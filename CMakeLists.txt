@@ -512,11 +512,21 @@ if(WIN32)
     set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}/${THERION_STUDIO_WINDOWS_ICON}")
     set(CPACK_NSIS_MUI_UNIICON "${CMAKE_CURRENT_SOURCE_DIR}/${THERION_STUDIO_WINDOWS_ICON}")
     set(CPACK_NSIS_INSTALLED_ICON_NAME "${CMAKE_INSTALL_BINDIR}/TherionStudio.exe")
-    set(CPACK_NSIS_EXECUTABLES_DIRECTORY "${CMAKE_INSTALL_BINDIR}")
-    set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
+    include(CPack)
+elseif(UNIX AND NOT APPLE)
+    set(CPACK_GENERATOR "DEB")
+    set(CPACK_PACKAGE_NAME "therion-studio")
+    set(CPACK_PACKAGE_VENDOR "therion-studio")
+    set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Ladislav Blazek <ladislav.blazek@gmail.com>")
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Therion Studio - Qt desktop editor for Therion cave surveying software")
+    set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
     include(CPack)
 endif()
 
+option(BUILD_TESTING "Build tests" ON)
+if(BUILD_TESTING)
 therion_add_core_unit_test(TherionDocumentEditorTest
     tests/TherionDocumentEditorTest.cpp)
 
@@ -990,3 +1000,4 @@ set_tests_properties(
     ${THERION_UI_TEST_TARGETS}
     PROPERTIES
         LABELS "ui")
+endif()
