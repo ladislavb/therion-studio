@@ -163,7 +163,16 @@ protected:
             painter->setPen(Qt::NoPen);
             painter->setBrush(halo);
             const qreal haloRadius = 2.2 * zoomOutScale;
-            painter->drawEllipse(drawRect.adjusted(-haloRadius, -haloRadius, haloRadius, haloRadius));
+            if (isStation_) {
+                QPolygonF haloTriangle;
+                QRectF haloRect = drawRect.adjusted(-haloRadius, -haloRadius, haloRadius, haloRadius);
+                haloTriangle << QPointF(haloRect.center().x(), haloRect.top())
+                             << QPointF(haloRect.right(), haloRect.bottom())
+                             << QPointF(haloRect.left(), haloRect.bottom());
+                painter->drawPolygon(haloTriangle);
+            } else {
+                painter->drawEllipse(drawRect.adjusted(-haloRadius, -haloRadius, haloRadius, haloRadius));
+            }
         }
 
         const qreal outlineWidth = (selected ? 1.8 : 1.1) * zoomOutScale;

@@ -1265,18 +1265,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                     orientationHandle->setVisible(false);
                 }
 
-                if (feature.stationPoint) {
-                    QPainterPath markerPath;
-                    markerPath.moveTo(previewPoint + QPointF(0.0, -12.0));
-                    markerPath.lineTo(previewPoint + QPointF(10.0, 6.0));
-                    markerPath.lineTo(previewPoint + QPointF(-10.0, 6.0));
-                    markerPath.closeSubpath();
 
-                    auto *triangle = scene->addPath(markerPath, QPen(canvasTheme.stationMarker, 1.2), QBrush(canvasTheme.stationMarker));
-                    triangle->setZValue(3.5);
-                    markGeometryItem(triangle);
-                    makeMouseTransparent(triangle);
-                }
 
                 if (feature.stationPoint) {
                     auto *label = makeMouseTransparent(scene->addText(feature.label.isEmpty() ? feature.category : feature.label, QFont(QStringLiteral("Menlo"), 10, QFont::Bold)));
