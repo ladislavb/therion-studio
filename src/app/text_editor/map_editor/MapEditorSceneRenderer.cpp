@@ -81,6 +81,65 @@ QPen geometricPen(const QColor &color,
     return pen;
 }
 
+bool tokenLooksNumeric(const QString &token);
+
+QString parsedPointTypeToken(const TherionParsedLine &parsedLine)
+{
+    bool skipOptionValue = false;
+    for (int index = 1; index < parsedLine.tokens.size(); ++index) {
+        const QString token = parsedLine.tokens.at(index);
+        if (skipOptionValue) {
+            skipOptionValue = false;
+            continue;
+        }
+        if (tokenLooksNumeric(token)) {
+            continue;
+        }
+        if (token.startsWith(QLatin1Char('-'))) {
+            skipOptionValue = index + 1 < parsedLine.tokens.size();
+            continue;
+        }
+        return token;
+    }
+    return QString();
+}
+
+QString parsedStationName(const TherionParsedLine &parsedLine)
+{
+    for (int index = 0; index + 1 < parsedLine.tokens.size(); ++index) {
+        if (parsedLine.tokens.at(index) == QStringLiteral("-name")) {
+            return parsedLine.tokens.at(index + 1);
+        }
+    }
+    const QString typeToken = parsedPointTypeToken(parsedLine);
+    if (typeToken.compare(QStringLiteral("station"), Qt::CaseInsensitive) == 0) {
+        bool foundType = false;
+        bool skipOptionValue = false;
+        for (int index = 1; index < parsedLine.tokens.size(); ++index) {
+            const QString token = parsedLine.tokens.at(index);
+            if (skipOptionValue) {
+                skipOptionValue = false;
+                continue;
+            }
+            if (token.startsWith(QLatin1Char('-'))) {
+                skipOptionValue = index + 1 < parsedLine.tokens.size();
+                continue;
+            }
+            if (tokenLooksNumeric(token)) {
+                continue;
+            }
+            if (!foundType) {
+                if (token == typeToken) {
+                    foundType = true;
+                }
+                continue;
+            }
+            return token;
+        }
+    }
+    return QString();
+}
+
 qreal zoomOutStrokeScale(qreal lod)
 {
     if (lod >= 1.0) {
@@ -1957,8 +2016,12 @@ QVector<MapGeometryFeature> collectGeometryFeatures(const QVector<TherionParsedL
             MapGeometryFeature feature;
             feature.kind = MapGeometryFeature::Kind::Point;
             feature.lineNumber = parsedLine.lineNumber;
-            feature.category = mapEntryCategoryForLine(parsedLine);
-            feature.label = mapEntryTitleForLine(parsedLine);
+
+            const QString pType = parsedPointTypeToken(parsedLine);
+            const bool isStation = (pType.compare(QStringLiteral("station"), Qt::CaseInsensitive) == 0);
+
+            feature.category = isStation ? QStringLiteral("Station") : mapEntryCategoryForLine(parsedLine);
+            feature.label = isStation ? parsedStationName(parsedLine) : mapEntryTitleForLine(parsedLine);
             feature.subtype = optionValue(parsedLine.tokens, QStringLiteral("-subtype"));
             feature.subtitle = mapEntrySubtitleForLine(parsedLine);
             feature.accent = mapEntryAccentForCategory(feature.category);
@@ -1974,7 +2037,7 @@ QVector<MapGeometryFeature> collectGeometryFeatures(const QVector<TherionParsedL
                                                             QStringLiteral("orient")})) {
                 feature.orientationDegrees = normalizedSceneOrientationDegrees(orientation.value());
             }
-            feature.stationPoint = false;
+            feature.stationPoint = isStation;
             features.append(feature);
             continue;
         }
