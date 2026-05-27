@@ -1039,7 +1039,7 @@ The criteria below are intended for implementation verification and QA.
 - Supported line, point, and area types render using a style catalog rather than a single generic fallback appearance.
 - Type-specific and subtype-specific styles are applied when matching catalog entries exist.
 - Missing or invalid style entries fall back to bundled defaults without preventing map rendering.
-- Point symbols support configurable shape, radius, fill, and label presentation.
+- Point symbols support configurable shape, radius, fill, and label presentation. Particularly, a point representing a survey station (`station` point) shall render on the map canvas as a small yellow triangle pointing upwards, while other point types are rendered as circular dots by default.
 - Line symbols support configurable stroke width, dash pattern, and optional decorations such as arrows or ticks.
 - Area symbols support configurable solid, hatch, or dot-pattern fills and optional strokes.
 - Selection, draft, and edit-preview visuals are applied consistently through the shared style system.

@@ -1176,7 +1176,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                 const QColor pointFillColor = pointStyle.fillColor.value_or(canvasTheme.pointHandleFill);
                 const QColor pointStrokeColor = pointStyle.strokeColor.value_or(canvasTheme.pointHandleStroke);
                 const QPointF previewPoint = mapGeometryPointToPreview(feature.anchor, sourceBounds, previewBounds);
-                auto *pointItem = new MapEditablePointItem(feature.lineNumber, feature.anchor, sourceBounds, previewBounds);
+                auto *pointItem = new MapEditablePointItem(feature.lineNumber, feature.anchor, sourceBounds, previewBounds, feature.stationPoint);
                 pointItem->setRect(QRectF(-pointRadius, -pointRadius, pointRadius * 2.0, pointRadius * 2.0));
                 pointItem->setPen(cosmeticPen(pointStrokeColor, qBound(0.6, pointStyle.outlineWidth, 8.0)));
                 pointItem->setBrush(QBrush(pointFillColor));

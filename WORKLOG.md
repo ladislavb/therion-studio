@@ -73,6 +73,7 @@ Active work only. Completed history is archived in `WORKLOG_ARCHIVE_2026-05-13.m
 - ~~Inspector smooth toggle now preserves vertex selection across asynchronous scene refresh (flush + multi-attempt owner-vertex selection recovery).~~
 - ~~Map render style defaults are now data-driven from `resources/map_object_styles/*.json` (point radius/outline, line thickness/detail/style, area thickness/fill-opacity/style), with safe hardcoded fallback when JSON is missing/invalid.~~
 - ~~Extended map object style catalog to support per-type/per-subtype overrides with colors, dash patterns, and area fill patterns (`solid`/`hatch`/`dots`) from `resources/map_object_styles/*.json`, keeping defaults as fallback.~~
+- ~~Implemented station point rendering: display station points as small yellow triangles pointing upwards on the map canvas, while keeping other points as circular dots.~~
 
 ### Phase 10 - Interactive Map Drawing and Insertion (`Post-MVP`)
 

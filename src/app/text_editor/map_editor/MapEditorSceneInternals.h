@@ -95,12 +95,14 @@ public:
     MapEditablePointItem(int lineNumber,
                          const QPointF &sourcePoint,
                          const QRectF &sourceBounds,
-                         const QRectF &previewBounds)
+                         const QRectF &previewBounds,
+                         bool isStation = false)
         : QGraphicsEllipseItem(QRectF(-5.0, -5.0, 10.0, 10.0))
         , lineNumber_(lineNumber)
         , sourceBounds_(sourceBounds)
         , previewBounds_(previewBounds)
         , fittedBounds_(previewBounds)
+        , isStation_(isStation)
     {
         setFlag(QGraphicsItem::ItemIsMovable, true);
         setFlag(QGraphicsItem::ItemIsSelectable, true);
@@ -167,7 +169,15 @@ protected:
         const qreal outlineWidth = (selected ? 1.8 : 1.1) * zoomOutScale;
         painter->setPen(QPen(outline, qMax<qreal>(0.55, outlineWidth)));
         painter->setBrush(fill);
-        painter->drawEllipse(drawRect);
+        if (isStation_) {
+            QPolygonF triangle;
+            triangle << QPointF(drawRect.center().x(), drawRect.top())
+                     << QPointF(drawRect.right(), drawRect.bottom())
+                     << QPointF(drawRect.left(), drawRect.bottom());
+            painter->drawPolygon(triangle);
+        } else {
+            painter->drawEllipse(drawRect);
+        }
     }
 
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override
@@ -241,6 +251,7 @@ private:
     QPointF pressSourcePoint_;
     bool hoverActive_ = false;
     bool dragActive_ = false;
+    bool isStation_ = false;
     std::function<QPointF(const QPointF &)> displayToSourceMapper_;
     std::function<void(int, const QPointF &, const QPointF &)> moveCommittedCallback_;
 };
