@@ -24,17 +24,15 @@ is easier to maintain and more comfortable on modern desktop systems, especially
 
 ## Screenshots
 
-<p>
-  <img src="docs/screenshots/map_editor.jpeg" alt="Visual TH2 map editor" width="49%">
-  <img src="docs/screenshots/multi_window_mode.jpeg" alt="Detached multi-window map editing" width="49%">
-</p>
-<p>
-  <img src="docs/screenshots/validator.png" alt="Project validation panel" width="49%">
-  <img src="docs/screenshots/search.png" alt="Project search panel" width="49%">
-</p>
-<p>
-  <img src="docs/screenshots/3d_viewer.png" alt="LOX 3D viewer" width="49%">
-</p>
+[![Visual TH2 map editor](docs/screenshots/map_editor.jpeg)](docs/screenshots/map_editor_medium.png)
+
+[![Detached multi-window map editing](docs/screenshots/multi_window_mode.jpeg)](docs/screenshots/multi_window_mode_medium.png)
+
+[![Project validation panel](docs/screenshots/validator.png)](docs/screenshots/validator_medium.png)
+
+[![Project search panel](docs/screenshots/search.png)](docs/screenshots/search_medium.png)
+
+[![LOX 3D viewer](docs/screenshots/3d_viewer.png)](docs/screenshots/3d_viewer_medium.png)
 
 ## Status
 
