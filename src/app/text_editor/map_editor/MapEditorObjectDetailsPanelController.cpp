@@ -615,6 +615,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
                                                  || (commandKind != QStringLiteral("point") && objectQuickOptionsVisible));
             context_.advancedSection->setVisible(false);
             context_.vertexActionsEditor->setVisible(false);
+            context_.linePointActionsSection->setVisible(false);
             context_.orientationEditor->setVisible((commandKind == QStringLiteral("point") && objectQuickOptionsVisible)
                                                    || pendingLinePointAvailable
                                                    || pendingOrientationApplicable
@@ -862,7 +863,8 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
         moveProjectionComboForSelection(effectiveKind);
         context_.quickProjectionEditor->setVisible(false);
     }
-    const bool lineVertexActionsAvailable = *context_.selectedObjectKind == QStringLiteral("line")
+    const bool lineVertexActionsAvailable = effectiveKind == QStringLiteral("line")
+        && effectiveLineNumber > 0
         && *context_.selectedObjectVertexIndex >= 0
         && context_.textEditor != nullptr;
     context_.linePointActionsSection->setVisible(lineVertexActionsAvailable);
