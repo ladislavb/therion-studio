@@ -846,6 +846,92 @@ int runVisibleVertexPressFallsThroughForDragTest()
     return 0;
 }
 
+int runNearVisibleVertexPressFallsThroughForDragTest()
+{
+    QGraphicsScene scene;
+    QGraphicsView view(&scene);
+    view.resize(240, 180);
+    view.show();
+
+    QString toolbarStatus;
+    bool primaryPointerInteractionActive = false;
+    bool pendingClickSelection = false;
+    QPointF pendingClickScenePosition;
+    QElapsedTimer pendingClickElapsed;
+    int pendingClickLineNumber = 0;
+    int pendingClickSourceVertexIndex = -1;
+    QString pendingClickGeometryKind;
+    int selectionSyncCalls = 0;
+
+    MapEditorViewportInputContext context;
+    context.scene = &scene;
+    context.view = &view;
+    context.toolbarStatusNote = &toolbarStatus;
+    context.primaryPointerInteractionActive = &primaryPointerInteractionActive;
+    context.pendingClickSelection = &pendingClickSelection;
+    context.pendingClickScenePosition = &pendingClickScenePosition;
+    context.pendingClickElapsed = &pendingClickElapsed;
+    context.pendingClickLineNumber = &pendingClickLineNumber;
+    context.pendingClickSourceVertexIndex = &pendingClickSourceVertexIndex;
+    context.pendingClickGeometryKind = &pendingClickGeometryKind;
+    context.drawMode = []() { return MapEditorInteractiveDrawMode::None; };
+    context.handleInteractiveDrawClick = [](const QPointF &) {
+        return false;
+    };
+    context.refreshToolbarSummary = []() {};
+    context.updateCommandSurfaceState = []() {};
+    context.syncMapSelectionFromScene = [&selectionSyncCalls]() {
+        ++selectionSyncCalls;
+    };
+
+    MapEditorViewportInputController controller(context);
+
+    QPainterPath wallPath;
+    wallPath.moveTo(10.0, 40.0);
+    wallPath.lineTo(90.0, 40.0);
+    auto *wallItem = scene.addPath(wallPath, QPen(Qt::black, 12.0));
+    wallItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
+    wallItem->setAcceptedMouseButtons(Qt::LeftButton);
+    wallItem->setData(kMapSceneLineNumberRole, 601);
+    wallItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeGeneric);
+    wallItem->setSelected(true);
+
+    const QPointF controlScenePosition(50.0, 40.0);
+    const QRectF stableBounds(0.0, 0.0, 100.0, 80.0);
+    auto *controlItem = new MapEditableGeometryVertexItem(601,
+                                                          QStringLiteral("line control"),
+                                                          2,
+                                                          controlScenePosition,
+                                                          stableBounds,
+                                                          stableBounds);
+    controlItem->setRect(QRectF(-2.4, -2.4, 4.8, 4.8));
+    controlItem->setData(kMapSceneLineNumberRole, 601);
+    controlItem->setData(kMapSceneSelectionGatedRole, true);
+    controlItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControl);
+    controlItem->setData(kMapSceneOwnerVertexRole, 1);
+    scene.addItem(controlItem);
+
+    const QPoint controlCenter = view.mapFromScene(controlScenePosition);
+    const QPoint nearControlButOutsideSmallRect = controlCenter + QPoint(9, 0);
+    QMouseEvent press(QEvent::MouseButtonPress,
+                      QPointF(nearControlButOutsideSmallRect),
+                      QPointF(view.viewport()->mapToGlobal(nearControlButOutsideSmallRect)),
+                      Qt::LeftButton,
+                      Qt::LeftButton,
+                      Qt::NoModifier);
+    const std::optional<bool> handled = controller.handleEvent(view.viewport(), &press);
+    if (!expect(!handled.has_value(),
+                "A thick selected path must not steal press events near a visible Bezier control handle affordance.")) {
+        return 1;
+    }
+    if (!expect(selectionSyncCalls == 0 && wallItem->isSelected(),
+                "Near-handle press should fall through to QGraphicsItem drag handling instead of reselecting the path.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 int runHoveredPathDoesNotStealVisibleVertexPressTest()
 {
     QGraphicsScene scene;
@@ -1020,6 +1106,9 @@ int main(int argc, char **argv)
         return rc;
     }
     if (const int rc = runVisibleVertexPressFallsThroughForDragTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runNearVisibleVertexPressFallsThroughForDragTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runHoveredPathDoesNotStealVisibleVertexPressTest(); rc != 0) {

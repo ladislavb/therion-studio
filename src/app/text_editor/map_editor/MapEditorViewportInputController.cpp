@@ -41,6 +41,7 @@ namespace
 {
 constexpr qreal kFilledPathInteriorHitDistancePixels = 6.0;
 constexpr qreal kDirectVertexCenterHitDistance = 1.0;
+constexpr qreal kDirectVertexAffordanceHitDistancePixels = 12.0;
 constexpr qreal kMaximumPathPrimaryHitDistancePixels = 10.0;
 
 bool wheelEventHasPreciseScrollingDeltas(const QWheelEvent *event)
@@ -96,6 +97,17 @@ bool isInteractiveMapSelectionItem(const QGraphicsItem *item)
         return false;
     }
     return true;
+}
+
+QPointF viewportHitCenterScenePoint(const QGraphicsItem *item)
+{
+    if (item == nullptr) {
+        return QPointF();
+    }
+    if (dynamic_cast<const MapEditableGeometryVertexItem *>(item) != nullptr) {
+        return item->scenePos();
+    }
+    return item->mapToScene(item->boundingRect().center());
 }
 
 QGraphicsItem *preferredMapHitItem(const QList<QGraphicsItem *> &hitItems,
@@ -227,22 +239,13 @@ QGraphicsItem *nearestDirectVertexLikeItemForViewportPosition(MapEditorViewportI
             continue;
         }
 
-        const QTransform deviceTransform = candidate->deviceTransform(context.view->viewportTransform());
-        bool invertible = false;
-        const QTransform itemFromViewport = deviceTransform.inverted(&invertible);
-        if (!invertible) {
-            continue;
-        }
-        const QPointF itemPoint = itemFromViewport.map(QPointF(viewportPosition));
-        const QRectF vertexRect = dynamic_cast<MapEditableGeometryVertexItem *>(candidate) != nullptr
-            ? static_cast<MapEditableGeometryVertexItem *>(candidate)->rect()
-            : candidate->boundingRect();
-        if (!vertexRect.adjusted(-2.0, -2.0, 2.0, 2.0).contains(itemPoint)) {
+        const QPoint candidateCenter = context.view->mapFromScene(viewportHitCenterScenePoint(candidate));
+        const QPoint delta = viewportPosition - candidateCenter;
+        const qreal distance = std::hypot(delta.x(), delta.y());
+        if (distance > kDirectVertexAffordanceHitDistancePixels) {
             continue;
         }
 
-        const QPointF delta = itemPoint - vertexRect.center();
-        const qreal distance = std::hypot(delta.x(), delta.y());
         if (distance < nearestDistance) {
             nearestDistance = distance;
             nearestDirectVertexItem = candidate;
@@ -298,17 +301,8 @@ QGraphicsItem *preferredMapHitItemForViewportPosition(MapEditorViewportInputCont
             }
         }
         if (candidate == nearestDirectVertexItem) {
-            const QTransform deviceTransform = candidate->deviceTransform(context.view->viewportTransform());
-            bool invertible = false;
-            const QTransform itemFromViewport = deviceTransform.inverted(&invertible);
-            if (!invertible) {
-                continue;
-            }
-            const QPointF itemPoint = itemFromViewport.map(QPointF(viewportPosition));
-            const QRectF vertexRect = dynamic_cast<MapEditableGeometryVertexItem *>(candidate) != nullptr
-                ? static_cast<MapEditableGeometryVertexItem *>(candidate)->rect()
-                : candidate->boundingRect();
-            const QPointF delta = itemPoint - vertexRect.center();
+            const QPoint candidateCenter = context.view->mapFromScene(viewportHitCenterScenePoint(candidate));
+            const QPoint delta = viewportPosition - candidateCenter;
             nearestDistance = std::hypot(delta.x(), delta.y());
         }
     }

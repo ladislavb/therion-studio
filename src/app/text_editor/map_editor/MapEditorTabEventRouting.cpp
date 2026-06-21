@@ -17,8 +17,10 @@
 #include <QMenu>
 #include <QMouseEvent>
 #include <QPlainTextEdit>
+#include <QPointer>
 #include <QTabWidget>
 #include <QTextEdit>
+#include <QTimer>
 #include <QTreeView>
 #include <QWidget>
 
@@ -239,6 +241,16 @@ bool MapEditorTab::eventFilter(QObject *watched, QEvent *event)
             }
             if (event->type() == QEvent::Show) {
                 updateMagnifierOverlayGeometry();
+                if (mapSceneRefreshWhenVisiblePending_) {
+                    mapSceneRefreshWhenVisiblePending_ = false;
+                    QPointer<MapEditorTab> guarded(this);
+                    QTimer::singleShot(0, this, [guarded]() {
+                        if (guarded == nullptr) {
+                            return;
+                        }
+                        guarded->refreshMapScenePreservingUndoStack();
+                    });
+                }
             }
             break;
         }

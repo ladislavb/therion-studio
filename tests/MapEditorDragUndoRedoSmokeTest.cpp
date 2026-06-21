@@ -1902,7 +1902,10 @@ int runInspectorObjectMoveSmoke()
 int runTemplateBezierEditScenario(const QString &fixtureName,
                                   const QString &th2RelativePath,
                                   int lineNumber,
-                                  bool expectBackgroundLayer)
+                                  bool expectBackgroundLayer,
+                                  bool loadWhileHidden = false,
+                                  const QString &targetProjectName = QString(),
+                                  bool openConfigSibling = false)
 {
     QTemporaryDir tempDir;
     if (!expect(tempDir.isValid(), "Failed to create temporary directory for template Bezier smoke test.")) {
@@ -1911,7 +1914,9 @@ int runTemplateBezierEditScenario(const QString &fixtureName,
 
     const QString fixtureRoot = repositoryFilePath(
         QStringLiteral("tests/fixtures/projects/map_editor_regression/%1").arg(fixtureName));
-    const QString projectRoot = QDir(tempDir.path()).filePath(fixtureName);
+    const QString projectRoot = QDir(tempDir.path()).filePath(targetProjectName.isEmpty()
+                                                                 ? fixtureName
+                                                                 : targetProjectName);
     if (!expect(copyDirectoryRecursively(fixtureRoot, projectRoot),
                 "Failed to copy map editor regression fixture project.")) {
         return 1;
@@ -1927,12 +1932,22 @@ int runTemplateBezierEditScenario(const QString &fixtureName,
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
-    auto *mapTab = new MapEditorTab(fileSystem, sessionStore, CommandCatalogStore(), central);
+    QTabWidget *documentTabs = nullptr;
+    if (openConfigSibling) {
+        documentTabs = new QTabWidget(central);
+        layout->addWidget(documentTabs);
+    }
+
+    auto *mapTab = new MapEditorTab(fileSystem, sessionStore, CommandCatalogStore(), openConfigSibling ? nullptr : central);
     mapTab->setProjectRootPath(projectRoot);
-    layout->addWidget(mapTab);
+    if (!openConfigSibling) {
+        layout->addWidget(mapTab);
+    }
     hostWindow.setCentralWidget(central);
-    hostWindow.show();
-    pumpEvents();
+    if (!loadWhileHidden) {
+        hostWindow.show();
+        pumpEvents();
+    }
 
     QString errorMessage;
     if (!expect(mapTab->loadFile(filePath, &errorMessage),
@@ -1942,7 +1957,32 @@ int runTemplateBezierEditScenario(const QString &fixtureName,
         }
         return 1;
     }
+    TextEditorTab *configTab = nullptr;
+    if (openConfigSibling) {
+        documentTabs->addTab(mapTab, QStringLiteral("scrap1.th2"));
+        configTab = new TextEditorTab(fileSystem, CommandCatalogStore(), documentTabs);
+        configTab->setProjectRootPath(projectRoot);
+        configTab->setModeSelectorVisible(false);
+        QString configErrorMessage;
+        if (!expect(configTab->loadFile(QDir(projectRoot).filePath(QStringLiteral("main.thconfig")),
+                                        &configErrorMessage),
+                    "Template-style config sibling tab should load next to the map editor.")) {
+            if (!configErrorMessage.isEmpty()) {
+                std::cerr << configErrorMessage.toStdString() << '\n';
+            }
+            return 1;
+        }
+        documentTabs->addTab(configTab, QStringLiteral("main.thconfig"));
+        documentTabs->setCurrentWidget(configTab);
+    }
+    if (loadWhileHidden) {
+        hostWindow.show();
+    }
     pumpEvents();
+    if (openConfigSibling) {
+        documentTabs->setCurrentWidget(mapTab);
+        pumpEvents();
+    }
 
     auto *mapView = mapTab->findChild<QGraphicsView *>();
     if (!expect(mapView != nullptr && mapView->scene() != nullptr,
@@ -2008,6 +2048,16 @@ int runTemplateBezierEditSmoke()
                                                      QStringLiteral("scraps/scrap1.th2"),
                                                      6,
                                                      false);
+        rc != 0) {
+        return rc;
+    }
+    if (const int rc = runTemplateBezierEditScenario(QStringLiteral("default_template_like"),
+                                                     QStringLiteral("scraps/scrap1.th2"),
+                                                     6,
+                                                     false,
+                                                     true,
+                                                     QStringLiteral("New Project"),
+                                                     true);
         rc != 0) {
         return rc;
     }

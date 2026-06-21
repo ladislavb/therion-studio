@@ -69,7 +69,7 @@ int runCreateProjectFromTemplateTest()
         return 1;
     }
 
-    const QString targetRoot = QDir(targetParentDir.path()).filePath(QStringLiteral("created-project"));
+    const QString targetRoot = QDir(targetParentDir.path()).filePath(QStringLiteral("New Project"));
     const auto result = ProjectTemplateService::createProjectFromTemplate(templateRoot, targetRoot);
     if (!expect(result.success, "Template project creation should succeed.")) {
         std::cerr << result.errorMessage.toStdString() << '\n';
@@ -99,7 +99,7 @@ int runCreateProjectFromTemplateTest()
                     && result.openFilePaths.at(1) == QDir(targetRoot).filePath(QStringLiteral("index.th"))
                     && result.openFilePaths.at(2) == QDir(targetRoot).filePath(QStringLiteral("surveys/survey1.th"))
                     && result.openFilePaths.at(3) == QDir(targetRoot).filePath(QStringLiteral("scraps/scrap1.th2")),
-                "Created project should preserve manifest open-file order.")) {
+                "Created project should preserve manifest open-file order when the project folder contains spaces.")) {
         return 1;
     }
 

@@ -136,7 +136,9 @@ TherionStudio::TextEditorTab *MainWindow::createUntitledTextTab(const QString &s
         }
     });
     connect(tab, &TherionStudio::TextEditorTab::currentLineChanged, this, [this, tab](int lineNumber) {
-        handleTextEditorCurrentLineChanged(tab->filePath(), lineNumber);
+        if (currentDocumentWidget() == tab) {
+            handleTextEditorCurrentLineChanged(tab->filePath(), lineNumber);
+        }
     });
     connect(tab, &TherionStudio::TextEditorTab::documentTextChanged, this, [this, tab]() {
         handleDocumentTextChanged(tab);
@@ -198,7 +200,9 @@ TherionStudio::MapEditorTab *MainWindow::createUntitledMapEditorTab(const QStrin
         }
     });
     connect(tab, &TherionStudio::MapEditorTab::currentLineChanged, this, [this, tab](int lineNumber) {
-        handleTextEditorCurrentLineChanged(tab->filePath(), lineNumber);
+        if (currentDocumentWidget() == tab) {
+            handleTextEditorCurrentLineChanged(tab->filePath(), lineNumber);
+        }
     });
     connect(tab, &TherionStudio::MapEditorTab::documentTextChanged, this, [this, tab]() {
         handleDocumentTextChanged(tab);

@@ -1196,7 +1196,11 @@ void MainWindow::createNewTherionConfigDocument()
 void MainWindow::handleTextEditorCurrentLineChanged(const QString &filePath, int lineNumber)
 {
     updateStructureSelectionFromEditorLocation(filePath, lineNumber);
-    updateMapObjectSelectionFromEditorLocation(filePath, lineNumber);
+    if (auto *mapTab = currentMapEditorTab(); mapTab != nullptr
+        && TherionStudio::MainWindowDocumentOpenController::canonicalDocumentPath(mapTab->filePath())
+            == TherionStudio::MainWindowDocumentOpenController::canonicalDocumentPath(filePath)) {
+        updateMapObjectSelectionFromEditorLocation(filePath, lineNumber);
+    }
 }
 
 void MainWindow::handleTabCloseRequested(int index)
@@ -1481,7 +1485,9 @@ TherionStudio::TextEditorTab *MainWindow::openTextTab(const QString &filePath,
     });
 
     connect(tab, &TherionStudio::TextEditorTab::currentLineChanged, this, [this, tab](int lineNumber) {
-        handleTextEditorCurrentLineChanged(tab->filePath(), lineNumber);
+        if (currentDocumentWidget() == tab) {
+            handleTextEditorCurrentLineChanged(tab->filePath(), lineNumber);
+        }
     });
     connect(tab, &TherionStudio::TextEditorTab::documentTextChanged, this, [this, tab]() {
         handleDocumentTextChanged(tab);
@@ -1692,7 +1698,9 @@ TherionStudio::MapEditorTab *MainWindow::openMapEditorTab(const QString &filePat
         }
     });
     connect(tab, &TherionStudio::MapEditorTab::currentLineChanged, this, [this, tab](int lineNumber) {
-        handleTextEditorCurrentLineChanged(tab->filePath(), lineNumber);
+        if (currentDocumentWidget() == tab) {
+            handleTextEditorCurrentLineChanged(tab->filePath(), lineNumber);
+        }
     });
     connect(tab, &TherionStudio::MapEditorTab::documentTextChanged, this, [this, tab]() {
         handleDocumentTextChanged(tab);

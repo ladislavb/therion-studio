@@ -25,6 +25,12 @@ Active planning only. Completed history belongs in archive files. Stable archite
   by click, selected/hovered stale items must not steal clicks, and path candidates outside the current screen-space hit
   radius must not become inspector primary selections.
 - Keep hidden gated map vertices reachable for context-menu selection paths without making ordinary hidden handles steal primary clicks.
+- Keep visible map vertex/control-handle affordances ahead of thick selected paths in viewport hit-testing so clicks near
+  the drawn handle fall through to QGraphicsItem drag handling instead of being consumed as path reselection.
+- Keep map tabs loaded while hidden, such as New Project from Template tabs, refreshing once when first shown so handles
+  and drag affordances are attached to the visible viewport state.
+- Keep inactive `.th` / `.thconfig` tabs from driving map-object cursor synchronization; only the current document should
+  update the global map object selection from its current line.
 - Keep map line selection readable by focusing clicked segments: primary path clicks should expose only the segment
   endpoint anchors and their control handles, with smaller visible vertex markers.
 - Keep map line-point orientation/size handles draggable when they overlap highlighted paths, and keep Backspace/Delete
