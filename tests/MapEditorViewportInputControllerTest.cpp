@@ -1116,6 +1116,146 @@ int runHoveredPathDoesNotStealLinePointHandlePressTest()
     return 0;
 }
 
+int runSlopeLinePointHandleShapeExcludesAnchorAndConnectorTest()
+{
+    const QPointF anchorPreview(100.0, 100.0);
+    constexpr qreal orientationDegrees = 35.0;
+    constexpr qreal leftSize = 40.0;
+    constexpr qreal previewScale = 1.0;
+    MapLinePointSizeHandleItem handleItem(18,
+                                          2,
+                                          anchorPreview,
+                                          orientationDegrees,
+                                          leftSize,
+                                          previewScale);
+    if (!expect(!(handleItem.flags() & QGraphicsItem::ItemIsSelectable),
+                "Slope line-point orientation handle should stay out of map selection hit-testing.")) {
+        return 1;
+    }
+
+    const QPainterPath shape = handleItem.shape();
+    if (!expect(!shape.contains(anchorPreview),
+                "Slope line-point orientation handle hit shape must not include the anchor vertex.")) {
+        return 1;
+    }
+
+    constexpr qreal pi = 3.14159265358979323846;
+    const qreal radians = orientationDegrees * pi / 180.0;
+    const qreal displayLength = qMax<qreal>(12.0, qMax<qreal>(0.1, leftSize) * previewScale);
+    const QPointF arrowTip = anchorPreview + QPointF(std::sin(radians) * displayLength,
+                                                     -std::cos(radians) * displayLength);
+    const QPointF direction = (arrowTip - anchorPreview) / displayLength;
+    const QPointF normal(-direction.y(), direction.x());
+    const QPointF arrowBase = arrowTip - (direction * 9.0);
+    const QPointF connectorMidpoint = anchorPreview + ((arrowTip - anchorPreview) * 0.5);
+    if (!expect(!shape.contains(connectorMidpoint),
+                "Slope line-point orientation handle hit shape must not include the connector segment.")) {
+        return 1;
+    }
+
+    if (!expect(shape.contains(arrowTip),
+                "Slope line-point orientation handle hit shape should include the arrow tip.")) {
+        return 1;
+    }
+
+    const QPointF arrowHeadCenter = (arrowTip + arrowBase + (arrowBase + (normal * 6.0))) / 3.0;
+    if (!expect(shape.contains(arrowHeadCenter),
+                "Slope line-point orientation handle hit shape should include the arrow-head center.")) {
+        return 1;
+    }
+
+    if (!expect(shape.contains(arrowBase + (normal * 4.0))
+                    && shape.contains(arrowBase - (normal * 4.0)),
+                "Slope line-point orientation handle hit shape should include both arrow-head flanks.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int runHoveredPathDoesNotStealSlopeOrientationHandlePressTest()
+{
+    QGraphicsScene scene;
+    QGraphicsView view(&scene);
+    view.resize(240, 180);
+    view.show();
+
+    QString toolbarStatus;
+    bool primaryPointerInteractionActive = false;
+    bool pendingClickSelection = false;
+    QPointF pendingClickScenePosition;
+    QElapsedTimer pendingClickElapsed;
+    int pendingClickLineNumber = 0;
+    int pendingClickSourceVertexIndex = -1;
+    QString pendingClickGeometryKind;
+
+    MapEditorViewportInputContext context;
+    context.scene = &scene;
+    context.view = &view;
+    context.toolbarStatusNote = &toolbarStatus;
+    context.primaryPointerInteractionActive = &primaryPointerInteractionActive;
+    context.pendingClickSelection = &pendingClickSelection;
+    context.pendingClickScenePosition = &pendingClickScenePosition;
+    context.pendingClickElapsed = &pendingClickElapsed;
+    context.pendingClickLineNumber = &pendingClickLineNumber;
+    context.pendingClickSourceVertexIndex = &pendingClickSourceVertexIndex;
+    context.pendingClickGeometryKind = &pendingClickGeometryKind;
+    context.drawMode = []() { return MapEditorInteractiveDrawMode::None; };
+    context.handleInteractiveDrawClick = [](const QPointF &) {
+        return false;
+    };
+    context.refreshToolbarSummary = []() {};
+    context.updateCommandSurfaceState = []() {};
+
+    MapEditorViewportInputController controller(context);
+
+    QPainterPath contourPath;
+    contourPath.moveTo(10.0, 40.0);
+    contourPath.lineTo(90.0, 40.0);
+    auto *hoveredPathItem = scene.addPath(contourPath, QPen(Qt::cyan, 2.0));
+    hoveredPathItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
+    hoveredPathItem->setAcceptedMouseButtons(Qt::LeftButton);
+    hoveredPathItem->setData(kMapSceneLineNumberRole, 18);
+    hoveredPathItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineDetail);
+    hoveredPathItem->setData(kMapSceneInteractionHoverRole, true);
+
+    const QPointF anchorPreview(50.0, 40.0);
+    auto *handleItem = new MapLinePointSizeHandleItem(18,
+                                                      2,
+                                                      anchorPreview,
+                                                      35.0,
+                                                      40.0,
+                                                      1.0);
+    scene.addItem(handleItem);
+    handleItem->setZValue(4.7);
+    handleItem->setData(kMapSceneLineNumberRole, 18);
+    handleItem->setData(kMapSceneOwnerVertexRole, 2);
+    handleItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControlConnector);
+    handleItem->setVisible(true);
+
+    const QPoint clickPosition = view.mapFromScene(handleItem->boundingRect().center());
+    QMouseEvent press(QEvent::MouseButtonPress,
+                      QPointF(clickPosition),
+                      QPointF(view.viewport()->mapToGlobal(clickPosition)),
+                      Qt::LeftButton,
+                      Qt::LeftButton,
+                      Qt::NoModifier);
+    const std::optional<bool> handled = controller.handleEvent(view.viewport(), &press);
+    if (!expect(!handled.has_value(),
+                "A highlighted path must not steal primary press events from a slope orientation handle.")) {
+        return 1;
+    }
+    if (!expect(pendingClickSelection
+                    && pendingClickLineNumber == 18
+                    && pendingClickSourceVertexIndex == 2
+                    && pendingClickGeometryKind == QStringLiteral("line"),
+                "Primary press on a slope orientation handle should preserve pending metadata for its owner vertex.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 }
 
 int main(int argc, char **argv)
@@ -1143,6 +1283,12 @@ int main(int argc, char **argv)
         return rc;
     }
     if (const int rc = runHoveredPathDoesNotStealLinePointHandlePressTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runSlopeLinePointHandleShapeExcludesAnchorAndConnectorTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runHoveredPathDoesNotStealSlopeOrientationHandlePressTest(); rc != 0) {
         return rc;
     }
     return runResizeAutoFitSuppressesCommandSurfaceUpdateTest();

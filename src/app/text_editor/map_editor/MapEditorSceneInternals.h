@@ -1109,7 +1109,6 @@ public:
         , leftSize_(qMax<qreal>(0.1, leftSize))
         , previewScale_(qMax<qreal>(1e-6, previewScale))
     {
-        setFlag(QGraphicsItem::ItemIsSelectable, true);
         setAcceptHoverEvents(true);
         setAcceptedMouseButtons(Qt::LeftButton);
         setCursor(Qt::OpenHandCursor);
@@ -1124,21 +1123,44 @@ public:
 
     QRectF boundingRect() const override
     {
-        return QRectF(anchorPreview_, handlePreview_).normalized().adjusted(-10.0, -10.0, 10.0, 10.0);
+        return QRectF(anchorPreview_, handlePreview_).normalized().adjusted(-14.0, -14.0, 14.0, 14.0);
     }
 
     QPainterPath shape() const override
     {
         QPainterPath path;
-        path.moveTo(anchorPreview_);
-        path.lineTo(handlePreview_);
-        path.addEllipse(handlePreview_, 6.0, 6.0);
+        path.setFillRule(Qt::WindingFill);
+        path.addEllipse(handlePreview_, 11.0, 11.0);
 
-        QPainterPathStroker stroker;
-        stroker.setWidth(12.0);
-        stroker.setCapStyle(Qt::RoundCap);
-        stroker.setJoinStyle(Qt::RoundJoin);
-        return stroker.createStroke(path).united(path);
+        const QPointF vector = handlePreview_ - anchorPreview_;
+        const qreal length = std::hypot(vector.x(), vector.y());
+        if (length > 1e-6) {
+            const QPointF direction(vector.x() / length, vector.y() / length);
+            const QPointF normal(-direction.y(), direction.x());
+            const QPointF arrowTip = handlePreview_;
+            const qreal arrowLength = qMin<qreal>(9.0, length);
+            const QPointF arrowBase = arrowTip - (direction * arrowLength);
+            path.addEllipse(arrowBase, 7.0, 7.0);
+            const qreal shaftLength = qMin<qreal>(8.0, qMax<qreal>(0.0, length - arrowLength));
+            if (shaftLength > 1e-6) {
+                const QPointF shaftStart = arrowBase - (direction * shaftLength);
+                QPainterPath shaftPath;
+                shaftPath.moveTo(shaftStart + (normal * 3.0));
+                shaftPath.lineTo(arrowBase + (normal * 3.0));
+                shaftPath.lineTo(arrowBase - (normal * 3.0));
+                shaftPath.lineTo(shaftStart - (normal * 3.0));
+                shaftPath.closeSubpath();
+                path.addPath(shaftPath);
+            }
+
+            QPainterPath arrowPath;
+            arrowPath.moveTo(arrowTip);
+            arrowPath.lineTo(arrowBase + (normal * 6.0));
+            arrowPath.lineTo(arrowBase - (normal * 6.0));
+            arrowPath.closeSubpath();
+            path.addPath(arrowPath);
+        }
+        return path;
     }
 
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override

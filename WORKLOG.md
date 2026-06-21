@@ -44,6 +44,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   endpoint anchors and their control handles, with smaller visible vertex markers.
 - Keep map line-point orientation/size handles draggable when they overlap highlighted paths, and keep Backspace/Delete
   deleting a whole selected line unless an actual vertex/control handle is selected.
+- Keep `line slope` orientation/size arrow handles targetable directly at the arrow head without extending their hit area
+  back across the connector segment or stealing endpoint vertex drags.
 - Keep map geometry strokes readable on HiDPI/Retina displays without changing TH2 source geometry or XTherion
   background-reference loading semantics.
 - Keep map object style catalog tests aligned with intentional resource-backed visual tuning such as `line wall`

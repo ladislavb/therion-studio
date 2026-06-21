@@ -66,6 +66,35 @@ bool isSecondaryClickPress(const QMouseEvent *event)
         && event->modifiers().testFlag(Qt::ControlModifier);
 }
 
+MapLinePointSizeHandleItem *slopeOrientationHandleAtViewportPosition(MapEditorViewportInputContext &context,
+                                                                     const QPoint &viewportPosition)
+{
+    if (context.scene == nullptr || context.view == nullptr) {
+        return nullptr;
+    }
+
+    const QPointF scenePosition = context.view->mapToScene(viewportPosition);
+    const QPointF sceneDx = context.view->mapToScene(viewportPosition + QPoint(10, 0));
+    const QPointF sceneDy = context.view->mapToScene(viewportPosition + QPoint(0, 10));
+    const qreal radiusX = std::max<qreal>(1.0, std::abs(sceneDx.x() - scenePosition.x()));
+    const qreal radiusY = std::max<qreal>(1.0, std::abs(sceneDy.y() - scenePosition.y()));
+    const QRectF probeRect(scenePosition.x() - radiusX,
+                           scenePosition.y() - radiusY,
+                           radiusX * 2.0,
+                           radiusY * 2.0);
+    const QList<QGraphicsItem *> hitItems =
+        context.scene->items(probeRect, Qt::IntersectsItemShape, Qt::DescendingOrder, context.view->transform());
+    for (QGraphicsItem *item : hitItems) {
+        auto *handle = dynamic_cast<MapLinePointSizeHandleItem *>(item);
+        if (handle == nullptr || !handle->isVisible()) {
+            continue;
+        }
+        return handle;
+    }
+
+    return nullptr;
+}
+
 void applyDefaultMapViewportCursor(const MapEditorViewportInputContext &context, QWidget *viewport)
 {
     if (viewport == nullptr) {
@@ -376,6 +405,14 @@ QGraphicsItem *preferredMapClickHitItemForViewportPosition(MapEditorViewportInpu
 {
     if (context.scene == nullptr || context.view == nullptr) {
         return nullptr;
+    }
+
+    if (MapLinePointSizeHandleItem *orientationHandle =
+            slopeOrientationHandleAtViewportPosition(context, viewportPosition)) {
+        const QPointF scenePosition = context.view->mapToScene(viewportPosition);
+        resetPendingClickSelection(context, scenePosition);
+        describePendingClickSelection(context, orientationHandle);
+        return orientationHandle;
     }
 
     if (QGraphicsItem *directVertexItem =
@@ -1255,7 +1292,11 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                                                                                   false,
                                                                                   false);
                 setMapInteractionHoverItem(context_, hoverItem);
-                applyDefaultMapViewportCursor(context_, viewport);
+                if (slopeOrientationHandleAtViewportPosition(context_, mouseEvent->pos()) != nullptr) {
+                    viewport->setCursor(Qt::OpenHandCursor);
+                } else {
+                    applyDefaultMapViewportCursor(context_, viewport);
+                }
             }
 
             if (!(*context_.mapPanActive)) {
