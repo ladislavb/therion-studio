@@ -95,7 +95,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Keep Selection quick-field label/input visibility synchronized with wrapper visibility across clear/refresh cycles.
 - Keep point `-align` rendering anchored like Therion so map canvas placement matches saved point options.
 - Clear pending Selection inspector insert state when Smart Area confirmation returns to Select mode.
-- Keep release notes, package metadata, and CI artifact workflow aligned with `v2026.6.8`.
+- Keep release notes, README, package metadata, and CI artifact workflow aligned with `v2026.6.8`.
 - Keep Linux CI and package-builder Qt dependency lists aligned with the Qt Quick/QML-backed 3D viewer surface.
 - Keep Windows CI and installer Qt archive lists aligned with the Qt Quick/QML-backed 3D viewer surface.
 - Keep AppImage runtime-library staging aligned with Debian Qt runtime dependencies instead of masking missing

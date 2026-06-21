@@ -16,10 +16,25 @@ is easier to maintain and more comfortable on modern desktop systems, especially
 - Synchronized Raw and Visual map editing for TH2 files.
 - Visual TH2 map editor with source-linked points, lines, areas, scraps, and background images.
 - Structured Block editor for more approachable `.th` and `.thconfig` authoring.
+- Read-only `.lox` 3D viewer with layer controls, measurement, station hover details, and altitude coloring.
 - Project structure and map-object navigation sidebars.
 - Integrated Therion runner for current or project `.thconfig` compilation.
 - Detached map window for multi-monitor workflows.
 - Runtime light/dark appearance support.
+
+## Screenshots
+
+<p>
+  <img src="docs/screenshots/map_editor.jpeg" alt="Visual TH2 map editor" width="49%">
+  <img src="docs/screenshots/multi_window_mode.jpeg" alt="Detached multi-window map editing" width="49%">
+</p>
+<p>
+  <img src="docs/screenshots/validator.png" alt="Project validation panel" width="49%">
+  <img src="docs/screenshots/search.png" alt="Project search panel" width="49%">
+</p>
+<p>
+  <img src="docs/screenshots/3d_viewer.png" alt="LOX 3D viewer" width="49%">
+</p>
 
 ## Status
 
@@ -30,7 +45,9 @@ requirements.
 
 ## Installation
 
-Release packaging is still being hardened.
+Installers and packages are published through
+[GitHub Releases](https://github.com/ladislavb/therion-studio/releases). Packaging details and
+local build instructions are maintained here:
 
 - Windows installer notes: [`packaging/windows/README.md`](packaging/windows/README.md)
 - Linux package notes (`.deb` + `AppImage`): [`packaging/linux/README.md`](packaging/linux/README.md)
@@ -47,7 +64,8 @@ v2026.5.0
 ## Notes
 
 Therion Studio does not bundle the external Therion compiler. Install Therion separately and
-configure it in the Compiler pane.
+configure the executable path in Settings if the default `therion` command or platform fallback
+detection is not enough.
 
 ## License
 
