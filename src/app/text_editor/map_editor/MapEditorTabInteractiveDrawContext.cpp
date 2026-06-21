@@ -4,6 +4,8 @@
 #include "MapEditorInteractiveDrawController.h"
 #include "../TextEditorTab.h"
 
+#include <QScopedValueRollback>
+
 namespace TherionStudio
 {
 namespace
@@ -136,9 +138,12 @@ MapEditorInteractiveDrawContext MapEditorTab::interactiveDrawContext()
             clearPendingInsertObject();
         },
         .selectCommittedDraftObject = [this](int lineNumber) {
-            goToLine(lineNumber);
+            if (textEditor_ != nullptr) {
+                const QScopedValueRollback<bool> syncGuard(selectionSyncState_.textNavigationInProgress_, true);
+                textEditor_->goToLine(lineNumber);
+            }
             selectMapLine(lineNumber, false);
-            syncInspectorObjectSelectionToLine(lineNumber);
+            syncInspectorObjectSelectionToLine(lineNumber, false);
         },
         .refreshObjectDetailsPanel = [this]() {
             refreshObjectDetailsPanel();
