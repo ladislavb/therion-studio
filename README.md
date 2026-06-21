@@ -24,15 +24,7 @@ is easier to maintain and more comfortable on modern desktop systems, especially
 
 ## Screenshots
 
-[![Visual TH2 map editor](docs/screenshots/map_editor_medium.png)](docs/screenshots/map_editor.jpeg)
-
-[![Detached multi-window map editing](docs/screenshots/multi_window_mode_medium.png)](docs/screenshots/multi_window.jpeg)
-
-[![Project validation panel](docs/screenshots/validator_medium.png)](docs/screenshots/validator_medium.png)
-
-[![Project search panel](docs/screenshots/search_medium.png)](docs/screenshots/search.png)
-
-[![LOX 3D viewer](docs/screenshots/3d_viewer_medium.png)](docs/screenshots/3d_viewer.png)
+[![Visual TH2 map editor](docs/screenshots/map_editor_medium.png)](docs/screenshots/map_editor.jpeg) [![Detached multi-window map editing](docs/screenshots/multi_window_mode_medium.png)](docs/screenshots/multi_window.jpeg) [![Project validation panel](docs/screenshots/validator_medium.png)](docs/screenshots/validator_medium.png) [![Project search panel](docs/screenshots/search_medium.png)](docs/screenshots/search.png) [![LOX 3D viewer](docs/screenshots/3d_viewer_medium.png)](docs/screenshots/3d_viewer.png)
 
 ## Status
 
