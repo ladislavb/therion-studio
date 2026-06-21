@@ -842,6 +842,13 @@ int runVisibleVertexPressFallsThroughForDragTest()
                 "Primary press on a visible vertex should fall through so the scene can start dragging it.")) {
         return 1;
     }
+    if (!expect(pendingClickSelection
+                    && pendingClickLineNumber == 601
+                    && pendingClickSourceVertexIndex == 7
+                    && pendingClickGeometryKind == QStringLiteral("line"),
+                "Primary press on a visible vertex should preserve pending metadata for selection restoration.")) {
+        return 1;
+    }
 
     return 0;
 }
@@ -922,6 +929,13 @@ int runNearVisibleVertexPressFallsThroughForDragTest()
     const std::optional<bool> handled = controller.handleEvent(view.viewport(), &press);
     if (!expect(!handled.has_value(),
                 "A thick selected path must not steal press events near a visible Bezier control handle affordance.")) {
+        return 1;
+    }
+    if (!expect(pendingClickSelection
+                    && pendingClickLineNumber == 601
+                    && pendingClickSourceVertexIndex == 1
+                    && pendingClickGeometryKind == QStringLiteral("line"),
+                "Primary press near a visible Bezier control should preserve pending metadata for its owner vertex.")) {
         return 1;
     }
     if (!expect(selectionSyncCalls == 0 && wallItem->isSelected(),
@@ -1009,6 +1023,13 @@ int runHoveredPathDoesNotStealVisibleVertexPressTest()
                 "A highlighted path must not steal primary press events from its visible vertex handles.")) {
         return 1;
     }
+    if (!expect(pendingClickSelection
+                    && pendingClickLineNumber == 601
+                    && pendingClickSourceVertexIndex == 7
+                    && pendingClickGeometryKind == QStringLiteral("line"),
+                "Primary press on a visible vertex ahead of a highlighted path should preserve pending metadata.")) {
+        return 1;
+    }
 
     return 0;
 }
@@ -1082,6 +1103,13 @@ int runHoveredPathDoesNotStealLinePointHandlePressTest()
     const std::optional<bool> handled = controller.handleEvent(view.viewport(), &press);
     if (!expect(!handled.has_value(),
                 "A highlighted path must not steal primary press events from a visible line-point orientation handle.")) {
+        return 1;
+    }
+    if (!expect(pendingClickSelection
+                    && pendingClickLineNumber == 91
+                    && pendingClickSourceVertexIndex == 4
+                    && pendingClickGeometryKind == QStringLiteral("line"),
+                "Primary press on a visible line-point handle should preserve pending metadata for its owner vertex.")) {
         return 1;
     }
 

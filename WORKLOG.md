@@ -27,6 +27,15 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Keep hidden gated map vertices reachable for context-menu selection paths without making ordinary hidden handles steal primary clicks.
 - Keep visible map vertex/control-handle affordances ahead of thick selected paths in viewport hit-testing so clicks near
   the drawn handle fall through to QGraphicsItem drag handling instead of being consumed as path reselection.
+- Keep direct map vertex/control-handle presses carrying pending line/vertex metadata so selection refreshes restore the
+  clicked line point instead of drifting to another selected item on the same or nearby geometry.
+- Keep map vertex and Bezier control point markers large enough to target comfortably on HiDPI/Windows-scaled displays
+  without changing source coordinates or map geometry.
+- Keep Bezier control point markers visually distinct as solid blue square handles.
+- Keep Bezier control connector lines visible enough on light raster backgrounds and HiDPI displays.
+- Keep standalone point/station anchors out of snap guide markers during line/area vertex drags; show them only as the
+  active snap target when the dragged or inserted vertex is actually within snap range.
+- Keep snap guide and active target markers as scene-anchored overlay items so they do not drift with the dragged vertex.
 - Keep map tabs loaded while hidden, such as New Project from Template tabs, refreshing once when first shown so handles
   and drag affordances are attached to the visible viewport state.
 - Keep inactive `.th` / `.thconfig` tabs from driving map-object cursor synchronization; only the current document should

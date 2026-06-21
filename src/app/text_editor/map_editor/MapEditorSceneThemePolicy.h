@@ -36,7 +36,7 @@ inline MapEditorSceneThemeColors mapEditorSceneThemeColors()
         QColor(QStringLiteral("#556b84")),
         QColor(18, 26, 37, 220),
         QColor(24, 30, 42, 190),
-        QColor(52, 110, 186, 190),
+        QColor(0, 70, 220, 235),
         QColor(20, 73, 148, 230),
         QColor(96, 176, 248, 220),
     };

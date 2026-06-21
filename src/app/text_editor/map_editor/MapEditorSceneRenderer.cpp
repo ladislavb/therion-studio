@@ -1868,7 +1868,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
     const QHash<int, QPainterPath> scrapClipPaths =
         scrapClipPathsForFeatures(geometryFeatures, sourceBounds, previewBounds);
     const MapEditorObjectStyleCatalog styleCatalog = mapEditorObjectStyleCatalog();
-    const qreal vertexRadius = 3.4;
+    const qreal vertexRadius = 3.8;
     auto markGeometryItem = [](QGraphicsItem *item) {
         if (item != nullptr) {
             item->setData(kMapItemRole, kMapItemGeometryValue);
@@ -2184,7 +2184,8 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                     }
                 }
 
-                const qreal controlRadius = 2.4;
+                const qreal controlRadius = 2.8;
+                const qreal controlConnectorWidth = qBound<qreal>(1.4, 1.8 * mapScale, 2.4);
                 for (int segmentIndex = 1; segmentIndex < feature.lineVertices.size(); ++segmentIndex) {
                     const MapGeometryFeature::TH2LineVertex &previousVertex = feature.lineVertices.at(segmentIndex - 1);
                     const MapGeometryFeature::TH2LineVertex &currentVertex = feature.lineVertices.at(segmentIndex);
@@ -2193,7 +2194,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                         const QPointF anchorPreview = mapGeometryPointToPreview(previousVertex.anchor, sourceBounds, previewBounds);
                         const QPointF controlPreview = mapGeometryPointToPreview(previousVertex.outgoingControl.value(), sourceBounds, previewBounds);
                         auto *connector = scene->addLine(QLineF(anchorPreview, controlPreview),
-                                                         cosmeticPen(canvasTheme.controlConnector, qBound(0.7, 1.0 * mapScale, 1.4), Qt::DashLine, Qt::RoundCap));
+                                                         cosmeticPen(canvasTheme.controlConnector, controlConnectorWidth, Qt::DashLine, Qt::RoundCap));
                         connector->setZValue(3.2);
                         markGeometryItem(connector);
                         makeMouseTransparent(connector);
@@ -2236,7 +2237,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                         const QPointF anchorPreview = mapGeometryPointToPreview(currentVertex.anchor, sourceBounds, previewBounds);
                         const QPointF controlPreview = mapGeometryPointToPreview(currentVertex.incomingControl.value(), sourceBounds, previewBounds);
                         auto *connector = scene->addLine(QLineF(anchorPreview, controlPreview),
-                                                         cosmeticPen(canvasTheme.controlConnector, qBound(0.7, 1.0 * mapScale, 1.4), Qt::DashLine, Qt::RoundCap));
+                                                         cosmeticPen(canvasTheme.controlConnector, controlConnectorWidth, Qt::DashLine, Qt::RoundCap));
                         connector->setZValue(3.2);
                         markGeometryItem(connector);
                         makeMouseTransparent(connector);
@@ -2283,7 +2284,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                         const QPointF anchorPreview = mapGeometryPointToPreview(lastVertex.anchor, sourceBounds, previewBounds);
                         const QPointF controlPreview = mapGeometryPointToPreview(lastVertex.outgoingControl.value(), sourceBounds, previewBounds);
                         auto *connector = scene->addLine(QLineF(anchorPreview, controlPreview),
-                                                         cosmeticPen(canvasTheme.controlConnector, qBound(0.7, 1.0 * mapScale, 1.4), Qt::DashLine, Qt::RoundCap));
+                                                         cosmeticPen(canvasTheme.controlConnector, controlConnectorWidth, Qt::DashLine, Qt::RoundCap));
                         connector->setZValue(3.2);
                         markGeometryItem(connector);
                         makeMouseTransparent(connector);
@@ -2326,7 +2327,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                         const QPointF anchorPreview = mapGeometryPointToPreview(firstVertex.anchor, sourceBounds, previewBounds);
                         const QPointF controlPreview = mapGeometryPointToPreview(firstVertex.incomingControl.value(), sourceBounds, previewBounds);
                         auto *connector = scene->addLine(QLineF(anchorPreview, controlPreview),
-                                                         cosmeticPen(canvasTheme.controlConnector, qBound(0.7, 1.0 * mapScale, 1.4), Qt::DashLine, Qt::RoundCap));
+                                                         cosmeticPen(canvasTheme.controlConnector, controlConnectorWidth, Qt::DashLine, Qt::RoundCap));
                         connector->setZValue(3.2);
                         markGeometryItem(connector);
                         makeMouseTransparent(connector);

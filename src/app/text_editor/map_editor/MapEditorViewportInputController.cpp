@@ -156,8 +156,17 @@ void describePendingClickSelection(MapEditorViewportInputContext &context, QGrap
     item->setData(kMapScenePendingPrimarySelectionRole, true);
     const int subtype = item->data(kMapSceneSelectionSubtypeRole).toInt();
     if (auto *vertexItem = dynamic_cast<MapEditableGeometryVertexItem *>(item)) {
-        (*context.pendingClickSourceVertexIndex) = vertexItem->vertexIndex();
-        (*context.pendingClickGeometryKind) = vertexItem->geometryKind();
+        if (subtype == kMapSceneSelectionSubtypeLineControl
+            || subtype == kMapSceneSelectionSubtypeLineControlConnector) {
+            const int ownerVertexIndex = item->data(kMapSceneOwnerVertexRole).toInt();
+            (*context.pendingClickSourceVertexIndex) = ownerVertexIndex >= 0
+                ? ownerVertexIndex
+                : vertexItem->vertexIndex();
+            (*context.pendingClickGeometryKind) = QStringLiteral("line");
+        } else {
+            (*context.pendingClickSourceVertexIndex) = vertexItem->vertexIndex();
+            (*context.pendingClickGeometryKind) = vertexItem->geometryKind();
+        }
     } else if (subtype == kMapSceneSelectionSubtypeLineAnchor || subtype == kMapSceneSelectionSubtypeLineControl) {
         const int ownerVertexIndex = item->data(kMapSceneOwnerVertexRole).toInt();
         if (ownerVertexIndex >= 0) {
@@ -374,6 +383,9 @@ QGraphicsItem *preferredMapClickHitItemForViewportPosition(MapEditorViewportInpu
                                                            viewportPosition,
                                                            false,
                                                            true)) {
+        const QPointF scenePosition = context.view->mapToScene(viewportPosition);
+        resetPendingClickSelection(context, scenePosition);
+        describePendingClickSelection(context, directVertexItem);
         return directVertexItem;
     }
 
@@ -704,7 +716,9 @@ QPointF snapInteractiveDrawAnchorIfAvailable(const MapEditorViewportInputContext
         return scenePoint;
     }
 
-    const qreal snapRadius = sceneRadiusForViewportPixels(context.view, viewportPoint, 10);
+    const qreal snapRadius = sceneRadiusForViewportPixels(context.view,
+                                                          viewportPoint,
+                                                          kMapEditorSnapTargetRadiusPixels);
     if (snapRadius <= 0.0) {
         return scenePoint;
     }
@@ -721,7 +735,9 @@ int nearestNeighborGeometryLineNumberForSnapGuides(const MapEditorViewportInputC
         return 0;
     }
 
-    const qreal guideRadius = sceneRadiusForViewportPixels(context.view, viewportPoint, 28);
+    const qreal guideRadius = sceneRadiusForViewportPixels(context.view,
+                                                           viewportPoint,
+                                                           kMapEditorSnapGuideRadiusPixels);
     if (guideRadius <= 0.0) {
         return 0;
     }
@@ -781,8 +797,9 @@ QVector<QPointF> snapGuidePointsForNearbyGeometry(const MapEditorViewportInputCo
     }
 
     const int guideLineNumber = nearestNeighborGeometryLineNumberForSnapGuides(context, viewportPoint, scenePoint);
-    const qreal guideRadius = sceneRadiusForViewportPixels(context.view, viewportPoint, 28);
-    const qreal maxPointDistanceSquared = guideRadius * guideRadius;
+    if (guideLineNumber <= 0) {
+        return guidePoints;
+    }
 
     const QList<QGraphicsItem *> items = context.scene->items();
     for (QGraphicsItem *item : items) {
@@ -799,18 +816,6 @@ QVector<QPointF> snapGuidePointsForNearbyGeometry(const MapEditorViewportInputCo
             }
             continue;
         }
-        if (auto *pointItem = dynamic_cast<MapEditablePointItem *>(item)) {
-            if (guideRadius <= 0.0) {
-                continue;
-            }
-            const QPointF candidatePoint = pointItem->pos();
-            const qreal deltaX = candidatePoint.x() - scenePoint.x();
-            const qreal deltaY = candidatePoint.y() - scenePoint.y();
-            const qreal distanceSquared = (deltaX * deltaX) + (deltaY * deltaY);
-            if (distanceSquared <= maxPointDistanceSquared) {
-                guidePoints.append(candidatePoint);
-            }
-        }
     }
     return guidePoints;
 }
@@ -824,7 +829,9 @@ bool isLineAnchorSnapActive(const MapEditorViewportInputContext &context,
     }
 
     const QPoint viewportAnchor = context.view->mapFromScene(scenePoint);
-    const qreal snapRadius = sceneRadiusForViewportPixels(context.view, viewportAnchor, 10);
+    const qreal snapRadius = sceneRadiusForViewportPixels(context.view,
+                                                          viewportAnchor,
+                                                          kMapEditorSnapTargetRadiusPixels);
     if (snapRadius <= 0.0) {
         return false;
     }

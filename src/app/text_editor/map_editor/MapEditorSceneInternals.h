@@ -101,6 +101,9 @@ inline QColor mapEditorInteractionHoverColor()
     return QColor(QStringLiteral("#00e5ff"));
 }
 
+inline constexpr int kMapEditorSnapTargetRadiusPixels = 10;
+inline constexpr int kMapEditorSnapGuideRadiusPixels = 16;
+
 inline QColor mapEditorLineVertexFillColor()
 {
     return QColor(QStringLiteral("#ff0000"));
@@ -113,7 +116,7 @@ inline QColor mapEditorLineVertexOutlineColor()
 
 inline QColor mapEditorLineControlFillColor()
 {
-    return QColor(QStringLiteral("#60b0f8"));
+    return QColor(QStringLiteral("#0000ff"));
 }
 
 inline QColor mapEditorLineControlOutlineColor()
@@ -598,7 +601,7 @@ protected:
         } else if (lineControl) {
             fill = mapEditorLineControlFillColor();
         }
-        fill.setAlpha(emphasize ? 240 : 175);
+        fill.setAlpha(lineControl ? 255 : (emphasize ? 240 : 175));
         QColor outline = selected ? mapEditorInteractionSelectionColor() : (hovered ? mapEditorInteractionHoverColor() : pen().color());
         if (lineAnchor) {
             outline = mapEditorLineVertexOutlineColor();
@@ -609,7 +612,7 @@ protected:
             outline = QColor(24, 24, 24, 210);
         }
 
-        painter->setRenderHint(QPainter::Antialiasing, true);
+        painter->setRenderHint(QPainter::Antialiasing, !lineControl);
         if (emphasize) {
             QColor halo = selected ? mapEditorInteractionSelectionColor() : mapEditorInteractionHoverColor();
             if (focused) {
@@ -619,15 +622,23 @@ protected:
             painter->setPen(Qt::NoPen);
             painter->setBrush(halo);
             const qreal haloRadius = 2.0 * zoomOutScale;
-            painter->drawEllipse(drawRect.adjusted(-haloRadius, -haloRadius, haloRadius, haloRadius));
+            const QRectF haloRect = drawRect.adjusted(-haloRadius, -haloRadius, haloRadius, haloRadius);
+            if (lineControl) {
+                painter->drawRect(haloRect);
+            } else {
+                painter->drawEllipse(haloRect);
+            }
         }
 
         const qreal outlineWidth = (selected ? 1.7 : 0.9) * zoomOutScale;
-        painter->setPen(QPen(outline, qMax<qreal>(0.5, outlineWidth)));
         painter->setBrush(fill);
         if (lineControl) {
+            Q_UNUSED(outline);
+            Q_UNUSED(outlineWidth);
+            painter->setPen(Qt::NoPen);
             painter->drawRect(drawRect);
         } else {
+            painter->setPen(QPen(outline, qMax<qreal>(0.5, outlineWidth)));
             painter->drawEllipse(drawRect);
         }
 
@@ -706,11 +717,12 @@ protected:
             candidate.setX(qBound(fittedBounds_.left(), candidate.x(), fittedBounds_.right()));
             candidate.setY(qBound(fittedBounds_.top(), candidate.y(), fittedBounds_.bottom()));
             if (dragActive_) {
-                updateSnapGuideMarkers(candidate);
                 const SnapTargetResult snapTarget = snapDragCandidateToNeighborGeometry(candidate);
+                const QPointF finalCandidate = snapTarget.snapped ? snapTarget.point : candidate;
+                updateSnapGuideMarkers(finalCandidate);
                 if (snapTarget.snapped) {
                     ensureSnapTargetMarker(snapTarget.point);
-                    candidate = snapTarget.point;
+                    candidate = finalCandidate;
                 } else {
                     clearSnapTargetMarker();
                 }
@@ -792,7 +804,7 @@ private:
             return {};
         }
 
-        const qreal snapRadius = sceneRadiusForViewportPixels(candidate, 10);
+        const qreal snapRadius = sceneRadiusForViewportPixels(candidate, kMapEditorSnapTargetRadiusPixels);
         if (snapRadius <= 0.0) {
             return {};
         }
@@ -854,7 +866,7 @@ private:
             return 0;
         }
 
-        const qreal guideRadius = sceneRadiusForViewportPixels(candidate, 28);
+        const qreal guideRadius = sceneRadiusForViewportPixels(candidate, kMapEditorSnapGuideRadiusPixels);
         if (guideRadius <= 0.0) {
             return 0;
         }
@@ -907,13 +919,17 @@ private:
 
     void updateSnapGuideMarkers(const QPointF &candidate)
     {
-        const int guideLineNumber = nearestNeighborGeometryLineNumberForSnapGuides(candidate);
-        const qreal guideRadius = sceneRadiusForViewportPixels(candidate, 28);
-        if (guideLineNumber <= 0 && guideRadius <= 0.0) {
+        QGraphicsScene *currentScene = scene();
+        if (currentScene == nullptr) {
             clearSnapGuideMarkers();
             return;
         }
-        const qreal maxPointDistanceSquared = guideRadius * guideRadius;
+
+        const int guideLineNumber = nearestNeighborGeometryLineNumberForSnapGuides(candidate);
+        if (guideLineNumber <= 0) {
+            clearSnapGuideMarkers();
+            return;
+        }
 
         QVector<QPointF> guidePoints;
         const QList<QGraphicsItem *> items = scene()->items();
@@ -931,18 +947,6 @@ private:
                 }
                 continue;
             }
-            if (auto *pointItem = dynamic_cast<MapEditablePointItem *>(item)) {
-                if (guideRadius <= 0.0) {
-                    continue;
-                }
-                const QPointF candidatePoint = pointItem->pos();
-                const qreal deltaX = candidatePoint.x() - candidate.x();
-                const qreal deltaY = candidatePoint.y() - candidate.y();
-                const qreal distanceSquared = (deltaX * deltaX) + (deltaY * deltaY);
-                if (distanceSquared <= maxPointDistanceSquared) {
-                    guidePoints.append(candidatePoint);
-                }
-            }
         }
 
         if (guidePoints.isEmpty()) {
@@ -951,7 +955,7 @@ private:
         }
 
         while (snapGuideMarkers_.size() < guidePoints.size()) {
-            auto *marker = new QGraphicsEllipseItem(QRectF(-8.0, -8.0, 16.0, 16.0), this);
+            auto *marker = new QGraphicsEllipseItem(QRectF(-8.0, -8.0, 16.0, 16.0));
             marker->setFlag(QGraphicsItem::ItemIgnoresTransformations, true);
             marker->setAcceptedMouseButtons(Qt::NoButton);
             QColor guideFill(QStringLiteral("#00e5ff"));
@@ -963,6 +967,7 @@ private:
             QPen guidePen(guideColor, 2.0);
             guidePen.setCosmetic(true);
             marker->setPen(guidePen);
+            currentScene->addItem(marker);
             snapGuideMarkers_.append(marker);
         }
 
@@ -975,7 +980,7 @@ private:
                 marker->hide();
                 continue;
             }
-            marker->setPos(mapFromScene(guidePoints.at(index)));
+            marker->setPos(guidePoints.at(index));
             marker->show();
         }
     }
@@ -989,12 +994,14 @@ private:
         }
 
         ensureSnapTargetMarkerItem(&snapTargetShadow_,
+                                   currentScene,
                                    QRectF(-10.0, -10.0, 20.0, 20.0),
                                    QColor(QStringLiteral("#1f2937")),
                                    3.4,
                                    200,
                                    30.0);
         ensureSnapTargetMarkerItem(&snapTargetRing_,
+                                   currentScene,
                                    QRectF(-10.0, -10.0, 20.0, 20.0),
                                    QColor(QStringLiteral("#ffe16a")),
                                    2.0,
@@ -1002,31 +1009,33 @@ private:
                                    30.1);
 
         if (snapTargetShadow_ != nullptr) {
-            snapTargetShadow_->setPos(mapFromScene(targetPoint));
+            snapTargetShadow_->setPos(targetPoint);
             snapTargetShadow_->show();
         }
         if (snapTargetRing_ != nullptr) {
-            snapTargetRing_->setPos(mapFromScene(targetPoint));
+            snapTargetRing_->setPos(targetPoint);
             snapTargetRing_->show();
         }
     }
 
     void ensureSnapTargetMarkerItem(QGraphicsEllipseItem **marker,
+                                    QGraphicsScene *currentScene,
                                     const QRectF &rect,
                                     const QColor &baseColor,
                                     qreal width,
                                     int alpha,
                                     qreal zValue)
     {
-        if (marker == nullptr) {
+        if (marker == nullptr || currentScene == nullptr) {
             return;
         }
 
         if (*marker == nullptr) {
-            *marker = new QGraphicsEllipseItem(rect, this);
+            *marker = new QGraphicsEllipseItem(rect);
             (*marker)->setFlag(QGraphicsItem::ItemIgnoresTransformations, true);
             (*marker)->setAcceptedMouseButtons(Qt::NoButton);
             (*marker)->setBrush(Qt::NoBrush);
+            currentScene->addItem(*marker);
         }
 
         QColor markerColor = baseColor;
