@@ -112,6 +112,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Keep point `-align` rendering anchored like Therion so map canvas placement matches saved point options.
 - Clear pending Selection inspector insert state when Smart Area confirmation returns to Select mode.
 - Keep release notes, README, package metadata, and CI artifact workflow aligned with `v2026.6.8`.
+- Keep Therion executable auto-detection fallback candidates build-clean after the detector PR so release packaging
+  and desktop startup validation do not fail on a trivial compile regression.
 - Keep Linux CI and package-builder Qt dependency lists aligned with the Qt Quick/QML-backed 3D viewer surface.
 - Keep Windows CI and installer Qt archive lists aligned with the Qt Quick/QML-backed 3D viewer surface.
 - Keep AppImage runtime-library staging aligned with Debian Qt runtime dependencies instead of masking missing

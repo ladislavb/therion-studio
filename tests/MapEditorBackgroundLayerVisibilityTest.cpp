@@ -17,6 +17,7 @@
 #include <QMouseEvent>
 #include <QThread>
 #include <QTemporaryDir>
+#include <QTreeView>
 #include <QVBoxLayout>
 #include <QtMath>
 
@@ -75,6 +76,25 @@ QString repositoryFilePath(const QString &relativePath)
     const QString fromBuildDirectory = QDir(QCoreApplication::applicationDirPath())
                                            .absoluteFilePath(QStringLiteral("../") + relativePath);
     return QFileInfo(fromBuildDirectory).absoluteFilePath();
+}
+
+QTreeView *findBackgroundLayersTree(MapEditorTab *mapTab)
+{
+    if (mapTab == nullptr) {
+        return nullptr;
+    }
+
+    const QList<QTreeView *> trees = mapTab->findChildren<QTreeView *>();
+    for (QTreeView *tree : trees) {
+        if (tree == nullptr || tree->model() == nullptr) {
+            continue;
+        }
+        if (tree->model()->columnCount() == 3 && !tree->rootIsDecorated()) {
+            return tree;
+        }
+    }
+
+    return nullptr;
 }
 
 int runBackgroundVisibilityDoesNotDirtyDocumentTest()
@@ -243,6 +263,15 @@ int runMapiahPercentEncodedXviSampleLoadsTest()
 
     if (!expect(mapTab->backgroundLayerCount() == 1,
                 "Expected one background layer from percent-encoded Mapiah XVI sample path.")) {
+        return 1;
+    }
+    QTreeView *backgroundLayersTree = findBackgroundLayersTree(mapTab);
+    if (!expect(backgroundLayersTree != nullptr,
+                "Expected Backgrounds inspector tree to exist for XVI sample.")) {
+        return 1;
+    }
+    if (!expect(backgroundLayersTree->model()->rowCount() == 1,
+                "Expected Backgrounds inspector to list the auto-loaded XVI layer.")) {
         return 1;
     }
     if (!expect(mapTab->backgroundLayerSceneBounds(0).isValid(),
