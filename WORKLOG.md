@@ -49,6 +49,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Keep draft completion and draft auto-commit from recentering the map viewport or force-scrolling the Objects tree to
   the newly inserted object.
 - Keep pending point/line/area recent type/subtype MRU choices persisted across application restarts.
+- Keep repeated `point station` draft naming compatible with numeric and trailing-letter survey conventions such as
+  `1a -> 1b` and `1z -> 1aa`.
 - Keep map geometry strokes readable on HiDPI/Retina displays without changing TH2 source geometry or XTherion
   background-reference loading semantics.
 - Keep map object style catalog tests aligned with intentional resource-backed visual tuning such as `line wall`

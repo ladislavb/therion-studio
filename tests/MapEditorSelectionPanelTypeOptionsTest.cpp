@@ -1026,6 +1026,28 @@ int runSelectionPanelTypeValuesTest()
                 "Point station insert should continue advancing suffixed station names after repeated clicks.")) {
         return 1;
     }
+    mapTab->triggerAddPoint();
+    pumpEvents();
+    nameEdit->setText(QStringLiteral("1a"));
+    QMetaObject::invokeMethod(nameEdit, "editingFinished", Qt::DirectConnection);
+    pumpEvents();
+    sendMouseClick(mapView->viewport(), mapView->mapFromScene(QPointF(100, 20)));
+    pumpEvents();
+    if (!expect(nameEdit->text() == QStringLiteral("1b"),
+                "Point station insert should advance trailing letter suffixes for DACH-style station names.")) {
+        return 1;
+    }
+    mapTab->triggerAddPoint();
+    pumpEvents();
+    nameEdit->setText(QStringLiteral("1z@survey"));
+    QMetaObject::invokeMethod(nameEdit, "editingFinished", Qt::DirectConnection);
+    pumpEvents();
+    sendMouseClick(mapView->viewport(), mapView->mapFromScene(QPointF(120, 20)));
+    pumpEvents();
+    if (!expect(nameEdit->text() == QStringLiteral("1aa@survey"),
+                "Point station insert should carry trailing letter suffixes when they overflow z.")) {
+        return 1;
+    }
     auto *valueEditor = mapTab->findChild<QWidget *>(QStringLiteral("mapObjectQuickValueEditor"));
     commitComboEdit(typeCombo, QStringLiteral("altitude"));
     pumpEvents();

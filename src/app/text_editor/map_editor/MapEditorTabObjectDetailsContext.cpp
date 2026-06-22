@@ -48,26 +48,55 @@ bool pendingPointNameVisible(const QString &type)
 QString nextStationName(const QString &stationName)
 {
     static const QRegularExpression numericTailPattern(QStringLiteral("^(.*?)(\\d+)(@.*)?$"));
+    static const QRegularExpression alphabeticTailPattern(QStringLiteral("^(.*?)([A-Za-z]+)(@.*)?$"));
     const QString trimmed = stationName.trimmed();
-    const QRegularExpressionMatch match = numericTailPattern.match(trimmed);
-    if (!match.hasMatch()) {
+    const QRegularExpressionMatch numericMatch = numericTailPattern.match(trimmed);
+    if (numericMatch.hasMatch()) {
+        const QString prefix = numericMatch.captured(1);
+        const QString numberToken = numericMatch.captured(2);
+        const QString suffix = numericMatch.captured(3);
+        bool ok = false;
+        const qulonglong number = numberToken.toULongLong(&ok);
+        if (!ok) {
+            return QString();
+        }
+
+        QString nextNumber = QString::number(number + 1);
+        if (nextNumber.size() < numberToken.size()) {
+            nextNumber = QString(numberToken.size() - nextNumber.size(), QLatin1Char('0')) + nextNumber;
+        }
+        return prefix + nextNumber + suffix;
+    }
+
+    const QRegularExpressionMatch alphabeticMatch = alphabeticTailPattern.match(trimmed);
+    if (!alphabeticMatch.hasMatch()) {
         return QString();
     }
 
-    const QString prefix = match.captured(1);
-    const QString numberToken = match.captured(2);
-    const QString suffix = match.captured(3);
-    bool ok = false;
-    const qulonglong number = numberToken.toULongLong(&ok);
-    if (!ok) {
+    const QString prefix = alphabeticMatch.captured(1);
+    const QString letterToken = alphabeticMatch.captured(2);
+    const QString suffix = alphabeticMatch.captured(3);
+    if (prefix.isEmpty()) {
         return QString();
     }
 
-    QString nextNumber = QString::number(number + 1);
-    if (nextNumber.size() < numberToken.size()) {
-        nextNumber = QString(numberToken.size() - nextNumber.size(), QLatin1Char('0')) + nextNumber;
+    const bool upperCase = letterToken == letterToken.toUpper();
+    QString nextToken = upperCase ? letterToken.toUpper() : letterToken.toLower();
+    int index = nextToken.size() - 1;
+    while (index >= 0) {
+        const QChar current = nextToken.at(index);
+        if (current == (upperCase ? QLatin1Char('Z') : QLatin1Char('z'))) {
+            nextToken[index] = upperCase ? QLatin1Char('A') : QLatin1Char('a');
+            --index;
+            continue;
+        }
+
+        nextToken[index] = QChar(current.unicode() + 1);
+        return prefix + nextToken + suffix;
     }
-    return prefix + nextNumber + suffix;
+
+    nextToken.prepend(upperCase ? QLatin1Char('A') : QLatin1Char('a'));
+    return prefix + nextToken + suffix;
 }
 
 bool isPendingStationPoint(const QString &commandKind, const QString &type)
