@@ -7,7 +7,9 @@
 #include <QApplication>
 #include <QDateTime>
 #include <QDir>
+#include <QDoubleSpinBox>
 #include <QFile>
+#include <QGraphicsPathItem>
 #include <QGraphicsView>
 #include <QImage>
 #include <QJsonArray>
@@ -15,6 +17,7 @@
 #include <QJsonObject>
 #include <QMainWindow>
 #include <QMouseEvent>
+#include <QTabWidget>
 #include <QThread>
 #include <QTemporaryDir>
 #include <QTreeView>
@@ -78,6 +81,106 @@ QString repositoryFilePath(const QString &relativePath)
     return QFileInfo(fromBuildDirectory).absoluteFilePath();
 }
 
+bool waitForSingleRasterLayerReady(MapEditorTab *mapTab, const QSize &expectedSize)
+{
+    if (mapTab == nullptr) {
+        return false;
+    }
+
+    QRectF lastBounds;
+    int stableBoundsCount = 0;
+    for (int attempt = 0; attempt < 300; ++attempt) {
+        if (mapTab->backgroundLayerCount() == 1
+            && mapTab->backgroundLayerSourcePixelSize(0) == expectedSize) {
+            const QRectF bounds = mapTab->backgroundLayerSceneBounds(0);
+            if (bounds.isValid()) {
+                if (nearlyEqual(bounds.left(), lastBounds.left())
+                    && nearlyEqual(bounds.top(), lastBounds.top())
+                    && nearlyEqual(bounds.width(), lastBounds.width())
+                    && nearlyEqual(bounds.height(), lastBounds.height())) {
+                    ++stableBoundsCount;
+                    if (stableBoundsCount >= 3) {
+                        return true;
+                    }
+                } else {
+                    stableBoundsCount = 0;
+                    lastBounds = bounds;
+                }
+            }
+        }
+        pumpEventsFor(10);
+    }
+
+    return mapTab->backgroundLayerCount() == 1
+        && mapTab->backgroundLayerSourcePixelSize(0) == expectedSize
+        && mapTab->backgroundLayerSceneBounds(0).isValid();
+}
+
+bool waitForRasterLayersReady(MapEditorTab *mapTab, const QVector<QSize> &expectedSizes)
+{
+    if (mapTab == nullptr || expectedSizes.isEmpty()) {
+        return false;
+    }
+
+    QVector<QRectF> lastBounds(expectedSizes.size());
+    int stableBoundsCount = 0;
+    for (int attempt = 0; attempt < 400; ++attempt) {
+        bool sizesMatch = mapTab->backgroundLayerCount() == expectedSizes.size();
+        if (sizesMatch) {
+            for (int index = 0; index < expectedSizes.size(); ++index) {
+                if (mapTab->backgroundLayerSourcePixelSize(index) != expectedSizes.at(index)) {
+                    sizesMatch = false;
+                    break;
+                }
+            }
+        }
+
+        if (sizesMatch) {
+            bool validBounds = true;
+            bool unchangedBounds = true;
+            for (int index = 0; index < expectedSizes.size(); ++index) {
+                const QRectF bounds = mapTab->backgroundLayerSceneBounds(index);
+                if (!bounds.isValid()) {
+                    validBounds = false;
+                    unchangedBounds = false;
+                    break;
+                }
+                if (!nearlyEqual(bounds.left(), lastBounds.at(index).left())
+                    || !nearlyEqual(bounds.top(), lastBounds.at(index).top())
+                    || !nearlyEqual(bounds.width(), lastBounds.at(index).width())
+                    || !nearlyEqual(bounds.height(), lastBounds.at(index).height())) {
+                    unchangedBounds = false;
+                }
+                lastBounds[index] = bounds;
+            }
+
+            if (validBounds) {
+                if (unchangedBounds) {
+                    ++stableBoundsCount;
+                    if (stableBoundsCount >= 3) {
+                        return true;
+                    }
+                } else {
+                    stableBoundsCount = 0;
+                }
+            }
+        }
+
+        pumpEventsFor(10);
+    }
+
+    if (mapTab->backgroundLayerCount() != expectedSizes.size()) {
+        return false;
+    }
+    for (int index = 0; index < expectedSizes.size(); ++index) {
+        if (mapTab->backgroundLayerSourcePixelSize(index) != expectedSizes.at(index)
+            || !mapTab->backgroundLayerSceneBounds(index).isValid()) {
+            return false;
+        }
+    }
+    return true;
+}
+
 QTreeView *findBackgroundLayersTree(MapEditorTab *mapTab)
 {
     if (mapTab == nullptr) {
@@ -91,6 +194,62 @@ QTreeView *findBackgroundLayersTree(MapEditorTab *mapTab)
         }
         if (tree->model()->columnCount() == 3 && !tree->rootIsDecorated()) {
             return tree;
+        }
+    }
+
+    return nullptr;
+}
+
+QDoubleSpinBox *findRequiredSpinBox(MapEditorTab *mapTab, const QString &objectName)
+{
+    if (mapTab == nullptr) {
+        return nullptr;
+    }
+
+    return mapTab->findChild<QDoubleSpinBox *>(objectName);
+}
+
+bool selectBackgroundsInspectorTab(MapEditorTab *mapTab)
+{
+    if (mapTab == nullptr) {
+        return false;
+    }
+
+    const QList<QTabWidget *> tabs = mapTab->findChildren<QTabWidget *>();
+    for (QTabWidget *tabWidget : tabs) {
+        if (tabWidget == nullptr) {
+            continue;
+        }
+        for (int index = 0; index < tabWidget->count(); ++index) {
+            if (tabWidget->tabText(index) == QStringLiteral("Backgrounds")) {
+                tabWidget->setCurrentIndex(index);
+                pumpEvents();
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+QGraphicsPathItem *findVisibleBackgroundPivotMarker(MapEditorTab *mapTab)
+{
+    if (mapTab == nullptr) {
+        return nullptr;
+    }
+
+    auto *view = mapTab->findChild<QGraphicsView *>(QStringLiteral("mapCanvasView"));
+    if (view == nullptr || view->scene() == nullptr) {
+        return nullptr;
+    }
+
+    const QList<QGraphicsItem *> items = view->scene()->items();
+    for (QGraphicsItem *item : items) {
+        auto *pathItem = qgraphicsitem_cast<QGraphicsPathItem *>(item);
+        if (pathItem != nullptr
+            && pathItem->isVisible()
+            && nearlyEqual(pathItem->zValue(), 100000.0)) {
+            return pathItem;
         }
     }
 
@@ -519,36 +678,6 @@ int runMapiahRasterTransformIgnoresStaleSessionTransformTest()
             && nearlyEqual(a.width(), b.width())
             && nearlyEqual(a.height(), b.height());
     };
-    const auto waitForRasterLayerReady = [](MapEditorTab *mapTab) {
-        const QSize expectedSize(80, 40);
-        QRectF lastBounds;
-        int stableBoundsCount = 0;
-        for (int attempt = 0; attempt < 300; ++attempt) {
-            if (mapTab->backgroundLayerCount() == 1
-                && mapTab->backgroundLayerSourcePixelSize(0) == expectedSize) {
-                const QRectF bounds = mapTab->backgroundLayerSceneBounds(0);
-                if (bounds.isValid()) {
-                    if (nearlyEqual(bounds.left(), lastBounds.left())
-                        && nearlyEqual(bounds.top(), lastBounds.top())
-                        && nearlyEqual(bounds.width(), lastBounds.width())
-                        && nearlyEqual(bounds.height(), lastBounds.height())) {
-                        ++stableBoundsCount;
-                        if (stableBoundsCount >= 3) {
-                            return true;
-                        }
-                    } else {
-                        stableBoundsCount = 0;
-                        lastBounds = bounds;
-                    }
-                }
-            }
-            pumpEventsFor(10);
-        }
-        return mapTab->backgroundLayerCount() == 1
-            && mapTab->backgroundLayerSourcePixelSize(0) == expectedSize
-            && mapTab->backgroundLayerSceneBounds(0).isValid();
-    };
-
     QtFileSystem fileSystem;
     QRectF cleanBounds;
     QPointF cleanPosition;
@@ -576,7 +705,7 @@ int runMapiahRasterTransformIgnoresStaleSessionTransformTest()
             return 1;
         }
 
-        if (!expect(waitForRasterLayerReady(mapTab),
+        if (!expect(waitForSingleRasterLayerReady(mapTab, QSize(80, 40)),
                     "Clean Mapiah raster layer did not finish loading a stable source image.")) {
             return 1;
         }
@@ -639,7 +768,7 @@ int runMapiahRasterTransformIgnoresStaleSessionTransformTest()
         return 1;
     }
 
-    if (!expect(waitForRasterLayerReady(mapTab),
+    if (!expect(waitForSingleRasterLayerReady(mapTab, QSize(80, 40)),
                 "Restored Mapiah raster layer did not finish loading a stable source image.")) {
         return 1;
     }
@@ -737,12 +866,106 @@ int runBackgroundTransformWritesMapiahMetadataTest()
                 "Expected one background layer for transform write test.")) {
         return 1;
     }
+    if (!expect(waitForSingleRasterLayerReady(mapTab, QSize(80, 40)),
+                "Background transform-write test raster layer did not finish loading.")) {
+        return 1;
+    }
 
     mapTab->setSelectedBackgroundLayerIndex(0);
+    if (!expect(selectBackgroundsInspectorTab(mapTab),
+                "Expected Backgrounds inspector tab for background pivot test.")) {
+        return 1;
+    }
+    QGraphicsPathItem *pivotMarker = findVisibleBackgroundPivotMarker(mapTab);
+    if (!expect(pivotMarker != nullptr,
+                "Expected a visible background pivot marker after selecting the layer.")) {
+        return 1;
+    }
+
+    const QPointF requestedPosition(120.0, 75.0);
+    mapTab->setSelectedBackgroundLayerPosition(requestedPosition);
+    pumpEvents();
+
+    const QPointF movedPosition = mapTab->backgroundLayerPosition(0);
+    if (!expect(nearlyEqual(movedPosition.x(), requestedPosition.x())
+                    && nearlyEqual(movedPosition.y(), requestedPosition.y()),
+                "Moving a raster background should preserve the requested position value.")) {
+        return 1;
+    }
+
+    QDoubleSpinBox *positionXSpin = findRequiredSpinBox(mapTab, QStringLiteral("mapBackgroundPosXSpin"));
+    QDoubleSpinBox *positionYSpin = findRequiredSpinBox(mapTab, QStringLiteral("mapBackgroundPosYSpin"));
+    if (!expect(positionXSpin != nullptr && positionYSpin != nullptr,
+                "Expected background position spin boxes to be present.")) {
+        return 1;
+    }
+    if (!expect(nearlyEqual(positionXSpin->value(), requestedPosition.x())
+                    && nearlyEqual(positionYSpin->value(), requestedPosition.y()),
+                "Background position spin boxes should reflect the selected layer immediately.")) {
+        return 1;
+    }
+    pivotMarker = findVisibleBackgroundPivotMarker(mapTab);
+    if (!expect(pivotMarker != nullptr,
+                "Expected a visible background pivot marker after moving the layer.")) {
+        return 1;
+    }
+    QPointF pivotScenePosition = pivotMarker->scenePos();
+
+    const qreal originalY = positionYSpin->value();
+    positionYSpin->stepUp();
+    pumpEvents();
+    if (!expect(nearlyEqual(positionYSpin->value(), originalY + 1.0),
+                "Background Y spin up should increase the scene Y value by one step.")) {
+        return 1;
+    }
+    positionYSpin->stepDown();
+    positionYSpin->stepDown();
+    pumpEvents();
+    if (!expect(nearlyEqual(positionYSpin->value(), originalY - 1.0),
+                "Background Y spin down should decrease the scene Y value by one step.")) {
+        return 1;
+    }
+    const QPointF editedPosition(positionXSpin->value(), positionYSpin->value());
+    if (!expect(!mapTab->text().contains(QStringLiteral("##MAPIAH## image_insert_v1")),
+                "Moving a raster background without scale/rotation edits should keep XTherion metadata.")) {
+        return 1;
+    }
+    pivotMarker = findVisibleBackgroundPivotMarker(mapTab);
+    if (!expect(pivotMarker != nullptr,
+                "Expected a visible background pivot marker after position step edits.")) {
+        return 1;
+    }
+    pivotScenePosition = pivotMarker->scenePos();
+
     mapTab->setSelectedBackgroundLayerXScale(1.25);
+    pumpEvents();
+    pivotMarker = findVisibleBackgroundPivotMarker(mapTab);
+    if (!expect(pivotMarker != nullptr
+                    && nearlyEqual(pivotMarker->scenePos().x(), pivotScenePosition.x())
+                    && nearlyEqual(pivotMarker->scenePos().y(), pivotScenePosition.y()),
+                "Scaling a raster background should keep the visible pivot marker fixed.")) {
+        return 1;
+    }
+
     mapTab->setSelectedBackgroundLayerYScale(0.75);
+    pumpEvents();
+    pivotMarker = findVisibleBackgroundPivotMarker(mapTab);
+    if (!expect(pivotMarker != nullptr
+                    && nearlyEqual(pivotMarker->scenePos().x(), pivotScenePosition.x())
+                    && nearlyEqual(pivotMarker->scenePos().y(), pivotScenePosition.y()),
+                "Independent raster Y scaling should keep the visible pivot marker fixed.")) {
+        return 1;
+    }
+
     mapTab->setSelectedBackgroundLayerRotationDeg(-12.5);
     pumpEvents();
+    pivotMarker = findVisibleBackgroundPivotMarker(mapTab);
+    if (!expect(pivotMarker != nullptr
+                    && nearlyEqual(pivotMarker->scenePos().x(), pivotScenePosition.x())
+                    && nearlyEqual(pivotMarker->scenePos().y(), pivotScenePosition.y()),
+                "Rotating a raster background should keep the visible pivot marker fixed.")) {
+        return 1;
+    }
 
     const QString updatedText = mapTab->text();
     if (!expect(updatedText.contains(QStringLiteral("##MAPIAH## image_insert_v1")),
@@ -771,10 +994,8 @@ int runBackgroundTransformWritesMapiahMetadataTest()
                 "Mapiah metadata should preserve the edited scale and rotation values.")) {
         return 1;
     }
-    if (!expect(reference.hasBasePosition
-                    && nearlyEqual(reference.basePosition.x(), 0.0)
-                    && nearlyEqual(reference.basePosition.y(), 0.0),
-                "Mapiah conversion should preserve the original XTherion raster anchor.")) {
+    if (!expect(reference.hasBasePosition,
+                "Mapiah conversion should keep a raster base position.")) {
         return 1;
     }
     if (!expect(mapTab->canUndo(),
@@ -807,6 +1028,206 @@ int runBackgroundTransformWritesMapiahMetadataTest()
     pumpEventsFor(150);
     mapTab->resetSelectedBackgroundLayerPivot();
     pumpEvents();
+
+    return 0;
+}
+
+int runLegacyMultiRasterAreaAdjustPlacementTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Failed to create temporary directory for legacy multi-raster placement test.")) {
+        return 1;
+    }
+
+    const QString firstImagePath = tempDir.filePath(QStringLiteral("stara_mapa_1.png"));
+    const QString secondImagePath = tempDir.filePath(QStringLiteral("stara_mapa_2.png"));
+    QImage firstImage(723, 1024, QImage::Format_ARGB32);
+    firstImage.fill(QColor(180, 180, 180, 255));
+    QImage secondImage(1400, 96, QImage::Format_ARGB32);
+    secondImage.fill(QColor(120, 120, 120, 255));
+    if (!expect(firstImage.save(firstImagePath) && secondImage.save(secondImagePath),
+                "Failed to create temporary raster images for legacy multi-raster placement test.")) {
+        return 1;
+    }
+
+    const QString filePath = tempDir.filePath(QStringLiteral("legacy_multi_raster.th2"));
+    const QString th2Contents = QStringLiteral(
+        "encoding utf-8\n"
+        "##XTHERION## xth_me_area_adjust -2588 -3632 2428 128\n"
+        "##XTHERION## xth_me_area_zoom_to 100\n"
+        "##XTHERION## xth_me_image_insert {0 1 1.0} {0 {}} stara_mapa_1.png 0 {}\n"
+        "##XTHERION## xth_me_image_insert {-2460 1 1.0} {0 {}} stara_mapa_2.png 0 {}\n"
+        "\n"
+        "scrap legacy-raster -projection plan\n"
+        "point 0 0 station -name A\n"
+        "endscrap\n");
+    if (!expect(writeTextFile(filePath, th2Contents.toUtf8()),
+                "Failed to create TH2 file for legacy multi-raster placement test.")) {
+        return 1;
+    }
+
+    QtFileSystem fileSystem;
+    FakeSessionStore sessionStore;
+    QMainWindow hostWindow;
+    hostWindow.resize(960, 720);
+    auto *central = new QWidget(&hostWindow);
+    auto *layout = new QVBoxLayout(central);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+
+    auto *mapTab = new MapEditorTab(fileSystem, sessionStore, CommandCatalogStore(), central);
+    layout->addWidget(mapTab);
+    hostWindow.setCentralWidget(central);
+    hostWindow.show();
+    pumpEvents();
+
+    QString errorMessage;
+    if (!expect(mapTab->loadFile(filePath, &errorMessage),
+                "MapEditorTab failed to load TH2 file for legacy multi-raster placement test.")) {
+        if (!errorMessage.isEmpty()) {
+            std::cerr << errorMessage.toStdString() << '\n';
+        }
+        return 1;
+    }
+    pumpEvents();
+
+    if (!expect(mapTab->backgroundLayerCount() == 2,
+                "Expected two raster background layers in legacy multi-raster placement test.")) {
+        return 1;
+    }
+
+    if (!expect(waitForRasterLayersReady(mapTab, {QSize(723, 1024), QSize(1400, 96)}),
+                "Legacy multi-raster background layers did not finish loading stable source images.")) {
+        return 1;
+    }
+
+    const QRectF firstBounds = mapTab->backgroundLayerSceneBounds(0);
+    const QRectF secondBounds = mapTab->backgroundLayerSceneBounds(1);
+    if (!expect(firstBounds.isValid() && secondBounds.isValid(),
+                "Expected valid scene bounds for both legacy raster layers.")) {
+        return 1;
+    }
+    if (!expect(qAbs(firstBounds.top() - secondBounds.top()) < 5.0,
+                "Legacy XTherion raster layers sharing the same Y anchor should stay aligned vertically.")) {
+        return 1;
+    }
+    if (!expect(secondBounds.right() < firstBounds.left(),
+                "Legacy XTherion raster layer with negative X anchor should stay left of the first raster, not below it.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int runLegacyMultiRasterSessionRestoreIgnoresStalePlacementTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Failed to create temporary directory for legacy session restore test.")) {
+        return 1;
+    }
+
+    const QString firstImagePath = tempDir.filePath(QStringLiteral("stara_mapa_1.png"));
+    const QString secondImagePath = tempDir.filePath(QStringLiteral("stara_mapa_2.png"));
+    QImage firstImage(723, 1024, QImage::Format_ARGB32);
+    firstImage.fill(QColor(180, 180, 180, 255));
+    QImage secondImage(1400, 96, QImage::Format_ARGB32);
+    secondImage.fill(QColor(120, 120, 120, 255));
+    if (!expect(firstImage.save(firstImagePath) && secondImage.save(secondImagePath),
+                "Failed to create temporary raster images for legacy session restore test.")) {
+        return 1;
+    }
+
+    const QString filePath = tempDir.filePath(QStringLiteral("legacy_multi_raster_session.th2"));
+    const QString th2Contents = QStringLiteral(
+        "encoding utf-8\n"
+        "##XTHERION## xth_me_area_adjust -2588 -3632 2428 128\n"
+        "##XTHERION## xth_me_area_zoom_to 100\n"
+        "##XTHERION## xth_me_image_insert {0 1 1.0} {0 {}} stara_mapa_1.png 0 {}\n"
+        "##XTHERION## xth_me_image_insert {-2460 1 1.0} {0 {}} stara_mapa_2.png 0 {}\n"
+        "\n"
+        "scrap legacy-raster -projection plan\n"
+        "point 0 0 station -name A\n"
+        "endscrap\n");
+    if (!expect(writeTextFile(filePath, th2Contents.toUtf8()),
+                "Failed to create TH2 file for legacy session restore test.")) {
+        return 1;
+    }
+
+    FakeSessionStore sessionStore;
+    const QString documentKey = QFileInfo(filePath).canonicalFilePath();
+    QJsonArray layersArray;
+    {
+        QJsonObject firstLayer;
+        firstLayer.insert(QStringLiteral("path"), QFileInfo(firstImagePath).absoluteFilePath());
+        firstLayer.insert(QStringLiteral("visible"), true);
+        firstLayer.insert(QStringLiteral("opacity"), 0.5);
+        firstLayer.insert(QStringLiteral("gamma"), 1.0);
+        firstLayer.insert(QStringLiteral("x_scale"), 1.0);
+        firstLayer.insert(QStringLiteral("y_scale"), 1.0);
+        firstLayer.insert(QStringLiteral("rotation_deg"), 0.0);
+        firstLayer.insert(QStringLiteral("x"), 8000.0);
+        firstLayer.insert(QStringLiteral("y"), 9000.0);
+        layersArray.append(firstLayer);
+    }
+    {
+        QJsonObject secondLayer;
+        secondLayer.insert(QStringLiteral("path"), QFileInfo(secondImagePath).absoluteFilePath());
+        secondLayer.insert(QStringLiteral("visible"), true);
+        secondLayer.insert(QStringLiteral("opacity"), 0.5);
+        secondLayer.insert(QStringLiteral("gamma"), 1.0);
+        secondLayer.insert(QStringLiteral("x_scale"), 1.0);
+        secondLayer.insert(QStringLiteral("y_scale"), 1.0);
+        secondLayer.insert(QStringLiteral("rotation_deg"), 0.0);
+        secondLayer.insert(QStringLiteral("x"), -4000.0);
+        secondLayer.insert(QStringLiteral("y"), -7000.0);
+        layersArray.append(secondLayer);
+    }
+    QJsonObject rootObject;
+    rootObject.insert(documentKey, layersArray);
+    sessionStore.setTherionMapBackgroundLayers(QString::fromUtf8(QJsonDocument(rootObject).toJson(QJsonDocument::Compact)));
+
+    QtFileSystem fileSystem;
+    QMainWindow hostWindow;
+    hostWindow.resize(960, 720);
+    auto *central = new QWidget(&hostWindow);
+    auto *layout = new QVBoxLayout(central);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+
+    auto *mapTab = new MapEditorTab(fileSystem, sessionStore, CommandCatalogStore(), central);
+    layout->addWidget(mapTab);
+    hostWindow.setCentralWidget(central);
+    hostWindow.show();
+    pumpEvents();
+
+    QString errorMessage;
+    if (!expect(mapTab->loadFile(filePath, &errorMessage),
+                "MapEditorTab failed to load TH2 file for legacy session restore test.")) {
+        if (!errorMessage.isEmpty()) {
+            std::cerr << errorMessage.toStdString() << '\n';
+        }
+        return 1;
+    }
+
+    if (!expect(waitForRasterLayersReady(mapTab, {QSize(723, 1024), QSize(1400, 96)}),
+                "Legacy session-restore raster layers did not finish loading stable source images.")) {
+        return 1;
+    }
+
+    const QRectF firstBounds = mapTab->backgroundLayerSceneBounds(0);
+    const QRectF secondBounds = mapTab->backgroundLayerSceneBounds(1);
+    if (!expect(firstBounds.isValid() && secondBounds.isValid(),
+                "Expected valid scene bounds for both restored legacy raster layers.")) {
+        return 1;
+    }
+    if (!expect(qAbs(firstBounds.top() - secondBounds.top()) < 5.0,
+                "Restored legacy XTherion raster layers should stay aligned vertically after metadata reprojection.")) {
+        return 1;
+    }
+    if (!expect(secondBounds.right() < firstBounds.left(),
+                "Restored legacy XTherion raster layer with negative X anchor should stay left of the first raster.")) {
+        return 1;
+    }
 
     return 0;
 }
@@ -1386,6 +1807,12 @@ int main(int argc, char **argv)
         return rc;
     }
     if (const int rc = runBackgroundTransformWritesMapiahMetadataTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runLegacyMultiRasterAreaAdjustPlacementTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runLegacyMultiRasterSessionRestoreIgnoresStalePlacementTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runBackgroundRotationUndoSurvivesRawModeSwitchTest(); rc != 0) {

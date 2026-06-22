@@ -114,6 +114,37 @@ int runOffsetAnchorTest()
     return 0;
 }
 
+int runAreaAdjustMatchDoesNotOverrideMovedPlacementTest()
+{
+    RasterPlacementMetadata metadata{};
+    metadata.basePosition = QPointF(120.0, 75.0);
+    metadata.hasBasePosition = true;
+    metadata.topEdgeAnchor = true;
+
+    AreaAdjustMetadata areaAdjust{};
+    areaAdjust.valid = true;
+    areaAdjust.modelRect = QRectF(QPointF(0.0, -40.0), QPointF(80.0, 0.0));
+
+    const QRectF rect = resolveRasterModelRect(QSizeF(80.0, 40.0), metadata, areaAdjust);
+    if (!expect(rect.isValid(), "Expected valid model rect for moved placement with matching area-adjust size.")) {
+        return 1;
+    }
+    if (!expect(nearlyEqual(rect.left(), 120.0), "Expected moved placement to preserve left edge.")) {
+        return 1;
+    }
+    if (!expect(nearlyEqual(rect.top(), 35.0), "Expected moved placement to preserve top edge from base position.")) {
+        return 1;
+    }
+    if (!expect(nearlyEqual(rect.right(), 200.0), "Expected moved placement to preserve right edge.")) {
+        return 1;
+    }
+    if (!expect(nearlyEqual(rect.bottom(), 75.0), "Expected moved placement to preserve bottom edge.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 int runXviRootStationPlacementTest()
 {
     QHash<QString, QPointF> stations;
@@ -328,6 +359,9 @@ int main()
         return rc;
     }
     if (const int rc = runOffsetAnchorTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runAreaAdjustMatchDoesNotOverrideMovedPlacementTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runXviRootStationPlacementTest(); rc != 0) {

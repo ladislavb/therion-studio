@@ -84,8 +84,10 @@ void MapEditorTab::buildInspectorBackgroundTab(DocumentInspectorPanel *inspector
     auto *xRow = new QHBoxLayout;
     xRow->addWidget(new QLabel(tr("X"), positionFrame));
     mapBackgroundPosXSpin_ = new QDoubleSpinBox(positionFrame);
+    mapBackgroundPosXSpin_->setObjectName(QStringLiteral("mapBackgroundPosXSpin"));
     mapBackgroundPosXSpin_->setRange(-50000.0, 50000.0);
     mapBackgroundPosXSpin_->setDecimals(1);
+    mapBackgroundPosXSpin_->setSingleStep(1.0);
     mapBackgroundPosXSpin_->setKeyboardTracking(false);
     xRow->addWidget(mapBackgroundPosXSpin_, 1);
     positionLayout->addLayout(xRow);
@@ -93,8 +95,10 @@ void MapEditorTab::buildInspectorBackgroundTab(DocumentInspectorPanel *inspector
     auto *yRow = new QHBoxLayout;
     yRow->addWidget(new QLabel(tr("Y"), positionFrame));
     mapBackgroundPosYSpin_ = new QDoubleSpinBox(positionFrame);
+    mapBackgroundPosYSpin_->setObjectName(QStringLiteral("mapBackgroundPosYSpin"));
     mapBackgroundPosYSpin_->setRange(-50000.0, 50000.0);
     mapBackgroundPosYSpin_->setDecimals(1);
+    mapBackgroundPosYSpin_->setSingleStep(1.0);
     mapBackgroundPosYSpin_->setKeyboardTracking(false);
     yRow->addWidget(mapBackgroundPosYSpin_, 1);
     positionLayout->addLayout(yRow);
@@ -105,6 +109,7 @@ void MapEditorTab::buildInspectorBackgroundTab(DocumentInspectorPanel *inspector
     auto *scaleXRow = new QHBoxLayout;
     scaleXRow->addWidget(new QLabel(tr("Scale X"), transformFrame));
     mapBackgroundScaleXSpin_ = new QDoubleSpinBox(transformFrame);
+    mapBackgroundScaleXSpin_->setObjectName(QStringLiteral("mapBackgroundScaleXSpin"));
     mapBackgroundScaleXSpin_->setRange(0.01, 100.0);
     mapBackgroundScaleXSpin_->setDecimals(3);
     mapBackgroundScaleXSpin_->setSingleStep(0.1);
@@ -115,6 +120,7 @@ void MapEditorTab::buildInspectorBackgroundTab(DocumentInspectorPanel *inspector
     auto *scaleYRow = new QHBoxLayout;
     scaleYRow->addWidget(new QLabel(tr("Scale Y"), transformFrame));
     mapBackgroundScaleYSpin_ = new QDoubleSpinBox(transformFrame);
+    mapBackgroundScaleYSpin_->setObjectName(QStringLiteral("mapBackgroundScaleYSpin"));
     mapBackgroundScaleYSpin_->setRange(0.01, 100.0);
     mapBackgroundScaleYSpin_->setDecimals(3);
     mapBackgroundScaleYSpin_->setSingleStep(0.1);
@@ -129,6 +135,7 @@ void MapEditorTab::buildInspectorBackgroundTab(DocumentInspectorPanel *inspector
     auto *rotationRow = new QHBoxLayout;
     rotationRow->addWidget(new QLabel(tr("Rotation"), transformFrame));
     mapBackgroundRotationSpin_ = new QDoubleSpinBox(transformFrame);
+    mapBackgroundRotationSpin_->setObjectName(QStringLiteral("mapBackgroundRotationSpin"));
     mapBackgroundRotationSpin_->setRange(-360.0, 360.0);
     mapBackgroundRotationSpin_->setDecimals(1);
     mapBackgroundRotationSpin_->setSingleStep(1.0);

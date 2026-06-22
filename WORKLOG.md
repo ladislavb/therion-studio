@@ -70,6 +70,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
   inferring success from post-apply hooks.
 - Keep map background layer refreshes isolated from viewport-only command-surface updates so loaded raster/XVI metadata
   does not cause inspector blinking or interrupt line vertex/control-handle interaction.
+- Keep raster background position edits using the same transform-metadata path as scale/rotation so inspector spin boxes
+  refresh immediately and X/Y stepping stays monotonic.
+- Keep legacy XTherion raster background placement anchored by metadata top-left semantics even for mixed-size multi-layer
+  scans and stale restored sessions, while preserving Mapiah scale/rotation pivot behavior.
 - Keep map selection restoration scoped to the narrow line-vertex restore generation used before `fb965aa`; point,
   anchor, inspector, and line-extension restores must not share a broad map-selection veto counter.
 - Keep MainWindow project/sidebar refresh work out of synchronous map-editor source-change handling so project-mode
@@ -249,4 +253,4 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Make line guide-spine rendering explicit in style JSON (`guide_spine_visible`) and remove the fallback when catalog coverage allows it.
 - Apple Pencil/freehand stroke UX and shape-sensitive simplification polish.
 - Additional map-style catalog tuning and SVG-backed symbol evaluation.
-- Mapiah background editing/export follow-up for mixed XTherion/Mapiah metadata, XTherion rewrite caveats, undo/redo, Visual/Raw mode switching, selected-layer pivot marker behavior, and `Display` controls.
+- Mapiah background editing/export follow-up for mixed XTherion/Mapiah metadata, stable raster position anchors during scale/rotation, XTherion rewrite caveats, undo/redo, Visual/Raw mode switching, selected-layer pivot marker behavior, and `Display` controls.

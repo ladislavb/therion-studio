@@ -155,18 +155,28 @@ void applyMapEditorRasterLayerTransform(QGraphicsPixmapItem *item)
         : 1.0;
     const qreal rotationDeg = item->data(kMapEditorBackgroundRotationDegRole).toDouble();
     const bool pivotSet = item->data(kMapEditorBackgroundPivotSetRole).toBool();
-    const qreal pivotX = pivotSet
-        ? item->data(kMapEditorBackgroundRotationCenterDxRole).toDouble()
-        : viewRect.width() / 2.0;
-    const qreal pivotY = pivotSet
-        ? item->data(kMapEditorBackgroundRotationCenterDyRole).toDouble()
-        : viewRect.height() / 2.0;
-
+    const bool hasUserTransform = pivotSet
+        || !qFuzzyCompare(layerScaleX, 1.0)
+        || !qFuzzyCompare(layerScaleY, 1.0)
+        || !qFuzzyIsNull(rotationDeg);
     QTransform transform;
-    transform.translate(pivotX, pivotY);
-    transform.rotate(rotationDeg);
-    transform.translate(-pivotX, -pivotY);
-    transform.scale(scaleX * layerScaleX, scaleY * layerScaleY);
+    if (!hasUserTransform) {
+        transform.scale(scaleX, scaleY);
+    } else {
+        const qreal pivotLocalX = pivotSet
+            ? item->data(kMapEditorBackgroundRotationCenterDxRole).toDouble()
+            : static_cast<qreal>(pixmapSize.width()) / 2.0;
+        const qreal pivotLocalY = pivotSet
+            ? item->data(kMapEditorBackgroundRotationCenterDyRole).toDouble()
+            : static_cast<qreal>(pixmapSize.height()) / 2.0;
+        const qreal pivotPreviewX = pivotLocalX * scaleX;
+        const qreal pivotPreviewY = pivotLocalY * scaleY;
+        transform.translate(pivotPreviewX, pivotPreviewY);
+        transform.rotate(rotationDeg);
+        transform.scale(layerScaleX, layerScaleY);
+        transform.translate(-pivotPreviewX, -pivotPreviewY);
+        transform.scale(scaleX, scaleY);
+    }
 
     item->setTransformationMode(Qt::SmoothTransformation);
     item->setTransformOriginPoint(0.0, 0.0);

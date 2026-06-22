@@ -37,6 +37,11 @@ bool sizesNearlyEqual(const QSizeF &a, const QSizeF &b)
         && qAbs(a.height() - b.height()) <= heightTolerance;
 }
 
+bool isOriginLikeBasePosition(const QPointF &position)
+{
+    return qAbs(position.x()) <= 1e-9 && qAbs(position.y()) <= 1e-9;
+}
+
 const XviStationPlacementEntry *resolveXviRootStationEntry(const QVector<XviStationPlacementEntry> &stationEntries,
                                                            const QString &rootStationName)
 {
@@ -84,7 +89,10 @@ QRectF resolveRasterModelRect(const QSizeF &imageModelSize,
         return QRectF();
     }
 
-    if (areaAdjust.valid && areaAdjust.modelRect.isValid() && sizesNearlyEqual(imageModelSize, areaAdjust.modelRect.size())) {
+    if (areaAdjust.valid
+        && areaAdjust.modelRect.isValid()
+        && sizesNearlyEqual(imageModelSize, areaAdjust.modelRect.size())
+        && isOriginLikeBasePosition(metadata.basePosition)) {
         return areaAdjust.modelRect;
     }
 
