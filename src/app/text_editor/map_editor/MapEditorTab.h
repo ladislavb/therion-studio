@@ -676,6 +676,8 @@ private:
     void recordCommittedPendingDraftObjectOptions(const QString &commandKind,
                                                   const TherionDraftObjectOptions &options);
     void applyRecentPendingInsertQuickFields(int index);
+    void restoreRecentPendingInsertQuickFieldsFromSession();
+    void persistRecentPendingInsertQuickFieldsToSession() const;
     QString pendingScrapPreferredName() const;
     QString pendingScrapOptions(const QString &scaleOption) const;
     void activateSelectionInspector();

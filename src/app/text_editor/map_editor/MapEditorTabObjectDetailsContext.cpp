@@ -2,7 +2,11 @@
 
 #include "MapEditorObjectDetailsContext.h"
 #include "../TextEditorTab.h"
+#include "../../../core/ISessionStore.h"
 
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QRegularExpression>
 #include <QTabWidget>
 
@@ -133,6 +137,74 @@ void recordRecentPendingInsertFields(QHash<QString, QVector<InspectorObjectQuick
         recent.removeLast();
     }
     recentByCommand->insert(normalizedCommand, recent);
+}
+
+QString serializeRecentPendingInsertFields(
+    const QHash<QString, QVector<InspectorObjectQuickFields>> &recentByCommand)
+{
+    QJsonObject root;
+    const QStringList supportedCommands{QStringLiteral("point"), QStringLiteral("line"), QStringLiteral("area")};
+    for (const QString &command : supportedCommands) {
+        const QVector<InspectorObjectQuickFields> recentFields = recentByCommand.value(command);
+        if (recentFields.isEmpty()) {
+            continue;
+        }
+
+        QJsonArray commandArray;
+        for (const InspectorObjectQuickFields &fields : recentFields) {
+            const QString type = fields.type.trimmed();
+            if (type.isEmpty()) {
+                continue;
+            }
+
+            QJsonObject fieldsObject;
+            fieldsObject.insert(QStringLiteral("type"), type);
+            fieldsObject.insert(QStringLiteral("subtype"), fields.subtype.trimmed());
+            commandArray.append(fieldsObject);
+        }
+        if (!commandArray.isEmpty()) {
+            root.insert(command, commandArray);
+        }
+    }
+
+    return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Compact));
+}
+
+QHash<QString, QVector<InspectorObjectQuickFields>> deserializeRecentPendingInsertFields(const QString &json)
+{
+    QHash<QString, QVector<InspectorObjectQuickFields>> recentByCommand;
+    const QJsonDocument document = QJsonDocument::fromJson(json.toUtf8());
+    if (!document.isObject()) {
+        return recentByCommand;
+    }
+
+    const QJsonObject root = document.object();
+    const QStringList supportedCommands{QStringLiteral("point"), QStringLiteral("line"), QStringLiteral("area")};
+    for (const QString &command : supportedCommands) {
+        const QJsonValue value = root.value(command);
+        if (!value.isArray()) {
+            continue;
+        }
+
+        const QJsonArray commandArray = value.toArray();
+        for (int index = commandArray.size() - 1; index >= 0; --index) {
+            const QJsonValue entryValue = commandArray.at(index);
+            if (!entryValue.isObject()) {
+                continue;
+            }
+            const QJsonObject entryObject = entryValue.toObject();
+            InspectorObjectQuickFields fields;
+            fields.commandKind = command;
+            fields.type = entryObject.value(QStringLiteral("type")).toString().trimmed();
+            fields.subtype = entryObject.value(QStringLiteral("subtype")).toString().trimmed();
+            if (fields.type.isEmpty()) {
+                continue;
+            }
+            recordRecentPendingInsertFields(&recentByCommand, fields);
+        }
+    }
+
+    return recentByCommand;
 }
 }
 
@@ -281,6 +353,7 @@ void MapEditorTab::setPendingInsertQuickFields(const InspectorObjectQuickFields 
                             interactiveDrawState_.pendingInsertFields_.value);
     recordRecentPendingInsertFields(&interactiveDrawState_.recentPendingInsertFieldsByCommand_,
                                     interactiveDrawState_.pendingInsertFields_);
+    persistRecentPendingInsertQuickFieldsToSession();
 }
 
 QVector<InspectorObjectQuickFields> MapEditorTab::recentPendingInsertQuickFields(const QString &commandKind) const
@@ -423,6 +496,27 @@ void MapEditorTab::applyRecentPendingInsertQuickFields(int index)
     pendingFields->subtype = recentFields.at(index).subtype;
     setPendingInsertQuickFields(*pendingFields);
     refreshObjectDetailsPanel();
+}
+
+void MapEditorTab::restoreRecentPendingInsertQuickFieldsFromSession()
+{
+    interactiveDrawState_.recentPendingInsertFieldsByCommand_.clear();
+    if (sessionStore_ == nullptr) {
+        return;
+    }
+
+    interactiveDrawState_.recentPendingInsertFieldsByCommand_ =
+        deserializeRecentPendingInsertFields(sessionStore_->therionMapRecentInsertTypeSubtypeHistory());
+}
+
+void MapEditorTab::persistRecentPendingInsertQuickFieldsToSession() const
+{
+    if (sessionStore_ == nullptr) {
+        return;
+    }
+
+    sessionStore_->setTherionMapRecentInsertTypeSubtypeHistory(
+        serializeRecentPendingInsertFields(interactiveDrawState_.recentPendingInsertFieldsByCommand_));
 }
 
 TherionDraftObjectOptions MapEditorTab::pendingDraftObjectOptions(const QString &commandKind) const

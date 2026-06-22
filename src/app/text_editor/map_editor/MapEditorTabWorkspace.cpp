@@ -98,6 +98,7 @@ void MapEditorTab::initializeWorkspace()
     magnifierEnabled_ = sessionStore_->therionMapMagnifierEnabled();
     objectsInspectorAutoCollapseExpandScrapsEnabled_ =
         sessionStore_->therionMapObjectsAutoCollapseExpandScrapsEnabled();
+    restoreRecentPendingInsertQuickFieldsFromSession();
     sessionStore_->setTherionMapTouchFriendlyControlsEnabled(false);
     buildUi();
     connect(this, &MapEditorTab::zoomStatusChanged, this, [this](int) {

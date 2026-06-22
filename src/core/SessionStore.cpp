@@ -29,6 +29,8 @@ const auto kTherionMapTouchFriendlyControlsEnabledKey = QStringLiteral("session/
 const auto kTherionMapMagnifierEnabledKey = QStringLiteral("session/therionMapMagnifierEnabled");
 const auto kTherionMapObjectsAutoCollapseExpandScrapsEnabledKey =
     QStringLiteral("session/therionMapObjectsAutoCollapseExpandScrapsEnabled");
+const auto kTherionMapRecentInsertTypeSubtypeHistoryKey =
+    QStringLiteral("session/therionMapRecentInsertTypeSubtypeHistory");
 const auto kTherionMapBackgroundLayersKey = QStringLiteral("session/therionMapBackgroundLayers");
 
 void clearDeprecatedSessionOnlyKeys(QSettings &settings)
@@ -265,6 +267,16 @@ void SessionSettingsStore::setTherionMapObjectsAutoCollapseExpandScrapsEnabled(b
     settings_->setValue(kTherionMapObjectsAutoCollapseExpandScrapsEnabledKey, enabled);
 }
 
+QString SessionSettingsStore::therionMapRecentInsertTypeSubtypeHistory() const
+{
+    return settings_->value(kTherionMapRecentInsertTypeSubtypeHistoryKey).toString();
+}
+
+void SessionSettingsStore::setTherionMapRecentInsertTypeSubtypeHistory(const QString &json)
+{
+    settings_->setValue(kTherionMapRecentInsertTypeSubtypeHistoryKey, json);
+}
+
 QString SessionSettingsStore::therionMapBackgroundLayers() const
 {
     return settings_->value(kTherionMapBackgroundLayersKey).toString();
@@ -457,6 +469,16 @@ bool InMemorySessionStore::therionMapObjectsAutoCollapseExpandScrapsEnabled() co
 void InMemorySessionStore::setTherionMapObjectsAutoCollapseExpandScrapsEnabled(bool enabled)
 {
     therionMapObjectsAutoCollapseExpandScrapsEnabled_ = enabled;
+}
+
+QString InMemorySessionStore::therionMapRecentInsertTypeSubtypeHistory() const
+{
+    return therionMapRecentInsertTypeSubtypeHistory_;
+}
+
+void InMemorySessionStore::setTherionMapRecentInsertTypeSubtypeHistory(const QString &json)
+{
+    therionMapRecentInsertTypeSubtypeHistory_ = json;
 }
 
 QString InMemorySessionStore::therionMapBackgroundLayers() const

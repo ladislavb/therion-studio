@@ -65,6 +65,9 @@ public:
     virtual bool therionMapObjectsAutoCollapseExpandScrapsEnabled() const = 0;
     virtual void setTherionMapObjectsAutoCollapseExpandScrapsEnabled(bool enabled) = 0;
 
+    virtual QString therionMapRecentInsertTypeSubtypeHistory() const = 0;
+    virtual void setTherionMapRecentInsertTypeSubtypeHistory(const QString &json) = 0;
+
     virtual QString therionMapBackgroundLayers() const = 0;
     virtual void setTherionMapBackgroundLayers(const QString &json) = 0;
 };

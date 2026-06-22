@@ -1249,6 +1249,110 @@ int runObjectsInspectorAutoCollapseExpandScrapsTest()
 
     return 0;
 }
+
+int runRecentPendingInsertTypeSubtypePersistsAcrossRestartTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Temporary directory for recent type/subtype persistence test was not created.")) {
+        return 1;
+    }
+
+    const QString filePath = tempDir.filePath(QStringLiteral("selection-panel-recent-persist.th2"));
+    QFile file(filePath);
+    if (!expect(file.open(QIODevice::WriteOnly | QIODevice::Text),
+                "TH2 test file for recent type/subtype persistence could not be created.")) {
+        return 1;
+    }
+    file.write("encoding utf-8\n\nscrap s1 -projection plan\nendscrap\n");
+    file.close();
+
+    QtFileSystem fileSystem;
+    FakeSessionStore sessionStore;
+
+    QMainWindow firstHostWindow;
+    firstHostWindow.resize(960, 720);
+    auto *firstCentral = new QWidget(&firstHostWindow);
+    auto *firstLayout = new QVBoxLayout(firstCentral);
+    firstLayout->setContentsMargins(0, 0, 0, 0);
+    firstLayout->setSpacing(0);
+    auto *firstMapTab = new MapEditorTab(fileSystem, sessionStore, CommandCatalogStore(), firstCentral);
+    firstLayout->addWidget(firstMapTab);
+    firstHostWindow.setCentralWidget(firstCentral);
+    firstHostWindow.show();
+    pumpEvents();
+
+    QString errorMessage;
+    if (!expect(firstMapTab->loadFile(filePath, &errorMessage),
+                "Initial MapEditorTab failed to load TH2 file for recent type/subtype persistence test.")) {
+        if (!errorMessage.isEmpty()) {
+            std::cerr << errorMessage.toStdString() << '\n';
+        }
+        return 1;
+    }
+    pumpEvents();
+
+    firstMapTab->triggerAddLine();
+    pumpEvents();
+    auto *typeCombo = firstMapTab->findChild<QComboBox *>(QStringLiteral("mapObjectQuickTypeCombo"));
+    auto *subtypeCombo = firstMapTab->findChild<QComboBox *>(QStringLiteral("mapObjectQuickSubtypeCombo"));
+    if (!expect(typeCombo != nullptr && subtypeCombo != nullptr,
+                "Pending line insert controls were not found for recent type/subtype persistence test.")) {
+        return 1;
+    }
+    commitComboEdit(typeCombo, QStringLiteral("border"));
+    pumpEvents();
+    commitComboEdit(subtypeCombo, QStringLiteral("invisible"));
+    pumpEvents();
+    commitComboEdit(typeCombo, QStringLiteral("wall"));
+    pumpEvents();
+    commitComboEdit(subtypeCombo, QStringLiteral("bedrock"));
+    pumpEvents();
+
+    if (!expect(!sessionStore.therionMapRecentInsertTypeSubtypeHistory().trimmed().isEmpty(),
+                "Recent type/subtype persistence should write session-store state after MRU changes.")) {
+        return 1;
+    }
+
+    QMainWindow reopenedHostWindow;
+    reopenedHostWindow.resize(960, 720);
+    auto *reopenedCentral = new QWidget(&reopenedHostWindow);
+    auto *reopenedLayout = new QVBoxLayout(reopenedCentral);
+    reopenedLayout->setContentsMargins(0, 0, 0, 0);
+    reopenedLayout->setSpacing(0);
+    auto *reopenedMapTab = new MapEditorTab(fileSystem, sessionStore, CommandCatalogStore(), reopenedCentral);
+    reopenedLayout->addWidget(reopenedMapTab);
+    reopenedHostWindow.setCentralWidget(reopenedCentral);
+    reopenedHostWindow.show();
+    pumpEvents();
+
+    QString reopenedErrorMessage;
+    if (!expect(reopenedMapTab->loadFile(filePath, &reopenedErrorMessage),
+                "Reopened MapEditorTab failed to load TH2 file for recent type/subtype persistence test.")) {
+        if (!reopenedErrorMessage.isEmpty()) {
+            std::cerr << reopenedErrorMessage.toStdString() << '\n';
+        }
+        return 1;
+    }
+    pumpEvents();
+
+    reopenedMapTab->triggerAddLine();
+    pumpEvents();
+    auto *reopenedTypeCombo = reopenedMapTab->findChild<QComboBox *>(QStringLiteral("mapObjectQuickTypeCombo"));
+    auto *reopenedSubtypeCombo = reopenedMapTab->findChild<QComboBox *>(QStringLiteral("mapObjectQuickSubtypeCombo"));
+    if (!expect(reopenedTypeCombo != nullptr
+                    && reopenedSubtypeCombo != nullptr
+                    && reopenedTypeCombo->currentText() == QStringLiteral("wall")
+                    && reopenedSubtypeCombo->currentText() == QStringLiteral("bedrock"),
+                "Reopened map tabs should restore recent line type/subtype defaults from the session store.")) {
+        return 1;
+    }
+    if (!expect(visibleRecentSymbolButton(reopenedMapTab, QStringLiteral("border:invisible")) != nullptr,
+                "Reopened map tabs should restore recent type/subtype buttons from the session store.")) {
+        return 1;
+    }
+
+    return 0;
+}
 }
 
 int main(int argc, char **argv)
@@ -1257,5 +1361,8 @@ int main(int argc, char **argv)
     if (const int result = runSelectionPanelTypeValuesTest(); result != 0) {
         return result;
     }
-    return runObjectsInspectorAutoCollapseExpandScrapsTest();
+    if (const int result = runObjectsInspectorAutoCollapseExpandScrapsTest(); result != 0) {
+        return result;
+    }
+    return runRecentPendingInsertTypeSubtypePersistsAcrossRestartTest();
 }
