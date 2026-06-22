@@ -63,6 +63,7 @@
 #include "MainWindowDocumentTabOpenController.h"
 #include "MainWindowHelpDialog.h"
 #include "MainWindowSettingsDialog.h"
+#include "TherionExecutableDetector.h"
 #include "MainWindowSessionDocumentController.h"
 #include "MainWindowSessionController.h"
 #include "MainWindowProjectController.h"
@@ -422,6 +423,15 @@ MainWindow::MainWindow(TherionStudio::ISessionStore &sessionStore,
 
     if (editorTabs_->count() == 0) {
         addWelcomeTab();
+    }
+
+    // If the Therion executable is not configured yet, try to auto-detect it silently.
+    // Runs after session restore so it never overwrites a path the user has already set.
+    if (sessionStore_ != nullptr && sessionStore_->therionExecutablePath().trimmed().isEmpty()) {
+        const QString detected = TherionStudio::TherionExecutableDetector::detect();
+        if (!detected.isEmpty()) {
+            sessionStore_->setTherionExecutablePath(detected);
+        }
     }
 
     rebuildStructureSidebar();

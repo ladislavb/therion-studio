@@ -27,11 +27,13 @@ public:
 
 private:
     void browseTherionExecutable();
+    void autoDetectTherionExecutable();
     void selectComboData(QComboBox *combo, const QString &data, const QString &fallbackData);
 
     QComboBox *languageCombo_ = nullptr;
     QLineEdit *therionExecutableEdit_ = nullptr;
     QPushButton *therionExecutableBrowseButton_ = nullptr;
+    QPushButton *therionExecutableAutoDetectButton_ = nullptr;
     QComboBox *defaultTextEditorModeCombo_ = nullptr;
 };
 }

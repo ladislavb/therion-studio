@@ -234,6 +234,8 @@ set(THERION_APP_SOURCES
     src/app/ProjectStructureScanner.h
     src/app/TherionExecutableSelectionController.cpp
     src/app/TherionExecutableSelectionController.h
+    src/app/TherionExecutableDetector.cpp
+    src/app/TherionExecutableDetector.h
     src/app/TherionRunnerConfigDisplayController.cpp
     src/app/TherionRunnerConfigDisplayController.h
     src/app/TherionRunnerConfigResolver.cpp

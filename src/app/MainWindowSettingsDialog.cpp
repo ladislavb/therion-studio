@@ -1,5 +1,6 @@
 #include "MainWindowSettingsDialog.h"
 
+#include "TherionExecutableDetector.h"
 #include "TherionExecutableSelectionController.h"
 
 #include <QComboBox>
@@ -55,12 +56,19 @@ MainWindowSettingsDialog::MainWindowSettingsDialog(const Settings &settings, QWi
             this,
             &MainWindowSettingsDialog::browseTherionExecutable);
 
+    therionExecutableAutoDetectButton_ = new QPushButton(tr("Auto-detect"), this);
+    connect(therionExecutableAutoDetectButton_,
+            &QPushButton::clicked,
+            this,
+            &MainWindowSettingsDialog::autoDetectTherionExecutable);
+
     auto *executableRow = new QWidget(this);
     auto *executableLayout = new QHBoxLayout(executableRow);
     executableLayout->setContentsMargins(0, 0, 0, 0);
     executableLayout->setSpacing(6);
     executableLayout->addWidget(therionExecutableEdit_, 1);
     executableLayout->addWidget(therionExecutableBrowseButton_);
+    executableLayout->addWidget(therionExecutableAutoDetectButton_);
     formLayout->addRow(tr("Therion executable"), executableRow);
 
     defaultTextEditorModeCombo_ = new QComboBox(this);
@@ -93,6 +101,23 @@ MainWindowSettingsDialog::Settings MainWindowSettingsDialog::settings() const
         ? defaultTextEditorModeCombo_->currentData().toString()
         : QStringLiteral("raw");
     return result;
+}
+
+void MainWindowSettingsDialog::autoDetectTherionExecutable()
+{
+    const QString detected = TherionExecutableDetector::detect();
+    if (detected.isEmpty()) {
+        QMessageBox::information(this,
+                                 tr("Auto-detect Therion Executable"),
+                                 tr("Therion executable could not be found automatically.\n"
+                                    "Please use Browse to locate it manually."));
+        return;
+    }
+
+    if (therionExecutableEdit_ != nullptr) {
+        therionExecutableEdit_->setText(detected);
+        therionExecutableEdit_->setCursorPosition(therionExecutableEdit_->text().size());
+    }
 }
 
 void MainWindowSettingsDialog::browseTherionExecutable()
