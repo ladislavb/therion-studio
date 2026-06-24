@@ -1,5 +1,7 @@
 #include "RawEditorCompletionInsertionController.h"
 
+#include "../../../core/TherionDocumentParser.h"
+
 #include <QPlainTextEdit>
 #include <QTextBlock>
 #include <QTextCursor>
@@ -8,6 +10,92 @@
 
 namespace TherionStudio
 {
+namespace
+{
+struct CompletionReplacementRange
+{
+    int start = 0;
+    int end = 0;
+};
+
+CompletionReplacementRange completionWordRange(const QString &blockText, int cursorColumn)
+{
+    CompletionReplacementRange range{cursorColumn, cursorColumn};
+
+    auto isCompletionCharacter = [](QChar ch) {
+        return ch.isLetterOrNumber() || ch == QLatin1Char('-') || ch == QLatin1Char('_');
+    };
+
+    while (range.start > 0 && isCompletionCharacter(blockText.at(range.start - 1))) {
+        --range.start;
+    }
+    while (range.end < blockText.length() && isCompletionCharacter(blockText.at(range.end))) {
+        ++range.end;
+    }
+
+    return range;
+}
+
+CompletionReplacementRange inputPathReplacementRange(const QString &blockText, int cursorColumn)
+{
+    CompletionReplacementRange range{cursorColumn, cursorColumn};
+    const int clampedColumn = qBound(0, cursorColumn, blockText.size());
+
+    int quoteStart = -1;
+    QChar quoteChar;
+    for (int index = 0; index < clampedColumn; ++index) {
+        const QChar ch = blockText.at(index);
+        if (quoteStart >= 0) {
+            if (ch == quoteChar) {
+                quoteStart = -1;
+                quoteChar = QChar();
+            }
+            continue;
+        }
+        if (ch == QLatin1Char('"') || ch == QLatin1Char('\'')) {
+            quoteStart = index;
+            quoteChar = ch;
+        }
+    }
+
+    if (quoteStart >= 0) {
+        range.start = quoteStart + 1;
+        range.end = clampedColumn;
+        for (int index = clampedColumn; index < blockText.size(); ++index) {
+            const QChar ch = blockText.at(index);
+            if (ch == quoteChar) {
+                break;
+            }
+            range.end = index + 1;
+        }
+        return range;
+    }
+
+    while (range.start > 0) {
+        const QChar ch = blockText.at(range.start - 1);
+        if (ch.isSpace() || ch == QLatin1Char('"') || ch == QLatin1Char('\'')) {
+            break;
+        }
+        --range.start;
+    }
+    while (range.end < blockText.length()) {
+        const QChar ch = blockText.at(range.end);
+        if (ch.isSpace() || ch == QLatin1Char('"') || ch == QLatin1Char('\'')) {
+            break;
+        }
+        ++range.end;
+    }
+
+    return range;
+}
+
+bool isInputCommandLine(const QString &blockText)
+{
+    const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(blockText);
+    return parsedLine.directive == QStringLiteral("input");
+}
+}
+
 RawEditorCompletionInsertionController::RawEditorCompletionInsertionController(RawEditorCompletionInsertionContext context)
     : context_(std::move(context))
 {
@@ -27,19 +115,11 @@ void RawEditorCompletionInsertionController::insertCompletionToken(const QString
     }
 
     const QString blockText = block.text();
-    int start = cursor.positionInBlock();
-    int end = cursor.positionInBlock();
-
-    auto isCompletionCharacter = [](QChar ch) {
-        return ch.isLetterOrNumber() || ch == QLatin1Char('-') || ch == QLatin1Char('_');
-    };
-
-    while (start > 0 && isCompletionCharacter(blockText.at(start - 1))) {
-        --start;
-    }
-    while (end < blockText.length() && isCompletionCharacter(blockText.at(end))) {
-        ++end;
-    }
+    const CompletionReplacementRange replacementRange = isInputCommandLine(blockText)
+        ? inputPathReplacementRange(blockText, cursor.positionInBlock())
+        : completionWordRange(blockText, cursor.positionInBlock());
+    const int start = replacementRange.start;
+    const int end = replacementRange.end;
 
     const QString normalizedCompletion = context_.normalizedDirectiveToken(completion.toLower());
     const QString closingDirective = context_.closingDirectiveForOpeningToken(normalizedCompletion);

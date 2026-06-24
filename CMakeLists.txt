@@ -1372,6 +1372,12 @@ therion_add_text_editor_ui_test(TextEditorSystemNormalizationTransactionTest
     tests/TextEditorSystemNormalizationTransactionTest.cpp
     "TextEditorSystemNormalizationTransactionResources")
 
+qt_add_executable(TextEditorRawEditorQTests
+    tests/TextEditorRawEditorQTestMain.cpp
+    tests/RawEditorCompletionInsertionControllerTest.cpp)
+
+target_link_libraries(TextEditorRawEditorQTests PRIVATE therion_text_editor_ui_test_support Qt6::Test)
+
 qt_add_executable(TextEditorDocumentControllerTest
     tests/TextEditorDocumentControllerTest.cpp
     src/app/text_editor/TextEditorDocumentController.cpp
@@ -1510,6 +1516,7 @@ set(THERION_UNIT_TEST_TARGETS
     MapEditorObjectDetailsLogicTest
     MapEditorLineExtensionPlannerTest
     MapEditorLineSplitPlannerTest
+    TextEditorRawEditorQTests
     TextEditorDocumentControllerTest
     TextEditorDocumentServiceQTests
     TextEditorOptionValidationTest

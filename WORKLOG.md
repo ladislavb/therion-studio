@@ -40,6 +40,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   and drag affordances are attached to the visible viewport state.
 - Keep inactive `.th` / `.thconfig` tabs from driving map-object cursor synchronization; only the current document should
   update the global map object selection from its current line.
+- Keep Raw editor `input` path completion replacing the active path token, including `./`, mid-token, quoted, and
+  Windows-style separator cases, so accepting a suggestion cannot duplicate the existing suffix.
 - Keep map line selection readable by focusing clicked segments: primary path clicks should expose only the segment
   endpoint anchors and their control handles, with smaller visible vertex markers.
 - Keep map line-point orientation/size handles draggable when they overlap highlighted paths, and keep Backspace/Delete
