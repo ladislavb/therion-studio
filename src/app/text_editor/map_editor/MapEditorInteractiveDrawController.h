@@ -23,6 +23,7 @@ private:
     QString tr(const char *text) const;
     MapEditorInteractiveDrawMode mode() const;
     void setMode(MapEditorInteractiveDrawMode mode);
+    bool canPlanDraftInsertionForMode(MapEditorInteractiveDrawMode mode, QString *errorMessage) const;
 
     MapEditorInteractiveDrawContext context_;
 };

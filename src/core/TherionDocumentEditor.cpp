@@ -1390,6 +1390,38 @@ int matchingEndscrapIndex(const QStringList &lines, int scrapStartIndex)
     return -1;
 }
 
+int firstUnclosedScrapLineNumber(const QStringList &lines)
+{
+    QVector<int> openScrapLineNumbers;
+    for (int index = 0; index < lines.size(); ++index) {
+        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(index), index + 1);
+        if (parsedLine.directive == QStringLiteral("scrap")) {
+            openScrapLineNumbers.append(index + 1);
+            continue;
+        }
+        if (parsedLine.directive == QStringLiteral("endscrap") && !openScrapLineNumbers.isEmpty()) {
+            openScrapLineNumbers.removeLast();
+        }
+    }
+
+    return openScrapLineNumbers.isEmpty() ? 0 : openScrapLineNumbers.constFirst();
+}
+
+bool rejectDraftInsertionIntoUnclosedScrap(const QStringList &lines, QString *errorMessage)
+{
+    const int unclosedScrapLineNumber = firstUnclosedScrapLineNumber(lines);
+    if (unclosedScrapLineNumber <= 0) {
+        return false;
+    }
+
+    if (errorMessage != nullptr) {
+        *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor",
+                                                    "Cannot insert draft geometry while scrap at line %1 is missing endscrap.")
+            .arg(unclosedScrapLineNumber);
+    }
+    return true;
+}
+
 int endscrapLineIndexForScrapIdentifier(const QStringList &lines, const QString &scrapIdentifier)
 {
     const QString normalizedIdentifier = scrapIdentifier.trimmed();
@@ -1654,7 +1686,11 @@ bool TherionDocumentEditor::appendDraftGeometryEdits(const QString &contents,
     }
 
     QString updated = contents;
-    const bool needsFallbackScrap = draftInsertionEndscrapLineIndex(splitLinesTrimmingCarriageReturns(updated), objectOptions, nullptr) < 0
+    const QStringList originalLines = splitLinesTrimmingCarriageReturns(updated);
+    if (rejectDraftInsertionIntoUnclosedScrap(originalLines, errorMessage)) {
+        return false;
+    }
+    const bool needsFallbackScrap = draftInsertionEndscrapLineIndex(originalLines, objectOptions, nullptr) < 0
         && objectOptions.targetScrapIdentifier.trimmed().isEmpty();
     if (needsFallbackScrap) {
         QVector<TherionSourceTextEdit> fallbackEdits;
@@ -1777,7 +1813,11 @@ bool TherionDocumentEditor::appendDraftLineGeometryEdits(const QString &contents
     }
 
     QString updated = contents;
-    const bool needsFallbackScrap = draftInsertionEndscrapLineIndex(splitLinesTrimmingCarriageReturns(updated), objectOptions, nullptr) < 0
+    const QStringList originalLines = splitLinesTrimmingCarriageReturns(updated);
+    if (rejectDraftInsertionIntoUnclosedScrap(originalLines, errorMessage)) {
+        return false;
+    }
+    const bool needsFallbackScrap = draftInsertionEndscrapLineIndex(originalLines, objectOptions, nullptr) < 0
         && objectOptions.targetScrapIdentifier.trimmed().isEmpty();
     if (needsFallbackScrap) {
         QVector<TherionSourceTextEdit> fallbackEdits;
@@ -1868,7 +1908,11 @@ bool TherionDocumentEditor::appendDraftAreaGeometryEdits(const QString &contents
     }
 
     QString updated = contents;
-    const bool needsFallbackScrap = draftInsertionEndscrapLineIndex(splitLinesTrimmingCarriageReturns(updated), objectOptions, nullptr) < 0
+    const QStringList originalLines = splitLinesTrimmingCarriageReturns(updated);
+    if (rejectDraftInsertionIntoUnclosedScrap(originalLines, errorMessage)) {
+        return false;
+    }
+    const bool needsFallbackScrap = draftInsertionEndscrapLineIndex(originalLines, objectOptions, nullptr) < 0
         && objectOptions.targetScrapIdentifier.trimmed().isEmpty();
     if (needsFallbackScrap) {
         QVector<TherionSourceTextEdit> fallbackEdits;

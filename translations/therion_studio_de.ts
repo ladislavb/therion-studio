@@ -6299,6 +6299,11 @@ subtype blocks</source>
             <translation type="unfinished" />
         </message>
         <message>
+            <location filename="../src/core/TherionDocumentEditor.cpp" line="1411" />
+            <source>Cannot insert draft geometry while scrap at line %1 is missing endscrap.</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
             <location filename="../src/core/TherionDocumentEditor.cpp" line="1956" />
             <source>Smart Area has no resolved boundary lines.</source>
             <translation type="unfinished" />

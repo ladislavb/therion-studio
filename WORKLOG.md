@@ -61,6 +61,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   transient UI-only behavior.
 - Keep interactive line/area drafts editable before commit: captured anchors and their Bezier controls must both be
   movable without writing source text until the draft is completed.
+- Keep map draft geometry insertion from writing into TH2 files with unclosed scraps; the map editor should surface the
+  missing `endscrap` instead of appending fallback geometry into an ambiguous source structure.
 - Keep line extension completion as one source transaction so `Extend Before/After` exits draft mode only after the
   extended line rewrite, selection restore, and UI refresh hook run together.
 - Keep `Extend Before/After` covered by a transaction regression so successful commits exit draft mode and preserve undo/redo.

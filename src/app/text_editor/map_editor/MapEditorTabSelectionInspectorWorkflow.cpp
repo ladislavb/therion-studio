@@ -48,6 +48,9 @@ QString plannerSourceWithAreaAdjust(const QString &beforeText, const std::option
 void MapEditorTab::handleAddPointTriggered()
 {
     setInteractiveDrawMode(InteractiveDrawMode::Point);
+    if (interactiveDrawState_.mode_ != InteractiveDrawMode::Point) {
+        return;
+    }
     beginPendingInsertObject(QStringLiteral("point"));
     activateSelectionInspector();
     refreshObjectDetailsPanel();
@@ -59,6 +62,9 @@ void MapEditorTab::handleAddLineTriggered()
 {
     interactiveDrawState_.lineExtensionActive_ = false;
     setInteractiveDrawMode(InteractiveDrawMode::Line);
+    if (interactiveDrawState_.mode_ != InteractiveDrawMode::Line) {
+        return;
+    }
     beginPendingInsertObject(QStringLiteral("line"));
     activateSelectionInspector();
     refreshObjectDetailsPanel();
@@ -70,6 +76,9 @@ void MapEditorTab::handleAddFreehandLineTriggered()
 {
     interactiveDrawState_.lineExtensionActive_ = false;
     setInteractiveDrawMode(InteractiveDrawMode::Freehand);
+    if (interactiveDrawState_.mode_ != InteractiveDrawMode::Freehand) {
+        return;
+    }
     beginPendingInsertObject(QStringLiteral("line"));
     activateSelectionInspector();
     refreshObjectDetailsPanel();
@@ -81,6 +90,9 @@ void MapEditorTab::handleAddAreaTriggered()
 {
     interactiveDrawState_.lineExtensionActive_ = false;
     setInteractiveDrawMode(InteractiveDrawMode::Area);
+    if (interactiveDrawState_.mode_ != InteractiveDrawMode::Area) {
+        return;
+    }
     beginPendingInsertObject(QStringLiteral("area"));
     activateSelectionInspector();
     refreshObjectDetailsPanel();

@@ -218,6 +218,62 @@ void MapEditorInteractiveDrawController::setMode(MapEditorInteractiveDrawMode mo
     }
 }
 
+bool MapEditorInteractiveDrawController::canPlanDraftInsertionForMode(MapEditorInteractiveDrawMode mode,
+                                                                      QString *errorMessage) const
+{
+    if (mode == MapEditorInteractiveDrawMode::None
+        || mode == MapEditorInteractiveDrawMode::SmartArea) {
+        return true;
+    }
+    if (context_.textEditor == nullptr) {
+        if (errorMessage != nullptr) {
+            *errorMessage = tr("Drawing failed: no active TH2 text editor.");
+        }
+        return false;
+    }
+
+    const QString plannerSource =
+        plannerSourceWithAreaAdjust(context_.textEditor->text(), draftInitialAreaAdjustRect(context_));
+    QVector<TherionSourceTextEdit> sourceEdits;
+    int insertedLineNumber = 0;
+    if (mode == MapEditorInteractiveDrawMode::Point) {
+        return TherionDocumentEditor::appendDraftGeometryEdits(plannerSource,
+                                                               QStringLiteral("point"),
+                                                               QVector<QPointF>{QPointF(0.0, 0.0)},
+                                                               &sourceEdits,
+                                                               &insertedLineNumber,
+                                                               errorMessage,
+                                                               draftObjectOptionsFor(context_, QStringLiteral("point")));
+    }
+    if (mode == MapEditorInteractiveDrawMode::Line
+        || mode == MapEditorInteractiveDrawMode::Freehand) {
+        return TherionDocumentEditor::appendDraftLineGeometryEdits(plannerSource,
+                                                                   QStringList{
+                                                                       QStringLiteral("0 0"),
+                                                                       QStringLiteral("1 1"),
+                                                                   },
+                                                                   &sourceEdits,
+                                                                   &insertedLineNumber,
+                                                                   errorMessage,
+                                                                   QString(),
+                                                                   draftObjectOptionsFor(context_, QStringLiteral("line")));
+    }
+    if (mode == MapEditorInteractiveDrawMode::Area) {
+        return TherionDocumentEditor::appendDraftAreaGeometryEdits(plannerSource,
+                                                                   QStringList{
+                                                                       QStringLiteral("0 0"),
+                                                                       QStringLiteral("1 0"),
+                                                                       QStringLiteral("1 1"),
+                                                                   },
+                                                                   &sourceEdits,
+                                                                   &insertedLineNumber,
+                                                                   errorMessage,
+                                                                   draftObjectOptionsFor(context_, QStringLiteral("area")));
+    }
+
+    return true;
+}
+
 MapEditorInteractiveDrawController::MapEditorInteractiveDrawController(MapEditorInteractiveDrawContext context)
     : context_(std::move(context))
 {
@@ -225,6 +281,18 @@ MapEditorInteractiveDrawController::MapEditorInteractiveDrawController(MapEditor
 
 void MapEditorInteractiveDrawController::setInteractiveDrawMode(MapEditorInteractiveDrawMode mode)
 {
+    QString errorMessage;
+    if (!canPlanDraftInsertionForMode(mode, &errorMessage)) {
+        clearInteractiveDrawSession(true);
+        (*context_.toolbarStatusNote) = errorMessage.isEmpty()
+            ? tr("Drawing failed: no active TH2 text editor.")
+            : errorMessage;
+        context_.refreshToolbarSummary();
+        context_.updateHelpPanel();
+        context_.updateCommandSurfaceState();
+        return;
+    }
+
     const MapEditorInteractiveDrawMode previousMode = this->mode();
     clearInteractiveDrawSession(false);
     setMode(mode);

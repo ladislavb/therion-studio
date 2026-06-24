@@ -989,6 +989,7 @@ therion_add_core_qtest_runner(TherionCoreQTests
     tests/core/ThreeDViewerLoxLoaderTest.cpp
     tests/core/ThreeDViewerSceneModelTest.cpp
     tests/core/ThreeDViewerSceneStatisticsTest.cpp
+    tests/core/TherionDocumentEditorDraftInsertionTest.cpp
     tests/core/TherionSourceDocumentTest.cpp
     tests/core/TherionSourceLogicalDocumentTest.cpp
     tests/core/TherionSourceSnapshotCacheTest.cpp
