@@ -180,6 +180,14 @@ void ThreeDViewerViewportWidget::rollRight()
     }
 }
 
+void ThreeDViewerViewportWidget::focusViewport(Qt::FocusReason reason)
+{
+    setFocus(reason);
+    if (auto *item = rootViewportItem()) {
+        item->forceActiveFocus(reason);
+    }
+}
+
 void ThreeDViewerViewportWidget::syncRootItem()
 {
     if (status() != QQuickWidget::Ready) {
@@ -191,6 +199,11 @@ void ThreeDViewerViewportWidget::syncRootItem()
                 &ThreeDViewerViewportItem::cameraSettingsChanged,
                 this,
                 &ThreeDViewerViewportWidget::handleCameraSettingsChanged,
+                Qt::UniqueConnection);
+        connect(item,
+                &ThreeDViewerViewportItem::measurementModeExitRequested,
+                this,
+                &ThreeDViewerViewportWidget::measurementModeExitRequested,
                 Qt::UniqueConnection);
         if (!rootSceneModelSynced_) {
             item->setSceneModel(sceneModel_, pendingSceneFitToScene_);

@@ -7,6 +7,7 @@
 
 #include <QFileInfo>
 #include <QFrame>
+#include <QShortcut>
 #include <QSplitter>
 #include <QVBoxLayout>
 
@@ -159,6 +160,9 @@ void ThreeDViewerTab::setMeasurementMode(bool measurementMode)
     }
     if (viewport_ != nullptr) {
         viewport_->setMeasurementMode(measurementMode);
+        if (measurementMode) {
+            viewport_->focusViewport(Qt::ShortcutFocusReason);
+        }
     }
 }
 
@@ -239,6 +243,14 @@ void ThreeDViewerTab::buildUi()
     viewportLayout->addWidget(viewport_);
     splitter_->addWidget(viewportFrame);
 
+    auto *measurementEscapeShortcut = new QShortcut(QKeySequence(Qt::Key_Escape), this);
+    measurementEscapeShortcut->setContext(Qt::WidgetWithChildrenShortcut);
+    connect(measurementEscapeShortcut, &QShortcut::activated, this, [this] {
+        if (measurementMode()) {
+            setMeasurementMode(false);
+        }
+    });
+
     auto *inspector = new QWidget(splitter_);
     auto *inspectorLayout = new QVBoxLayout(inspector);
     inspectorLayout->setContentsMargins(8, 8, 8, 8);
@@ -312,6 +324,9 @@ void ThreeDViewerTab::buildUi()
         inspectorState_->setCameraTiltDegrees(tiltDegrees);
         inspectorState_->setCameraDistanceMeters(distanceMeters);
         inspectorState_->setCameraFocalLengthMm(focalLengthMm);
+    });
+    connect(viewport_, &ThreeDViewerViewportWidget::measurementModeExitRequested, this, [this] {
+        setMeasurementMode(false);
     });
 
     inspectorWidget_ = new ThreeDViewerInspectorWidget(inspector);

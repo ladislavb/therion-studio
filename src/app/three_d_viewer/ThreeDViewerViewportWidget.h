@@ -39,9 +39,11 @@ public:
     void setViewPreset(ThreeDViewerViewPreset preset);
     void rollLeft();
     void rollRight();
+    void focusViewport(Qt::FocusReason reason = Qt::ShortcutFocusReason);
 
 signals:
     void cameraSettingsChanged(double facingDegrees, double tiltDegrees, double distanceMeters, double focalLengthMm);
+    void measurementModeExitRequested();
 
 private:
     void syncRootItem();

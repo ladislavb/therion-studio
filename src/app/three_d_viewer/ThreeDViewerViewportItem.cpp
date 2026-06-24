@@ -1417,6 +1417,13 @@ void ThreeDViewerViewportItem::keyPressEvent(QKeyEvent *event)
     }
 
     switch (event->key()) {
+    case Qt::Key_Escape:
+        if (snapshot().measurementMode) {
+            emit measurementModeExitRequested();
+            event->accept();
+            return;
+        }
+        break;
     case Qt::Key_Left:
         controller_.rotateLeft();
         event->accept();

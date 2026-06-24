@@ -61,6 +61,7 @@ protected:
 
 signals:
     void cameraSettingsChanged(double facingDegrees, double tiltDegrees, double distanceMeters, double focalLengthMm);
+    void measurementModeExitRequested();
 
 private:
     struct Snapshot

@@ -235,6 +235,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - The 3D viewer Layers default now starts with Stations and Labels hidden, while underground centerline, meshes, and surfaces remain visible.
 - The 3D viewer inspector now uses consistent Title Case for English field and layer labels.
 - The 3D viewer now supports arrow-key yaw/tilt navigation, higher-contrast per-vertex mesh lighting, and a palette-aware QML inspector surface styled closer to the existing QWidget inspectors.
+- The 3D viewer measurement mode now exits on `Esc`, keeping the viewport, inspector, and tab state synchronized.
 - The project File sidebar now uses the same Therion badged document icon for `.lox` files as for `.th`, `.th2`, and `thconfig` files.
 - Open `.lox` viewer tabs now auto-reload regenerated files through file and parent-directory watches while preserving the current camera and inspector state instead of refitting the view.
 - Continue the renderer refinement and the broader Qt Quick/QML shell migration once the GPU-backed viewport proves out the document-open workflow.
