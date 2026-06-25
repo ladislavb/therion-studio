@@ -1494,6 +1494,12 @@ therion_add_map_editor_ui_test(MapEditorViewportInputControllerTest
     tests/MapEditorViewportInputControllerTest.cpp
     "MapEditorViewportInputControllerResources")
 
+therion_add_map_editor_ui_test(MapEditorViewportTabletInputTest
+    tests/MapEditorViewportTabletInputTest.cpp
+    "MapEditorViewportTabletInputResources")
+target_link_libraries(MapEditorViewportTabletInputTest PRIVATE
+    Qt6::Test)
+
 therion_add_map_editor_ui_test(MapEditorCanvasEditSourceTransactionTest
     tests/MapEditorCanvasEditSourceTransactionTest.cpp
     "MapEditorCanvasEditSourceTransactionResources")
@@ -1594,7 +1600,8 @@ set(THERION_UI_TEST_TARGETS
     MapEditorInteractiveDrawTransactionTest
     MapEditorLineExtensionTransactionTest
     MapEditorValidationFixRefreshTest
-    MapEditorViewportInputControllerTest)
+    MapEditorViewportInputControllerTest
+    MapEditorViewportTabletInputTest)
 
 set(THERION_TEST_EXECUTABLE_TARGETS
     ${THERION_UNIT_TEST_TARGETS}

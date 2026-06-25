@@ -23,6 +23,7 @@ private:
     MapEditorInteractiveDrawMode drawMode() const;
     QString tr(const char *text) const;
 
+    bool forwardingTabletEventAsMouse_ = false;
     MapEditorViewportInputContext context_;
 };
 }

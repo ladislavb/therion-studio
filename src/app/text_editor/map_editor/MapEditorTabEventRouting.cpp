@@ -21,6 +21,7 @@
 #include <QTabWidget>
 #include <QTextEdit>
 #include <QTimer>
+#include <QTabletEvent>
 #include <QTreeView>
 #include <QWidget>
 
@@ -258,6 +259,11 @@ bool MapEditorTab::eventFilter(QObject *watched, QEvent *event)
         case QEvent::MouseButtonPress:
         case QEvent::MouseButtonRelease:
             scheduleMagnifierOverlayUpdateFromViewportPosition(static_cast<QMouseEvent *>(event)->pos());
+            break;
+        case QEvent::TabletMove:
+        case QEvent::TabletPress:
+        case QEvent::TabletRelease:
+            scheduleMagnifierOverlayUpdateFromViewportPosition(static_cast<QTabletEvent *>(event)->position().toPoint());
             break;
         case QEvent::Leave:
             hideMagnifierOverlay();

@@ -43,6 +43,7 @@ constexpr qreal kFilledPathInteriorHitDistancePixels = 6.0;
 constexpr qreal kDirectVertexCenterHitDistance = 1.0;
 constexpr qreal kDirectVertexAffordanceHitDistancePixels = 12.0;
 constexpr qreal kMaximumPathPrimaryHitDistancePixels = 10.0;
+constexpr qint64 kHandledTabletMouseSuppressionMs = 250;
 
 bool wheelEventHasPreciseScrollingDeltas(const QWheelEvent *event)
 {
@@ -64,6 +65,14 @@ bool isSecondaryClickPress(const QMouseEvent *event)
     }
     return event->button() == Qt::LeftButton
         && event->modifiers().testFlag(Qt::ControlModifier);
+}
+
+bool hasRecentHandledTabletEvent(const MapEditorViewportInputContext &context)
+{
+    if (context.lastTabletInteractionUtc == nullptr || !context.lastTabletInteractionUtc->isValid()) {
+        return false;
+    }
+    return context.lastTabletInteractionUtc->msecsTo(QDateTime::currentDateTimeUtc()) <= kHandledTabletMouseSuppressionMs;
 }
 
 MapLinePointSizeHandleItem *slopeOrientationHandleAtViewportPosition(MapEditorViewportInputContext &context,
@@ -1038,9 +1047,52 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
         switch (event->type()) {
         case QEvent::TabletPress:
         case QEvent::TabletMove:
-        case QEvent::TabletRelease:
-            (*context_.lastTabletInteractionUtc) = QDateTime::currentDateTimeUtc();
+        case QEvent::TabletRelease: {
+            auto *tabletEvent = static_cast<QTabletEvent *>(event);
+            QEvent::Type mouseEventType = QEvent::MouseMove;
+            Qt::MouseButton mouseButton = Qt::NoButton;
+            Qt::MouseButtons mouseButtons = tabletEvent->buttons();
+            switch (event->type()) {
+            case QEvent::TabletPress:
+                mouseEventType = QEvent::MouseButtonPress;
+                mouseButton = tabletEvent->button() == Qt::NoButton ? Qt::LeftButton : tabletEvent->button();
+                if (mouseButtons == Qt::NoButton) {
+                    mouseButtons = mouseButton;
+                }
+                break;
+            case QEvent::TabletMove:
+                mouseEventType = QEvent::MouseMove;
+                if (mouseButtons == Qt::NoButton && tabletEvent->pressure() > 0.0) {
+                    mouseButtons = Qt::LeftButton;
+                }
+                break;
+            case QEvent::TabletRelease:
+                mouseEventType = QEvent::MouseButtonRelease;
+                mouseButton = tabletEvent->button() == Qt::NoButton ? Qt::LeftButton : tabletEvent->button();
+                mouseButtons = Qt::NoButton;
+                break;
+            default:
+                break;
+            }
+
+            QMouseEvent mouseEvent(mouseEventType,
+                                   tabletEvent->position(),
+                                   tabletEvent->globalPosition(),
+                                   mouseButton,
+                                   mouseButtons,
+                                   tabletEvent->modifiers());
+            forwardingTabletEventAsMouse_ = true;
+            const std::optional<bool> handled = handleEvent(watched, &mouseEvent);
+            forwardingTabletEventAsMouse_ = false;
+            if (handled.has_value() && handled.value()) {
+                if (context_.lastTabletInteractionUtc != nullptr) {
+                    (*context_.lastTabletInteractionUtc) = QDateTime::currentDateTimeUtc();
+                }
+                event->accept();
+                return true;
+            }
             break;
+        }
         case QEvent::Enter:
         case QEvent::Show:
         case QEvent::FocusIn:
@@ -1068,6 +1120,10 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             return true;
         }
         case QEvent::MouseButtonPress: {
+            if (!forwardingTabletEventAsMouse_ && hasRecentHandledTabletEvent(context_)) {
+                event->accept();
+                return true;
+            }
             auto *mouseEvent = static_cast<QMouseEvent *>(event);
             if (mouseEvent->button() == Qt::RightButton) {
                 context_.view->setFocus(Qt::MouseFocusReason);
@@ -1207,6 +1263,10 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             break;
         }
         case QEvent::MouseMove: {
+            if (!forwardingTabletEventAsMouse_ && hasRecentHandledTabletEvent(context_)) {
+                event->accept();
+                return true;
+            }
             if ((drawMode() == MapEditorInteractiveDrawMode::Line
                  || drawMode() == MapEditorInteractiveDrawMode::Area)
                 && (*context_.interactiveDrawControlDragActive)) {
@@ -1332,6 +1392,10 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             return true;
         }
         case QEvent::MouseButtonDblClick: {
+            if (!forwardingTabletEventAsMouse_ && hasRecentHandledTabletEvent(context_)) {
+                event->accept();
+                return true;
+            }
             auto *mouseEvent = static_cast<QMouseEvent *>(event);
             if (drawMode() == MapEditorInteractiveDrawMode::Line
                 && mouseEvent->button() == Qt::LeftButton
@@ -1363,6 +1427,10 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             break;
         }
         case QEvent::MouseButtonRelease: {
+            if (!forwardingTabletEventAsMouse_ && hasRecentHandledTabletEvent(context_)) {
+                event->accept();
+                return true;
+            }
             auto *mouseEvent = static_cast<QMouseEvent *>(event);
             if ((drawMode() == MapEditorInteractiveDrawMode::Line
                  || drawMode() == MapEditorInteractiveDrawMode::Area)
