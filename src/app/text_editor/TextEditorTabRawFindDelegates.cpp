@@ -2,12 +2,18 @@
 
 #include "raw_editor/RawEditorFindController.h"
 
+#include <QFrame>
+#include <QShortcut>
+
 namespace TherionStudio
 {
 void TextEditorTab::showFindBar(bool replaceMode)
 {
     if (rawEditorFindController_ != nullptr) {
         rawEditorFindController_->showFindBar(replaceMode);
+    }
+    if (closeFindBarShortcut_ != nullptr) {
+        closeFindBarShortcut_->setEnabled(searchBar_ != nullptr && searchBar_->isVisible());
     }
 }
 
@@ -25,6 +31,9 @@ void TextEditorTab::hideFindBar()
 {
     if (rawEditorFindController_ != nullptr) {
         rawEditorFindController_->hideFindBar();
+    }
+    if (closeFindBarShortcut_ != nullptr) {
+        closeFindBarShortcut_->setEnabled(false);
     }
 }
 
@@ -111,8 +120,6 @@ void TextEditorTab::handleReplaceAllTriggered()
 
 void TextEditorTab::handleCloseSearchTriggered()
 {
-    if (rawEditorFindController_ != nullptr) {
-        rawEditorFindController_->handleCloseSearchTriggered();
-    }
+    hideFindBar();
 }
 }

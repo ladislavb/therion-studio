@@ -17,6 +17,7 @@
 #include <QLineEdit>
 #include <QPlainTextEdit>
 #include <QPushButton>
+#include <QShortcut>
 #include <QSplitter>
 #include <QStringListModel>
 #include <QTextEdit>
@@ -111,6 +112,11 @@ void TextEditorTab::buildRawEditorPanel()
     connect(replaceButton_, &QPushButton::clicked, this, &TextEditorTab::handleReplaceTriggered);
     connect(replaceAllButton_, &QPushButton::clicked, this, &TextEditorTab::handleReplaceAllTriggered);
     connect(closeSearchButton_, &QPushButton::clicked, this, &TextEditorTab::handleCloseSearchTriggered);
+
+    closeFindBarShortcut_ = new QShortcut(QKeySequence(Qt::Key_Escape), this);
+    closeFindBarShortcut_->setContext(Qt::WidgetWithChildrenShortcut);
+    closeFindBarShortcut_->setEnabled(false);
+    connect(closeFindBarShortcut_, &QShortcut::activated, this, &TextEditorTab::hideFindBar);
 
     editor_ = new RawEditorTextEdit(this);
     editor_->setFrameShape(QFrame::NoFrame);

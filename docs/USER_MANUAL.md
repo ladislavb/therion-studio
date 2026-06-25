@@ -404,6 +404,7 @@ Use `Command` on macOS and `Ctrl` on Windows/Linux unless the platform menu show
 | Find | `Command/Ctrl+F` |
 | Search in project | `Command/Ctrl+Shift+F` |
 | Find and replace | platform default replace shortcut |
+| Close find/replace bar | `Esc` when the find/replace bar is open |
 | Switch to Raw editor | `Command/Ctrl+top-row 1` |
 | Switch to Blocks editor for `.th` / config, or Visual editor for `.th2` | `Command/Ctrl+top-row 2` |
 | Manual completion popup (text editor) | `Ctrl+Space` |

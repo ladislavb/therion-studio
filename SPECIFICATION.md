@@ -331,7 +331,8 @@ The rules below define the expected day-to-day interaction model. If a later req
 - Search and replace shall support the current document and, where practical, the broader project.
 - Find and Replace commands shall reveal an inline search bar in the editor area rather than requiring a separate modal dialog.
 - The search bar shall support next, previous, replace current, replace all, whole-word matching, and case-sensitive matching.
-- The user shall be able to hide the search bar without closing the current document.
+- The user shall be able to hide the search bar without closing the current document, including by pressing `Esc`
+  while focus is in the search bar or the active text editor.
 - Global project search shall be available from a dedicated left activity-rail Search pane and from `Command/Ctrl+Shift+F`.
 - Global project search shall search the open project for literal text in Therion text sources, including `.th`, `.th2`, and Therion config files.
 - Global project search shall support whole-word and case-sensitive matching.

@@ -42,6 +42,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   update the global map object selection from its current line.
 - Keep Raw editor `input` path completion replacing the active path token, including `./`, mid-token, quoted, and
   Windows-style separator cases, so accepting a suggestion cannot duplicate the existing suffix.
+- Keep the Raw editor find/replace bar closable with `Esc` from either the find/replace controls or the text editor while
+  the bar is open.
 - Keep map line selection readable by focusing clicked segments: primary path clicks should expose only the segment
   endpoint anchors and their control handles, with smaller visible vertex markers.
 - Keep map line-point orientation/size handles draggable when they overlap highlighted paths, and keep Backspace/Delete

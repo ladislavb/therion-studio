@@ -29,6 +29,7 @@ class QGraphicsItem;
 class QGraphicsScene;
 class QGraphicsView;
 class QGraphicsLineItem;
+class QShortcut;
 class QStackedWidget;
 class QSplitter;
 class QSplitterHandle;
@@ -363,6 +364,7 @@ private:
     QPushButton *replaceButton_ = nullptr;
     QPushButton *replaceAllButton_ = nullptr;
     QPushButton *closeSearchButton_ = nullptr;
+    QShortcut *closeFindBarShortcut_ = nullptr;
     QWidget *modeRow_ = nullptr;
     QPushButton *rawModeButton_ = nullptr;
     QPushButton *blocksModeButton_ = nullptr;
