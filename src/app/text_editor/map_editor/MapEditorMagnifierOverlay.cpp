@@ -1,5 +1,7 @@
 #include "MapEditorMagnifierOverlay.h"
 
+#include "MapEditorSceneThemePolicy.h"
+
 #include <QFont>
 #include <QGraphicsScene>
 #include <QGraphicsView>
@@ -128,7 +130,7 @@ void MapEditorMagnifierOverlay::paintEvent(QPaintEvent *event)
     QPainterPath clipPath;
     clipPath.addRoundedRect(lensRect, 8, 8);
     painter.setClipPath(clipPath);
-    painter.fillRect(lensRect, appPalette.color(QPalette::Base));
+    painter.fillRect(lensRect, mapEditorCanvasViewportBackgroundColor());
 
     const QRectF sourceRect = sceneSourceRect();
     if (sourceRect.isValid()) {
