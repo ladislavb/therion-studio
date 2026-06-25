@@ -46,6 +46,22 @@ QRectF rasterModelRectFromMetadata(const QString &layerPath,
 
     return resolveRasterModelRect(modelSize, placement, areaMetadata);
 }
+
+QRectF layerModelRectFromMetadata(const QSizeF &modelSize,
+                                  const TherionBackgroundReference &reference,
+                                  const TherionAreaAdjust &areaAdjust)
+{
+    RasterPlacementMetadata placement{};
+    placement.basePosition = reference.basePosition;
+    placement.hasBasePosition = reference.hasBasePosition;
+    placement.topEdgeAnchor = reference.metadataTopEdgeAnchor;
+
+    AreaAdjustMetadata areaMetadata{};
+    areaMetadata.modelRect = areaAdjust.modelRect;
+    areaMetadata.valid = areaAdjust.valid;
+
+    return resolveRasterModelRect(modelSize, placement, areaMetadata);
+}
 }
 
 QRectF fittedMapEditorModelBoundsInPreview(const QRectF &modelBounds, const QRectF &previewBounds)
@@ -217,6 +233,22 @@ bool placeMapEditorRasterLayerPlaceholderInPreviewRect(QGraphicsPixmapItem *item
     return true;
 }
 
+bool placeMapEditorLayerInPreviewRect(QGraphicsPixmapItem *item, const QRectF &viewRect)
+{
+    if (item == nullptr
+        || item->pixmap().isNull()
+        || !viewRect.isValid()
+        || viewRect.width() < 1.0
+        || viewRect.height() < 1.0) {
+        return false;
+    }
+
+    item->setData(kMapEditorRasterPreviewRectRole, viewRect);
+    item->setPos(viewRect.topLeft());
+    applyMapEditorRasterLayerTransform(item);
+    return true;
+}
+
 bool placeMapEditorRasterLayerByModelRect(QGraphicsPixmapItem *item,
                                           const QImage &sourceImage,
                                           const QRectF &modelRect,
@@ -275,6 +307,46 @@ bool placeMapEditorRasterLayerPlaceholderFromMetadata(QGraphicsPixmapItem *item,
 
     storeMapEditorBackgroundTransformMetadata(item, reference);
     return placeMapEditorRasterLayerPlaceholderByModelRect(item, modelRect, modelBounds, previewBounds);
+}
+
+bool placeMapEditorLayerPlaceholderFromMetadata(QGraphicsPixmapItem *item,
+                                                const QSizeF &modelSize,
+                                                const TherionBackgroundReference &reference,
+                                                const TherionAreaAdjust &areaAdjust,
+                                                const QRectF &modelBounds,
+                                                const QRectF &previewBounds)
+{
+    if (item == nullptr || !reference.hasBasePosition) {
+        return false;
+    }
+
+    const QRectF modelRect = layerModelRectFromMetadata(modelSize, reference, areaAdjust);
+    if (!modelRect.isValid()) {
+        return false;
+    }
+
+    storeMapEditorBackgroundTransformMetadata(item, reference);
+    return placeMapEditorRasterLayerPlaceholderByModelRect(item, modelRect, modelBounds, previewBounds);
+}
+
+bool placeMapEditorLayerFromMetadata(QGraphicsPixmapItem *item,
+                                      const QSizeF &modelSize,
+                                      const TherionBackgroundReference &reference,
+                                      const TherionAreaAdjust &areaAdjust,
+                                      const QRectF &modelBounds,
+                                      const QRectF &previewBounds)
+{
+    if (item == nullptr || !reference.hasBasePosition) {
+        return false;
+    }
+
+    const QRectF modelRect = layerModelRectFromMetadata(modelSize, reference, areaAdjust);
+    if (!modelRect.isValid()) {
+        return false;
+    }
+
+    storeMapEditorBackgroundTransformMetadata(item, reference);
+    return placeMapEditorLayerInPreviewRect(item, previewRectForRasterModelRect(modelRect, modelBounds, previewBounds));
 }
 
 void storeMapEditorBackgroundTransformMetadata(QGraphicsPixmapItem *item,

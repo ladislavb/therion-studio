@@ -494,6 +494,10 @@ set(THERION_MAP_EDITOR_SOURCES
     src/app/text_editor/map_editor/MapEditorRasterBackgroundImage.h
     src/app/text_editor/map_editor/MapEditorRasterBackgroundPlacement.cpp
     src/app/text_editor/map_editor/MapEditorRasterBackgroundPlacement.h
+    src/app/text_editor/map_editor/MapEditorSvgBackgroundItem.cpp
+    src/app/text_editor/map_editor/MapEditorSvgBackgroundItem.h
+    src/app/text_editor/map_editor/MapEditorSvgBackgroundMetadata.cpp
+    src/app/text_editor/map_editor/MapEditorSvgBackgroundMetadata.h
     src/app/text_editor/map_editor/MapEditorDetachedPaneWindow.cpp
     src/app/text_editor/map_editor/MapEditorDetachedPaneWindow.h
     src/app/text_editor/map_editor/MapEditorCanvasEditCommandFactory.cpp
@@ -1080,9 +1084,12 @@ qt_add_executable(MapEditorLogicQTests
     tests/MapEditorObjectDeletePlannerTest.cpp
     tests/MapEditorObjectMovePlannerTest.cpp
     tests/MapEditorPointSymbolGeometryTest.cpp
+    tests/MapEditorSvgBackgroundMetadataTest.cpp
     tests/MapEditorUndoArbitrationServiceTest.cpp
     src/app/text_editor/map_editor/MapEditorAreaReferenceResolver.cpp
     src/app/text_editor/map_editor/MapEditorAreaReferenceResolver.h
+    src/app/text_editor/map_editor/MapEditorSvgBackgroundMetadata.cpp
+    src/app/text_editor/map_editor/MapEditorSvgBackgroundMetadata.h
     src/app/text_editor/map_editor/MapEditorObjectDeletePlanner.cpp
     src/app/text_editor/map_editor/MapEditorObjectDeletePlanner.h
     src/app/text_editor/map_editor/MapEditorObjectMovePlanner.cpp
@@ -1090,6 +1097,9 @@ qt_add_executable(MapEditorLogicQTests
     src/app/text_editor/map_editor/MapEditorPointSymbolGeometry.h
     src/app/text_editor/map_editor/MapEditorUndoArbitrationService.cpp
     src/app/text_editor/map_editor/MapEditorUndoArbitrationService.h)
+
+target_compile_definitions(MapEditorLogicQTests PRIVATE
+    THERION_STUDIO_TEST_FIXTURE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
 
 target_link_libraries(MapEditorLogicQTests PRIVATE therion_core Qt6::Core Qt6::Gui Qt6::Test)
 
@@ -1477,6 +1487,8 @@ therion_add_map_editor_ui_test(MapEditorSelectionPanelTypeOptionsTest
 therion_add_map_editor_ui_test(MapEditorBackgroundLayerVisibilityTest
     tests/MapEditorBackgroundLayerVisibilityTest.cpp
     "MapEditorBackgroundLayerVisibilityResources")
+target_compile_definitions(MapEditorBackgroundLayerVisibilityTest PRIVATE
+    THERION_STUDIO_TESTING)
 
 therion_add_map_editor_ui_test(MapEditorViewportInputControllerTest
     tests/MapEditorViewportInputControllerTest.cpp

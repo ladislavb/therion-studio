@@ -330,16 +330,16 @@ In `Inspector -> Objects`, you can select objects, reorder objects by drag/drop,
 
 In `Inspector -> Backgrounds`, you can:
 
-- add, remove, and reorder raster, `.xvi`, or PocketTopo `.txt` background layers
+- add, remove, and reorder raster, SVG, `.xvi`, or PocketTopo `.txt` background layers
 - show/hide individual layers
 - edit layer position and opacity
 - edit layer X/Y scale and rotation; `Lock proportions` keeps X and Y scale equal by default
 - set a rotation pivot by clicking `Set Pivot` and then clicking the desired center in the map; the selected layer's pivot is shown in the map while `Backgrounds` is active, and `Reset Pivot` restores the default pivot
-- adjust `Gamma` for raster layers (`.xvi` uses fixed Gamma)
+- adjust `Gamma` for raster layers (`.xvi` and SVG use fixed Gamma)
 
 Raster background layers keep their full image resolution, so they stay sharp as you zoom into the map instead of becoming blurry. Very large scans are bounded to a high internal display size to limit memory use.
 
-Therion Studio also reads and writes Mapiah `##MAPIAH## image_insert_v1` background metadata for `format=xvi` and `format=raster` layers, including rotation, X/Y scale, and pivot. This allows rotated PocketTopo/XVI or raster background references created in Mapiah to appear in the map editor, and lets Therion Studio upgrade a simple XTherion background reference to Mapiah metadata when you rotate, scale, or set the pivot for a layer. Mapiah `format=svg` layers are not supported yet.
+Therion Studio also reads and writes Mapiah `##MAPIAH## image_insert_v1` background metadata for `format=xvi`, `format=raster`, and `format=svg` layers, including rotation, X/Y scale, and pivot. This allows rotated PocketTopo/XVI, raster, or SVG background references created in Mapiah to appear in the map editor, and lets Therion Studio upgrade a simple XTherion background reference to Mapiah metadata when you rotate, scale, or set the pivot for a layer. SVG references render as SVG layers using Mapiah intrinsic size and source viewBox metadata for placement. When you add an SVG background, Therion Studio derives that metadata from the SVG root `width`, `height`, and `viewBox` attributes.
 
 When you add a PocketTopo Therion export (`.txt`) as a map background, Therion Studio asks for XVI scale, resolution, grid spacing, and plan or extended-elevation projection. It writes a generated `_p.xvi` or `_e.xvi` file next to the PocketTopo export, adds that `.xvi` as the background layer, and stores XTherion-compatible image metadata in the `.th2` source.
 
@@ -459,7 +459,7 @@ Fix:
 - select the layer in `Backgrounds`
 - check layer visibility, position, opacity, and Gamma
 - for `.xvi`, verify the `.xvi` file and referenced `.th2` are from the same coordinate context
-- Mapiah rotated/scaled background metadata is supported for `format=xvi` and `format=raster`; SVG backgrounds are ignored until SVG placement support is added
+- Mapiah rotated/scaled background metadata is supported for `format=xvi`, `format=raster`, and `format=svg`; SVG backgrounds require Mapiah intrinsic size and source viewBox metadata
 - a raster layer that still looks soft when zoomed in has reached the resolution of its source image; use a higher-resolution scan for more detail
 
 ### 11.5 I can zoom but cannot pan the map

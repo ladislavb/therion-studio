@@ -69,6 +69,18 @@ bool placeMapEditorRasterLayerPlaceholderFromMetadata(QGraphicsPixmapItem *item,
                                                       const TherionAreaAdjust &areaAdjust,
                                                       const QRectF &modelBounds,
                                                       const QRectF &previewBounds);
+bool placeMapEditorLayerPlaceholderFromMetadata(QGraphicsPixmapItem *item,
+                                                const QSizeF &modelSize,
+                                                const TherionBackgroundReference &reference,
+                                                const TherionAreaAdjust &areaAdjust,
+                                                const QRectF &modelBounds,
+                                                const QRectF &previewBounds);
+bool placeMapEditorLayerFromMetadata(QGraphicsPixmapItem *item,
+                                      const QSizeF &modelSize,
+                                      const TherionBackgroundReference &reference,
+                                      const TherionAreaAdjust &areaAdjust,
+                                      const QRectF &modelBounds,
+                                      const QRectF &previewBounds);
 
 void storeMapEditorBackgroundTransformMetadata(QGraphicsPixmapItem *item,
                                                const TherionBackgroundReference &reference);

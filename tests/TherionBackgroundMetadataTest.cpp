@@ -282,18 +282,96 @@ int runMapiahXviInsertParsingTest()
     return 0;
 }
 
-int runMapiahSvgRecognizedAsUnsupportedTest()
+int runMapiahSvgInsertParsingTest()
 {
     const QString documentPath = documentPathForTest(QStringLiteral("mapiah-svg.th2"));
     const QString text =
-        QStringLiteral("##MAPIAH## image_insert_v1 {format=svg;filename=sketch.svg;xx=1;yy=2;xScale=1;yScale=1;rotationDeg=0;pivotSet=false}\n");
+        QStringLiteral("##MAPIAH## image_insert_v1 {format=svg;filename=sketch.svg;xx=1;yy=2;xScale=1.5;yScale=0.5;rotationCenterDx=10;rotationCenterDy=-20;rotationDeg=30;pivotSet=true;intrinsicWidth=120;intrinsicHeight=80;sourceViewBoxLeft=-5;sourceViewBoxTop=10;sourceViewBoxWidth=240;sourceViewBoxHeight=160}\n");
 
     const QVector<TherionBackgroundReference> references = parseTherionBackgroundReferences(text, documentPath);
     if (!expect(references.size() == 1, "Expected Mapiah SVG metadata to parse as a recognized reference.")) {
         return 1;
     }
-    if (!expect(references.first().layerFormat == TherionBackgroundLayerFormat::Svg,
-                "Expected Mapiah SVG metadata to be marked as SVG for UI-side unsupported handling.")) {
+    const TherionBackgroundReference &reference = references.first();
+    if (!expect(reference.metadataFormat == TherionBackgroundMetadataFormat::Mapiah
+                    && reference.layerFormat == TherionBackgroundLayerFormat::Svg
+                    && !reference.xviReference,
+                "Expected Mapiah SVG metadata format to parse.")) {
+        return 1;
+    }
+    if (!expect(reference.metadataTopEdgeAnchor,
+                "Expected Mapiah SVG metadata to use Mapiah local SVG bounds anchoring.")) {
+        return 1;
+    }
+    if (!expect(reference.hasBasePosition
+                    && nearlyEqual(reference.basePosition.x(), 1.0)
+                    && nearlyEqual(reference.basePosition.y(), 2.0)
+                    && nearlyEqual(reference.xScale, 1.5)
+                    && nearlyEqual(reference.yScale, 0.5)
+                    && nearlyEqual(reference.rotationCenterDx, 10.0)
+                    && nearlyEqual(reference.rotationCenterDy, -20.0)
+                    && nearlyEqual(reference.rotationDeg, 30.0)
+                    && reference.pivotSet,
+                "Expected Mapiah SVG transform fields to parse.")) {
+        return 1;
+    }
+    if (!expect(reference.hasSvgIntrinsicSize
+                    && nearlyEqual(reference.svgIntrinsicSize.width(), 120.0)
+                    && nearlyEqual(reference.svgIntrinsicSize.height(), 80.0),
+                "Expected Mapiah SVG intrinsic size fields to parse.")) {
+        return 1;
+    }
+    if (!expect(reference.hasSvgSourceViewBox
+                    && nearlyEqual(reference.svgSourceViewBox.left(), -5.0)
+                    && nearlyEqual(reference.svgSourceViewBox.top(), 10.0)
+                    && nearlyEqual(reference.svgSourceViewBox.width(), 240.0)
+                    && nearlyEqual(reference.svgSourceViewBox.height(), 160.0),
+                "Expected Mapiah SVG source viewBox fields to parse.")) {
+        return 1;
+    }
+    const QString expectedPath = QFileInfo(documentPath).dir().filePath(QStringLiteral("sketch.svg"));
+    if (!expect(normalizedPathForCompare(reference.absolutePath) == normalizedPathForCompare(expectedPath),
+                "Expected Mapiah SVG path to resolve against TH2 document directory.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int runMapiahSvgInsertSerializationTest()
+{
+    const QString documentPath = documentPathForTest(QStringLiteral("mapiah-svg-write.th2"));
+    const QString svgPath = QFileInfo(documentPath).dir().filePath(QStringLiteral("background scans/sketch.svg"));
+
+    const QString line =
+        therionMapiahImageInsertMetadataLine(svgPath,
+                                             documentPath,
+                                             TherionBackgroundLayerFormat::Svg,
+                                             QPointF(1.0, 2.0),
+                                             1.5,
+                                             0.5,
+                                             10.0,
+                                             -20.0,
+                                             30.0,
+                                             true,
+                                             QString(),
+                                             QSizeF(120.0, 80.0),
+                                             QRectF(-5.0, 10.0, 240.0, 160.0));
+    const QString expected =
+        QStringLiteral("##MAPIAH## image_insert_v1 {format=svg;filename=background%20scans%2Fsketch.svg;xx=1;yy=2;xScale=1.5;yScale=0.5;rotationCenterDx=10;rotationCenterDy=-20;rotationDeg=30;pivotSet=true;intrinsicWidth=120;intrinsicHeight=80;sourceViewBoxLeft=-5;sourceViewBoxTop=10;sourceViewBoxWidth=240;sourceViewBoxHeight=160}");
+    if (!expect(line == expected, "Expected Mapiah SVG metadata serialization to match Mapiah payload fields.")) {
+        return 1;
+    }
+
+    const QVector<TherionBackgroundReference> references = parseTherionBackgroundReferences(line, documentPath);
+    if (!expect(references.size() == 1, "Expected serialized Mapiah SVG metadata to parse.")) {
+        return 1;
+    }
+    const TherionBackgroundReference &reference = references.first();
+    if (!expect(reference.layerFormat == TherionBackgroundLayerFormat::Svg
+                    && reference.hasSvgIntrinsicSize
+                    && reference.hasSvgSourceViewBox,
+                "Expected serialized Mapiah SVG metadata to preserve SVG fields.")) {
         return 1;
     }
 
@@ -429,7 +507,10 @@ int main()
     if (const int rc = runMapiahXviInsertParsingTest(); rc != 0) {
         return rc;
     }
-    if (const int rc = runMapiahSvgRecognizedAsUnsupportedTest(); rc != 0) {
+    if (const int rc = runMapiahSvgInsertParsingTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runMapiahSvgInsertSerializationTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runAreaAdjustParsingTest(); rc != 0) {

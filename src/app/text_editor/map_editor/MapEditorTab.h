@@ -229,6 +229,10 @@ public:
     int selectedBackgroundLayerIndex() const;
     void setSelectedBackgroundLayerIndex(int index);
     void browseAndAddBackgroundImages();
+#ifdef THERION_STUDIO_TESTING
+    bool addSvgBackgroundImageForTest(const QString &imagePath) { return addSvgBackgroundImage(imagePath); }
+    bool backgroundLayerPaintsVisiblePixelsForTest(int index) const { return backgroundLayerPaintsVisiblePixels(index); }
+#endif
     void removeSelectedBackgroundLayer();
     void moveSelectedBackgroundLayerUp();
     void moveSelectedBackgroundLayerDown();
@@ -530,6 +534,7 @@ private:
     MapEditorSceneLifecycleContext sceneLifecycleContext() const;
     void addBackgroundImage(const QString &imagePath, bool writeXtherionMetadata = false);
     void addBackgroundImageAsync(const QString &imagePath, bool writeXtherionMetadata = false);
+    bool addSvgBackgroundImage(const QString &imagePath);
     QGraphicsPixmapItem *addBackgroundImagePlaceholder(const QString &imagePath);
     bool addBackgroundImageFromSourceImage(const QString &imagePath,
                                            const QImage &image,
@@ -554,6 +559,7 @@ private:
     void invalidateBackgroundRasterJobs();
     QGraphicsPixmapItem *backgroundLayerItemAt(int index) const;
     QGraphicsPixmapItem *selectedBackgroundLayerItem() const;
+    bool backgroundLayerPaintsVisiblePixels(int index) const;
     qreal backgroundLayerGammaValue(const QGraphicsPixmapItem *item) const;
     qreal backgroundLayerXScaleValue(const QGraphicsPixmapItem *item) const;
     qreal backgroundLayerYScaleValue(const QGraphicsPixmapItem *item) const;

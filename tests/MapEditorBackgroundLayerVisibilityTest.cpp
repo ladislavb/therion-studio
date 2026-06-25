@@ -1032,6 +1032,156 @@ int runBackgroundTransformWritesMapiahMetadataTest()
     return 0;
 }
 
+int runSvgBackgroundInsertionPreservesMapiahMetadataTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Failed to create temporary directory for SVG background insertion test.")) {
+        return 1;
+    }
+
+    const QString svgPath = repositoryFilePath(QStringLiteral("tests/fixtures/svg_backgrounds/caves-of-balakanche-2d-map-en.svg"));
+    if (!expect(QFileInfo::exists(svgPath), "Expected SVG background fixture to exist.")) {
+        return 1;
+    }
+
+    const QString filePath = tempDir.filePath(QStringLiteral("svg_background_insert.th2"));
+    const QString th2Contents = QStringLiteral(
+        "encoding utf-8\n"
+        "##XTHERION## xth_me_area_adjust 0 -80 120 0\n"
+        "##XTHERION## xth_me_area_zoom_to 100\n"
+        "\n"
+        "scrap svg-background -projection plan\n"
+        "point 0 0 station -name A\n"
+        "endscrap\n");
+    if (!expect(writeTextFile(filePath, th2Contents.toUtf8()),
+                "Failed to create temporary TH2 file for SVG background insertion test.")) {
+        return 1;
+    }
+
+    QtFileSystem fileSystem;
+    FakeSessionStore sessionStore;
+    QMainWindow hostWindow;
+    hostWindow.resize(960, 720);
+    auto *central = new QWidget(&hostWindow);
+    auto *layout = new QVBoxLayout(central);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+
+    auto *mapTab = new MapEditorTab(fileSystem, sessionStore, CommandCatalogStore(), central);
+    layout->addWidget(mapTab);
+    hostWindow.setCentralWidget(central);
+    hostWindow.show();
+    pumpEvents();
+
+    QString errorMessage;
+    if (!expect(mapTab->loadFile(filePath, &errorMessage),
+                "MapEditorTab failed to load TH2 file for SVG background insertion test.")) {
+        if (!errorMessage.isEmpty()) {
+            std::cerr << errorMessage.toStdString() << '\n';
+        }
+        return 1;
+    }
+    pumpEvents();
+
+    if (!expect(mapTab->addSvgBackgroundImageForTest(svgPath),
+                "Expected SVG background insertion to succeed.")) {
+        return 1;
+    }
+    pumpEvents();
+
+    if (!expect(mapTab->backgroundLayerCount() == 1,
+                "Expected one SVG background layer after insertion.")) {
+        return 1;
+    }
+    if (!expect(!mapTab->backgroundLayerSupportsGamma(0),
+                "SVG background layers should not expose raster gamma editing.")) {
+        return 1;
+    }
+    const QSize svgDisplaySize = mapTab->backgroundLayerSourcePixelSize(0);
+    if (svgDisplaySize.isEmpty()) {
+        std::cerr << "Actual SVG display pixmap size: "
+                  << svgDisplaySize.width() << "x" << svgDisplaySize.height() << '\n';
+    }
+    if (!expect(!svgDisplaySize.isEmpty(),
+                "SVG insertion should create a visible display pixmap from the source SVG.")) {
+        return 1;
+    }
+    if (!expect(mapTab->backgroundLayerSceneBounds(0).isValid()
+                    && mapTab->backgroundLayerSceneBounds(0).width() > 1.0
+                    && mapTab->backgroundLayerSceneBounds(0).height() > 1.0,
+                "SVG insertion should place the display pixmap inside the map scene.")) {
+        return 1;
+    }
+    if (!expect(mapTab->backgroundLayerPaintsVisiblePixelsForTest(0),
+                "SVG background item should paint visible pixels through its renderer.")) {
+        return 1;
+    }
+    QVector<TherionBackgroundReference> references = parseTherionBackgroundReferences(mapTab->text(), filePath);
+    if (!expect(references.size() == 1,
+                "Expected one Mapiah SVG metadata reference after insertion.")) {
+        return 1;
+    }
+    const TherionBackgroundReference insertedReference = references.first();
+    if (!expect(insertedReference.metadataFormat == TherionBackgroundMetadataFormat::Mapiah
+                    && insertedReference.layerFormat == TherionBackgroundLayerFormat::Svg
+                    && insertedReference.hasSvgIntrinsicSize
+                    && insertedReference.hasSvgSourceViewBox,
+                "SVG insertion should write Mapiah SVG metadata with intrinsic size and viewBox.")) {
+        return 1;
+    }
+    if (!expect(nearlyEqual(insertedReference.svgIntrinsicSize.width(), 744.09448)
+                    && nearlyEqual(insertedReference.svgIntrinsicSize.height(), 1052.3622)
+                    && nearlyEqual(insertedReference.svgSourceViewBox.left(), 0.0)
+                    && nearlyEqual(insertedReference.svgSourceViewBox.top(), 0.0)
+                    && nearlyEqual(insertedReference.svgSourceViewBox.width(), 744.09448)
+                    && nearlyEqual(insertedReference.svgSourceViewBox.height(), 1052.3622),
+                "SVG insertion should preserve fixture intrinsic size and source viewBox fields.")) {
+        return 1;
+    }
+
+    mapTab->setSelectedBackgroundLayerIndex(0);
+    mapTab->setSelectedBackgroundLayerXScale(1.25);
+    mapTab->setSelectedBackgroundLayerYScale(0.75);
+    mapTab->setSelectedBackgroundLayerRotationDeg(15.0);
+    pumpEvents();
+
+    references = parseTherionBackgroundReferences(mapTab->text(), filePath);
+    if (!expect(references.size() == 1,
+                "Expected one Mapiah SVG metadata reference after SVG transform edits.")) {
+        return 1;
+    }
+    const TherionBackgroundReference transformedReference = references.first();
+    if (!expect(transformedReference.layerFormat == TherionBackgroundLayerFormat::Svg,
+                "Transforming an SVG background should preserve format=svg.")) {
+        return 1;
+    }
+    if (!expect(nearlyEqual(transformedReference.xScale, 1.25)
+                    && nearlyEqual(transformedReference.yScale, 0.75)
+                    && nearlyEqual(transformedReference.rotationDeg, 15.0),
+                "Transforming an SVG background should preserve edited transform fields.")) {
+        return 1;
+    }
+    if (!expect(transformedReference.hasSvgIntrinsicSize && transformedReference.hasSvgSourceViewBox,
+                "Transforming an SVG background should preserve SVG intrinsic metadata fields.")) {
+        return 1;
+    }
+
+    mapTab->removeSelectedBackgroundLayer();
+    pumpEvents();
+
+    if (!expect(mapTab->backgroundLayerCount() == 0,
+                "Expected SVG background layer to be removed from the map editor.")) {
+        return 1;
+    }
+    references = parseTherionBackgroundReferences(mapTab->text(), filePath);
+    if (!expect(references.isEmpty(),
+                "Removing an SVG background should remove its Mapiah metadata line.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 int runLegacyMultiRasterAreaAdjustPlacementTest()
 {
     QTemporaryDir tempDir;
@@ -1807,6 +1957,9 @@ int main(int argc, char **argv)
         return rc;
     }
     if (const int rc = runBackgroundTransformWritesMapiahMetadataTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runSvgBackgroundInsertionPreservesMapiahMetadataTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runLegacyMultiRasterAreaAdjustPlacementTest(); rc != 0) {

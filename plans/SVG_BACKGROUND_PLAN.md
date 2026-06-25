@@ -4,7 +4,7 @@ Date: 2026-06-25
 
 Scope: add SVG background-layer support to the TH2 Map editor while preserving existing raster, XVI, PocketTopo, XTherion, and Mapiah background behavior.
 
-This plan is intentionally incremental. The first implementation should make Mapiah `format=svg` metadata round-trip safely and make SVG usable as a map reference layer. A later implementation may replace the first rendering path with a fully vector-backed scene item.
+This plan is intentionally incremental, but the implementation target is full Mapiah compatibility from the start. SVG layers should be stored as Mapiah `format=svg` metadata, carry Mapiah-compatible intrinsic size/viewBox metadata, and render as SVG layers rather than being rewritten or serialized as raster layers.
 
 ## Current State
 
@@ -13,8 +13,10 @@ This plan is intentionally incremental. The first implementation should make Map
 - PocketTopo `.txt` backgrounds are converted to generated `.xvi` files before insertion.
 - Core background metadata parsing already recognizes Mapiah `##MAPIAH## image_insert_v1` entries with `format=svg`.
 - Mapiah metadata parsing already reads `filename`, `xx`, `yy`, `xScale`, `yScale`, `rotationCenterDx`, `rotationCenterDy`, `rotationDeg`, and `pivotSet`.
-- Mapiah metadata writing currently serializes only `format=xvi` or `format=raster`; SVG would currently be written incorrectly as raster.
-- The user manual currently states that Mapiah `format=svg` layers are not supported yet.
+- Mapiah SVG metadata additionally stores `intrinsicWidth`, `intrinsicHeight`, `sourceViewBoxLeft`, `sourceViewBoxTop`, `sourceViewBoxWidth`, and `sourceViewBoxHeight`.
+- Mapiah metadata writing preserves `format=svg` and the SVG intrinsic size/viewBox fields.
+- Existing Mapiah `format=svg` layers with intrinsic size and source viewBox metadata render as SVG background items in the map editor.
+- Adding a new SVG layer from the Backgrounds file picker is wired and writes Mapiah `format=svg` metadata.
 
 ## Product Goal
 
@@ -27,7 +29,7 @@ Therion Studio shall treat SVG backgrounds as Mapiah metadata, not as XTherion r
 Expected metadata form:
 
 ```text
-##MAPIAH## image_insert_v1 {format=svg;filename=background.svg;xx=0;yy=0;xScale=1;yScale=1;rotationCenterDx=0;rotationCenterDy=0;rotationDeg=0;pivotSet=false}
+##MAPIAH## image_insert_v1 {format=svg;filename=background.svg;xx=0;yy=0;xScale=1;yScale=1;rotationCenterDx=0;rotationCenterDy=0;rotationDeg=0;pivotSet=false;intrinsicWidth=100;intrinsicHeight=80;sourceViewBoxLeft=0;sourceViewBoxTop=0;sourceViewBoxWidth=100;sourceViewBoxHeight=80}
 ```
 
 ## Non-Goals
@@ -41,31 +43,32 @@ Expected metadata form:
 
 ## Phase 1 - Safe Metadata and UX Recognition
 
-1. Extend Mapiah metadata writing so `TherionBackgroundLayerFormat::Svg` serializes as `format=svg`.
-2. Keep `format=xvi` behavior unchanged, including `xviRoot`.
-3. Keep `format=raster` behavior unchanged for normal raster images.
-4. Update background file picker filters to include `*.svg`.
-5. Update layer labels and inspector behavior so SVG is identified as SVG, not raster.
-6. Disable Gamma controls for SVG layers unless a later rendering implementation provides a clear and documented color-adjustment model.
-7. Update `SPECIFICATION.md` and `docs/USER_MANUAL.md` to replace the current "not supported yet" wording with the intended behavior.
+1. Extend Mapiah metadata writing so `TherionBackgroundLayerFormat::Svg` serializes as `format=svg`. Done.
+2. Keep `format=xvi` behavior unchanged, including `xviRoot`. Done.
+3. Keep `format=raster` behavior unchanged for normal raster images. Done.
+4. Parse and write SVG intrinsic metadata fields: `intrinsicWidth`, `intrinsicHeight`, `sourceViewBoxLeft`, `sourceViewBoxTop`, `sourceViewBoxWidth`, and `sourceViewBoxHeight`. Done.
+5. Update background file picker filters to include `*.svg`. Done.
+6. Update layer labels and inspector behavior so SVG is identified as SVG, not raster.
+7. Disable Gamma controls for SVG layers; Mapiah SVG handling does not model raster gamma correction.
+8. Update `SPECIFICATION.md` and `docs/USER_MANUAL.md` to replace the current "not supported yet" wording with the intended behavior.
 
 Verification:
 
-- Core or app-service test for `format=svg` parse/write behavior.
+- Core or app-service test for `format=svg` parse/write behavior, including intrinsic size/viewBox fields.
 - Manual check that existing raster and XVI metadata still write exactly as before.
 - Localization check if any visible UI text changes.
 
-## Phase 2 - MVP Rendering Path
+## Phase 2 - SVG Rendering Path
 
-Recommended first rendering path: rasterize SVG into a high-resolution `QImage` / `QPixmap` and reuse the existing raster-like placement pipeline while preserving `layerFormat=Svg`.
+Current rendering path: validate and render SVG files with Qt SVG from a focused SVG background item. The map canvas uses full-viewport repainting so interactive point/line/area draft movement does not leave stale partial-repaint artefacts over SVG content.
 
 Implementation notes:
 
-- Add focused SVG loading/rendering logic, for example `MapEditorSvgBackgroundImage`.
-- Use `QSvgRenderer` to validate and render SVG.
-- Determine intrinsic SVG size from the renderer `viewBox` / `defaultSize`.
-- Render to a capped high-resolution image similar to raster display-image handling, with a cap chosen to avoid excessive memory usage.
-- Treat the rendered image as a display projection only; the source metadata and layer format remain SVG.
+- Add focused SVG loading/rendering logic, for example `MapEditorSvgBackgroundItem` and `MapEditorSvgBackgroundMetadata`. The initial `MapEditorSvgBackgroundItem` exists for Mapiah metadata restore and insertion.
+- Use `QSvgRenderer` to validate and render SVG content.
+- Determine intrinsic SVG size from explicit `width` / `height` and `viewBox`, matching Mapiah behavior where practical.
+- If SVG metadata lacks width/height/viewBox, derive stable intrinsic data from the SVG file and persist it into Mapiah metadata on insertion. The initial insertion path supports explicit `width`/`height`, falls back to `viewBox` size, and synthesizes a `0 0 width height` source viewBox when width/height exist without a viewBox.
+- When rendering an existing Mapiah SVG reference, use the stored intrinsic size/viewBox as the stable coordinate contract. If the source SVG lacks required root metadata, render with the stored metadata equivalent, matching Mapiah's normalization behavior.
 - Use the same Mapiah placement transform fields as raster and XVI where applicable.
 - Ensure Fit With Background includes SVG bounds.
 - Ensure source-driven refresh reloads changed SVG files consistently with raster/XVI refresh behavior.
@@ -82,24 +85,13 @@ Verification:
   - SVG with a large canvas
   - SVG with relative path metadata
 
-## Phase 3 - Vector-Backed Rendering
+## Phase 3 - Background Layer Item Abstraction
 
-Optional later improvement: replace the MVP rasterized projection with a vector-backed `QGraphicsItem`.
+The current background layer lifecycle is heavily `QGraphicsPixmapItem *`-oriented. A minimal SVG implementation may bridge this carefully, but the long-term direction should be a narrow background layer item abstraction shared by raster, XVI, and SVG layers.
 
-Possible approaches:
+Requirements:
 
-- `QGraphicsSvgItem` for straightforward SVG display.
-- Custom `QGraphicsItem` using `QSvgRenderer` when more control is needed over caching, bounds, opacity, and transform behavior.
-
-Reasons to defer this:
-
-- The current background item list and lifecycle are heavily `QGraphicsPixmapItem`-oriented.
-- A vector-backed path should not force broad background-layer refactors during release stabilization.
-- Rasterized SVG MVP is enough to validate metadata, UX, and transform semantics first.
-
-Vector-phase requirements:
-
-- Preserve sharp rendering during deep zoom.
+- Preserve stable interactive repainting during point/line/area drawing.
 - Preserve opacity, visibility, stacking order, pivot, scale, rotation, and Fit With Background behavior.
 - Avoid excessive repaint cost for complex SVGs.
 - Keep SVG loading safe: no network fetches, no script execution, and no user-invisible external dependency behavior.
@@ -109,21 +101,22 @@ Vector-phase requirements:
 - Keep metadata parsing and serialization in core/background metadata code, not in widgets.
 - Keep SVG loading/rendering in a focused map-editor background module rather than adding more ad hoc branches to `MapEditorBackgroundLayers.cpp`.
 - Do not add new source-write paths. SVG background insertion and transform changes should continue through the existing background source transaction path.
-- Keep rendering projection separate from source metadata. An SVG may be rasterized for display without becoming a raster layer semantically.
+- Keep rendering projection separate from source metadata. SVG must never become a raster layer semantically.
 - Use `TherionBackgroundLayerFormat::Svg` as the stable type boundary.
+- Treat Mapiah's intrinsic size/viewBox metadata as part of the SVG background source contract.
 
 ## UX Decisions
 
 - File picker label should include SVG in the background layer list.
 - The Backgrounds inspector should show SVG layers as transformable reference layers.
-- Gamma should be disabled for SVG in Phase 1/2.
+- Gamma should be disabled for SVG.
 - Opacity should remain available.
 - Rotation, scale, position, and pivot should remain available through Mapiah metadata.
 - If SVG loading fails, the user should see an actionable warning or status message naming the file.
 
 ## Risk Areas
 
-- SVG files can be very large or complex; cap rasterized display size and avoid blocking the UI thread for expensive loads.
+- SVG files can be very large or complex; avoid blocking the UI thread for expensive loads and avoid repainting unnecessarily.
 - SVG intrinsic sizing can be ambiguous; define fallback behavior for missing width/height/viewBox.
 - Existing code distinguishes primarily between `.xvi` and "not `.xvi`"; SVG support must avoid being accidentally treated as ordinary raster in metadata writes.
 - Mapiah compatibility depends on preserving `format=svg` through every transform rewrite.
@@ -132,6 +125,7 @@ Vector-phase requirements:
 ## Acceptance Criteria
 
 - Adding an SVG background creates Mapiah `format=svg` metadata.
+- SVG metadata includes Mapiah-compatible intrinsic size and source viewBox fields.
 - Reopening a TH2 document with Mapiah `format=svg` metadata restores the SVG background.
 - Moving, scaling, rotating, pivoting, changing visibility, and changing opacity preserve `format=svg`.
 - Existing raster, XVI, and PocketTopo background workflows continue to pass their current tests.

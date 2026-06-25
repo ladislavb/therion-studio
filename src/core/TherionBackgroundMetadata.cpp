@@ -242,6 +242,35 @@ QString formatTherionMetadataNumber(qreal value)
     return QString::number(value, 'g', 15);
 }
 
+QString mapiahLayerFormatToken(TherionBackgroundLayerFormat layerFormat)
+{
+    switch (layerFormat) {
+    case TherionBackgroundLayerFormat::Xvi:
+        return QStringLiteral("xvi");
+    case TherionBackgroundLayerFormat::Svg:
+        return QStringLiteral("svg");
+    case TherionBackgroundLayerFormat::Raster:
+    case TherionBackgroundLayerFormat::Unsupported:
+        return QStringLiteral("raster");
+    }
+    return QStringLiteral("raster");
+}
+
+QString mapiahMetadataValue(const QString &value)
+{
+    return QString::fromUtf8(QUrl::toPercentEncoding(value));
+}
+
+QString mapiahRelativeFilename(const QString &absolutePath, const QString &documentPath)
+{
+    QString path = absolutePath;
+    const QString baseDirectory = QFileInfo(documentPath).absolutePath();
+    if (!baseDirectory.isEmpty()) {
+        path = QDir(baseDirectory).relativeFilePath(absolutePath);
+    }
+    return QDir::fromNativeSeparators(path);
+}
+
 int insertionIndexAfterEncoding(const QStringList &lines)
 {
     for (int index = 0; index < lines.size(); ++index) {
@@ -327,7 +356,8 @@ QVector<TherionBackgroundReference> parseTherionBackgroundReferences(const QStri
             reference.metadataFormat = TherionBackgroundMetadataFormat::Mapiah;
             reference.layerFormat = mapiahLayerFormat(values.value(QStringLiteral("format")), absolutePath);
             reference.xviReference = reference.layerFormat == TherionBackgroundLayerFormat::Xvi;
-            reference.metadataTopEdgeAnchor = reference.layerFormat == TherionBackgroundLayerFormat::Raster;
+            reference.metadataTopEdgeAnchor = reference.layerFormat == TherionBackgroundLayerFormat::Raster
+                || reference.layerFormat == TherionBackgroundLayerFormat::Svg;
             reference.lineNumber = lineIndex + 1;
 
             qreal baseX = 0.0;
@@ -361,6 +391,29 @@ QVector<TherionBackgroundReference> parseTherionBackgroundReferences(const QStri
             const QString rootStationName = normalizeStationToken(values.value(QStringLiteral("xviRoot")));
             if (!rootStationName.isEmpty() && rootStationName != QStringLiteral("0")) {
                 reference.rootStationName = rootStationName;
+            }
+            qreal intrinsicWidth = 0.0;
+            qreal intrinsicHeight = 0.0;
+            if (parseStrictNumber(values.value(QStringLiteral("intrinsicWidth")), &intrinsicWidth)
+                && parseStrictNumber(values.value(QStringLiteral("intrinsicHeight")), &intrinsicHeight)
+                && intrinsicWidth > 0.0
+                && intrinsicHeight > 0.0) {
+                reference.svgIntrinsicSize = QSizeF(intrinsicWidth, intrinsicHeight);
+                reference.hasSvgIntrinsicSize = true;
+            }
+            qreal sourceViewBoxLeft = 0.0;
+            qreal sourceViewBoxTop = 0.0;
+            qreal sourceViewBoxWidth = 0.0;
+            qreal sourceViewBoxHeight = 0.0;
+            if (parseStrictNumber(values.value(QStringLiteral("sourceViewBoxLeft")), &sourceViewBoxLeft)
+                && parseStrictNumber(values.value(QStringLiteral("sourceViewBoxTop")), &sourceViewBoxTop)
+                && parseStrictNumber(values.value(QStringLiteral("sourceViewBoxWidth")), &sourceViewBoxWidth)
+                && parseStrictNumber(values.value(QStringLiteral("sourceViewBoxHeight")), &sourceViewBoxHeight)
+                && sourceViewBoxWidth > 0.0
+                && sourceViewBoxHeight > 0.0) {
+                reference.svgSourceViewBox =
+                    QRectF(sourceViewBoxLeft, sourceViewBoxTop, sourceViewBoxWidth, sourceViewBoxHeight);
+                reference.hasSvgSourceViewBox = true;
             }
             references.append(reference);
             continue;
@@ -488,6 +541,56 @@ TherionAreaAdjust parseTherionAreaAdjust(const QString &documentText)
     }
 
     return TherionAreaAdjust{};
+}
+
+QString therionMapiahImageInsertMetadataLine(const QString &absolutePath,
+                                             const QString &documentPath,
+                                             TherionBackgroundLayerFormat layerFormat,
+                                             const QPointF &basePosition,
+                                             qreal xScale,
+                                             qreal yScale,
+                                             qreal rotationCenterDx,
+                                             qreal rotationCenterDy,
+                                             qreal rotationDeg,
+                                             bool pivotSet,
+                                             const QString &rootStationName,
+                                             const QSizeF &svgIntrinsicSize,
+                                             const QRectF &svgSourceViewBox)
+{
+    QStringList parts;
+    parts.append(QStringLiteral("format=%1").arg(mapiahLayerFormatToken(layerFormat)));
+    parts.append(QStringLiteral("filename=%1").arg(mapiahMetadataValue(mapiahRelativeFilename(absolutePath, documentPath))));
+    parts.append(QStringLiteral("xx=%1").arg(mapiahMetadataValue(formatTherionMetadataNumber(basePosition.x()))));
+    parts.append(QStringLiteral("yy=%1").arg(mapiahMetadataValue(formatTherionMetadataNumber(basePosition.y()))));
+    parts.append(QStringLiteral("xScale=%1").arg(mapiahMetadataValue(formatTherionMetadataNumber(qMax(0.01, xScale)))));
+    parts.append(QStringLiteral("yScale=%1").arg(mapiahMetadataValue(formatTherionMetadataNumber(qMax(0.01, yScale)))));
+    parts.append(QStringLiteral("rotationCenterDx=%1").arg(mapiahMetadataValue(formatTherionMetadataNumber(rotationCenterDx))));
+    parts.append(QStringLiteral("rotationCenterDy=%1").arg(mapiahMetadataValue(formatTherionMetadataNumber(rotationCenterDy))));
+    parts.append(QStringLiteral("rotationDeg=%1").arg(mapiahMetadataValue(formatTherionMetadataNumber(rotationDeg))));
+    parts.append(QStringLiteral("pivotSet=%1").arg(pivotSet ? QStringLiteral("true") : QStringLiteral("false")));
+    if (layerFormat == TherionBackgroundLayerFormat::Xvi) {
+        parts.append(QStringLiteral("xviRoot=%1").arg(mapiahMetadataValue(rootStationName)));
+    } else if (layerFormat == TherionBackgroundLayerFormat::Svg
+               && svgIntrinsicSize.isValid()
+               && svgIntrinsicSize.width() > 0.0
+               && svgIntrinsicSize.height() > 0.0
+               && svgSourceViewBox.isValid()
+               && svgSourceViewBox.width() > 0.0
+               && svgSourceViewBox.height() > 0.0) {
+        parts.append(QStringLiteral("intrinsicWidth=%1")
+                         .arg(mapiahMetadataValue(formatTherionMetadataNumber(svgIntrinsicSize.width()))));
+        parts.append(QStringLiteral("intrinsicHeight=%1")
+                         .arg(mapiahMetadataValue(formatTherionMetadataNumber(svgIntrinsicSize.height()))));
+        parts.append(QStringLiteral("sourceViewBoxLeft=%1")
+                         .arg(mapiahMetadataValue(formatTherionMetadataNumber(svgSourceViewBox.left()))));
+        parts.append(QStringLiteral("sourceViewBoxTop=%1")
+                         .arg(mapiahMetadataValue(formatTherionMetadataNumber(svgSourceViewBox.top()))));
+        parts.append(QStringLiteral("sourceViewBoxWidth=%1")
+                         .arg(mapiahMetadataValue(formatTherionMetadataNumber(svgSourceViewBox.width()))));
+        parts.append(QStringLiteral("sourceViewBoxHeight=%1")
+                         .arg(mapiahMetadataValue(formatTherionMetadataNumber(svgSourceViewBox.height()))));
+    }
+    return QStringLiteral("##MAPIAH## image_insert_v1 {%1}").arg(parts.join(QLatin1Char(';')));
 }
 
 QString therionAreaAdjustMetadataLine(const QRectF &modelRect)

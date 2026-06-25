@@ -2,6 +2,7 @@
 
 #include <QPointF>
 #include <QRectF>
+#include <QSizeF>
 #include <QString>
 #include <QVector>
 
@@ -39,6 +40,10 @@ struct TherionBackgroundReference
     qreal rotationDeg = 0.0;
     bool pivotSet = false;
     QString rootStationName;
+    QSizeF svgIntrinsicSize;
+    QRectF svgSourceViewBox;
+    bool hasSvgIntrinsicSize = false;
+    bool hasSvgSourceViewBox = false;
     bool metadataTopEdgeAnchor = false;
     bool xviReference = false;
     int lineNumber = 0;
@@ -53,6 +58,19 @@ struct TherionAreaAdjust
 QVector<TherionBackgroundReference> parseTherionBackgroundReferences(const QString &documentText,
                                                                      const QString &documentPath);
 TherionAreaAdjust parseTherionAreaAdjust(const QString &documentText);
+QString therionMapiahImageInsertMetadataLine(const QString &absolutePath,
+                                             const QString &documentPath,
+                                             TherionBackgroundLayerFormat layerFormat,
+                                             const QPointF &basePosition,
+                                             qreal xScale,
+                                             qreal yScale,
+                                             qreal rotationCenterDx,
+                                             qreal rotationCenterDy,
+                                             qreal rotationDeg,
+                                             bool pivotSet,
+                                             const QString &rootStationName = QString(),
+                                             const QSizeF &svgIntrinsicSize = QSizeF(),
+                                             const QRectF &svgSourceViewBox = QRectF());
 QString therionAreaAdjustMetadataLine(const QRectF &modelRect);
 QString therionAreaZoomToMetadataLine();
 QString upsertTherionAreaAdjustMetadata(const QString &documentText, const QRectF &modelRect);

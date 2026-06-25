@@ -5054,8 +5054,8 @@ Přesto bod smazat?</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1602"/>
-        <source>Background layers (*.png *.jpg *.jpeg *.bmp *.tif *.tiff *.gif *.webp *.xvi *.txt *.TXT)</source>
-        <translation>Vrstvy pozadí (*.png *.jpg *.jpeg *.bmp *.tif *.tiff *.gif *.webp *.xvi *.txt *.TXT)</translation>
+        <source>Background layers (*.png *.jpg *.jpeg *.bmp *.tif *.tiff *.gif *.webp *.svg *.xvi *.txt *.TXT)</source>
+        <translation>Vrstvy pozadí (*.png *.jpg *.jpeg *.bmp *.tif *.tiff *.gif *.webp *.svg *.xvi *.txt *.TXT)</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1607"/>
@@ -5204,6 +5204,21 @@ Přesto bod smazat?</translation>
         <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3276"/>
         <source>Added background layer.</source>
         <translation>Vrstva pozadí přidána.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3724"/>
+        <source>Could not load SVG background metadata.</source>
+        <translation>Nepodařilo se načíst metadata SVG pozadí.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3762"/>
+        <source>Could not load SVG background.</source>
+        <translation>Nepodařilo se načíst SVG pozadí.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3769"/>
+        <source>Add SVG Background</source>
+        <translation>Přidat SVG pozadí</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3359"/>
