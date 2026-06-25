@@ -342,15 +342,6 @@ void appendScaleBar(QSGNode *root,
                    QFont(QStringLiteral("Menlo"), 10));
 }
 
-double normalizeDegrees(double value)
-{
-    value = std::fmod(value, 360.0);
-    if (value < 0.0) {
-        value += 360.0;
-    }
-    return value;
-}
-
 double radiansToDegrees(double radians)
 {
     return radians * 180.0 / kPi;
