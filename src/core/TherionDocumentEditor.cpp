@@ -1390,34 +1390,81 @@ int matchingEndscrapIndex(const QStringList &lines, int scrapStartIndex)
     return -1;
 }
 
-int firstUnclosedScrapLineNumber(const QStringList &lines)
+struct UnclosedMapBlock
 {
-    QVector<int> openScrapLineNumbers;
+    QString directive;
+    QString closeDirective;
+    int lineNumber = 0;
+};
+
+UnclosedMapBlock firstUnclosedMapBlock(const QStringList &lines)
+{
+    QVector<UnclosedMapBlock> openBlocks;
     for (int index = 0; index < lines.size(); ++index) {
         const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(index), index + 1);
         if (parsedLine.directive == QStringLiteral("scrap")) {
-            openScrapLineNumbers.append(index + 1);
+            openBlocks.append(UnclosedMapBlock{
+                QStringLiteral("scrap"),
+                QStringLiteral("endscrap"),
+                index + 1,
+            });
             continue;
         }
-        if (parsedLine.directive == QStringLiteral("endscrap") && !openScrapLineNumbers.isEmpty()) {
-            openScrapLineNumbers.removeLast();
+        if (parsedLine.directive == QStringLiteral("line")) {
+            openBlocks.append(UnclosedMapBlock{
+                QStringLiteral("line"),
+                QStringLiteral("endline"),
+                index + 1,
+            });
+            continue;
+        }
+        if (parsedLine.directive == QStringLiteral("area")) {
+            openBlocks.append(UnclosedMapBlock{
+                QStringLiteral("area"),
+                QStringLiteral("endarea"),
+                index + 1,
+            });
+            continue;
+        }
+        if (parsedLine.directive == QStringLiteral("endline")) {
+            if (!openBlocks.isEmpty() && openBlocks.constLast().directive == QStringLiteral("line")) {
+                openBlocks.removeLast();
+            }
+            continue;
+        }
+        if (parsedLine.directive == QStringLiteral("endarea")) {
+            if (!openBlocks.isEmpty() && openBlocks.constLast().directive == QStringLiteral("area")) {
+                openBlocks.removeLast();
+            }
+            continue;
+        }
+        if (parsedLine.directive == QStringLiteral("endscrap")) {
+            if (!openBlocks.isEmpty() && openBlocks.constLast().directive == QStringLiteral("scrap")) {
+                openBlocks.removeLast();
+                continue;
+            }
+            if (!openBlocks.isEmpty()) {
+                return openBlocks.constLast();
+            }
         }
     }
 
-    return openScrapLineNumbers.isEmpty() ? 0 : openScrapLineNumbers.constFirst();
+    return openBlocks.isEmpty() ? UnclosedMapBlock{} : openBlocks.constLast();
 }
 
 bool rejectDraftInsertionIntoUnclosedScrap(const QStringList &lines, QString *errorMessage)
 {
-    const int unclosedScrapLineNumber = firstUnclosedScrapLineNumber(lines);
-    if (unclosedScrapLineNumber <= 0) {
+    const UnclosedMapBlock unclosedBlock = firstUnclosedMapBlock(lines);
+    if (unclosedBlock.lineNumber <= 0) {
         return false;
     }
 
     if (errorMessage != nullptr) {
         *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor",
-                                                    "Cannot insert draft geometry while scrap at line %1 is missing endscrap.")
-            .arg(unclosedScrapLineNumber);
+                                                    "Cannot insert draft geometry while %1 block at line %2 is missing %3.")
+            .arg(unclosedBlock.directive)
+            .arg(unclosedBlock.lineNumber)
+            .arg(unclosedBlock.closeDirective);
     }
     return true;
 }

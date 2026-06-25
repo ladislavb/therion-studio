@@ -18,6 +18,8 @@ private slots:
     void rejectsPointInsertionWhenScrapIsUnclosed();
     void rejectsLineInsertionWhenScrapIsUnclosed();
     void rejectsAreaInsertionWhenScrapIsUnclosed();
+    void rejectsPointInsertionWhenLineIsUnclosed();
+    void rejectsPointInsertionWhenAreaIsUnclosed();
 };
 
 void TherionDocumentEditorDraftInsertionTest::rejectsPointInsertionWhenScrapIsUnclosed()
@@ -39,6 +41,56 @@ void TherionDocumentEditorDraftInsertionTest::rejectsPointInsertionWhenScrapIsUn
     QCOMPARE(insertedLineNumber, 0);
     QVERIFY(errorMessage.contains(QStringLiteral("endscrap")));
     QVERIFY(errorMessage.contains(QStringLiteral("line 1")));
+}
+
+void TherionDocumentEditorDraftInsertionTest::rejectsPointInsertionWhenLineIsUnclosed()
+{
+    const QString source = QStringLiteral(
+        "scrap broken -projection plan\n"
+        "  line wall\n"
+        "    0 0\n"
+        "endscrap\n");
+    QVector<TherionSourceTextEdit> edits;
+    int insertedLineNumber = 0;
+    QString errorMessage;
+
+    const bool ok = TherionDocumentEditor::appendDraftGeometryEdits(source,
+                                                                    QStringLiteral("point"),
+                                                                    QVector<QPointF>{QPointF(10.0, 20.0)},
+                                                                    &edits,
+                                                                    &insertedLineNumber,
+                                                                    &errorMessage);
+
+    QVERIFY(!ok);
+    QVERIFY(edits.isEmpty());
+    QCOMPARE(insertedLineNumber, 0);
+    QVERIFY(errorMessage.contains(QStringLiteral("endline")));
+    QVERIFY(errorMessage.contains(QStringLiteral("line 2")));
+}
+
+void TherionDocumentEditorDraftInsertionTest::rejectsPointInsertionWhenAreaIsUnclosed()
+{
+    const QString source = QStringLiteral(
+        "scrap broken -projection plan\n"
+        "  area water\n"
+        "    border-1\n"
+        "endscrap\n");
+    QVector<TherionSourceTextEdit> edits;
+    int insertedLineNumber = 0;
+    QString errorMessage;
+
+    const bool ok = TherionDocumentEditor::appendDraftGeometryEdits(source,
+                                                                    QStringLiteral("point"),
+                                                                    QVector<QPointF>{QPointF(10.0, 20.0)},
+                                                                    &edits,
+                                                                    &insertedLineNumber,
+                                                                    &errorMessage);
+
+    QVERIFY(!ok);
+    QVERIFY(edits.isEmpty());
+    QCOMPARE(insertedLineNumber, 0);
+    QVERIFY(errorMessage.contains(QStringLiteral("endarea")));
+    QVERIFY(errorMessage.contains(QStringLiteral("line 2")));
 }
 
 void TherionDocumentEditorDraftInsertionTest::rejectsLineInsertionWhenScrapIsUnclosed()

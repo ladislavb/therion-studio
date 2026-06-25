@@ -6906,6 +6906,11 @@ subtype blocks</translation>
         <source>The selected line block source range could not be rewritten.</source>
         <translation>Zdrojový rozsah vybraného bloku line sa nepodarilo prepísať.</translation>
     </message>
+    <message>
+        <location filename="../src/core/TherionDocumentEditor.cpp" line="1456"/>
+        <source>Cannot insert draft geometry while %1 block at line %2 is missing %3.</source>
+        <translation>Geometriu draftu nemožno vložiť, kým bloku %1 na riadku %2 chýba %3.</translation>
+    </message>
 </context>
 <context>
     <name>TherionStudio::TherionSourceValidator</name>
