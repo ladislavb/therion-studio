@@ -1295,7 +1295,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
 
             if (drawMode() == MapEditorInteractiveDrawMode::Freehand && (*context_.interactiveDrawStrokeActive)) {
                 const QPointF scenePoint = context_.view->mapToScene(static_cast<QMouseEvent *>(event)->pos());
-                constexpr qreal minimumSceneSampleDistance = 4.0;
+                constexpr qreal minimumSceneSampleDistance = 0.5;
                 if ((*context_.interactiveDrawSceneVertices).isEmpty()
                     || QLineF((*context_.interactiveDrawSceneVertices).last(), scenePoint).length() >= minimumSceneSampleDistance) {
                     (*context_.interactiveDrawSceneVertices).append(scenePoint);

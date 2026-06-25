@@ -277,7 +277,7 @@ While drafting a line or area:
 ### 6.6 Source Changes From Map Actions
 
 - Point tools write `point ...` commands inside the target scrap.
-- Line and freehand tools write `line ... endline` blocks. Freehand strokes are simplified into Bezier coordinate rows.
+- Line and freehand tools write `line ... endline` blocks. Freehand strokes are simplified into Bezier coordinate rows while preserving proportionally more anchors for curved or detailed strokes.
 - Manual Area writes a generated closed `line border -id ... -close on` and an `area ... endarea` block that references that border line.
 - Smart Area writes an `area ... endarea` block that references existing boundary lines. It may add missing `-id` values required for those references, but it does not change existing line geometry.
 - Background insertion writes XTherion-compatible image metadata such as `##XTHERION## xth_me_image_insert`. The first map insertion in a file without XTherion view metadata may also write `xth_me_area_adjust` and `xth_me_area_zoom_to`.

@@ -1,7 +1,5 @@
 #include "MapEditorInteractiveDrawLogic.h"
 
-#include "MapEditorSceneSupport.h"
-#include "MapEditorSourceReferenceResolver.h"
 #include "../../../core/TherionCommandSyntax.h"
 
 #include <QLineF>
@@ -14,9 +12,9 @@ namespace TherionStudio
 {
 namespace
 {
-constexpr qreal kFreehandSimplifyAverageSampleFactor = 0.65;
-constexpr qreal kFreehandSimplifyBoundsFactor = 0.001;
-constexpr int kFreehandMaximumSafetyAnchors = 256;
+constexpr qreal kFreehandSimplifyAverageSampleFactor = 0.35;
+constexpr qreal kFreehandSimplifyBoundsFactor = 0.0005;
+constexpr int kFreehandMaximumSafetyAnchors = 512;
 
 qreal normalizedDraftOrientationDegrees(qreal degrees)
 {
@@ -25,6 +23,31 @@ qreal normalizedDraftOrientationDegrees(qreal degrees)
         normalized += 360.0;
     }
     return normalized;
+}
+
+QString formatSourceCoordinate(qreal value)
+{
+    return QString::number(value, 'f', 1);
+}
+
+std::optional<QPointF> mirroredSmoothControlPoint(const QPointF &anchor,
+                                                  const QPointF &movedControlPoint,
+                                                  const std::optional<QPointF> &oppositeControlPoint)
+{
+    constexpr qreal kEpsilon = 1e-6;
+
+    const QPointF vector = movedControlPoint - anchor;
+    const qreal vectorLength = std::hypot(vector.x(), vector.y());
+    if (vectorLength <= kEpsilon) {
+        return std::nullopt;
+    }
+
+    const QPointF direction(vector.x() / vectorLength, vector.y() / vectorLength);
+    const qreal oppositeLength = oppositeControlPoint.has_value()
+        ? std::hypot(oppositeControlPoint->x() - anchor.x(), oppositeControlPoint->y() - anchor.y())
+        : vectorLength;
+    return QPointF(anchor.x() - (direction.x() * oppositeLength),
+                   anchor.y() - (direction.y() * oppositeLength));
 }
 
 qreal pointSegmentDistance(const QPointF &point, const QPointF &start, const QPointF &end)

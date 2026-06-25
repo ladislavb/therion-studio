@@ -1081,6 +1081,7 @@ target_link_libraries(MapEditorInputPolicyTest PRIVATE Qt6::Widgets)
 qt_add_executable(MapEditorLogicQTests
     tests/MapEditorLogicQTestMain.cpp
     tests/MapEditorAreaReferenceResolverTest.cpp
+    tests/MapEditorFreehandSimplificationTest.cpp
     tests/MapEditorObjectDeletePlannerTest.cpp
     tests/MapEditorObjectMovePlannerTest.cpp
     tests/MapEditorPointSymbolGeometryTest.cpp
@@ -1088,6 +1089,8 @@ qt_add_executable(MapEditorLogicQTests
     tests/MapEditorUndoArbitrationServiceTest.cpp
     src/app/text_editor/map_editor/MapEditorAreaReferenceResolver.cpp
     src/app/text_editor/map_editor/MapEditorAreaReferenceResolver.h
+    src/app/text_editor/map_editor/MapEditorInteractiveDrawLogic.cpp
+    src/app/text_editor/map_editor/MapEditorInteractiveDrawLogic.h
     src/app/text_editor/map_editor/MapEditorSvgBackgroundMetadata.cpp
     src/app/text_editor/map_editor/MapEditorSvgBackgroundMetadata.h
     src/app/text_editor/map_editor/MapEditorObjectDeletePlanner.cpp
