@@ -74,6 +74,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   transaction status with success messages.
 - Keep map background metadata writes result-aware so skipped XTherion/Mapiah metadata syncs report the transaction
   result directly without depending on post-apply hooks.
+- Track SVG background support through `plans/SVG_BACKGROUND_PLAN.md`, keeping Mapiah `format=svg` metadata distinct
+  from raster background behavior.
 - Keep tab-level map source insertions such as Insert Scrap, Complete Draft, and Smart Area result-aware instead of
   inferring success from post-apply hooks.
 - Keep map background layer refreshes isolated from viewport-only command-surface updates so loaded raster/XVI metadata
