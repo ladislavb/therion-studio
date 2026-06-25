@@ -9,6 +9,7 @@
 #include "TherionSourceSnapshotCache.h"
 
 #include <QCoreApplication>
+#include <QSet>
 
 #include <algorithm>
 #include <optional>
@@ -24,6 +25,127 @@ struct LineCleanupResult
     int columnNumber = 1;
     int columnLength = 0;
 };
+
+struct UnclosedBlockFixPlan
+{
+    bool valid = false;
+    int startOffset = 0;
+    int insertionLineNumber = 0;
+    QString replacementText;
+    QString suggestedText;
+};
+
+QString leadingWhitespace(const QString &text)
+{
+    int index = 0;
+    while (index < text.size() && text.at(index).isSpace()) {
+        ++index;
+    }
+    return text.left(index);
+}
+
+bool isLineOrAreaCloseBoundary(const QString &directive)
+{
+    static const QSet<QString> boundaryDirectives{
+        QStringLiteral("point"),
+        QStringLiteral("line"),
+        QStringLiteral("area"),
+        QStringLiteral("endscrap"),
+    };
+    return boundaryDirectives.contains(directive);
+}
+
+bool isFixableUnclosedMapBlock(const QString &directive)
+{
+    return directive == QStringLiteral("scrap")
+        || directive == QStringLiteral("line")
+        || directive == QStringLiteral("area");
+}
+
+bool isUnclosedBlockFixBoundary(const QString &openDirective, const QString &candidateDirective)
+{
+    if (openDirective == QStringLiteral("scrap")) {
+        return candidateDirective == QStringLiteral("scrap");
+    }
+    if (openDirective == QStringLiteral("line") || openDirective == QStringLiteral("area")) {
+        return isLineOrAreaCloseBoundary(candidateDirective);
+    }
+    return false;
+}
+
+QString lineEndingForInsertion(const TherionSourceDocument &sourceDocument,
+                               int insertionLineIndex,
+                               const QString &contents)
+{
+    const QVector<TherionSourceDocumentLine> &lines = sourceDocument.lines();
+    if (insertionLineIndex > 0 && insertionLineIndex - 1 < lines.size()) {
+        const QString lineEnding = lines.at(insertionLineIndex - 1).sourceLine.lineEnding;
+        if (!lineEnding.isEmpty()) {
+            return lineEnding;
+        }
+    }
+    if (insertionLineIndex >= 0 && insertionLineIndex < lines.size()) {
+        const QString lineEnding = lines.at(insertionLineIndex).sourceLine.lineEnding;
+        if (!lineEnding.isEmpty()) {
+            return lineEnding;
+        }
+    }
+    return contents.contains(QStringLiteral("\r\n")) ? QStringLiteral("\r\n") : QStringLiteral("\n");
+}
+
+UnclosedBlockFixPlan unclosedBlockFixPlan(const TherionSourceDocument &sourceDocument,
+                                          const TherionSourceBlockFrame &openBlock,
+                                          const QString &closeDirective)
+{
+    UnclosedBlockFixPlan plan;
+    if (closeDirective.isEmpty() || !isFixableUnclosedMapBlock(openBlock.directive)) {
+        return plan;
+    }
+
+    const QString contents = sourceDocument.toText();
+    const QVector<TherionSourceDocumentLine> &lines = sourceDocument.lines();
+    int openLineIndex = -1;
+    for (int index = 0; index < lines.size(); ++index) {
+        if (lines.at(index).sourceLine.lineNumber == openBlock.lineNumber) {
+            openLineIndex = index;
+            break;
+        }
+    }
+    if (openLineIndex < 0 || openLineIndex >= lines.size()) {
+        return plan;
+    }
+
+    int insertionLineIndex = lines.size();
+    for (int index = openLineIndex + 1; index < lines.size(); ++index) {
+        const QString candidateDirective = lines.at(index).normalizedDirective;
+        if (isUnclosedBlockFixBoundary(openBlock.directive, candidateDirective)) {
+            insertionLineIndex = index;
+            break;
+        }
+    }
+
+    const QString indentation = leadingWhitespace(lines.at(openLineIndex).sourceLine.text);
+    const QString insertedLine = indentation + closeDirective;
+    const QString lineEnding = lineEndingForInsertion(sourceDocument, insertionLineIndex, contents);
+    plan.valid = true;
+    plan.startOffset = insertionLineIndex < lines.size()
+        ? lines.at(insertionLineIndex).sourceLine.startOffset
+        : contents.size();
+    plan.insertionLineNumber = insertionLineIndex < lines.size()
+        ? lines.at(insertionLineIndex).sourceLine.lineNumber
+        : 0;
+    plan.replacementText = insertedLine + lineEnding;
+    if (insertionLineIndex >= lines.size() && !contents.isEmpty() && !contents.endsWith(QLatin1Char('\n'))) {
+        plan.replacementText.prepend(lineEnding);
+    }
+    plan.suggestedText = plan.insertionLineNumber > 0
+        ? QCoreApplication::translate("TherionStudio::TherionSourceValidator", "Insert before line %1:\n%2")
+              .arg(plan.insertionLineNumber)
+              .arg(insertedLine)
+        : QCoreApplication::translate("TherionStudio::TherionSourceValidator", "Insert at end of file:\n%1")
+              .arg(insertedLine);
+    return plan;
+}
 
 std::optional<TherionParsedToken> tokenSpanForCommandTokenIndex(const TherionParsedLine &parsedLine,
                                                                 int tokenIndex)
@@ -854,6 +976,7 @@ void appendBlockDiagnostics(TherionSourceValidationResult *result,
     }
 
     for (const TherionSourceBlockFrame &openBlock : sourceDocument.openBlocksAtEnd()) {
+        const QString closeDirective = openToClose.value(openBlock.directive);
         TherionSourceDiagnostic diagnostic;
         diagnostic.code = QStringLiteral("unclosed-block");
         diagnostic.severity = TherionSourceDiagnosticSeverity::Error;
@@ -862,8 +985,22 @@ void appendBlockDiagnostics(TherionSourceValidationResult *result,
         diagnostic.columnLength = openBlock.directive.size();
         diagnostic.title = QCoreApplication::translate("TherionStudio::TherionSourceValidator", "Unclosed block");
         diagnostic.message = QCoreApplication::translate("TherionStudio::TherionSourceValidator", "Block `%1` is not closed before the end of the document. Expected `%2`.")
-                                 .arg(openBlock.directive, openToClose.value(openBlock.directive));
+                                 .arg(openBlock.directive, closeDirective);
         diagnostic.currentText = openBlock.lineText;
+        const UnclosedBlockFixPlan fixPlan = unclosedBlockFixPlan(sourceDocument, openBlock, closeDirective);
+        if (fixPlan.valid) {
+            diagnostic.suggestedText = fixPlan.suggestedText;
+            diagnostic.hasFix = true;
+            diagnostic.fix.startOffset = fixPlan.startOffset;
+            diagnostic.fix.length = 0;
+            diagnostic.fix.replacementText = fixPlan.replacementText;
+            diagnostic.fix.description = fixPlan.insertionLineNumber > 0
+                ? QCoreApplication::translate("TherionStudio::TherionSourceValidator", "Insert %1 before line %2")
+                      .arg(closeDirective)
+                      .arg(fixPlan.insertionLineNumber)
+                : QCoreApplication::translate("TherionStudio::TherionSourceValidator", "Insert %1 at end of file")
+                      .arg(closeDirective);
+        }
         result->diagnostics.append(diagnostic);
     }
 }

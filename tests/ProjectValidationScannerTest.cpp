@@ -42,6 +42,24 @@ QString canonicalOrAbsolutePath(const QString &path)
     return canonicalOrAbsoluteFilePath(path);
 }
 
+QString repositoryFilePath(const QString &relativePath)
+{
+    const QString fromCurrentDirectory = QDir::current().absoluteFilePath(relativePath);
+    if (QFileInfo::exists(fromCurrentDirectory)) {
+        return QFileInfo(fromCurrentDirectory).absoluteFilePath();
+    }
+
+    const QString fromBuildDirectory = QDir(QCoreApplication::applicationDirPath())
+                                           .absoluteFilePath(QStringLiteral("../") + relativePath);
+    return QFileInfo(fromBuildDirectory).absoluteFilePath();
+}
+
+QString projectValidationFixturePath(const QString &fixtureName)
+{
+    return repositoryFilePath(
+        QStringLiteral("tests/fixtures/projects/project_validation/%1").arg(fixtureName));
+}
+
 TherionSourceValidationCatalog testCatalog()
 {
     TherionSourceValidationCatalog catalog;
@@ -1145,75 +1163,84 @@ int runSupersededRunningScanStartsNextImmediatelyTest()
     return 0;
 }
 
-int runBabiceSampleValidationCompletesTest()
+int runOpenDocumentDiagnosticsFixtureValidationCompletesTest()
 {
-    const QString sampleProjectPath =
-        QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(QStringLiteral("../sample_data/babice"));
-    if (!QDir(sampleProjectPath).exists()) {
-        return 0;
+    const QString fixtureProjectPath =
+        projectValidationFixturePath(QStringLiteral("open_document_diagnostics"));
+    if (!expect(QDir(fixtureProjectPath).exists(),
+                "Open-document diagnostics fixture project is missing.")) {
+        return 1;
     }
 
     ProjectValidationScanner scanner;
     scanner.setDebounceIntervalMs(0);
-    scanner.requestScan(sampleProjectPath, contextualDocumentTypeCatalog(), {});
+    scanner.requestScan(fixtureProjectPath, contextualDocumentTypeCatalog(), {});
 
     const ValidationWaitResult waitResult = waitForValidation(scanner);
-    if (!expect(waitResult.received, "Babice sample project validation did not emit validationFinished before timeout.")) {
+    if (!expect(waitResult.received, "Open-document diagnostics fixture validation did not emit validationFinished before timeout.")) {
         return 1;
     }
-    if (!expect(waitResult.result.errorMessage.isEmpty(), "Babice sample project validation should not report a scanner error.")) {
+    if (!expect(waitResult.result.errorMessage.isEmpty(), "Open-document diagnostics fixture validation should not report a scanner error.")) {
         return 1;
     }
 
     return 0;
 }
 
-int runBabiceSampleValidationWithOpenDocumentsTest()
+int runFixtureValidationWithOpenDocumentsTest()
 {
-    const QString sampleProjectPath =
-        QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(QStringLiteral("../sample_data/babice"));
-    if (!QDir(sampleProjectPath).exists()) {
-        return 0;
+    const QString fixtureProjectPath =
+        projectValidationFixturePath(QStringLiteral("open_document_diagnostics"));
+    if (!expect(QDir(fixtureProjectPath).exists(),
+                "Open-document diagnostics fixture project is missing.")) {
+        return 1;
     }
 
     QHash<QString, QString> inMemoryContents;
     for (const QString &relativePath : {
-             QStringLiteral("babice.th"),
+             QStringLiteral("index.th"),
              QStringLiteral("untitled2.th2"),
          }) {
-        const QString filePath = QDir(sampleProjectPath).filePath(relativePath);
+        const QString filePath = QDir(fixtureProjectPath).filePath(relativePath);
         QString text;
         if (!expect(DocumentFile::readTextFile(filePath, &text, nullptr, nullptr, nullptr),
-                    "Babice open-document fixture could not be read.")) {
+                    "Open-document diagnostics fixture could not be read.")) {
             return 1;
         }
-        if (relativePath == QStringLiteral("babice.th")) {
+        if (relativePath == QStringLiteral("index.th")) {
             text.append(QStringLiteral("\ninput __missing_validation_fixture__.th\n"));
+        } else if (relativePath == QStringLiteral("untitled2.th2")) {
+            const QString clipOption = QStringLiteral("line wall -clip off");
+            const int clipOptionOffset = text.indexOf(clipOption);
+            if (!expect(clipOptionOffset >= 0, "Open-document diagnostics fixture should contain a line -clip option.")) {
+                return 1;
+            }
+            text.insert(clipOptionOffset + clipOption.size(), QStringLiteral(" -clip off"));
         }
         inMemoryContents.insert(canonicalOrAbsolutePath(filePath), text);
     }
 
     ProjectValidationScanner scanner;
     scanner.setDebounceIntervalMs(0);
-    scanner.requestScan(sampleProjectPath, appValidationCatalog(), inMemoryContents);
+    scanner.requestScan(fixtureProjectPath, appValidationCatalog(), inMemoryContents);
 
     const ValidationWaitResult waitResult = waitForValidation(scanner);
-    if (!expect(waitResult.received, "Babice open-document project validation did not emit validationFinished before timeout.")) {
+    if (!expect(waitResult.received, "Open-document fixture project validation did not emit validationFinished before timeout.")) {
         return 1;
     }
-    if (!expect(waitResult.result.errorMessage.isEmpty(), "Babice open-document project validation should not report a scanner error.")) {
+    if (!expect(waitResult.result.errorMessage.isEmpty(), "Open-document fixture project validation should not report a scanner error.")) {
         return 1;
     }
     if (!expect(containsFinding(waitResult.result,
-                                QDir(sampleProjectPath).filePath(QStringLiteral("untitled2.th2")),
+                                QDir(fixtureProjectPath).filePath(QStringLiteral("untitled2.th2")),
                                 QStringLiteral("malformed-option-token")),
-                "Babice open-document project validation should report duplicate -clip options.")) {
+                "Open-document fixture project validation should report duplicate -clip options.")) {
         return 1;
     }
     if (!expect(containsFinding(waitResult.result,
-                                QDir(sampleProjectPath).filePath(QStringLiteral("babice.th")),
+                                QDir(fixtureProjectPath).filePath(QStringLiteral("index.th")),
                                 QStringLiteral("missing-source-reference")),
-                "Babice open-document project validation should report the missing input file.")) {
+                "Open-document fixture project validation should report the missing input file.")) {
         return 1;
     }
 
@@ -1268,10 +1295,10 @@ int main(int argc, char **argv)
     if (runSupersededRunningScanStartsNextImmediatelyTest() != 0) {
         return 1;
     }
-    if (runBabiceSampleValidationCompletesTest() != 0) {
+    if (runOpenDocumentDiagnosticsFixtureValidationCompletesTest() != 0) {
         return 1;
     }
-    if (runBabiceSampleValidationWithOpenDocumentsTest() != 0) {
+    if (runFixtureValidationWithOpenDocumentsTest() != 0) {
         return 1;
     }
     return 0;

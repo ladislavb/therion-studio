@@ -304,7 +304,7 @@ void MainWindow::buildValidationSidebar()
     configureValidationSourcePreview(validationCurrentSourceEdit_);
     validationLayout->addWidget(validationCurrentSourceEdit_);
 
-    validationSuggestedSourceLabel_ = new QLabel(tr("Suggested source line"), validationPage);
+    validationSuggestedSourceLabel_ = new QLabel(tr("Automatic fix preview"), validationPage);
     validationLayout->addWidget(validationSuggestedSourceLabel_);
     validationSuggestedSourceEdit_ = new QPlainTextEdit(validationPage);
     configureValidationSourcePreview(validationSuggestedSourceEdit_);
@@ -768,7 +768,7 @@ void MainWindow::handleValidationSelectionChanged(const QModelIndex &current, co
             validationCurrentSourceLabel_->setText(tr("Current source line"));
         }
         if (validationSuggestedSourceLabel_ != nullptr) {
-            validationSuggestedSourceLabel_->setText(tr("Suggested source line"));
+            validationSuggestedSourceLabel_->setText(tr("Automatic fix preview"));
         }
         if (validationCurrentSourceEdit_ != nullptr) {
             validationCurrentSourceEdit_->clear();
@@ -802,7 +802,7 @@ void MainWindow::handleValidationSelectionChanged(const QModelIndex &current, co
     if (validationSuggestedSourceLabel_ != nullptr) {
         validationSuggestedSourceLabel_->setText(removesSource
                                                      ? tr("Automatic fix")
-                                                     : tr("Suggested source line"));
+                                                     : tr("Automatic fix preview"));
     }
     if (validationSuggestedSourceEdit_ != nullptr) {
         if (!diagnostic.hasFix) {

@@ -1,0 +1,7 @@
+encoding utf-8
+scrap test
+line wall -clip off
+  0 0
+  1 1
+endline
+endscrap

@@ -1831,6 +1831,13 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <translation>Navržený zdrojový řádek</translation>
     </message>
     <message>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="307"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="768"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="802"/>
+        <source>Automatic fix preview</source>
+        <translation>Náhled automatické opravy</translation>
+    </message>
+    <message>
         <location filename="../src/app/MainWindowValidationSidebar.cpp" line="316"/>
         <location filename="../src/app/MainWindowValidationSidebar.cpp" line="778"/>
         <location filename="../src/app/MainWindowValidationSidebar.cpp" line="817"/>
@@ -7071,6 +7078,30 @@ subtype blocks</translation>
         <location filename="../src/core/TherionSourceValidator.cpp" line="863"/>
         <source>Block `%1` is not closed before the end of the document. Expected `%2`.</source>
         <translation>Blok `%1` není před koncem dokumentu uzavřen. Očekáváno `%2`.</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="137"/>
+        <source>Insert before line %1:
+%2</source>
+        <translation>Vložit před řádek %1:
+%2</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="140"/>
+        <source>Insert at end of file:
+%1</source>
+        <translation>Vložit na konec souboru:
+%1</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="997"/>
+        <source>Insert %1 before line %2</source>
+        <translation>Vložit %1 před řádek %2</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1001"/>
+        <source>Insert %1 at end of file</source>
+        <translation>Vložit %1 na konec souboru</translation>
     </message>
 </context>
 <context>
