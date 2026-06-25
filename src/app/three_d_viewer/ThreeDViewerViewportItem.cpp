@@ -358,8 +358,7 @@ double radiansToDegrees(double radians)
 
 double cameraHeadingDegrees(const ThreeDViewerCamera &camera)
 {
-    const ThreeDViewerVec3 forward = camera.forwardVector();
-    return normalizeDegrees(std::atan2(forward.x, forward.y) * 180.0 / kPi);
+    return camera.headingDegrees();
 }
 
 double cameraInclinationDegrees(const ThreeDViewerCamera &camera)
@@ -394,24 +393,11 @@ void appendCompassIndicator(QSGNode *root,
         return;
     }
 
+    Q_UNUSED(viewportWidth);
     Q_UNUSED(viewportHeight);
 
-    const ThreeDViewerVec3 worldNorth{0.0, 1.0, 0.0};
-    const ThreeDViewerVec3 sceneCenter = boundsCenter(bounds);
-    const ThreeDViewerVec3 northPoint{sceneCenter.x + worldNorth.x * 100.0, sceneCenter.y + worldNorth.y * 100.0, sceneCenter.z + worldNorth.z * 100.0};
-    const ThreeDViewerProjectedPoint projectedCenter = ThreeDViewerProjection::projectPoint(camera, sceneCenter, viewportWidth, viewportHeight);
-    const ThreeDViewerProjectedPoint projectedNorth = ThreeDViewerProjection::projectPoint(camera, northPoint, viewportWidth, viewportHeight);
-
-    QPointF arrow(0.0, -26.0);
-    if (projectedCenter.visible && projectedNorth.visible) {
-        arrow = projectedNorth.screenPosition - projectedCenter.screenPosition;
-        const double length = std::hypot(arrow.x(), arrow.y());
-        if (length > 0.001) {
-            arrow = QPointF(arrow.x() / length * 26.0, arrow.y() / length * 26.0);
-        } else {
-            arrow = QPointF(0.0, -26.0);
-        }
-    }
+    const double headingRadians = cameraHeadingDegrees(camera) * kPi / 180.0;
+    const QPointF arrow(std::sin(headingRadians) * 26.0, -std::cos(headingRadians) * 26.0);
 
     const QVector<QPointF> disk = projectedCircle(center, 18.0, 24);
     appendClosedPolyline(root, disk, QColor(QStringLiteral("#2563eb")), 1.0);

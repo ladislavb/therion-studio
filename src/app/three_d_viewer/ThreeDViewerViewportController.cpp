@@ -7,6 +7,7 @@ namespace TherionStudio
 namespace
 {
 constexpr double kPi = 3.14159265358979323846;
+constexpr double kRotateStepDegrees = 5.0;
 
 double degreesToRadians(double degrees)
 {
@@ -60,13 +61,13 @@ void ThreeDViewerViewportController::setViewPreset(ThreeDViewerViewPreset preset
 
 void ThreeDViewerViewportController::rotateLeft()
 {
-    camera_.yawByRadians(kPi / 12.0);
+    camera_.yawByRadians(degreesToRadians(kRotateStepDegrees));
     emitCameraChanged();
 }
 
 void ThreeDViewerViewportController::rotateRight()
 {
-    camera_.yawByRadians(-kPi / 12.0);
+    camera_.yawByRadians(-degreesToRadians(kRotateStepDegrees));
     emitCameraChanged();
 }
 

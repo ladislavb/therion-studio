@@ -8,6 +8,7 @@ namespace TherionStudio
 {
 namespace
 {
+constexpr double kPi = 3.14159265358979323846;
 constexpr ThreeDViewerVec3 worldUp{0.0, 0.0, 1.0};
 
 double vectorLengthSquared(const ThreeDViewerVec3 &value)
@@ -54,6 +55,25 @@ ThreeDViewerVec3 normalizedOrFallback(const ThreeDViewerVec3 &value, const Three
         return fallback;
     }
     return {value.x / length, value.y / length, value.z / length};
+}
+
+double normalizeDegrees(double value)
+{
+    value = std::fmod(value, 360.0);
+    if (value < 0.0) {
+        value += 360.0;
+    }
+    return value;
+}
+
+double radiansToDegrees(double radians)
+{
+    return radians * 180.0 / kPi;
+}
+
+double headingDegreesFromYaw(double yaw)
+{
+    return normalizeDegrees(radiansToDegrees(std::atan2(-std::cos(yaw), -std::sin(yaw))));
 }
 
 std::array<ThreeDViewerVec3, 8> boundsCorners(const ThreeDViewerBounds &bounds)
@@ -145,11 +165,9 @@ void ThreeDViewerCamera::setViewPreset(ThreeDViewerViewPreset preset)
         state_.pitch = 0.45;
         break;
     case ThreeDViewerViewPreset::Top:
-        state_.yaw = -0.85;
-        state_.pitch = 3.14159265358979323846 * 0.5;
+        state_.pitch = kPi * 0.5;
         break;
     case ThreeDViewerViewPreset::Side:
-        state_.yaw = 0.0;
         state_.pitch = 0.0;
         break;
     }
@@ -158,7 +176,7 @@ void ThreeDViewerCamera::setViewPreset(ThreeDViewerViewPreset preset)
 
 void ThreeDViewerCamera::yawByRadians(double deltaRadians)
 {
-    state_.yaw = std::remainder(state_.yaw + deltaRadians, 2.0 * 3.14159265358979323846);
+    state_.yaw = std::remainder(state_.yaw + deltaRadians, 2.0 * kPi);
 }
 
 void ThreeDViewerCamera::orbitByPixels(double deltaX, double deltaY, double yawScale, double pitchScale)
@@ -215,6 +233,11 @@ ThreeDViewerVec3 ThreeDViewerCamera::upVector() const
     return normalizedOrFallback(cross(right, forward), worldUp);
 }
 
+double ThreeDViewerCamera::headingDegrees() const
+{
+    return headingDegreesFromYaw(state_.yaw);
+}
+
 double ThreeDViewerCamera::fieldOfViewRadians() const
 {
     return fieldOfViewRadiansForFocalLengthMm(state_.focalLengthMm);
@@ -236,7 +259,7 @@ double ThreeDViewerCamera::clampDistance(double distance)
 
 double ThreeDViewerCamera::clampPitch(double pitch)
 {
-    constexpr double verticalLimit = 3.14159265358979323846 * 0.5;
+    constexpr double verticalLimit = kPi * 0.5;
     return std::clamp(pitch, -verticalLimit, verticalLimit);
 }
 

@@ -7,12 +7,18 @@
 
 #include <QFileInfo>
 #include <QFrame>
+#include <QPointer>
 #include <QShortcut>
 #include <QSplitter>
+#include <QTimer>
 #include <QVBoxLayout>
 
 namespace TherionStudio
 {
+namespace
+{
+constexpr double kKeyboardTiltStepDegrees = 5.0;
+}
 
 ThreeDViewerTab::ThreeDViewerTab(QWidget *parent)
     : QWidget(parent)
@@ -111,6 +117,7 @@ void ThreeDViewerTab::fitToScene()
         return;
     }
     viewport_->fitToScene();
+    focusViewportForKeyboardNavigation();
 }
 
 void ThreeDViewerTab::resetView()
@@ -119,6 +126,7 @@ void ThreeDViewerTab::resetView()
         return;
     }
     viewport_->resetView();
+    focusViewportForKeyboardNavigation();
 }
 
 void ThreeDViewerTab::setTopView()
@@ -127,6 +135,7 @@ void ThreeDViewerTab::setTopView()
         return;
     }
     viewport_->setViewPreset(ThreeDViewerViewPreset::Top);
+    focusViewportForKeyboardNavigation();
 }
 
 void ThreeDViewerTab::setSideView()
@@ -135,6 +144,7 @@ void ThreeDViewerTab::setSideView()
         return;
     }
     viewport_->setViewPreset(ThreeDViewerViewPreset::Side);
+    focusViewportForKeyboardNavigation();
 }
 
 void ThreeDViewerTab::rollViewLeft()
@@ -143,6 +153,7 @@ void ThreeDViewerTab::rollViewLeft()
         return;
     }
     viewport_->rollLeft();
+    focusViewportForKeyboardNavigation();
 }
 
 void ThreeDViewerTab::rollViewRight()
@@ -151,6 +162,16 @@ void ThreeDViewerTab::rollViewRight()
         return;
     }
     viewport_->rollRight();
+    focusViewportForKeyboardNavigation();
+}
+
+void ThreeDViewerTab::adjustTiltDegrees(double deltaDegrees)
+{
+    if (viewport_ == nullptr || inspectorState_ == nullptr) {
+        return;
+    }
+    viewport_->setCameraTiltDegrees(inspectorState_->cameraTiltDegrees() + deltaDegrees);
+    focusViewportForKeyboardNavigation();
 }
 
 void ThreeDViewerTab::setMeasurementMode(bool measurementMode)
@@ -249,6 +270,22 @@ void ThreeDViewerTab::buildUi()
         if (measurementMode()) {
             setMeasurementMode(false);
         }
+    });
+    auto *rotateLeftShortcut = new QShortcut(QKeySequence(Qt::Key_Left), this);
+    rotateLeftShortcut->setContext(Qt::WindowShortcut);
+    connect(rotateLeftShortcut, &QShortcut::activated, this, &ThreeDViewerTab::rollViewLeft);
+    auto *rotateRightShortcut = new QShortcut(QKeySequence(Qt::Key_Right), this);
+    rotateRightShortcut->setContext(Qt::WindowShortcut);
+    connect(rotateRightShortcut, &QShortcut::activated, this, &ThreeDViewerTab::rollViewRight);
+    auto *tiltUpShortcut = new QShortcut(QKeySequence(Qt::Key_Up), this);
+    tiltUpShortcut->setContext(Qt::WindowShortcut);
+    connect(tiltUpShortcut, &QShortcut::activated, this, [this] {
+        adjustTiltDegrees(-kKeyboardTiltStepDegrees);
+    });
+    auto *tiltDownShortcut = new QShortcut(QKeySequence(Qt::Key_Down), this);
+    tiltDownShortcut->setContext(Qt::WindowShortcut);
+    connect(tiltDownShortcut, &QShortcut::activated, this, [this] {
+        adjustTiltDegrees(kKeyboardTiltStepDegrees);
     });
 
     auto *inspector = new QWidget(splitter_);
@@ -399,6 +436,22 @@ void ThreeDViewerTab::loadSceneIntoView(bool fitToScene)
     if (fitToScene) {
         viewport_->fitToScene();
     }
+}
+
+void ThreeDViewerTab::focusViewportForKeyboardNavigation()
+{
+    if (viewport_ == nullptr) {
+        return;
+    }
+
+    viewport_->focusViewport(Qt::ShortcutFocusReason);
+
+    const QPointer<ThreeDViewerViewportWidget> viewport(viewport_);
+    QTimer::singleShot(0, this, [viewport] {
+        if (viewport != nullptr) {
+            viewport->focusViewport(Qt::ShortcutFocusReason);
+        }
+    });
 }
 
 } // namespace TherionStudio

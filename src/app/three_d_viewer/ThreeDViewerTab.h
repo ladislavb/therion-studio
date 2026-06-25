@@ -34,6 +34,7 @@ public:
     void setSideView();
     void rollViewLeft();
     void rollViewRight();
+    void adjustTiltDegrees(double deltaDegrees);
     void setMeasurementMode(bool measurementMode);
     bool measurementMode() const;
     void setAutoRotationEnabled(bool autoRotationEnabled);
@@ -56,6 +57,7 @@ private:
     void rebuildScene(bool fitToScene = true);
     void updateSceneSummary();
     void loadSceneIntoView(bool fitToScene = true);
+    void focusViewportForKeyboardNavigation();
 
     ThreeDViewerLoxLoader loader_;
     ThreeDViewerSceneModel sceneModel_;

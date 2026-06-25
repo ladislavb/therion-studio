@@ -236,6 +236,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - The 3D viewer inspector now uses consistent Title Case for English field and layer labels.
 - The 3D viewer now supports arrow-key yaw/tilt navigation, higher-contrast per-vertex mesh lighting, and a palette-aware QML inspector surface styled closer to the existing QWidget inspectors.
 - The 3D viewer measurement mode now exits on `Esc`, keeping the viewport, inspector, and tab state synchronized.
+- The 3D viewer arrow-key navigation and rotate buttons now use a shared 5-degree yaw/tilt step; toolbar view
+  commands return focus to the viewport, and top/side view rotation keeps a stable compass heading while top-view tilt
+  remains 90 degrees. Top/side view presets preserve the current compass heading instead of resetting yaw, and arrow-key
+  navigation works whenever the 3D viewer tab is active.
 - The project File sidebar now uses the same Therion badged document icon for `.lox` files as for `.th`, `.th2`, and `thconfig` files.
 - Open `.lox` viewer tabs now auto-reload regenerated files through file and parent-directory watches while preserving the current camera and inspector state instead of refitting the view.
 - Continue the renderer refinement and the broader Qt Quick/QML shell migration once the GPU-backed viewport proves out the document-open workflow.

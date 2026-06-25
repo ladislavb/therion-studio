@@ -27,7 +27,7 @@ void ThreeDViewerViewportControllerTest::rotatesAroundBlueAxisAndZooms()
     const ThreeDViewerCameraState beforeRotate = controller.camera().state();
     controller.rotateLeft();
     const ThreeDViewerCameraState afterRotate = controller.camera().state();
-    QVERIFY(std::abs(afterRotate.yaw - (beforeRotate.yaw + 3.14159265358979323846 / 12.0)) < 1e-12);
+    QVERIFY(std::abs(afterRotate.yaw - (beforeRotate.yaw + 5.0 * 3.14159265358979323846 / 180.0)) < 1e-12);
     QCOMPARE(afterRotate.pitch, beforeRotate.pitch);
     QCOMPARE(afterRotate.distance, beforeRotate.distance);
     QCOMPARE(afterRotate.target.x, beforeRotate.target.x);

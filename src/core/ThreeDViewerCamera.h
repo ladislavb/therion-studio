@@ -46,6 +46,7 @@ public:
     ThreeDViewerVec3 forwardVector() const;
     ThreeDViewerVec3 rightVector() const;
     ThreeDViewerVec3 upVector() const;
+    double headingDegrees() const;
 
     double fieldOfViewRadians() const;
     double screenPanScale(int viewportHeight) const;

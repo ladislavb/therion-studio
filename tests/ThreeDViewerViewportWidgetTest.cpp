@@ -6,6 +6,8 @@
 #include <QApplication>
 #include <QKeyEvent>
 #include <QSignalSpy>
+#include <QToolButton>
+#include <QVBoxLayout>
 
 using namespace TherionStudio;
 
@@ -17,6 +19,10 @@ private slots:
     void loadsTheQmlViewportSurface();
     void escapeRequestsMeasurementModeExit();
     void escapeLeavesTabMeasurementModeAfterToolbarActivation();
+    void arrowKeysNavigateWhenTabHasFocus();
+    void arrowKeysNavigateWhenWindowFocusIsOutsideCanvas();
+    void viewPresetReturnsFocusForArrowNavigation();
+    void toolbarViewPresetReturnsFocusForArrowNavigation();
 };
 
 void ThreeDViewerViewportWidgetTest::loadsTheQmlViewportSurface()
@@ -60,6 +66,103 @@ void ThreeDViewerViewportWidgetTest::escapeLeavesTabMeasurementModeAfterToolbarA
     QTest::keyClick(viewport, Qt::Key_Escape);
 
     QTRY_VERIFY(!tab.measurementMode());
+}
+
+void ThreeDViewerViewportWidgetTest::arrowKeysNavigateWhenTabHasFocus()
+{
+    ThreeDViewerTab tab;
+    tab.resize(800, 600);
+    tab.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&tab));
+
+    auto *viewport = tab.findChild<ThreeDViewerViewportWidget *>();
+    QVERIFY(viewport != nullptr);
+    QTRY_COMPARE(viewport->status(), QQuickWidget::Ready);
+
+    QSignalSpy spy(viewport, &ThreeDViewerViewportWidget::cameraSettingsChanged);
+
+    QTest::keyClick(&tab, Qt::Key_Left);
+
+    QTRY_VERIFY(spy.count() > 0);
+}
+
+void ThreeDViewerViewportWidgetTest::arrowKeysNavigateWhenWindowFocusIsOutsideCanvas()
+{
+    QWidget window;
+    auto *layout = new QVBoxLayout(&window);
+    auto *button = new QToolButton(&window);
+    auto *tab = new ThreeDViewerTab(&window);
+    button->setText(QStringLiteral("Focus"));
+    layout->addWidget(button);
+    layout->addWidget(tab);
+    window.resize(800, 640);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    auto *viewport = tab->findChild<ThreeDViewerViewportWidget *>();
+    QVERIFY(viewport != nullptr);
+    QTRY_COMPARE(viewport->status(), QQuickWidget::Ready);
+
+    button->setFocus(Qt::MouseFocusReason);
+    QCOMPARE(QApplication::focusWidget(), button);
+
+    QSignalSpy spy(viewport, &ThreeDViewerViewportWidget::cameraSettingsChanged);
+
+    QTest::keyClick(button, Qt::Key_Left);
+
+    QTRY_VERIFY(spy.count() > 0);
+}
+
+void ThreeDViewerViewportWidgetTest::viewPresetReturnsFocusForArrowNavigation()
+{
+    ThreeDViewerTab tab;
+    tab.resize(800, 600);
+    tab.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&tab));
+
+    auto *viewport = tab.findChild<ThreeDViewerViewportWidget *>();
+    QVERIFY(viewport != nullptr);
+    QTRY_COMPARE(viewport->status(), QQuickWidget::Ready);
+
+    tab.setTopView();
+    QTRY_COMPARE(QApplication::focusWidget(), viewport);
+
+    QSignalSpy spy(viewport, &ThreeDViewerViewportWidget::cameraSettingsChanged);
+
+    QTest::keyClick(viewport, Qt::Key_Left);
+
+    QTRY_VERIFY(spy.count() > 0);
+}
+
+void ThreeDViewerViewportWidgetTest::toolbarViewPresetReturnsFocusForArrowNavigation()
+{
+    QWidget window;
+    auto *layout = new QVBoxLayout(&window);
+    auto *button = new QToolButton(&window);
+    auto *tab = new ThreeDViewerTab(&window);
+    button->setText(QStringLiteral("Top"));
+    layout->addWidget(button);
+    layout->addWidget(tab);
+    window.resize(800, 640);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    auto *viewport = tab->findChild<ThreeDViewerViewportWidget *>();
+    QVERIFY(viewport != nullptr);
+    QTRY_COMPARE(viewport->status(), QQuickWidget::Ready);
+
+    connect(button, &QToolButton::clicked, tab, &ThreeDViewerTab::setTopView);
+    button->setFocus(Qt::MouseFocusReason);
+    QCOMPARE(QApplication::focusWidget(), button);
+
+    QTest::mouseClick(button, Qt::LeftButton);
+    QTRY_COMPARE(QApplication::focusWidget(), viewport);
+
+    QSignalSpy spy(viewport, &ThreeDViewerViewportWidget::cameraSettingsChanged);
+
+    QTest::keyClick(viewport, Qt::Key_Left);
+
+    QTRY_VERIFY(spy.count() > 0);
 }
 
 int runThreeDViewerViewportWidgetTest(int argc, char **argv)

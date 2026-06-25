@@ -78,15 +78,17 @@ void ThreeDViewerCameraTest::resetRestoresDefaultOrientation()
 void ThreeDViewerCameraTest::appliesViewPresets()
 {
     ThreeDViewerCamera camera;
+    camera.setState({{0.0, 0.0, 0.0}, 0.7, 0.2, 20.0});
+
     camera.setViewPreset(ThreeDViewerViewPreset::Top);
 
     ThreeDViewerCameraState top = camera.state();
-    QVERIFY(std::abs(top.yaw + 0.85) < 1e-12);
+    QVERIFY(std::abs(top.yaw - 0.7) < 1e-12);
     QVERIFY(std::abs(top.pitch - 3.14159265358979323846 * 0.5) < 1e-12);
 
     camera.setViewPreset(ThreeDViewerViewPreset::Side);
     const ThreeDViewerCameraState side = camera.state();
-    QVERIFY(std::abs(side.yaw) < 1e-12);
+    QVERIFY(std::abs(side.yaw - 0.7) < 1e-12);
     QVERIFY(std::abs(side.pitch) < 1e-12);
 }
 
@@ -114,10 +116,14 @@ void ThreeDViewerCameraTest::topViewRotationKeepsYawVisible()
     ThreeDViewerCamera camera;
     camera.setViewPreset(ThreeDViewerViewPreset::Top);
 
+    const double beforeHeading = camera.headingDegrees();
     const ThreeDViewerVec3 before = camera.rightVector();
     camera.yawByRadians(3.14159265358979323846 / 4.0);
+    const double afterHeading = camera.headingDegrees();
     const ThreeDViewerVec3 after = camera.rightVector();
 
+    QCOMPARE(camera.state().pitch, 3.14159265358979323846 * 0.5);
+    QVERIFY(std::abs(beforeHeading - afterHeading) > 1.0);
     QVERIFY(std::abs(before.x - after.x) > 0.1 || std::abs(before.y - after.y) > 0.1);
     QCOMPARE(before.z, 0.0);
     QCOMPARE(after.z, 0.0);
