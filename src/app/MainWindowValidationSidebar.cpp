@@ -359,6 +359,7 @@ void MainWindow::triggerValidateDocumentForActiveDocument()
     const QString documentLabel = validationDocumentLabel(displayName, filePath);
     if (validation.diagnostics.isEmpty()) {
         clearValidationRailIndicator();
+        pendingValidationFixNavigation_ = false;
         if (validationStatusLabel_ != nullptr) {
             validationStatusLabel_->setText(tr("No validation problems found in %1.").arg(documentLabel));
         }
@@ -423,6 +424,10 @@ void MainWindow::triggerValidateDocumentForActiveDocument()
         if (firstFinding.isValid()) {
             validationResultsTree_->setCurrentIndex(firstFinding);
             handleValidationSelectionChanged(firstFinding, {});
+            if (pendingValidationFixNavigation_) {
+                pendingValidationFixNavigation_ = false;
+                openValidationResult(firstFinding);
+            }
         }
         restoreValidationScrollValue(validationResultsTree_, previousScrollValue);
     }
@@ -591,9 +596,8 @@ void MainWindow::updateOpenEditorProjectValidationDiagnostics()
 void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidationController::Trigger trigger,
                                                  const TherionStudio::ProjectValidationScanner::Result &result)
 {
-    Q_UNUSED(trigger)
-
     const bool revealPanel = validationRevealByGeneration_.take(result.generation);
+    const bool navigateAfterFix = trigger == TherionStudio::ProjectValidationController::Trigger::FixApplied;
     if (validationScanProjectButton_ != nullptr) {
         validationScanProjectButton_->setEnabled(true);
     }
@@ -742,6 +746,9 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
         if (nextFinding.isValid()) {
             validationResultsTree_->setCurrentIndex(nextFinding);
             handleValidationSelectionChanged(nextFinding, {});
+            if (navigateAfterFix) {
+                openValidationResult(nextFinding);
+            }
         } else {
             handleValidationSelectionChanged({}, {});
         }
@@ -927,8 +934,9 @@ void MainWindow::applySelectedValidationFix()
         : QString();
     if (applyValidationFixesToValidatedDocument(filePath, {diagnostic.fix})) {
         if (validationProjectMode_) {
-            requestProjectValidation();
+            requestProjectValidation(TherionStudio::ProjectValidationController::Trigger::FixApplied, true);
         } else {
+            pendingValidationFixNavigation_ = true;
             triggerValidateDocumentForActiveDocument();
         }
     }

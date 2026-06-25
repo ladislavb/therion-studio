@@ -121,6 +121,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   platform-specific `QGraphicsItem` implicit move behavior.
 - Keep empty scrap object cleanup explicit through validator warnings and `Apply Fix`, not silent source mutation.
 - Keep deletion-style validation fixes visibly labeled as removals and preview the full source block being removed.
+- Keep validator `Apply Fix` source edits refreshing open map projections immediately after a successful transaction.
+- Keep validator `Apply Fix` navigation synchronized with the next selected problem after the refreshed findings list is
+  rebuilt.
 - Keep inline `type:subtype` map object rendering aligned with inspector preview and `-subtype` rendering.
 - Keep Selection quick-field label/input visibility synchronized with wrapper visibility across clear/refresh cycles.
 - Keep point `-align` rendering anchored like Therion so map canvas placement matches saved point options.

@@ -196,6 +196,10 @@ public:
     {
         return scenePointFromSourcePosition(sourcePosition);
     }
+    bool testHasMapSceneItemForLine(int lineNumber) const
+    {
+        return mapItemsByLine_.contains(lineNumber);
+    }
 #endif
     void setMagnifierEnabled(bool enabled);
     void setRightPanelCollapsed(bool collapsed);

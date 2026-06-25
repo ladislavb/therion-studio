@@ -1502,6 +1502,14 @@ target_compile_definitions(MapEditorLineExtensionTransactionTest PRIVATE
 target_link_libraries(MapEditorLineExtensionTransactionTest PRIVATE
     Qt6::Test)
 
+therion_add_map_editor_ui_test(MapEditorValidationFixRefreshTest
+    tests/MapEditorValidationFixRefreshTest.cpp
+    "MapEditorValidationFixRefreshResources")
+target_compile_definitions(MapEditorValidationFixRefreshTest PRIVATE
+    THERION_STUDIO_TESTING)
+target_link_libraries(MapEditorValidationFixRefreshTest PRIVATE
+    Qt6::Test)
+
 set(THERION_UNIT_TEST_TARGETS
     CommandCatalogStoreTest
     CommandOptionParserTest
@@ -1573,6 +1581,7 @@ set(THERION_UI_TEST_TARGETS
     MapEditorObjectDetailsQuickFieldsTransactionTest
     MapEditorInteractiveDrawTransactionTest
     MapEditorLineExtensionTransactionTest
+    MapEditorValidationFixRefreshTest
     MapEditorViewportInputControllerTest)
 
 set(THERION_TEST_EXECUTABLE_TARGETS

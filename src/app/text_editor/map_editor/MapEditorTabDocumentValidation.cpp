@@ -29,6 +29,10 @@ bool MapEditorTab::applyValidationFixes(const QVector<TherionSourceDiagnosticFix
     if (textEditor_ == nullptr) {
         return false;
     }
-    return textEditor_->applyValidationFixes(fixes);
+    const bool applied = textEditor_->applyValidationFixes(fixes);
+    if (applied) {
+        refreshMapScenePreservingUndoStack();
+    }
+    return applied;
 }
 }

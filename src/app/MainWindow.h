@@ -481,6 +481,7 @@ private:
     QString validationDocumentPath_;
     QHash<quint64, bool> validationRevealByGeneration_;
     bool pendingProjectValidationRevealPanel_ = false;
+    bool pendingValidationFixNavigation_ = false;
     bool validationProjectMode_ = false;
     int validationProblemCount_ = 0;
     TherionStudio::TherionSourceDiagnosticSeverity validationHighestSeverity_ =
