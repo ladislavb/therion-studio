@@ -81,6 +81,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   workflow regression using a real Wikimedia cave-map SVG fixture for insertion, transform preservation, and removal.
 - Keep raster/SVG background pivots stored in layer-local image coordinates so `Set Pivot` works consistently for clicks
   inside or outside the visible background and subsequent scale/rotation keeps the chosen scene point fixed.
+- Keep manually imported XVI backgrounds visible in the Backgrounds inspector immediately after import, and keep XVI
+  position edits writing Mapiah base-position metadata instead of only moving the transient scene item.
 - Keep tab-level map source insertions such as Insert Scrap, Complete Draft, and Smart Area result-aware instead of
   inferring success from post-apply hooks.
 - Keep map background layer refreshes isolated from viewport-only command-surface updates so loaded raster/XVI metadata

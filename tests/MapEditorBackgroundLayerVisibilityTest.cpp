@@ -1774,6 +1774,41 @@ int runMetadataXviPlacementIgnoresSessionScenePositionTest()
             return 1;
         }
         metadataPosition = mapTab->backgroundLayerPosition(0);
+
+        const QRectF originalSceneBounds = mapTab->backgroundLayerSceneBounds(0);
+        const QPointF movedPosition(metadataPosition.x() + 37.0, metadataPosition.y() - 23.0);
+        mapTab->setSelectedBackgroundLayerIndex(0);
+        mapTab->setSelectedBackgroundLayerPosition(movedPosition);
+        pumpEvents();
+        if (!expect(nearlyEqual(mapTab->backgroundLayerPosition(0).x(), movedPosition.x())
+                        && nearlyEqual(mapTab->backgroundLayerPosition(0).y(), movedPosition.y()),
+                    "Moving an XVI background should update its editable base position.")) {
+            return 1;
+        }
+        const QRectF movedSceneBounds = mapTab->backgroundLayerSceneBounds(0);
+        if (!expect(movedSceneBounds.isValid()
+                        && (!nearlyEqual(movedSceneBounds.center().x(), originalSceneBounds.center().x())
+                            || !nearlyEqual(movedSceneBounds.center().y(), originalSceneBounds.center().y())),
+                    "Moving an XVI background should move its rendered scene bounds.")) {
+            return 1;
+        }
+
+        const QVector<TherionBackgroundReference> movedReferences =
+            parseTherionBackgroundReferences(mapTab->text(), filePath);
+        bool foundMovedXviReference = false;
+        for (const TherionBackgroundReference &reference : movedReferences) {
+            if (reference.layerFormat == TherionBackgroundLayerFormat::Xvi
+                && reference.metadataFormat == TherionBackgroundMetadataFormat::Mapiah
+                && nearlyEqual(reference.basePosition.x(), movedPosition.x())
+                && nearlyEqual(reference.basePosition.y(), movedPosition.y())) {
+                foundMovedXviReference = true;
+                break;
+            }
+        }
+        if (!expect(foundMovedXviReference,
+                    "Moving an XVI background should write Mapiah XVI metadata with the new base position.")) {
+            return 1;
+        }
     }
 
     FakeSessionStore staleSessionStore;

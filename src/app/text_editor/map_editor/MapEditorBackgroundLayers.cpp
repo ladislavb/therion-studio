@@ -1775,11 +1775,7 @@ bool MapEditorTab::backgroundLayerSupportsTransformEditing(int index) const
 
 bool MapEditorTab::backgroundLayerSupportsPositionEditing(int index) const
 {
-    const QGraphicsPixmapItem *item = backgroundLayerItemAt(index);
-    if (item == nullptr) {
-        return false;
-    }
-    return !isMapEditorXviBackgroundPath(item->data(0).toString());
+    return backgroundLayerItemAt(index) != nullptr;
 }
 
 QPointF MapEditorTab::backgroundLayerPosition(int index) const
@@ -1926,6 +1922,9 @@ void MapEditorTab::browseAndAddBackgroundImages()
                                                   previewBounds)) {
                 continue;
             }
+            applyBackgroundLayerStackingOrder();
+            setSelectedBackgroundLayerIndexInternal(backgroundImageItems_.size() - 1);
+            refreshBackgroundLayerControls();
             if (pocketTopoImport && textEditor_ != nullptr) {
                 const QString beforeText = textEditor_->text();
                 const QString metadataLine = xtherionImageInsertLine(absoluteXviPath,
@@ -2107,6 +2106,42 @@ void MapEditorTab::setSelectedBackgroundLayerPosition(const QPointF &position)
         return;
     }
     if (isMapEditorXviBackgroundPath(item->data(0).toString())) {
+        const QString layerPath = QFileInfo(item->data(0).toString()).absoluteFilePath();
+        XviDocument xviDocument;
+        if (!parseXviDocumentFileCached(layerPath, &xviDocument)) {
+            return;
+        }
+
+        const XtherionAreaAdjust areaAdjust = textEditor_ != nullptr
+            ? parseXtherionAreaAdjust(textEditor_->text())
+            : XtherionAreaAdjust{};
+        QRectF sourceBounds = mapSourceBoundsForCurrentDocument();
+        if (!sourceBounds.isValid()) {
+            sourceBounds = xtherionAutoAreaAdjustRect();
+        }
+        const QRectF xviModelBounds = areaAdjust.valid && areaAdjust.modelRect.isValid()
+            ? areaAdjust.modelRect
+            : sourceBounds;
+        const QRectF previewBounds = mapPreviewBounds();
+        auto *xviItem = dynamic_cast<MapEditorXviBackgroundItem *>(item);
+        if (xviItem == nullptr
+            || !updateXviBackgroundItemGeometry(xviItem,
+                                                layerPath,
+                                                xviDocument,
+                                                position,
+                                                item->data(kBackgroundLayerXviRootStationRole).toString(),
+                                                xviModelBounds,
+                                                previewBounds)) {
+            return;
+        }
+
+        item->setData(kBackgroundLayerXviBasePositionRole, position);
+        item->setData(kMapEditorBackgroundMetadataFormatRole,
+                      static_cast<int>(TherionBackgroundMetadataFormat::Mapiah));
+        applyBackgroundLayerTransform(item);
+        syncBackgroundLayerMapiahMetadata(item, tr("Move Background Image"), false);
+        saveBackgroundLayersToSession();
+        refreshBackgroundLayerPropertyControls();
         return;
     }
 
@@ -2197,6 +2232,10 @@ void MapEditorTab::nudgeSelectedBackgroundLayer(const QPointF &delta)
 {
     QGraphicsPixmapItem *item = selectedBackgroundLayerItem();
     if (item == nullptr) {
+        return;
+    }
+    if (isMapEditorXviBackgroundPath(item->data(0).toString())) {
+        setSelectedBackgroundLayerPosition(backgroundLayerPosition(selectedBackgroundLayerIndex_) + delta);
         return;
     }
 
