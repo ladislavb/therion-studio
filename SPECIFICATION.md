@@ -441,6 +441,8 @@ The rules below define the expected day-to-day interaction model. If a later req
 - Placement tools that require a scrap context shall be disabled or unavailable until a valid scrap target exists.
 - Zoom and pan shall be editable and shall persist per document session.
 - Input-device behavior shall be deterministic and mode-aware:
+  - holding Space and dragging with the primary mouse button shall temporarily pan the map canvas without leaving the current map tool
+  - holding Ctrl and dragging with the primary mouse button shall pan the map canvas using the same behavior as right-button drag, while Ctrl plus primary-button click without drag shall remain available as a secondary-click/context-menu gesture on platforms that use it
   - precise scrolling devices (touchpad and Magic Mouse) shall pan by default
   - non-precise wheel scrolling may zoom by default
   - pinch/magnify gestures shall zoom

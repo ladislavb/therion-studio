@@ -807,6 +807,8 @@ private:
     mutable QVector<TherionParsedLine> cachedParsedLines_;
     bool mapPanActive_ = false;
     bool mapPanMoved_ = false;
+    bool mapSpacePanKeyDown_ = false;
+    bool mapControlPanActive_ = false;
     QPoint mapPanStartPosition_;
     QPoint mapPanLastPosition_;
     QPointer<QMenu> mapSelectionContextMenu_;

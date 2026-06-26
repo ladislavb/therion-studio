@@ -32,6 +32,8 @@ struct MapEditorViewportInputContext
     bool *fitBackgroundRequested = nullptr;
     bool *mapPanActive = nullptr;
     bool *mapPanMoved = nullptr;
+    bool *mapSpacePanKeyDown = nullptr;
+    bool *mapControlPanActive = nullptr;
     QPoint *mapPanStartPosition = nullptr;
     QPoint *mapPanLastPosition = nullptr;
     bool *primaryPointerInteractionActive = nullptr;

@@ -31,6 +31,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   clicked line point instead of drifting to another selected item on the same or nearby geometry.
 - Keep Windows pen-tablet and stylus input normalized through the map viewport controller so selecting, line/area
   drafting, and freehand strokes do not depend on platform mouse-event synthesis or duplicate generated clicks.
+- Keep map panning discoverable through temporary `Space` + primary-button drag and `Ctrl` + primary-button drag while
+  preserving right-button drag, precision-scroll panning, context menus, and the currently selected drawing tool.
 - Keep map vertex and Bezier control point markers large enough to target comfortably on HiDPI/Windows-scaled displays
   without changing source coordinates or map geometry.
 - Keep Bezier control point markers visually distinct as solid blue square handles.

@@ -67,6 +67,48 @@ bool isSecondaryClickPress(const QMouseEvent *event)
         && event->modifiers().testFlag(Qt::ControlModifier);
 }
 
+bool isSpacePanPress(const MapEditorViewportInputContext &context, const QMouseEvent *event)
+{
+    return event != nullptr
+        && event->button() == Qt::LeftButton
+        && context.mapSpacePanKeyDown != nullptr
+        && (*context.mapSpacePanKeyDown);
+}
+
+bool isControlPanPress(const QMouseEvent *event)
+{
+    return event != nullptr
+        && event->button() == Qt::LeftButton
+        && event->modifiers().testFlag(Qt::ControlModifier);
+}
+
+void beginMapPanDrag(MapEditorViewportInputContext &context,
+                     QWidget *viewport,
+                     const QPoint &position,
+                     bool controlPan)
+{
+    if (context.view != nullptr) {
+        context.view->setFocus(Qt::MouseFocusReason);
+    }
+    if (viewport != nullptr) {
+        viewport->setFocus(Qt::MouseFocusReason);
+        viewport->setCursor(Qt::OpenHandCursor);
+    }
+    (*context.mapPanActive) = true;
+    if (context.mapPanMoved != nullptr) {
+        (*context.mapPanMoved) = false;
+    }
+    if (context.mapPanStartPosition != nullptr) {
+        (*context.mapPanStartPosition) = position;
+    }
+    if (context.mapPanLastPosition != nullptr) {
+        (*context.mapPanLastPosition) = position;
+    }
+    if (context.mapControlPanActive != nullptr) {
+        (*context.mapControlPanActive) = controlPan;
+    }
+}
+
 bool hasRecentHandledTabletEvent(const MapEditorViewportInputContext &context)
 {
     if (context.lastTabletInteractionUtc == nullptr || !context.lastTabletInteractionUtc->isValid()) {
@@ -1111,6 +1153,9 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                 return true;
             }
             (*context_.mapPanActive) = false;
+            if (context_.mapControlPanActive != nullptr) {
+                (*context_.mapControlPanActive) = false;
+            }
             if (context_.mapPanMoved != nullptr) {
                 (*context_.mapPanMoved) = false;
             }
@@ -1125,20 +1170,10 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                 return true;
             }
             auto *mouseEvent = static_cast<QMouseEvent *>(event);
-            if (mouseEvent->button() == Qt::RightButton) {
-                context_.view->setFocus(Qt::MouseFocusReason);
-                viewport->setFocus(Qt::MouseFocusReason);
-                (*context_.mapPanActive) = true;
-                if (context_.mapPanMoved != nullptr) {
-                    (*context_.mapPanMoved) = false;
-                }
-                if (context_.mapPanStartPosition != nullptr) {
-                    (*context_.mapPanStartPosition) = mouseEvent->pos();
-                }
-                if (context_.mapPanLastPosition != nullptr) {
-                    (*context_.mapPanLastPosition) = mouseEvent->pos();
-                }
-                viewport->setCursor(Qt::OpenHandCursor);
+            if (mouseEvent->button() == Qt::RightButton
+                || isSpacePanPress(context_, mouseEvent)
+                || isControlPanPress(mouseEvent)) {
+                beginMapPanDrag(context_, viewport, mouseEvent->pos(), isControlPanPress(mouseEvent));
                 event->accept();
                 return true;
             }
@@ -1567,9 +1602,19 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                 (*context_.primaryPointerInteractionActive) = false;
             }
 
-            if ((*context_.mapPanActive) && mouseEvent->button() == Qt::RightButton) {
+            if ((*context_.mapPanActive)
+                && (mouseEvent->button() == Qt::RightButton || mouseEvent->button() == Qt::LeftButton)) {
+                const bool controlPan = context_.mapControlPanActive != nullptr
+                    && (*context_.mapControlPanActive);
+                const bool moved = context_.mapPanMoved != nullptr && (*context_.mapPanMoved);
                 (*context_.mapPanActive) = false;
+                if (context_.mapControlPanActive != nullptr) {
+                    (*context_.mapControlPanActive) = false;
+                }
                 applyDefaultMapViewportCursor(context_, viewport);
+                if (mouseEvent->button() == Qt::LeftButton && controlPan && !moved) {
+                    showContextMenuAtViewportPosition(mouseEvent->pos(), mouseEvent->globalPosition().toPoint());
+                }
                 event->accept();
                 return true;
             }
@@ -1757,6 +1802,9 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
         case QEvent::Leave:
             if ((*context_.mapPanActive)) {
                 (*context_.mapPanActive) = false;
+                if (context_.mapControlPanActive != nullptr) {
+                    (*context_.mapControlPanActive) = false;
+                }
                 if (context_.mapPanMoved != nullptr) {
                     (*context_.mapPanMoved) = false;
                 }

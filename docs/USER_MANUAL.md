@@ -210,13 +210,13 @@ Use navigation controls before drawing or editing map objects.
 
 | Action | Control |
 |---|---|
-| Pan | Drag with the right mouse button. Precision scrolling devices such as trackpads and Apple Magic Mouse pan with two-finger or surface scrolling. |
+| Pan | Hold `Space` and drag with the left mouse button, hold `Ctrl` and drag with the left mouse button, or drag with the right mouse button. Precision devices such as trackpads and Apple Magic Mouse pan with two-finger or surface scrolling. |
 | Zoom in / out | Use the toolbar `Zoom In` / `Zoom Out` buttons, use a non-precision mouse wheel, or hold `Command/Ctrl` while scrolling. |
 | Fit map geometry | Use `Fit` to fit the drawn map objects into the viewport. |
 | Fit map geometry and backgrounds | Use `Fit With Background` to include raster and `.xvi` background layers in the fitted viewport. |
 | Pan with scrollbars | Use the horizontal and vertical scrollbars when they are visible. |
 
-Right-button dragging pans the map in XTherion style. A right-click without dragging on a map object or line vertex opens that object's context menu instead.
+`Space` temporarily switches the map canvas to pan while it is held, without leaving the current map tool. `Ctrl` + left drag and right-button drag use the same pan behavior. A right-click, or `Ctrl` + left click without dragging, opens the map object context menu instead.
 
 Therion Studio treats precision scrolling devices as pan controls by default, so trackpads and devices such as Apple Magic Mouse can pan horizontally and vertically. A conventional mouse wheel zooms by default.
 
@@ -410,7 +410,7 @@ Use `Command` on macOS and `Ctrl` on Windows/Linux unless the platform menu show
 | Switch to Raw editor | `Command/Ctrl+top-row 1` |
 | Switch to Blocks editor for `.th` / config, or Visual editor for `.th2` | `Command/Ctrl+top-row 2` |
 | Manual completion popup (text editor) | `Ctrl+Space` |
-| Pan map | Right mouse button drag; precision scrolling device such as trackpad or Apple Magic Mouse |
+| Pan map | `Space` + left mouse drag; `Ctrl` + left mouse drag; right mouse button drag; precision scrolling device such as trackpad or Apple Magic Mouse |
 | Zoom map | Toolbar `Zoom In` / `Zoom Out`; non-precision mouse wheel; `Command/Ctrl+scroll` |
 | Fit map geometry | Toolbar `Fit` |
 | Fit map geometry and backgrounds | Toolbar `Fit With Background` |
@@ -468,6 +468,8 @@ Fix:
 
 Fix:
 
+- hold `Space` and drag with the left mouse button
+- hold `Ctrl` and drag with the left mouse button
 - drag with the right mouse button, or use trackpad / precision-device scrolling
 - hold `Command/Ctrl` while scrolling if your precision device is currently zooming
 - use the horizontal and vertical scrollbars when visible

@@ -56,31 +56,9 @@ bool isMapSecondaryClickEvent(const QEvent *event, QPoint *globalPosition)
         return false;
     }
 
-    if (event->type() == QEvent::MouseButtonPress) {
-        const auto *mouseEvent = static_cast<const QMouseEvent *>(event);
-        const bool secondaryClick = mouseEvent->button() == Qt::LeftButton
-            && mouseEvent->modifiers().testFlag(Qt::ControlModifier);
-        if (!secondaryClick) {
-            return false;
-        }
-        *globalPosition = mouseEvent->globalPosition().toPoint();
-        return true;
-    }
-
     if (event->type() == QEvent::ContextMenu) {
         const auto *contextMenuEvent = static_cast<const QContextMenuEvent *>(event);
         *globalPosition = contextMenuEvent->globalPos();
-        return true;
-    }
-
-    if (event->type() == QEvent::GraphicsSceneMousePress) {
-        const auto *sceneMouseEvent = static_cast<const QGraphicsSceneMouseEvent *>(event);
-        const bool secondaryClick = sceneMouseEvent->button() == Qt::LeftButton
-            && sceneMouseEvent->modifiers().testFlag(Qt::ControlModifier);
-        if (!secondaryClick) {
-            return false;
-        }
-        *globalPosition = sceneMouseEvent->screenPos();
         return true;
     }
 
@@ -113,6 +91,16 @@ bool isDescendantOf(QObject *receiver, QObject *ancestor)
         }
     }
     return false;
+}
+
+bool isCursorOverViewport(const QGraphicsView *view)
+{
+    if (view == nullptr || view->viewport() == nullptr) {
+        return false;
+    }
+
+    const QPoint viewportPosition = view->viewport()->mapFromGlobal(QCursor::pos());
+    return view->viewport()->rect().contains(viewportPosition);
 }
 }
 
@@ -201,6 +189,35 @@ bool MapEditorTab::eventFilter(QObject *watched, QEvent *event)
         && isMapEditorEventReceiver(watched)
         && handleBackgroundPivotPickViewportEvent(event)) {
         return true;
+    }
+
+    if ((event->type() == QEvent::KeyPress || event->type() == QEvent::KeyRelease)
+        && mapView_ != nullptr
+        && mapView_->viewport() != nullptr
+        && isMapEditorEventReceiver(watched)
+        && !isTextEditingReceiver(watched)) {
+        auto *keyEvent = static_cast<QKeyEvent *>(event);
+        if (keyEvent->key() == Qt::Key_Space
+            && keyEvent->modifiers() == Qt::NoModifier
+            && (watched == mapView_
+                || watched == mapView_->viewport()
+                || watched == mapScene_
+                || isCursorOverViewport(mapView_))) {
+            if (!keyEvent->isAutoRepeat()) {
+                mapSpacePanKeyDown_ = event->type() == QEvent::KeyPress;
+            }
+            if (mapSpacePanKeyDown_) {
+                mapView_->viewport()->setCursor(Qt::OpenHandCursor);
+            } else if (!mapPanActive_) {
+                if (selectModeActive_) {
+                    mapView_->viewport()->setCursor(Qt::CrossCursor);
+                } else {
+                    mapView_->viewport()->unsetCursor();
+                }
+            }
+            event->accept();
+            return true;
+        }
     }
 
     if (handleMapEditorEscapeKeyEvent(watched, event)) {

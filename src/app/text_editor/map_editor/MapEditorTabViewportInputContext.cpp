@@ -40,6 +40,8 @@ MapEditorViewportInputContext MapEditorTab::viewportInputContext()
         .fitBackgroundRequested = &fitBackgroundRequested_,
         .mapPanActive = &mapPanActive_,
         .mapPanMoved = &mapPanMoved_,
+        .mapSpacePanKeyDown = &mapSpacePanKeyDown_,
+        .mapControlPanActive = &mapControlPanActive_,
         .mapPanStartPosition = &mapPanStartPosition_,
         .mapPanLastPosition = &mapPanLastPosition_,
         .primaryPointerInteractionActive = &primaryPointerInteractionActive_,
