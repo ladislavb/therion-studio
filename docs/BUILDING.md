@@ -123,6 +123,17 @@ configured to use NSIS for the Windows installer and emits
 The installer metadata uses the root `LICENSE` file for the project license.
 The installed executable is linked as a Windows GUI application and shall not open a console
 window when launched from Explorer, Start Menu, or the desktop shortcut.
+Set `THERION_STUDIO_ENABLE_LOG=1` before launching the application to capture Qt and QML
+diagnostics to the per-user application data log file `therion-studio.log`; set
+`THERION_STUDIO_LOG_FILE` to override that path, for example:
+
+```powershell
+$env:THERION_STUDIO_ENABLE_LOG="1"
+$env:THERION_STUDIO_LOG_FILE="C:\temp\therion-studio.log"
+$env:QML_IMPORT_TRACE="1"
+$env:QT_DEBUG_PLUGINS="1"
+.\TherionStudio.exe
+```
 
 Required Windows packaging tools:
 

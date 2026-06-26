@@ -4,6 +4,8 @@
 #include "ThreeDViewerLayerListModel.h"
 
 #include <QQmlContext>
+#include <QQmlError>
+#include <QDebug>
 #include <QUrl>
 
 namespace TherionStudio
@@ -15,6 +17,14 @@ ThreeDViewerInspectorWidget::ThreeDViewerInspectorWidget(QWidget *parent)
     setResizeMode(QQuickWidget::SizeRootObjectToView);
     setClearColor(palette().window().color());
     updateContextProperties();
+    connect(this, &QQuickWidget::statusChanged, this, [this](QQuickWidget::Status status) {
+        if (status != QQuickWidget::Error) {
+            return;
+        }
+        for (const QQmlError &error : errors()) {
+            qWarning().noquote() << "3D viewer inspector QML error:" << error.toString();
+        }
+    });
     setSource(QUrl(QStringLiteral("qrc:/resources/qml/three_d_viewer/ThreeDViewerInspector.qml")));
 }
 

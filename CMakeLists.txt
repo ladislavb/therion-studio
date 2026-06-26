@@ -142,6 +142,8 @@ endfunction()
 set(THERION_PLATFORM_SOURCES
     src/platform/ApplicationIdentity.cpp
     src/platform/ApplicationIdentity.h
+    src/platform/DiagnosticLogging.cpp
+    src/platform/DiagnosticLogging.h
     src/platform/ApplicationLanguageOverride.h
     src/platform/PlatformPathResolver.h)
 

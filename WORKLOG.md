@@ -144,6 +144,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Keep Windows CI and installer Qt archive lists aligned with the Qt Quick/QML-backed 3D viewer surface.
 - Keep Windows installer deployment passing `--qmldir resources/qml` to `windeployqt` and smoke-checking deployed
   `bin/qml/QtQuick/Controls`, `Layouts`, and `Templates` so the 3D viewer inspector does not install as a blank Quick surface.
+- Keep cross-platform diagnostic logging available behind `THERION_STUDIO_ENABLE_LOG=1`, with `THERION_STUDIO_LOG_FILE`
+  enabling a path override while investigating Qt/QML runtime failures that do not surface in a console.
 - Keep AppImage runtime-library staging aligned with Debian Qt runtime dependencies instead of masking missing
   bundled libraries in smoke-test containers.
 - Keep AppImage package/smoke scripts diagnostic enough to identify whether missing runtime libraries were lost

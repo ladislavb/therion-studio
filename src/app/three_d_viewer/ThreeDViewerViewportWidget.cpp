@@ -4,7 +4,9 @@
 
 #include <QQmlContext>
 #include <QQmlEngine>
+#include <QQmlError>
 #include <QQuickItem>
+#include <QDebug>
 #include <QUrl>
 
 namespace TherionStudio
@@ -28,7 +30,12 @@ ThreeDViewerViewportWidget::ThreeDViewerViewportWidget(QWidget *parent)
     setFocusPolicy(Qt::StrongFocus);
     setResizeMode(QQuickWidget::SizeRootObjectToView);
     setClearColor(QColor(QStringLiteral("#000000")));
-    connect(this, &QQuickWidget::statusChanged, this, [this](QQuickWidget::Status) {
+    connect(this, &QQuickWidget::statusChanged, this, [this](QQuickWidget::Status status) {
+        if (status == QQuickWidget::Error) {
+            for (const QQmlError &error : errors()) {
+                qWarning().noquote() << "3D viewer viewport QML error:" << error.toString();
+            }
+        }
         rootSceneModelSynced_ = false;
         syncRootItem();
     });
