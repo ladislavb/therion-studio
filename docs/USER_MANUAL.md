@@ -336,7 +336,7 @@ In `Inspector -> Backgrounds`, you can:
 - show/hide individual layers
 - edit layer position and opacity
 - edit layer X/Y scale and rotation; `Lock proportions` keeps X and Y scale equal by default
-- set a rotation pivot by clicking `Set Pivot` and then clicking the desired center in the map; the selected layer's pivot is shown in the map while `Backgrounds` is active, and `Reset Pivot` restores the default pivot
+- set a rotation pivot by clicking `Set Pivot` and then clicking the desired center in the map; for raster and SVG layers the click may be inside or outside the visible background, the selected layer's pivot is shown in the map while `Backgrounds` is active, and `Reset Pivot` restores the default pivot
 - adjust `Gamma` for raster layers (`.xvi` and SVG use fixed Gamma)
 
 Raster background layers keep their full image resolution, so they stay sharp as you zoom into the map instead of becoming blurry. Very large scans are bounded to a high internal display size to limit memory use.

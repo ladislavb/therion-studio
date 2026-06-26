@@ -232,6 +232,10 @@ public:
 #ifdef THERION_STUDIO_TESTING
     bool addSvgBackgroundImageForTest(const QString &imagePath) { return addSvgBackgroundImage(imagePath); }
     bool backgroundLayerPaintsVisiblePixelsForTest(int index) const { return backgroundLayerPaintsVisiblePixels(index); }
+    void setSelectedBackgroundLayerPivotAtScenePositionForTest(const QPointF &scenePosition)
+    {
+        setSelectedBackgroundLayerPivotAtScenePosition(scenePosition);
+    }
 #endif
     void removeSelectedBackgroundLayer();
     void moveSelectedBackgroundLayerUp();

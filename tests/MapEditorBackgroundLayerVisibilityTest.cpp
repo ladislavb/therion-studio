@@ -16,7 +16,6 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QMainWindow>
-#include <QMouseEvent>
 #include <QTabWidget>
 #include <QThread>
 #include <QTemporaryDir>
@@ -1028,6 +1027,35 @@ int runBackgroundTransformWritesMapiahMetadataTest()
     pumpEventsFor(150);
     mapTab->resetSelectedBackgroundLayerPivot();
     pumpEvents();
+
+    auto *mapView = mapTab->findChild<QGraphicsView *>(QStringLiteral("mapCanvasView"));
+    if (!expect(mapView != nullptr && mapView->viewport() != nullptr,
+                "Expected map canvas viewport for background pivot pick test.")) {
+        return 1;
+    }
+    const QRectF transformedLayerBounds = mapTab->backgroundLayerSceneBounds(0);
+    mapView->centerOn(transformedLayerBounds.center());
+    pumpEvents();
+    const QPointF postUndoPivotScene = mapView->mapToScene(mapView->viewport()->rect().center());
+    mapTab->beginSetSelectedBackgroundLayerPivot();
+    mapTab->setSelectedBackgroundLayerPivotAtScenePositionForTest(postUndoPivotScene);
+    pumpEvents();
+    pivotMarker = findVisibleBackgroundPivotMarker(mapTab);
+    if (!expect(pivotMarker != nullptr
+                    && nearlyEqual(pivotMarker->scenePos().x(), postUndoPivotScene.x())
+                    && nearlyEqual(pivotMarker->scenePos().y(), postUndoPivotScene.y()),
+                "Clicking a custom background pivot should move the pivot marker to the clicked scene point.")) {
+        return 1;
+    }
+    mapTab->setSelectedBackgroundLayerXScale(1.35);
+    pumpEvents();
+    pivotMarker = findVisibleBackgroundPivotMarker(mapTab);
+    if (!expect(pivotMarker != nullptr
+                    && nearlyEqual(pivotMarker->scenePos().x(), postUndoPivotScene.x())
+                    && nearlyEqual(pivotMarker->scenePos().y(), postUndoPivotScene.y()),
+                "Picking a transformed raster background pivot should store layer-local coordinates and keep that scene point fixed.")) {
+        return 1;
+    }
 
     return 0;
 }

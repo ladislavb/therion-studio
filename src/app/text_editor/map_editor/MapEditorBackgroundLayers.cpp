@@ -2375,13 +2375,14 @@ QPointF MapEditorTab::backgroundLayerPivotScenePosition(QGraphicsPixmapItem *ite
         const bool pivotSet = item->data(kMapEditorBackgroundPivotSetRole).isValid()
             ? item->data(kMapEditorBackgroundPivotSetRole).toBool()
             : false;
-        if (!pivotSet) {
-            const QSize pixmapSize = item->pixmap().size();
-            if (!pixmapSize.isEmpty()) {
-                const QPointF centerLocal(static_cast<qreal>(pixmapSize.width()) / 2.0,
-                                          static_cast<qreal>(pixmapSize.height()) / 2.0);
-                return item->sceneTransform().map(centerLocal);
-            }
+        const QSize pixmapSize = item->pixmap().size();
+        if (!pixmapSize.isEmpty()) {
+            const QPointF pivotLocal = pivotSet
+                ? QPointF(item->data(kMapEditorBackgroundRotationCenterDxRole).toDouble(),
+                          item->data(kMapEditorBackgroundRotationCenterDyRole).toDouble())
+                : QPointF(static_cast<qreal>(pixmapSize.width()) / 2.0,
+                          static_cast<qreal>(pixmapSize.height()) / 2.0);
+            return item->sceneTransform().map(pivotLocal);
         }
     }
 
@@ -2510,21 +2511,38 @@ void MapEditorTab::setSelectedBackgroundLayerPivotAtScenePosition(const QPointF 
         return;
     }
 
-    QRectF sourceBounds = mapSourceBoundsForCurrentDocument();
-    if (!sourceBounds.isValid()) {
-        sourceBounds = xtherionAutoAreaAdjustRect();
-    }
-    const QRectF previewBounds = mapPreviewBounds();
-    if (!sourceBounds.isValid() || !previewBounds.isValid()) {
-        toolbarStatusNote_ = tr("Set pivot failed: map bounds are not available.");
-        refreshToolbarSummary();
-        return;
-    }
+    const QString layerPath = item->data(0).toString();
+    if (isMapEditorXviBackgroundPath(layerPath)) {
+        QRectF sourceBounds = mapSourceBoundsForCurrentDocument();
+        if (!sourceBounds.isValid()) {
+            sourceBounds = xtherionAutoAreaAdjustRect();
+        }
+        const QRectF previewBounds = mapPreviewBounds();
+        if (!sourceBounds.isValid() || !previewBounds.isValid()) {
+            toolbarStatusNote_ = tr("Set pivot failed: map bounds are not available.");
+            refreshToolbarSummary();
+            return;
+        }
 
-    const QPointF pivotModel = mapEditorPreviewToModelPoint(scenePosition, sourceBounds, previewBounds);
-    const QPointF basePosition = backgroundLayerBaseModelPosition(item);
-    item->setData(kMapEditorBackgroundRotationCenterDxRole, pivotModel.x() - basePosition.x());
-    item->setData(kMapEditorBackgroundRotationCenterDyRole, pivotModel.y() - basePosition.y());
+        const QPointF pivotModel = mapEditorPreviewToModelPoint(scenePosition, sourceBounds, previewBounds);
+        const QPointF basePosition = backgroundLayerBaseModelPosition(item);
+        item->setData(kMapEditorBackgroundRotationCenterDxRole, pivotModel.x() - basePosition.x());
+        item->setData(kMapEditorBackgroundRotationCenterDyRole, pivotModel.y() - basePosition.y());
+    } else {
+        const QRectF viewRect = item->data(kMapEditorRasterPreviewRectRole).toRectF();
+        const QSize pixmapSize = item->pixmap().size();
+        if (!viewRect.isValid() || pixmapSize.isEmpty()) {
+            toolbarStatusNote_ = tr("Set pivot failed: map bounds are not available.");
+            refreshToolbarSummary();
+            return;
+        }
+        const qreal scaleX = viewRect.width() / static_cast<qreal>(pixmapSize.width());
+        const qreal scaleY = viewRect.height() / static_cast<qreal>(pixmapSize.height());
+        const QPointF pivotLocal((scenePosition.x() - item->pos().x()) / scaleX,
+                                 (scenePosition.y() - item->pos().y()) / scaleY);
+        item->setData(kMapEditorBackgroundRotationCenterDxRole, pivotLocal.x());
+        item->setData(kMapEditorBackgroundRotationCenterDyRole, pivotLocal.y());
+    }
     item->setData(kMapEditorBackgroundPivotSetRole, true);
     item->setData(kMapEditorBackgroundMetadataFormatRole,
                   static_cast<int>(TherionBackgroundMetadataFormat::Mapiah));
@@ -2626,40 +2644,6 @@ void MapEditorTab::applyBackgroundLayerTransform(QGraphicsPixmapItem *item)
             : sourceBounds;
         applyXviBackgroundItemTransform(item, xviModelBounds, mapPreviewBounds());
         return;
-    }
-
-    const bool pivotSet = item->data(kMapEditorBackgroundPivotSetRole).toBool();
-    if (pivotSet) {
-        QRectF sourceBounds = mapSourceBoundsForCurrentDocument();
-        if (!sourceBounds.isValid()) {
-            sourceBounds = xtherionAutoAreaAdjustRect();
-        }
-        const QRectF previewBounds = mapPreviewBounds();
-        const QRectF viewRect = item->data(kMapEditorRasterPreviewRectRole).toRectF();
-        const QSize pixmapSize = item->pixmap().size();
-        if (sourceBounds.isValid() && previewBounds.isValid() && viewRect.isValid() && !pixmapSize.isEmpty()) {
-            const QPointF basePosition = backgroundLayerBaseModelPosition(item);
-            const QPointF pivotModel(basePosition.x() + item->data(kMapEditorBackgroundRotationCenterDxRole).toDouble(),
-                                     basePosition.y() + item->data(kMapEditorBackgroundRotationCenterDyRole).toDouble());
-            const QPointF pivotPreview = mapEditorModelToPreviewPoint(pivotModel, sourceBounds, previewBounds);
-            const qreal scaleX = viewRect.width() / static_cast<qreal>(pixmapSize.width());
-            const qreal scaleY = viewRect.height() / static_cast<qreal>(pixmapSize.height());
-            const QPointF pivotPreviewLocal = pivotPreview - item->pos();
-            const QPointF pivotLocal(pivotPreviewLocal.x() / scaleX,
-                                     pivotPreviewLocal.y() / scaleY);
-
-            QTransform transform;
-            transform.translate(pivotLocal.x(), pivotLocal.y());
-            transform.rotate(backgroundLayerRotationDegValue(item));
-            transform.scale(scaleX * backgroundLayerXScaleValue(item), scaleY * backgroundLayerYScaleValue(item));
-            transform.translate(-pivotLocal.x(), -pivotLocal.y());
-            item->setTransformationMode(Qt::SmoothTransformation);
-            item->setTransformOriginPoint(0.0, 0.0);
-            item->setScale(1.0);
-            item->setRotation(0.0);
-            item->setTransform(transform, false);
-            return;
-        }
     }
 
     applyMapEditorRasterLayerTransform(item);
