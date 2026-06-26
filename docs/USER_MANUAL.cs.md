@@ -1,6 +1,6 @@
 # Uživatelská příručka Therion Studio
 
-Aktualizováno: 2026-06-09
+Aktualizováno: 2026-06-25
 
 Tato příručka popisuje běžnou práci v Therion Studio. Záměrně není úplnou referencí jazyka Therion. Syntaxe Therionu, názvy příkazů, volby a obsah ukládaný do souborů zůstávají v kanonické podobě Therionu.
 
@@ -196,13 +196,13 @@ Navigační ovládání použijte před kreslením nebo editací mapových objek
 
 | Akce | Ovládání |
 |---|---|
-| Posun mapy | Táhněte pravým tlačítkem myši. Zařízení s přesným posouváním, například touchpady a Apple Magic Mouse, posouvají mapu dvouprstým nebo povrchovým posouváním. |
+| Posun mapy | Podržte `Space` a táhněte levým tlačítkem myši, podržte `Ctrl` a táhněte levým tlačítkem myši, nebo táhněte pravým tlačítkem myši. Zařízení s přesným posouváním, například touchpady a Apple Magic Mouse, posouvají mapu dvouprstým nebo povrchovým posouváním. |
 | Přiblížení / oddálení | Použijte tlačítka `Přiblížit` / `Oddálit` v liště, běžné neprecizní kolečko myši, nebo při posouvání držte `Command/Ctrl`. |
 | Přizpůsobit geometrii mapy | `Přizpůsobit` zobrazí nakreslené mapové objekty ve viewportu. |
-| Přizpůsobit geometrii mapy i pozadí | `Přizpůsobit včetně pozadí` zahrne do přizpůsobení i rastrové a `.xvi` vrstvy pozadí. |
+| Přizpůsobit geometrii mapy i pozadí | `Přizpůsobit včetně pozadí` zahrne do přizpůsobení i rastrové, SVG a `.xvi` vrstvy pozadí. |
 | Posun posuvníky | Použijte vodorovný a svislý posuvník, pokud jsou viditelné. |
 
-Tažení pravým tlačítkem posouvá mapu ve stylu XTherionu. Pravý klik bez tažení na mapový objekt nebo vrchol čáry místo toho otevře kontextové menu daného objektu.
+`Space` dočasně přepne mapové plátno na posun, dokud je držené, aniž by opustilo aktuální mapový nástroj. `Ctrl` + tažení levým tlačítkem a tažení pravým tlačítkem používají stejné chování posunu. Pravý klik, nebo `Ctrl` + levý klik bez tažení, otevře kontextové menu mapového objektu.
 
 Therion Studio bere zařízení s přesným posouváním jako výchozí ovládání posunu, takže touchpady a zařízení jako Apple Magic Mouse umí posouvat mapu vodorovně i svisle. Běžné kolečko myši ve výchozím chování zoomuje.
 
@@ -224,6 +224,8 @@ Mapové plátno používá stabilní světlý „papírový“ povrch ve světl�
 - `Smart Area`: klikněte dovnitř uzavřené plochy vytvořené existujícími čarami ve stejném scrapu, zkontrolujte náhled, pomocí `[` / `]` přepněte alternativy, pokud odpovídá více ploch, a potvrďte `Enter` nebo `Dokončit návrh`.
 - `Volná kresba`: stiskněte, táhněte a pusťte; vloží se zjednodušená Bezier čára.
 - `Vložit scrap`: okamžitě vytvoří nový scrap, vybere ho ve `Výběru` i v `Objektech` a potom můžete upravit jeho ID/projekci před vkládáním bodů, linií, volné kresby nebo ploch.
+
+Na podporovaných kreslicích tabletech a stylus zařízeních se klepnutí a tah stylusem přijímají jako primární vstup mapového plátna pro výběr objektů a vkládání bodů, vertexů linií, vertexů ploch a volných tahů. Myš a trackpad zůstávají dostupné bez změny nástroje.
 
 Po spuštění `Bod`, `Linie`, `Volná kresba` nebo `Plocha` se aktivuje `Inspektor -> Výběr` ještě před prvním vložením. Nastavte tam typ, podtyp, ID, název bodu, text popisku nebo podporovanou hodnotu bodu ještě před potvrzením nového objektu. Pokud byl při spuštění nástroje vybraný scrap nebo objekt uvnitř scrapu, nový objekt se vloží do tohoto scrapu; metadata připraveného vložení ukazují ID cílového scrapu. Pomocí `Vložit do` můžete před potvrzením vybrat jiný existující cílový scrap.
 
@@ -259,7 +261,7 @@ Během kreslení čáry nebo plochy:
 ### 6.6 Změny zapisované do zdroje
 
 - Nástroj Bod zapisuje příkazy `point ...` do cílového scrapu.
-- Nástroje Linie a Volná kresba zapisují bloky `line ... endline`. Volná kresba se zjednoduší do Bezier souřadnicových řádků.
+- Nástroje Linie a Volná kresba zapisují bloky `line ... endline`. Volná kresba se zjednoduší do Bezier souřadnicových řádků a u zakřivených nebo detailních tahů zachová poměrně více kotev.
 - Ruční Plocha zapisuje vygenerovanou uzavřenou `line border -id ... -close on` a blok `area ... endarea`, který tuto hraniční linii referencuje.
 - Smart Area zapisuje blok `area ... endarea`, který referencuje existující hraniční linie. Může doplnit chybějící hodnoty `-id` potřebné pro tyto reference, ale nemění geometrii existujících linií.
 - Vložení pozadí zapisuje XTherion-kompatibilní metadata obrázku, například `##XTHERION## xth_me_image_insert`. První mapové vložení v souboru bez XTherion metadat pohledu může zapsat také `xth_me_area_adjust` a `xth_me_area_zoom_to`.
@@ -308,10 +310,16 @@ V `Inspektor -> Objekty` lze vybírat objekty, měnit jejich pořadí přetažen
 
 V `Inspektor -> Pozadí` lze:
 
-- přidat, odebrat a řadit rastrové, `.xvi` nebo PocketTopo `.txt` vrstvy pozadí,
+- přidat, odebrat a řadit rastrové, SVG, `.xvi` nebo PocketTopo `.txt` vrstvy pozadí,
 - zobrazit/skrýt jednotlivé vrstvy,
 - měnit polohu a krytí vrstvy,
-- upravit `Gamma` pro rastrové vrstvy (`.xvi` používá pevnou Gamma).
+- upravit X/Y měřítko a rotaci vrstvy; `Lock proportions` ve výchozím stavu drží X a Y měřítko stejné,
+- nastavit pivot rotace kliknutím na `Set Pivot` a potom kliknutím na požadovaný střed v mapě; u rastrových a SVG vrstev může být klik uvnitř i mimo viditelné pozadí, pivot vybrané vrstvy je v mapě zobrazený, když je aktivní `Pozadí`, a `Reset Pivot` obnoví výchozí pivot,
+- upravit `Gamma` pro rastrové vrstvy (`.xvi` a SVG používají pevnou Gamma).
+
+Rastrové vrstvy pozadí si zachovávají plné rozlišení obrázku, takže při přiblížení zůstávají ostré místo toho, aby se rozmazaly. Velmi velké skeny jsou omezené na vysokou interní zobrazovací velikost kvůli spotřebě paměti.
+
+Therion Studio také čte a zapisuje Mapiah metadata pozadí `##MAPIAH## image_insert_v1` pro vrstvy `format=xvi`, `format=raster` a `format=svg`, včetně rotace, X/Y měřítka a pivotu. Díky tomu se v map editoru zobrazí rotované PocketTopo/XVI, rastrové nebo SVG reference vytvořené v Mapiah a Therion Studio může jednoduchou XTherion referenci povýšit na Mapiah metadata, když vrstvu otočíte, změníte měřítko nebo jí nastavíte pivot. SVG reference se vykreslují jako SVG vrstvy s použitím Mapiah metadat o vnitřní velikosti a zdrojovém viewBoxu. Při přidání SVG pozadí Therion Studio odvodí tato metadata z atributů `width`, `height` a `viewBox` kořenového SVG prvku.
 
 Při přidání PocketTopo Therion exportu (`.txt`) jako mapového pozadí se Therion Studio zeptá na měřítko XVI, rozlišení, rozestup gridu a projekci plán nebo rozvinutý řez. Vedle PocketTopo exportu zapíše vygenerovaný soubor `_p.xvi` nebo `_e.xvi`, přidá toto `.xvi` jako vrstvu pozadí a uloží do `.th2` zdroje XTherion-kompatibilní metadata obrázku.
 
@@ -376,10 +384,11 @@ Používejte `Command` na macOS a `Ctrl` na Windows/Linux, pokud menu platformy 
 | Najít | `Command/Ctrl+F` |
 | Hledat v projektu | `Command/Ctrl+Shift+F` |
 | Najít a nahradit | platformní výchozí zkratka pro replace |
+| Zavřít panel hledání/nahrazení | `Esc`, když je panel hledání/nahrazení otevřený |
 | Přepnout do editoru Zdroj (`Raw`) | `Command/Ctrl+horní 1` |
 | Přepnout do editoru Bloky pro `.th` / config, nebo do editoru Vizuálně pro `.th2` | `Command/Ctrl+horní 2` |
 | Ruční otevření doplňování (textový editor) | `Ctrl+Space` |
-| Posun mapy | Tažení pravým tlačítkem myši; zařízení s přesným posouváním, například touchpad nebo Apple Magic Mouse |
+| Posun mapy | `Space` + tažení levým tlačítkem myši; `Ctrl` + tažení levým tlačítkem myši; tažení pravým tlačítkem myši; zařízení s přesným posouváním, například touchpad nebo Apple Magic Mouse |
 | Zoom mapy | Tlačítka `Přiblížit` / `Oddálit`; běžné kolečko myši; `Command/Ctrl+posouvání` |
 | Přizpůsobit geometrii mapy | Tlačítko `Přizpůsobit` |
 | Přizpůsobit geometrii mapy i pozadí | Tlačítko `Přizpůsobit včetně pozadí` |
@@ -422,11 +431,15 @@ Používejte `Command` na macOS a `Ctrl` na Windows/Linux, pokud menu platformy 
 - vyberte vrstvu v `Pozadí`,
 - ověřte viditelnost, polohu, krytí a Gamma,
 - u `.xvi` ověřte, že `.xvi` a související `.th2` patří do stejného souřadnicového kontextu.
+- Mapiah metadata rotovaného nebo měřeného pozadí jsou podporovaná pro `format=xvi`, `format=raster` a `format=svg`; SVG pozadí vyžaduje Mapiah metadata vnitřní velikosti a zdrojového viewBoxu,
+- pokud rastrová vrstva při přiblížení pořád vypadá měkce, dosáhla rozlišení zdrojového obrázku; pro více detailů použijte sken ve vyšším rozlišení.
 
 ### 11.5 Mapu lze zoomovat, ale nejde posouvat
 
 Řešení:
 
+- podržte `Space` a táhněte levým tlačítkem myši,
+- podržte `Ctrl` a táhněte levým tlačítkem myši,
 - táhněte pravým tlačítkem myši nebo použijte posouvání na touchpadu / přesném polohovacím zařízení,
 - pokud přesné zařízení právě zoomuje, podržte při posouvání `Command/Ctrl`,
 - použijte vodorovný a svislý posuvník, pokud jsou viditelné.

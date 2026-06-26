@@ -176,6 +176,7 @@ int runSecondaryClickOpensContextMenuTest()
     bool fitBackgroundRequested = false;
     bool mapPanActive = false;
     bool mapPanMoved = false;
+    bool mapControlPanActive = false;
     QPoint mapPanStartPosition;
     QPoint mapPanLastPosition;
     bool primaryPointerInteractionActive = false;
@@ -224,6 +225,7 @@ int runSecondaryClickOpensContextMenuTest()
     context.fitBackgroundRequested = &fitBackgroundRequested;
     context.mapPanActive = &mapPanActive;
     context.mapPanMoved = &mapPanMoved;
+    context.mapControlPanActive = &mapControlPanActive;
     context.mapPanStartPosition = &mapPanStartPosition;
     context.mapPanLastPosition = &mapPanLastPosition;
     context.primaryPointerInteractionActive = &primaryPointerInteractionActive;
@@ -436,15 +438,33 @@ int runSecondaryClickOpensContextMenuTest()
                                   Qt::LeftButton,
                                   Qt::ControlModifier);
     if (!expect(controller.handleEvent(view.viewport(), &controlClickPress).value_or(false),
-                "Control-click should be handled as a platform secondary click.")) {
+                "Control-left press should be handled as a map pan candidate.")) {
+        return 1;
+    }
+    if (!expect(contextMenuCalls == 0,
+                "Control-left press should not open the map selection context menu immediately.")) {
+        return 1;
+    }
+    if (!expect(mapPanActive && !mapPanMoved,
+                "Control-left press should start pan state without marking movement yet.")) {
+        return 1;
+    }
+    QMouseEvent controlClickRelease(QEvent::MouseButtonRelease,
+                                    QPointF(clickPosition),
+                                    QPointF(view.viewport()->mapToGlobal(clickPosition)),
+                                    Qt::LeftButton,
+                                    Qt::NoButton,
+                                    Qt::ControlModifier);
+    if (!expect(controller.handleEvent(view.viewport(), &controlClickRelease).value_or(false),
+                "Control-left release without movement should finish a pan candidate.")) {
         return 1;
     }
     if (!expect(contextMenuCalls == 1,
-                "Control-click should open the map selection context menu.")) {
+                "Control-left click without movement should open the map selection context menu.")) {
         return 1;
     }
     if (!expect(preparedSelectionCalls == 1 && preparedLineNumber == 77,
-                "Control-click should prepare selection metadata before opening the context menu.")) {
+                "Control-left click without movement should prepare selection metadata before opening the context menu.")) {
         return 1;
     }
 
