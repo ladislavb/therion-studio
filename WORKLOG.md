@@ -31,6 +31,16 @@ Active planning only. Completed history belongs in archive files. Stable archite
   clicked line point instead of drifting to another selected item on the same or nearby geometry.
 - Keep Windows pen-tablet and stylus input normalized through the map viewport controller so selecting, line/area
   drafting, and freehand strokes do not depend on platform mouse-event synthesis or duplicate generated clicks.
+- Keep tablet-event duplicate suppression narrow: suppress only duplicate synthetic mouse presses after handled tablet
+  input, while allowing mouse move/release completion paths to finish active Bezier and freehand drawing workflows.
+- Use opt-in map-input diagnostics (`THERION_STUDIO_ENABLE_LOG=1`) when investigating Windows mouse/tablet lag,
+  skipped freehand samples, slow line/area preview updates, or growing map source undo cost; slow pointer events and
+  source transactions include action/state counters, undo stack state, and snapshot sizes in the log.
+- Keep freehand drawing responsive by sampling every accepted pointer position while throttling preview redraws and deferring
+  the post-commit map-scene refresh out of the pointer release event; preview redraw throttling should be time-based so
+  high-frequency stylus events do not force more than roughly one preview refresh per frame.
+- Keep map-editor undo history bounded to the most recent 200 steps per tab so long freehand/source-edit sessions do not
+  accumulate unbounded full-source snapshots.
 - Keep map panning discoverable through temporary `Space` + primary-button drag and `Ctrl` + primary-button drag while
   preserving right-button drag, precision-scroll panning, context menus, and the currently selected drawing tool.
 - Keep map vertex and Bezier control point markers large enough to target comfortably on HiDPI/Windows-scaled displays

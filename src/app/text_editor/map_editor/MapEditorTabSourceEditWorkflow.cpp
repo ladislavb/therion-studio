@@ -1,6 +1,7 @@
 #include "MapEditorTab.h"
 
 #include "MapEditorObjectDetailsLogic.h"
+#include "MapEditorCanvasEditController.h"
 #include "MapEditorSceneSupport.h"
 #include "../TextEditorSourceTransactionController.h"
 #include "../TextEditorTab.h"
@@ -8,15 +9,32 @@
 #include "../../../core/TherionBackgroundMetadata.h"
 #include "../../../core/TherionDocumentParser.h"
 
+#include <QDebug>
+#include <QElapsedTimer>
 #include <QGraphicsPathItem>
 #include <QGraphicsScene>
 #include <QPainterPath>
+#include <QPointer>
+#include <QTimer>
 #include <cmath>
+#include <utility>
 
 namespace TherionStudio
 {
 namespace
 {
+bool diagnosticMapInputLoggingEnabled()
+{
+    static const bool enabled = [] {
+        const QString value = QString::fromLocal8Bit(qgetenv("THERION_STUDIO_ENABLE_LOG")).trimmed().toLower();
+        return value == QStringLiteral("1")
+            || value == QStringLiteral("true")
+            || value == QStringLiteral("yes")
+            || value == QStringLiteral("on");
+    }();
+    return enabled;
+}
+
 QString plannerSourceWithAreaAdjust(const QString &beforeText, const std::optional<QRectF> &initialAreaAdjustRect)
 {
     QString plannerSource = beforeText;
@@ -202,6 +220,14 @@ bool MapEditorTab::commitInteractiveDrawVertices(const QString &geometryKind,
                                                  const QVector<QPointF> &vertices,
                                                  const QString &successLabel)
 {
+    QElapsedTimer totalTimer;
+    QElapsedTimer stageTimer;
+    const bool logCommitTiming = diagnosticMapInputLoggingEnabled();
+    if (logCommitTiming) {
+        totalTimer.start();
+        stageTimer.start();
+    }
+
     if (textEditor_ == nullptr) {
         toolbarStatusNote_ = tr("Complete Draft failed: no active TH2 text editor.");
         return false;
@@ -212,6 +238,10 @@ bool MapEditorTab::commitInteractiveDrawVertices(const QString &geometryKind,
     const QString beforeText = textEditor_->text();
     const bool lineGeometry = geometryKind.trimmed().compare(QStringLiteral("line"), Qt::CaseInsensitive) == 0;
     const QString plannerSource = plannerSourceWithAreaAdjust(beforeText, initialAreaAdjustRectForDraftInsertion());
+    const qint64 prepareMs = logCommitTiming ? stageTimer.elapsed() : 0;
+    if (logCommitTiming) {
+        stageTimer.restart();
+    }
     QVector<TherionSourceTextEdit> sourceEdits;
     const bool planned = lineGeometry
         ? TherionDocumentEditor::appendDraftLineGeometryEdits(plannerSource,
@@ -228,32 +258,92 @@ bool MapEditorTab::commitInteractiveDrawVertices(const QString &geometryKind,
                                                           &insertedLineNumber,
                                                           &errorMessage,
                                                           pendingDraftObjectOptions(geometryKind));
+    const qint64 planMs = logCommitTiming ? stageTimer.elapsed() : 0;
     if (!planned) {
+        if (logCommitTiming) {
+            qInfo().noquote()
+                << QStringLiteral("map-commit geometry=%1 result=plan-failed vertices=%2 prepare_ms=%3 plan_ms=%4 total_ms=%5")
+                       .arg(geometryKind)
+                       .arg(vertices.size())
+                       .arg(prepareMs)
+                       .arg(planMs)
+                       .arg(totalTimer.elapsed());
+        }
         toolbarStatusNote_ = errorMessage.isEmpty()
             ? tr("Complete Draft failed.")
             : tr("Complete Draft failed: %1").arg(errorMessage);
         return false;
     }
 
+    if (logCommitTiming) {
+        stageTimer.restart();
+    }
     QString afterText = plannerSource;
     if (!TherionDocumentEditor::applySourceTextEdits(&afterText, sourceEdits, &errorMessage)) {
+        if (logCommitTiming) {
+            qInfo().noquote()
+                << QStringLiteral("map-commit geometry=%1 result=apply-edits-failed vertices=%2 edits=%3 prepare_ms=%4 plan_ms=%5 apply_edits_ms=%6 total_ms=%7")
+                       .arg(geometryKind)
+                       .arg(vertices.size())
+                       .arg(sourceEdits.size())
+                       .arg(prepareMs)
+                       .arg(planMs)
+                       .arg(stageTimer.elapsed())
+                       .arg(totalTimer.elapsed());
+        }
         toolbarStatusNote_ = errorMessage.isEmpty()
             ? tr("Complete Draft failed.")
             : tr("Complete Draft failed: %1").arg(errorMessage);
         return false;
     }
+    const qint64 applyEditsMs = logCommitTiming ? stageTimer.elapsed() : 0;
 
+    if (logCommitTiming) {
+        stageTimer.restart();
+    }
+    const int sourceEditCount = sourceEdits.size();
+    auto deferredProjectionRefresh = [guarded = QPointer<MapEditorTab>(this)]() {
+        QTimer::singleShot(0, guarded, [guarded]() {
+            if (guarded == nullptr) {
+                return;
+            }
+            guarded->flushPendingMapSceneRefreshAfterCommand();
+        });
+    };
+    MapEditorCanvasEditController canvasEditController(canvasEditContext());
     const TextEditorSourceTransactionResult transactionResult =
-        applySourceTextChangeWithSnapshot(
+        canvasEditController.applySourceEditsWithSnapshotDeferredProjection(
             tr("Complete Draft"),
             beforeText,
-            afterText,
+            std::move(sourceEdits),
             insertedLineNumber,
+            std::move(deferredProjectionRefresh),
+            TextEditorSourceSelectionRestorePolicy::CustomHook,
             [this, successLabel, insertedLineNumber]() {
                 toolbarStatusNote_ = insertedLineNumber > 0
                     ? tr("Complete Draft wrote %1 geometry at source line %2.").arg(successLabel, QString::number(insertedLineNumber))
                     : tr("Complete Draft wrote %1 geometry to source.").arg(successLabel);
             });
+    const qint64 transactionMs = logCommitTiming ? stageTimer.elapsed() : 0;
+    if (logCommitTiming) {
+        qInfo().noquote()
+            << QStringLiteral(
+                   "map-commit geometry=%1 result=%2 vertices=%3 edits=%4 inserted_line=%5 before_chars=%6 after_chars=%7 "
+                   "prepare_ms=%8 plan_ms=%9 apply_edits_ms=%10 transaction_ms=%11 total_ms=%12")
+                   .arg(geometryKind)
+                   .arg(transactionResult == TextEditorSourceTransactionResult::Applied ? QStringLiteral("applied")
+                                                                                        : QStringLiteral("not-applied"))
+                   .arg(vertices.size())
+                   .arg(sourceEditCount)
+                   .arg(insertedLineNumber)
+                   .arg(beforeText.size())
+                   .arg(afterText.size())
+                   .arg(prepareMs)
+                   .arg(planMs)
+                   .arg(applyEditsMs)
+                   .arg(transactionMs)
+                   .arg(totalTimer.elapsed());
+    }
     return transactionResult == TextEditorSourceTransactionResult::Applied;
 }
 

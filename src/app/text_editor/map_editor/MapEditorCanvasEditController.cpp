@@ -1064,6 +1064,50 @@ TextEditorSourceTransactionResult MapEditorCanvasEditController::applySourceText
                                  std::move(selectionRestoreHook)));
 }
 
+TextEditorSourceTransactionResult MapEditorCanvasEditController::applySourceTextChangeWithSnapshotDeferredProjection(
+    const QString &label,
+    const QString &beforeText,
+    const QString &afterText,
+    int insertedLineNumber,
+    std::function<void()> projectionInvalidationHook,
+    TextEditorSourceSelectionRestorePolicy selectionRestorePolicy,
+    std::function<void()> selectionRestoreHook)
+{
+    TextEditorSourceTransactionRequest request = sourceTransactionRequest(context_,
+                                                                          label,
+                                                                          beforeText,
+                                                                          afterText,
+                                                                          insertedLineNumber,
+                                                                          selectionRestorePolicy,
+                                                                          std::move(selectionRestoreHook));
+    request.projectionInvalidationPolicy = TextEditorSourceProjectionInvalidationPolicy::CustomHook;
+    request.projectionInvalidationHook = std::move(projectionInvalidationHook);
+    return sourceTransactionController(context_).applyChangeWithSnapshot(request);
+}
+
+TextEditorSourceTransactionResult MapEditorCanvasEditController::applySourceEditsWithSnapshotDeferredProjection(
+    const QString &label,
+    const QString &beforeText,
+    QVector<TherionSourceTextEdit> sourceEdits,
+    int insertedLineNumber,
+    std::function<void()> projectionInvalidationHook,
+    TextEditorSourceSelectionRestorePolicy selectionRestorePolicy,
+    std::function<void()> selectionRestoreHook)
+{
+    TextEditorSourceTransactionRequest request = sourceTransactionRequest(context_,
+                                                                          label,
+                                                                          beforeText,
+                                                                          QString(),
+                                                                          insertedLineNumber,
+                                                                          selectionRestorePolicy,
+                                                                          std::move(selectionRestoreHook));
+    request.sourceEdits = std::move(sourceEdits);
+    request.projectionInvalidationPolicy = TextEditorSourceProjectionInvalidationPolicy::CustomHook;
+    request.projectionInvalidationHook = std::move(projectionInvalidationHook);
+    request.rebuildBlocksCanvasOnApply = false;
+    return sourceTransactionController(context_).applyChangeWithSnapshot(request);
+}
+
 bool MapEditorCanvasEditController::insertLineVertexFromSelection(MapEditorLineVertexInsertPlacement placement)
 {
     if (context_.scene == nullptr || context_.textEditor == nullptr) {

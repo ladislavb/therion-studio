@@ -2,6 +2,7 @@
 
 #include "MapEditorViewportInputContext.h"
 
+#include <QElapsedTimer>
 #include <QPoint>
 
 #include <optional>
@@ -24,6 +25,7 @@ private:
     QString tr(const char *text) const;
 
     bool forwardingTabletEventAsMouse_ = false;
+    QElapsedTimer freehandPreviewThrottleTimer_;
     MapEditorViewportInputContext context_;
 };
 }

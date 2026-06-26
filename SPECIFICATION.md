@@ -726,6 +726,7 @@ Required behavior:
 - batch inspector edits applied by one explicit commit action shall commit as one undo step
 - any TH2 map-editor operation that mutates source text shall use one atomic source-write transaction that applies the text change and records its undo snapshot together via the shared map-source helper (`applySourceTextChangeWithSnapshot`) or an equivalent single abstraction
 - text-driven and map-driven mutations shall both participate in the same document undo history for the active TH2 session
+- TH2 map-editor undo history may be bounded to preserve memory use and input responsiveness during long drawing sessions
 - failed or invalid operations shall not create empty undo entries
 
 ### 3.12 Preferences and File-Change Handling

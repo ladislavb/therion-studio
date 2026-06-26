@@ -2,12 +2,21 @@
 
 #include "TextEditorSourceRewriteController.h"
 
+#include <utility>
+
 namespace TherionStudio
 {
 void TextEditorTab::applySourceSnapshotForTransaction(const QString &contents)
 {
     if (sourceRewriteController_ != nullptr) {
         sourceRewriteController_->applySourceSnapshotForTransaction(contents);
+    }
+}
+
+void TextEditorTab::applySourceEditsForTransaction(QVector<TherionSourceTextEdit> edits, bool rebuildBlocksCanvas)
+{
+    if (sourceRewriteController_ != nullptr) {
+        sourceRewriteController_->applySourceEditsForTransaction(std::move(edits), rebuildBlocksCanvas);
     }
 }
 

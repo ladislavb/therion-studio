@@ -136,6 +136,7 @@ public:
     bool replaceCurrent();
     int replaceAll();
     void applySourceSnapshotForTransaction(const QString &contents);
+    void applySourceEditsForTransaction(QVector<TherionSourceTextEdit> edits, bool rebuildBlocksCanvas = true);
     bool insertTextAtCursor(const QString &contents);
     QString importInsertionScopeToken() const;
     bool insertTextAtImportInsertionPoint(const QString &contents);

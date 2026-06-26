@@ -3,6 +3,8 @@
 #include "TextEditorTab.h"
 
 #include <QCoreApplication>
+#include <QDebug>
+#include <QElapsedTimer>
 #include <QPointer>
 #include <QScopedValueRollback>
 #include <QUndoCommand>
@@ -15,6 +17,30 @@ namespace TherionStudio
 {
 namespace
 {
+bool diagnosticSourceTransactionLoggingEnabled()
+{
+    static const bool enabled = [] {
+        const QString value = QString::fromLocal8Bit(qgetenv("THERION_STUDIO_ENABLE_LOG")).trimmed().toLower();
+        return value == QStringLiteral("1")
+            || value == QStringLiteral("true")
+            || value == QStringLiteral("yes")
+            || value == QStringLiteral("on");
+    }();
+    return enabled;
+}
+
+QString undoStackDiagnosticSummary(const QUndoStack *undoStack)
+{
+    if (undoStack == nullptr) {
+        return QStringLiteral("undo_count=-1 undo_index=-1 undo_limit=-1");
+    }
+
+    return QStringLiteral("undo_count=%1 undo_index=%2 undo_limit=%3")
+        .arg(undoStack->count())
+        .arg(undoStack->index())
+        .arg(undoStack->undoLimit());
+}
+
 std::optional<QString> resolvedAfterText(const TextEditorSourceTransactionRequest &request)
 {
     if (request.sourceEdits.isEmpty()) {
@@ -211,6 +237,23 @@ void applyTextEditorSourceSnapshot(TextEditorTab *textEditor, const QString &con
     textEditor->applySourceSnapshotForTransaction(contents);
 }
 
+void applyTextEditorSourceChange(TextEditorTab *textEditor,
+                                 const QString &contents,
+                                 const QVector<TherionSourceTextEdit> &sourceEdits,
+                                 bool rebuildBlocksCanvas)
+{
+    if (textEditor == nullptr) {
+        return;
+    }
+
+    if (sourceEdits.isEmpty()) {
+        textEditor->applySourceSnapshotForTransaction(contents);
+        return;
+    }
+
+    textEditor->applySourceEditsForTransaction(sourceEdits, rebuildBlocksCanvas);
+}
+
 TextEditorSourceTransactionResult TextEditorSourceTransactionController::recordSnapshot(
     const TextEditorSourceTransactionRequest &request)
 {
@@ -238,39 +281,132 @@ TextEditorSourceTransactionResult TextEditorSourceTransactionController::recordS
 TextEditorSourceTransactionResult TextEditorSourceTransactionController::applyChangeWithSnapshot(
     const TextEditorSourceTransactionRequest &request)
 {
+    const bool logTiming = diagnosticSourceTransactionLoggingEnabled();
+    QElapsedTimer totalTimer;
+    QElapsedTimer stageTimer;
+    if (logTiming) {
+        totalTimer.start();
+        stageTimer.start();
+    }
+
     const std::optional<QString> afterText = resolvedAfterText(request);
+    const qint64 resolveMs = logTiming ? stageTimer.elapsed() : 0;
     if (!afterText.has_value()) {
+        if (logTiming) {
+            qInfo().noquote()
+                << QStringLiteral("source-transaction label=\"%1\" result=invalid-edit resolve_ms=%2 total_ms=%3")
+                       .arg(request.label)
+                       .arg(resolveMs)
+                       .arg(totalTimer.elapsed());
+        }
         return TextEditorSourceTransactionResult::InvalidEdit;
     }
     if (request.beforeText == afterText.value()) {
+        if (logTiming) {
+            qInfo().noquote()
+                << QStringLiteral("source-transaction label=\"%1\" result=no-change resolve_ms=%2 total_ms=%3")
+                       .arg(request.label)
+                       .arg(resolveMs)
+                       .arg(totalTimer.elapsed());
+        }
         return TextEditorSourceTransactionResult::NoChange;
     }
     if (context_.textEditor == nullptr) {
+        if (logTiming) {
+            qInfo().noquote()
+                << QStringLiteral("source-transaction label=\"%1\" result=unavailable resolve_ms=%2 total_ms=%3")
+                       .arg(request.label)
+                       .arg(resolveMs)
+                       .arg(totalTimer.elapsed());
+        }
         return TextEditorSourceTransactionResult::Unavailable;
     }
 
     if (!sourceRevisionMatches(context_, request) || !currentTextMatches(context_, request.beforeText)) {
         reportStaleRequest(context_, request);
+        if (logTiming) {
+            qInfo().noquote()
+                << QStringLiteral("source-transaction label=\"%1\" result=stale resolve_ms=%2 total_ms=%3")
+                       .arg(request.label)
+                       .arg(resolveMs)
+                       .arg(totalTimer.elapsed());
+        }
         return TextEditorSourceTransactionResult::Stale;
     }
 
-    if (context_.commandApplyInProgress != nullptr) {
-        const QScopedValueRollback<bool> commandGuard((*context_.commandApplyInProgress), true);
-        applyTextEditorSourceSnapshot(context_.textEditor, afterText.value());
+    auto applySnapshot = [&]() -> qint64 {
+        stageTimer.restart();
+        applyTextEditorSourceChange(context_.textEditor,
+                                    afterText.value(),
+                                    request.sourceEdits,
+                                    request.rebuildBlocksCanvasOnApply);
+        return stageTimer.elapsed();
+    };
+    auto markOrigin = [&]() -> qint64 {
+        stageTimer.restart();
         if (context_.markSourceChangeOriginatedFromTransaction) {
             context_.markSourceChangeOriginatedFromTransaction();
         }
+        return stageTimer.elapsed();
+    };
+    auto pushUndo = [&]() -> qint64 {
+        stageTimer.restart();
         pushSnapshotCommand(context_, request, afterText.value());
+        return stageTimer.elapsed();
+    };
+    auto applyPolicies = [&]() -> qint64 {
+        stageTimer.restart();
         applyRequestPolicies(context_, request);
+        return stageTimer.elapsed();
+    };
+
+    if (context_.commandApplyInProgress != nullptr) {
+        const QScopedValueRollback<bool> commandGuard((*context_.commandApplyInProgress), true);
+        const qint64 applySnapshotMs = applySnapshot();
+        const qint64 markMs = markOrigin();
+        const qint64 pushUndoMs = pushUndo();
+        const qint64 policiesMs = applyPolicies();
+        if (logTiming) {
+            qInfo().noquote()
+                << QStringLiteral(
+                       "source-transaction label=\"%1\" result=applied guarded=1 before_chars=%2 after_chars=%3 resolve_ms=%4 "
+                       "apply_snapshot_ms=%5 mark_ms=%6 push_undo_ms=%7 policies_ms=%8 total_ms=%9 snapshot_chars=%10 %11")
+                       .arg(request.label)
+                       .arg(request.beforeText.size())
+                       .arg(afterText->size())
+                       .arg(resolveMs)
+                       .arg(applySnapshotMs)
+                       .arg(markMs)
+                       .arg(pushUndoMs)
+                       .arg(policiesMs)
+                       .arg(totalTimer.elapsed())
+                       .arg(request.beforeText.size() + afterText->size())
+                       .arg(undoStackDiagnosticSummary(context_.undoStack));
+        }
         return TextEditorSourceTransactionResult::Applied;
     }
 
-    applyTextEditorSourceSnapshot(context_.textEditor, afterText.value());
-    if (context_.markSourceChangeOriginatedFromTransaction) {
-        context_.markSourceChangeOriginatedFromTransaction();
+    const qint64 applySnapshotMs = applySnapshot();
+    const qint64 markMs = markOrigin();
+    const qint64 pushUndoMs = pushUndo();
+    const qint64 policiesMs = applyPolicies();
+    if (logTiming) {
+        qInfo().noquote()
+            << QStringLiteral(
+                   "source-transaction label=\"%1\" result=applied guarded=0 before_chars=%2 after_chars=%3 resolve_ms=%4 "
+                   "apply_snapshot_ms=%5 mark_ms=%6 push_undo_ms=%7 policies_ms=%8 total_ms=%9 snapshot_chars=%10 %11")
+                   .arg(request.label)
+                   .arg(request.beforeText.size())
+                   .arg(afterText->size())
+                   .arg(resolveMs)
+                   .arg(applySnapshotMs)
+                   .arg(markMs)
+                   .arg(pushUndoMs)
+                   .arg(policiesMs)
+                   .arg(totalTimer.elapsed())
+                   .arg(request.beforeText.size() + afterText->size())
+                   .arg(undoStackDiagnosticSummary(context_.undoStack));
     }
-    pushSnapshotCommand(context_, request, afterText.value());
-    applyRequestPolicies(context_, request);
     return TextEditorSourceTransactionResult::Applied;
 }
 }

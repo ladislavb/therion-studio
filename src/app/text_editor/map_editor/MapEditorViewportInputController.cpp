@@ -10,6 +10,7 @@
 #include <QContextMenuEvent>
 #include <QCursor>
 #include <QDateTime>
+#include <QDebug>
 #include <QElapsedTimer>
 #include <QEvent>
 #include <QGraphicsItem>
@@ -44,6 +45,251 @@ constexpr qreal kDirectVertexCenterHitDistance = 1.0;
 constexpr qreal kDirectVertexAffordanceHitDistancePixels = 12.0;
 constexpr qreal kMaximumPathPrimaryHitDistancePixels = 10.0;
 constexpr qint64 kHandledTabletMouseSuppressionMs = 250;
+constexpr qint64 kSlowMapInputEventMs = 8;
+constexpr qint64 kFreehandPreviewRefreshIntervalMs = 16;
+
+bool diagnosticMapInputLoggingEnabled()
+{
+    static const bool enabled = [] {
+        const QString value = QString::fromLocal8Bit(qgetenv("THERION_STUDIO_ENABLE_LOG")).trimmed().toLower();
+        return value == QStringLiteral("1")
+            || value == QStringLiteral("true")
+            || value == QStringLiteral("yes")
+            || value == QStringLiteral("on");
+    }();
+    return enabled;
+}
+
+const char *mapInputEventTypeName(QEvent::Type type)
+{
+    switch (type) {
+    case QEvent::MouseButtonPress:
+        return "MouseButtonPress";
+    case QEvent::MouseMove:
+        return "MouseMove";
+    case QEvent::MouseButtonRelease:
+        return "MouseButtonRelease";
+    case QEvent::MouseButtonDblClick:
+        return "MouseButtonDblClick";
+    case QEvent::TabletPress:
+        return "TabletPress";
+    case QEvent::TabletMove:
+        return "TabletMove";
+    case QEvent::TabletRelease:
+        return "TabletRelease";
+    case QEvent::TouchBegin:
+        return "TouchBegin";
+    case QEvent::TouchUpdate:
+        return "TouchUpdate";
+    case QEvent::TouchEnd:
+        return "TouchEnd";
+    case QEvent::TouchCancel:
+        return "TouchCancel";
+    case QEvent::Wheel:
+        return "Wheel";
+    case QEvent::NativeGesture:
+        return "NativeGesture";
+    default:
+        break;
+    }
+    return "Other";
+}
+
+const char *mapInputDrawModeName(MapEditorInteractiveDrawMode mode)
+{
+    switch (mode) {
+    case MapEditorInteractiveDrawMode::None:
+        return "none";
+    case MapEditorInteractiveDrawMode::Point:
+        return "point";
+    case MapEditorInteractiveDrawMode::Line:
+        return "line";
+    case MapEditorInteractiveDrawMode::Area:
+        return "area";
+    case MapEditorInteractiveDrawMode::SmartArea:
+        return "smart-area";
+    case MapEditorInteractiveDrawMode::Freehand:
+        return "freehand";
+    }
+    return "unknown";
+}
+
+bool isMapInputPointerEvent(QEvent::Type type)
+{
+    switch (type) {
+    case QEvent::MouseButtonPress:
+    case QEvent::MouseMove:
+    case QEvent::MouseButtonRelease:
+    case QEvent::MouseButtonDblClick:
+    case QEvent::TabletPress:
+    case QEvent::TabletMove:
+    case QEvent::TabletRelease:
+    case QEvent::TouchBegin:
+    case QEvent::TouchUpdate:
+    case QEvent::TouchEnd:
+    case QEvent::TouchCancel:
+        return true;
+    default:
+        break;
+    }
+    return false;
+}
+
+bool hasRecentHandledTabletEvent(const MapEditorViewportInputContext &context);
+
+QString mapInputPointerSummary(const QEvent *event)
+{
+    if (event == nullptr) {
+        return QStringLiteral("pointer=none");
+    }
+    switch (event->type()) {
+    case QEvent::MouseButtonPress:
+    case QEvent::MouseMove:
+    case QEvent::MouseButtonRelease:
+    case QEvent::MouseButtonDblClick: {
+        const auto *mouseEvent = static_cast<const QMouseEvent *>(event);
+        return QStringLiteral("button=%1 buttons=%2 pos=%3,%4")
+            .arg(static_cast<int>(mouseEvent->button()))
+            .arg(static_cast<int>(mouseEvent->buttons()))
+            .arg(mouseEvent->pos().x())
+            .arg(mouseEvent->pos().y());
+    }
+    case QEvent::TabletPress:
+    case QEvent::TabletMove:
+    case QEvent::TabletRelease: {
+        const auto *tabletEvent = static_cast<const QTabletEvent *>(event);
+        return QStringLiteral("button=%1 buttons=%2 pressure=%3 pos=%4,%5")
+            .arg(static_cast<int>(tabletEvent->button()))
+            .arg(static_cast<int>(tabletEvent->buttons()))
+            .arg(tabletEvent->pressure(), 0, 'f', 3)
+            .arg(qRound(tabletEvent->position().x()))
+            .arg(qRound(tabletEvent->position().y()));
+    }
+    default:
+        break;
+    }
+    return {};
+}
+
+class MapInputEventTrace
+{
+public:
+    MapInputEventTrace(const MapEditorViewportInputContext &context,
+                       const QEvent *event,
+                       bool active,
+                       bool forwardingTabletEventAsMouse)
+        : context_(context)
+        , event_(event)
+        , forwardingTabletEventAsMouse_(forwardingTabletEventAsMouse)
+        , enabled_(active && diagnosticMapInputLoggingEnabled() && event != nullptr && isMapInputPointerEvent(event->type()))
+    {
+        if (enabled_) {
+            timer_.start();
+        }
+    }
+
+    ~MapInputEventTrace()
+    {
+        if (!enabled_) {
+            return;
+        }
+
+        const qint64 elapsedMs = timer_.elapsed();
+        if (elapsedMs < kSlowMapInputEventMs && !forceLog_) {
+            return;
+        }
+
+        const bool includeSceneItemCount = forceLog_
+            || (event_->type() != QEvent::MouseMove && event_->type() != QEvent::TabletMove);
+        const int sceneItemCount = includeSceneItemCount && context_.scene != nullptr ? context_.scene->items().size() : -1;
+        const int sourceVertexCount = context_.interactiveDrawSourceVertices != nullptr
+            ? context_.interactiveDrawSourceVertices->size()
+            : -1;
+        const int sceneVertexCount = context_.interactiveDrawSceneVertices != nullptr
+            ? context_.interactiveDrawSceneVertices->size()
+            : -1;
+        const int draftVertexCount = context_.interactiveDrawLineVertices != nullptr
+            ? context_.interactiveDrawLineVertices->size()
+            : -1;
+        const int snapGuideCount = context_.interactiveDrawHoverSnapGuideScenePoints != nullptr
+            ? context_.interactiveDrawHoverSnapGuideScenePoints->size()
+            : -1;
+        const bool recentTablet = hasRecentHandledTabletEvent(context_);
+        const QString pointerSummary = mapInputPointerSummary(event_);
+
+        QString message = QStringLiteral(
+            "map-input event=%1 action=%2 elapsed_ms=%3 accepted=%4 forwarded_tablet=%5 draw_mode=%6 scene_items=%7 "
+            "source_vertices=%8 scene_vertices=%9 draft_vertices=%10 snap_guides=%11 primary_active=%12 pan_active=%13 "
+            "stroke_active=%14 anchor_press=%15 anchor_drag=%16 control_drag=%17 recent_tablet=%18")
+                              .arg(QString::fromLatin1(mapInputEventTypeName(event_->type())))
+                              .arg(QString::fromLatin1(action_))
+                              .arg(elapsedMs)
+                              .arg(event_->isAccepted() ? 1 : 0)
+                              .arg(forwardingTabletEventAsMouse_ ? 1 : 0)
+                              .arg(QString::fromLatin1(mapInputDrawModeName(
+                                  context_.drawMode ? context_.drawMode() : MapEditorInteractiveDrawMode::None)))
+                              .arg(sceneItemCount)
+                              .arg(sourceVertexCount)
+                              .arg(sceneVertexCount)
+                              .arg(draftVertexCount)
+                              .arg(snapGuideCount)
+                              .arg(context_.primaryPointerInteractionActive != nullptr
+                                       && (*context_.primaryPointerInteractionActive) ? 1 : 0)
+                              .arg(context_.mapPanActive != nullptr && (*context_.mapPanActive) ? 1 : 0)
+                              .arg(context_.interactiveDrawStrokeActive != nullptr
+                                       && (*context_.interactiveDrawStrokeActive) ? 1 : 0)
+                              .arg(context_.interactiveDrawAnchorPressActive != nullptr
+                                       && (*context_.interactiveDrawAnchorPressActive) ? 1 : 0)
+                              .arg(context_.interactiveDrawAnchorDragActive != nullptr
+                                       && (*context_.interactiveDrawAnchorDragActive) ? 1 : 0)
+                              .arg(context_.interactiveDrawControlDragActive != nullptr
+                                       && (*context_.interactiveDrawControlDragActive) ? 1 : 0)
+                              .arg(recentTablet ? 1 : 0);
+        if (!pointerSummary.isEmpty()) {
+            message += QLatin1Char(' ');
+            message += pointerSummary;
+        }
+        if (sampleCount_ >= 0) {
+            message += QStringLiteral(" samples=%1").arg(sampleCount_);
+        }
+        if (!detail_.isEmpty()) {
+            message += QLatin1Char(' ');
+            message += detail_;
+        }
+        qInfo().noquote() << message;
+    }
+
+    void setAction(const char *action)
+    {
+        action_ = action;
+    }
+
+    void setSampleCount(int sampleCount)
+    {
+        sampleCount_ = sampleCount;
+    }
+
+    void setDetail(QString detail)
+    {
+        detail_ = std::move(detail);
+    }
+
+    void forceLog()
+    {
+        forceLog_ = true;
+    }
+
+private:
+    const MapEditorViewportInputContext &context_;
+    const QEvent *event_ = nullptr;
+    const bool forwardingTabletEventAsMouse_ = false;
+    const bool enabled_ = false;
+    bool forceLog_ = false;
+    int sampleCount_ = -1;
+    const char *action_ = "dispatch";
+    QString detail_;
+    QElapsedTimer timer_;
+};
 
 bool wheelEventHasPreciseScrollingDeltas(const QWheelEvent *event)
 {
@@ -1023,6 +1269,11 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
     }
 
     QWidget *viewport = context_.view->viewport();
+    const bool mapViewportEvent = watched == viewport || watched == context_.view;
+    MapInputEventTrace inputTrace(context_, event, mapViewportEvent, forwardingTabletEventAsMouse_);
+    const auto traceAction = [&inputTrace](const char *action) {
+        inputTrace.setAction(action);
+    };
     const auto handleDeleteKeyPress = [&](QKeyEvent *keyEvent) -> bool {
         if (keyEvent == nullptr) {
             return false;
@@ -1090,6 +1341,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
         case QEvent::TabletPress:
         case QEvent::TabletMove:
         case QEvent::TabletRelease: {
+            traceAction("tablet-forward");
             auto *tabletEvent = static_cast<QTabletEvent *>(event);
             QEvent::Type mouseEventType = QEvent::MouseMove;
             Qt::MouseButton mouseButton = Qt::NoButton;
@@ -1166,6 +1418,8 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
         }
         case QEvent::MouseButtonPress: {
             if (!forwardingTabletEventAsMouse_ && hasRecentHandledTabletEvent(context_)) {
+                traceAction("suppress-synthetic-mouse-press");
+                inputTrace.forceLog();
                 event->accept();
                 return true;
             }
@@ -1173,11 +1427,13 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             if (mouseEvent->button() == Qt::RightButton
                 || isSpacePanPress(context_, mouseEvent)
                 || isControlPanPress(mouseEvent)) {
+                traceAction("begin-pan");
                 beginMapPanDrag(context_, viewport, mouseEvent->pos(), isControlPanPress(mouseEvent));
                 event->accept();
                 return true;
             }
             if (isSecondaryClickPress(mouseEvent)) {
+                traceAction("context-menu");
                 (*context_.mapPanActive) = false;
                 if (context_.mapPanMoved != nullptr) {
                     (*context_.mapPanMoved) = false;
@@ -1191,6 +1447,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                 context_.view->setFocus(Qt::MouseFocusReason);
                 viewport->setFocus(Qt::MouseFocusReason);
                 if (drawMode() == MapEditorInteractiveDrawMode::Freehand) {
+                    traceAction("freehand-begin");
                     if (context_.textEditor == nullptr) {
                         (*context_.toolbarStatusNote) = tr("Drawing failed: no active TH2 text editor.");
                         context_.refreshToolbarSummary();
@@ -1203,6 +1460,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                     (*context_.interactiveDrawStrokeActive) = true;
                     (*context_.interactiveDrawSourceVertices).append(context_.sourcePointFromScenePosition(scenePoint));
                     (*context_.interactiveDrawSceneVertices).append(scenePoint);
+                    freehandPreviewThrottleTimer_.restart();
                     context_.updateInteractiveDrawPreview();
                     (*context_.toolbarStatusNote) = tr("Freehand mode: drawing stroke...");
                     context_.refreshToolbarSummary();
@@ -1213,11 +1471,13 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                 }
                 if (drawMode() == MapEditorInteractiveDrawMode::Line
                     || drawMode() == MapEditorInteractiveDrawMode::Area) {
+                    traceAction("line-area-press");
                     const QPointF scenePoint = context_.view->mapToScene(mouseEvent->pos());
                     const QPointF anchorScenePoint = snapInteractiveDrawAnchorIfAvailable(context_, mouseEvent->pos(), scenePoint);
                     const QPointF sceneOffset = context_.view->mapToScene(mouseEvent->pos() + QPoint(8, 0));
                     const qreal controlHitRadius = std::max<qreal>(4.0, QLineF(scenePoint, sceneOffset).length());
                     if (const auto handle = context_.interactiveLineControlAt(scenePoint, controlHitRadius)) {
+                        traceAction("line-area-control-drag-begin");
                         (*context_.interactiveDrawControlDragActive) = true;
                         (*context_.interactiveDrawControlDragHandle) = handle.value();
                         (*context_.interactiveDrawAnchorPressActive) = false;
@@ -1264,6 +1524,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                     return true;
                 }
                 if (drawMode() == MapEditorInteractiveDrawMode::Point) {
+                    traceAction("point-insert");
                     const QPointF scenePoint = context_.view->mapToScene(mouseEvent->pos());
                     const QPointF anchorScenePoint = snapInteractiveDrawAnchorIfAvailable(context_, mouseEvent->pos(), scenePoint);
                     if (context_.handleInteractiveDrawClick(anchorScenePoint)) {
@@ -1273,6 +1534,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                     }
                 }
                 if (context_.handleInteractiveDrawClick(context_.view->mapToScene(mouseEvent->pos()))) {
+                    traceAction("generic-insert");
                     (*context_.primaryPointerInteractionActive) = false;
                     event->accept();
                     return true;
@@ -1286,6 +1548,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                             if (subtype == kMapSceneSelectionSubtypeGeneric
                                 || subtype == kMapSceneSelectionSubtypeLineDetail
                                 || subtype == kMapSceneSelectionSubtypeAreaFill) {
+                                traceAction("select-path-hit");
                                 setMapInteractionHoverItem(context_, item);
                                 selectSingleMapHitItem(context_, item);
                                 event->accept();
@@ -1298,13 +1561,10 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             break;
         }
         case QEvent::MouseMove: {
-            if (!forwardingTabletEventAsMouse_ && hasRecentHandledTabletEvent(context_)) {
-                event->accept();
-                return true;
-            }
             if ((drawMode() == MapEditorInteractiveDrawMode::Line
                  || drawMode() == MapEditorInteractiveDrawMode::Area)
                 && (*context_.interactiveDrawControlDragActive)) {
+                traceAction("line-area-control-drag-move");
                 const QPointF scenePoint = context_.view->mapToScene(static_cast<QMouseEvent *>(event)->pos());
                 if (context_.setInteractiveLineControlScenePoint((*context_.interactiveDrawControlDragHandle), scenePoint)) {
                     context_.updateInteractiveDrawPreview();
@@ -1316,6 +1576,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             if ((drawMode() == MapEditorInteractiveDrawMode::Line
                  || drawMode() == MapEditorInteractiveDrawMode::Area)
                 && (*context_.interactiveDrawAnchorPressActive)) {
+                traceAction("line-area-anchor-drag-preview");
                 const QPointF scenePoint = context_.view->mapToScene(static_cast<QMouseEvent *>(event)->pos());
                 constexpr qreal dragThreshold = 4.0;
                 if (!(*context_.interactiveDrawAnchorDragActive)
@@ -1329,14 +1590,23 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             }
 
             if (drawMode() == MapEditorInteractiveDrawMode::Freehand && (*context_.interactiveDrawStrokeActive)) {
+                traceAction("freehand-sample");
                 const QPointF scenePoint = context_.view->mapToScene(static_cast<QMouseEvent *>(event)->pos());
                 constexpr qreal minimumSceneSampleDistance = 0.5;
                 if ((*context_.interactiveDrawSceneVertices).isEmpty()
                     || QLineF((*context_.interactiveDrawSceneVertices).last(), scenePoint).length() >= minimumSceneSampleDistance) {
                     (*context_.interactiveDrawSceneVertices).append(scenePoint);
                     (*context_.interactiveDrawSourceVertices).append(context_.sourcePointFromScenePosition(scenePoint));
-                    context_.updateInteractiveDrawPreview();
-                    context_.updateCommandSurfaceState();
+                    const int sampleCount = context_.interactiveDrawSceneVertices->size();
+                    inputTrace.setSampleCount(sampleCount);
+                    const bool refreshPreview = sampleCount <= 2
+                        || !freehandPreviewThrottleTimer_.isValid()
+                        || freehandPreviewThrottleTimer_.elapsed() >= kFreehandPreviewRefreshIntervalMs;
+                    if (refreshPreview) {
+                        freehandPreviewThrottleTimer_.restart();
+                        context_.updateInteractiveDrawPreview();
+                        context_.updateCommandSurfaceState();
+                    }
                 }
                 event->accept();
                 return true;
@@ -1345,6 +1615,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             if (drawMode() == MapEditorInteractiveDrawMode::Point
                 || drawMode() == MapEditorInteractiveDrawMode::Line
                 || drawMode() == MapEditorInteractiveDrawMode::Area) {
+                traceAction("draw-hover-preview");
                 setMapInteractionHoverItem(context_, nullptr);
                 const QPoint mousePosition = static_cast<QMouseEvent *>(event)->pos();
                 const QPointF scenePoint = context_.view->mapToScene(mousePosition);
@@ -1382,6 +1653,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
 
             if (!(*context_.mapPanActive)) {
                 auto *mouseEvent = static_cast<QMouseEvent *>(event);
+                traceAction("select-hover-hit-test");
                 QGraphicsItem *hoverItem = preferredMapHitItemForViewportPosition(context_,
                                                                                   mouseEvent->pos(),
                                                                                   false,
@@ -1399,6 +1671,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             }
 
             auto *mouseEvent = static_cast<QMouseEvent *>(event);
+            traceAction("pan-move");
             if (context_.mapPanMoved != nullptr
                 && context_.mapPanStartPosition != nullptr
                 && !(*context_.mapPanMoved)) {
@@ -1427,14 +1700,11 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             return true;
         }
         case QEvent::MouseButtonDblClick: {
-            if (!forwardingTabletEventAsMouse_ && hasRecentHandledTabletEvent(context_)) {
-                event->accept();
-                return true;
-            }
             auto *mouseEvent = static_cast<QMouseEvent *>(event);
             if (drawMode() == MapEditorInteractiveDrawMode::Line
                 && mouseEvent->button() == Qt::LeftButton
                 && context_.cancelInteractiveDrawingToSelectMode != nullptr) {
+                traceAction("line-double-click-complete");
                 const QPointF scenePoint = context_.view->mapToScene(mouseEvent->pos());
                 const QPointF anchorScenePoint = snapInteractiveDrawAnchorIfAvailable(context_, mouseEvent->pos(), scenePoint);
                 bool anchorAlreadyCaptured = false;
@@ -1462,15 +1732,12 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             break;
         }
         case QEvent::MouseButtonRelease: {
-            if (!forwardingTabletEventAsMouse_ && hasRecentHandledTabletEvent(context_)) {
-                event->accept();
-                return true;
-            }
             auto *mouseEvent = static_cast<QMouseEvent *>(event);
             if ((drawMode() == MapEditorInteractiveDrawMode::Line
                  || drawMode() == MapEditorInteractiveDrawMode::Area)
                 && (*context_.interactiveDrawControlDragActive)
                 && mouseEvent->button() == Qt::LeftButton) {
+                traceAction("line-area-control-drag-release");
                 const QPointF scenePoint = context_.view->mapToScene(mouseEvent->pos());
                 const MapEditorInteractiveLineControlHandleRef dragHandle = (*context_.interactiveDrawControlDragHandle);
                 if (dragHandle.kind == MapEditorInteractiveLineControlHandleRef::Kind::Anchor
@@ -1483,6 +1750,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                     if (QLineF(scenePoint, firstAnchorScenePoint).length() <= closeHitRadius
                         && context_.commitInteractiveDrawSession != nullptr) {
                         (*context_.interactiveDrawControlDragActive) = false;
+                        traceAction("line-area-control-drag-close");
                         context_.commitInteractiveDrawSession(drawMode() == MapEditorInteractiveDrawMode::Line);
                         event->accept();
                         return true;
@@ -1518,6 +1786,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                  || drawMode() == MapEditorInteractiveDrawMode::Area)
                 && (*context_.interactiveDrawAnchorPressActive)
                 && mouseEvent->button() == Qt::LeftButton) {
+                traceAction("line-area-anchor-release");
                 const MapEditorInteractiveDrawMode currentDrawMode = drawMode();
                 const QPointF anchorScenePoint = (*context_.interactiveDrawAnchorPressScenePoint);
                 const QPointF releaseScenePoint = context_.view->mapToScene(mouseEvent->pos());
@@ -1549,6 +1818,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                 }
 
                 if (completeClosedDraftByClick && context_.commitInteractiveDrawSession != nullptr) {
+                    traceAction("line-area-anchor-release-close");
                     context_.commitInteractiveDrawSession(currentDrawMode == MapEditorInteractiveDrawMode::Line);
                     event->accept();
                     return true;
@@ -1568,6 +1838,8 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             if (drawMode() == MapEditorInteractiveDrawMode::Freehand
                 && (*context_.interactiveDrawStrokeActive)
                 && mouseEvent->button() == Qt::LeftButton) {
+                traceAction("freehand-release");
+                const int sceneItemCountBeforeRelease = context_.scene != nullptr ? context_.scene->items().size() : -1;
                 const QPointF releasePoint = context_.view->mapToScene(mouseEvent->pos());
                 if ((*context_.interactiveDrawSceneVertices).isEmpty()
                     || QLineF((*context_.interactiveDrawSceneVertices).last(), releasePoint).length() >= 1.0) {
@@ -1575,8 +1847,13 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                     (*context_.interactiveDrawSourceVertices).append(context_.sourcePointFromScenePosition(releasePoint));
                 }
                 (*context_.interactiveDrawStrokeActive) = false;
+                const int verticesBeforeCommit = context_.interactiveDrawSourceVertices->size();
 
                 if ((*context_.interactiveDrawSourceVertices).size() < 2) {
+                    inputTrace.setDetail(QStringLiteral("vertices_before_commit=%1 scene_items_before_release=%2")
+                                             .arg(verticesBeforeCommit)
+                                             .arg(sceneItemCountBeforeRelease));
+                    inputTrace.forceLog();
                     context_.clearInteractiveDrawSession(false);
                     (*context_.toolbarStatusNote) = tr("Freehand mode needs a drag stroke to create a line.");
                     context_.refreshToolbarSummary();
@@ -1585,15 +1862,33 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                     return true;
                 }
 
+                QElapsedTimer releaseStageTimer;
+                releaseStageTimer.start();
                 const bool committed = context_.commitInteractiveDrawVertices(QStringLiteral("line"),
                                                                      (*context_.interactiveDrawSourceVertices),
                                                                      tr("freehand line"));
+                const qint64 commitMs = releaseStageTimer.elapsed();
+                releaseStageTimer.restart();
+                inputTrace.setSampleCount(context_.interactiveDrawSourceVertices->size());
                 context_.clearInteractiveDrawSession(false);
+                const qint64 clearMs = releaseStageTimer.elapsed();
+                releaseStageTimer.restart();
                 if (committed) {
                     context_.updateHelpPanel();
                 }
                 context_.refreshToolbarSummary();
                 context_.updateCommandSurfaceState();
+                const qint64 postCommitUiMs = releaseStageTimer.elapsed();
+                inputTrace.setDetail(QStringLiteral(
+                                         "vertices_before_commit=%1 committed=%2 commit_ms=%3 clear_ms=%4 post_commit_ui_ms=%5 "
+                                         "scene_items_before_release=%6")
+                                         .arg(verticesBeforeCommit)
+                                         .arg(committed ? 1 : 0)
+                                         .arg(commitMs)
+                                         .arg(clearMs)
+                                         .arg(postCommitUiMs)
+                                         .arg(sceneItemCountBeforeRelease));
+                inputTrace.forceLog();
                 event->accept();
                 return true;
             }
@@ -1604,6 +1899,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
 
             if ((*context_.mapPanActive)
                 && (mouseEvent->button() == Qt::RightButton || mouseEvent->button() == Qt::LeftButton)) {
+                traceAction("pan-release");
                 const bool controlPan = context_.mapControlPanActive != nullptr
                     && (*context_.mapControlPanActive);
                 const bool moved = context_.mapPanMoved != nullptr && (*context_.mapPanMoved);

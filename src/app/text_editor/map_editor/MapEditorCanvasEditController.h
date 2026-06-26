@@ -54,6 +54,24 @@ public:
         TextEditorSourceSelectionRestorePolicy selectionRestorePolicy =
             TextEditorSourceSelectionRestorePolicy::PreserveCurrentSelection,
         std::function<void()> selectionRestoreHook = {});
+    TextEditorSourceTransactionResult applySourceTextChangeWithSnapshotDeferredProjection(
+        const QString &label,
+        const QString &beforeText,
+        const QString &afterText,
+        int insertedLineNumber,
+        std::function<void()> projectionInvalidationHook,
+        TextEditorSourceSelectionRestorePolicy selectionRestorePolicy =
+            TextEditorSourceSelectionRestorePolicy::PreserveCurrentSelection,
+        std::function<void()> selectionRestoreHook = {});
+    TextEditorSourceTransactionResult applySourceEditsWithSnapshotDeferredProjection(
+        const QString &label,
+        const QString &beforeText,
+        QVector<TherionSourceTextEdit> sourceEdits,
+        int insertedLineNumber,
+        std::function<void()> projectionInvalidationHook,
+        TextEditorSourceSelectionRestorePolicy selectionRestorePolicy =
+            TextEditorSourceSelectionRestorePolicy::PreserveCurrentSelection,
+        std::function<void()> selectionRestoreHook = {});
     bool insertLineVertexFromSelection(MapEditorLineVertexInsertPlacement placement);
     bool insertLineVertexAtSelectionCoordinate();
     bool splitLineAtSelection();

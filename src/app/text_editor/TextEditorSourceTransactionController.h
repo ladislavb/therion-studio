@@ -61,6 +61,7 @@ struct TextEditorSourceTransactionRequest
     std::function<void()> initialRedoHook;
     std::function<void()> undoHook;
     std::function<void()> redoHook;
+    bool rebuildBlocksCanvasOnApply = true;
     QString undoStatusMessage;
     QString redoStatusMessage;
     QString staleStatusMessage;

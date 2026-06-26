@@ -396,6 +396,8 @@ Používejte `Command` na macOS a `Ctrl` na Windows/Linux, pokud menu platformy 
 | Zrušit vkládání/kreslení v mapě | `Esc` |
 | Smazat vybraný mapový objekt nebo vybraný line point; při kreslení smazat poslední bod návrhu | `Delete` / `Backspace` |
 
+Mapové kreslení a source-edit operace uchovávají posledních 200 kroků zpět pro každou záložku mapového editoru.
+
 ## 10. Nápověda a O aplikaci
 
 - `Nápověda -> Uživatelská příručka` otevře lokalizovaný manuál v aplikaci. Prohlížeč manuálu nechává vlevo viditelný obsah, podporuje odkazy z obsahu v tomto dokumentu a obsahuje hledání v manuálu s navigací na předchozí/další shodu. `Command/Ctrl+F` fokusuje hledání v manuálu.

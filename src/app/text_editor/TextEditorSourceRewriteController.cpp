@@ -107,6 +107,16 @@ void TextEditorSourceRewriteController::applySourceSnapshotForTransaction(const 
     replaceTextPreservingCursor(contents, true, true, true, false);
 }
 
+void TextEditorSourceRewriteController::applySourceEditsForTransaction(QVector<TherionSourceTextEdit> edits,
+                                                                       bool rebuildBlocksCanvas)
+{
+    if (context_.editor == nullptr || edits.isEmpty()) {
+        return;
+    }
+
+    applyTextEditsPreservingCursor(std::move(edits), true, rebuildBlocksCanvas, true, false);
+}
+
 bool TextEditorSourceRewriteController::replaceTextForSystemNormalization(const QString &contents)
 {
     return replaceTextForSystemNormalizationResult(contents) == TextEditorSourceTransactionResult::Applied;

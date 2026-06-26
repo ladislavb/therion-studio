@@ -63,6 +63,8 @@ namespace TherionStudio
 {
 namespace
 {
+constexpr int kMapEditorUndoLimit = 200;
+
 void applyThinSplitterStyle(QSplitter *splitter, const QString &objectName)
 {
     if (splitter == nullptr) {
@@ -92,6 +94,7 @@ MapEditorTab::MapEditorTab(IFileSystem &fileSystem,
 void MapEditorTab::initializeWorkspace()
 {
     undoStack_ = new QUndoStack(this);
+    undoStack_->setUndoLimit(kMapEditorUndoLimit);
     MapEditorUndoArbitrationService::resetOwnership(undoOwnershipState_, undoStack_->index());
     workspaceMode_ = WorkspaceMode::Visual;
     touchFriendlyControlsEnabled_ = false;

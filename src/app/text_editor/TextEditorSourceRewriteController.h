@@ -39,6 +39,7 @@ public:
     bool applyTransactionRequestWithEditorUndo(const TextEditorSourceTransactionRequest &request,
                                                QString *statusMessage = nullptr);
     void applySourceSnapshotForTransaction(const QString &contents);
+    void applySourceEditsForTransaction(QVector<TherionSourceTextEdit> edits, bool rebuildBlocksCanvas = true);
     TextEditorSourceTransactionResult replaceTextForSystemNormalizationResult(const QString &contents);
     bool replaceTextForSystemNormalization(const QString &contents);
 
