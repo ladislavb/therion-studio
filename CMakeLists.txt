@@ -912,7 +912,7 @@ if(WIN32)
     if(THERION_STUDIO_WINDEPLOYQT_EXECUTABLE)
         install(CODE "
             set(_therion_studio_windows_executable \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/TherionStudio.exe\")
-            set(_therion_studio_windows_runtime_dir \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}\")
+            set(_therion_studio_windows_runtime_dir \"\${CMAKE_INSTALL_PREFIX}\")
             if(NOT EXISTS \"\${_therion_studio_windows_executable}\")
                 message(FATAL_ERROR \"Windows Qt runtime deployment failed: missing installed executable \${_therion_studio_windows_executable}\")
             endif()

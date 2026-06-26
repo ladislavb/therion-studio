@@ -42,7 +42,7 @@ The Windows CMake configuration:
 
 - installs `TherionStudio.exe` under `bin/`
 - links `TherionStudio.exe` as a Windows GUI application so launching it does not open a console window
-- runs Qt deployment during install packaging so required Qt DLLs, plugins, and QML imports are included beside the installed executable, including `bin/platforms/qwindows.dll` and the `bin/qml/QtQuick` modules used by the 3D viewer inspector
+- runs Qt deployment during install packaging so required Qt DLLs, plugins, and QML imports are included beside the installed executable, including `bin/platforms/qwindows.dll` and the install-prefix `qml/QtQuick` modules used by the 3D viewer inspector
 - uses NSIS to create the installer
 - includes the project `GPL-3.0-or-later` license from the root `LICENSE` file in CPack metadata
 - assigns the bundled `resources/app/TherionStudio.ico` to the installer and installed app shortcut

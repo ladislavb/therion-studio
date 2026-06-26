@@ -34,13 +34,13 @@ def required_path_groups(platform_name: str) -> list[list[pathlib.Path]]:
                 pathlib.Path("bin/Qt6Svgd.dll"),
             ],
             [
-                pathlib.Path("bin/qml/QtQuick/Controls"),
+                pathlib.Path("qml/QtQuick/Controls"),
             ],
             [
-                pathlib.Path("bin/qml/QtQuick/Layouts"),
+                pathlib.Path("qml/QtQuick/Layouts"),
             ],
             [
-                pathlib.Path("bin/qml/QtQuick/Templates"),
+                pathlib.Path("qml/QtQuick/Templates"),
             ],
         ]
     if platform_name == "macos":

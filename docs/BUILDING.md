@@ -117,7 +117,7 @@ CMake runs Qt's deployment helper and an explicit `windeployqt` install step so 
 install-smoke checks verify the same runtime layout that the NSIS package consumes. The
 explicit `windeployqt` step passes `--qmldir resources/qml` so Qt Quick imports used by
 the 3D viewer, including `QtQuick.Controls`, `QtQuick.Layouts`, and `QtQuick.Templates`,
-are copied under `bin/qml`. CPack is
+are copied under the install-prefix `qml` directory used by the deployed Qt runtime. CPack is
 configured to use NSIS for the Windows installer and emits
 `TherionStudio-<package_label>-Windows-x86_64.exe` in the build directory.
 The installer metadata uses the root `LICENSE` file for the project license.
