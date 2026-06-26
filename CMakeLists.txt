@@ -917,6 +917,7 @@ if(WIN32)
             execute_process(
                 COMMAND \"${THERION_STUDIO_WINDEPLOYQT_EXECUTABLE}\"
                     --dir \"\${_therion_studio_windows_runtime_dir}\"
+                    --qmldir \"${CMAKE_CURRENT_SOURCE_DIR}/resources/qml\"
                     \"\${_therion_studio_windows_executable}\"
                 RESULT_VARIABLE _therion_studio_windeployqt_result)
             if(NOT _therion_studio_windeployqt_result EQUAL 0)

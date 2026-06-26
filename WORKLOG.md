@@ -142,6 +142,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   and desktop startup validation do not fail on a trivial compile regression.
 - Keep Linux CI and package-builder Qt dependency lists aligned with the Qt Quick/QML-backed 3D viewer surface.
 - Keep Windows CI and installer Qt archive lists aligned with the Qt Quick/QML-backed 3D viewer surface.
+- Keep Windows installer deployment passing `--qmldir resources/qml` to `windeployqt` and smoke-checking deployed
+  `bin/qml/QtQuick/Controls`, `Layouts`, and `Templates` so the 3D viewer inspector does not install as a blank Quick surface.
 - Keep AppImage runtime-library staging aligned with Debian Qt runtime dependencies instead of masking missing
   bundled libraries in smoke-test containers.
 - Keep AppImage package/smoke scripts diagnostic enough to identify whether missing runtime libraries were lost

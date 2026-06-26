@@ -114,7 +114,10 @@ copying the required Qt runtime next to the installed `bin/TherionStudio.exe`, i
 `Qt6*.dll` runtime libraries and the Qt platform plugin at `bin/platforms/qwindows.dll`
 (or Debug-build variants such as `Qt6Cored.dll` and `qwindowsd.dll` in Debug CI jobs).
 CMake runs Qt's deployment helper and an explicit `windeployqt` install step so CI
-install-smoke checks verify the same runtime layout that the NSIS package consumes. CPack is
+install-smoke checks verify the same runtime layout that the NSIS package consumes. The
+explicit `windeployqt` step passes `--qmldir resources/qml` so Qt Quick imports used by
+the 3D viewer, including `QtQuick.Controls`, `QtQuick.Layouts`, and `QtQuick.Templates`,
+are copied under `bin/qml`. CPack is
 configured to use NSIS for the Windows installer and emits
 `TherionStudio-<package_label>-Windows-x86_64.exe` in the build directory.
 The installer metadata uses the root `LICENSE` file for the project license.

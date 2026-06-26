@@ -42,7 +42,7 @@ The Windows CMake configuration:
 
 - installs `TherionStudio.exe` under `bin/`
 - links `TherionStudio.exe` as a Windows GUI application so launching it does not open a console window
-- runs Qt deployment during install packaging so required Qt DLLs and plugins are included beside the installed executable, including `bin/platforms/qwindows.dll`
+- runs Qt deployment during install packaging so required Qt DLLs, plugins, and QML imports are included beside the installed executable, including `bin/platforms/qwindows.dll` and the `bin/qml/QtQuick` modules used by the 3D viewer inspector
 - uses NSIS to create the installer
 - includes the project `GPL-3.0-or-later` license from the root `LICENSE` file in CPack metadata
 - assigns the bundled `resources/app/TherionStudio.ico` to the installer and installed app shortcut
@@ -72,7 +72,7 @@ Recommended release flow:
 The workflow installs Qt directly with `aqtinstall`, installs NSIS/Ninja with Chocolatey,
 configures a Release Ninja build, runs a staged `cmake --install`, verifies expected runtime layout
 with `scripts/verify_install_layout.py` (including `bin/TherionStudio.exe` and
-`bin/platforms/qwindows.dll`), runs CPack, verifies the produced installer filename against the
+`bin/platforms/qwindows.dll`, plus Qt Quick Controls QML import directories), runs CPack, verifies the produced installer filename against the
 resolved `THERION_STUDIO_PACKAGE_LABEL`, generates an installer manifest with SHA256 via
 `scripts/verify_windows_installer_artifact.py`, and uploads both the `.exe` and manifest artifact.
 The upload step uses a Node 24-compatible `actions/upload-artifact` version to avoid GitHub
