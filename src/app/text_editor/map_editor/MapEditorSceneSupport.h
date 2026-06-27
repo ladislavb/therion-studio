@@ -86,6 +86,7 @@ struct MapGeometryFeature
         };
 
         Type type = Type::Linear;
+        QString subtype;
         int endVertexIndex = -1;
         int control1VertexIndex = -1;
         int control2VertexIndex = -1;

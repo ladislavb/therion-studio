@@ -232,6 +232,88 @@ int runSmoothAndOptionMetadataIgnoredTest()
     return 0;
 }
 
+int runLinePointSubtypeSegmentParsingTest()
+{
+    const QString text =
+        QStringLiteral("line wall -reverse on\n"
+                       "  0 0\n"
+                       "  10 0\n"
+                       "  subtype invisible\n"
+                       "  10 0 15 5 20 0\n"
+                       "  smooth off\n"
+                       "  20 0 25 -5 30 0\n"
+                       "  subtype bedrock\n"
+                       "  40 0\n"
+                       "endline\n");
+
+    const QVector<TherionParsedLine> parsedLines = TherionDocumentParser::parseTokenLines(text);
+    const QVector<MapGeometryFeature> features = collectGeometryFeatures(parsedLines);
+    const MapGeometryFeature *line = firstLineFeature(features);
+    if (!expect(line != nullptr, "Expected one parsed line feature for line-point subtype segment test.")) {
+        return 1;
+    }
+
+    if (!expect(line->lineSegments.size() == 4,
+                "Expected all line segments to be preserved across line-point subtype switches.")) {
+        return 1;
+    }
+    if (!expect(line->lineSegments.at(0).subtype.isEmpty(),
+                "Expected the initial wall segment to keep the header subtype.")) {
+        return 1;
+    }
+    if (!expect(line->lineSegments.at(1).subtype == QStringLiteral("invisible")
+                    && line->lineSegments.at(2).subtype == QStringLiteral("invisible"),
+                "Expected subtype invisible to apply to following line segments until the next subtype row.")) {
+        return 1;
+    }
+    if (!expect(line->lineSegments.at(3).subtype == QStringLiteral("bedrock"),
+                "Expected subtype bedrock to apply to the following line segment.")) {
+        return 1;
+    }
+    if (!expect(line->lineVertices.at(1).standaloneOptionRows.contains(QStringLiteral("subtype invisible")),
+                "Expected line-point subtype rows to remain attached to the source vertex for editing.")) {
+        return 1;
+    }
+    if (!expect(line->lineVertices.at(3).standaloneOptionRows.contains(QStringLiteral("subtype bedrock")),
+                "Expected later line-point subtype rows to remain attached to the source vertex for editing.")) {
+        return 1;
+    }
+
+    QGraphicsScene scene;
+    QHash<int, QGraphicsItem *> mapItemsByLine;
+    renderMapWorkspaceScene(&scene,
+                            QStringLiteral("fixture.th2"),
+                            collectMapSceneEntries(parsedLines),
+                            features,
+                            std::nullopt,
+                            false,
+                            &mapItemsByLine,
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {});
+
+    int renderedPathItems = 0;
+    for (QGraphicsItem *item : scene.items()) {
+        if (item == nullptr || item->data(kMapSceneLineNumberRole).toInt() != line->lineNumber) {
+            continue;
+        }
+        auto *pathItem = dynamic_cast<QGraphicsPathItem *>(item);
+        if (pathItem == nullptr) {
+            continue;
+        }
+        ++renderedPathItems;
+    }
+    if (!expect(renderedPathItems > 1,
+                "Expected subtype-split lines to render separate path items for segment-specific styles.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 int runInlineSubtypeParsingTest()
 {
     const QString text =
@@ -1765,6 +1847,9 @@ int main(int argc, char **argv)
         return rc;
     }
     if (const int rc = runSmoothAndOptionMetadataIgnoredTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runLinePointSubtypeSegmentParsingTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runInlineSubtypeParsingTest(); rc != 0) {

@@ -23,6 +23,7 @@
 #include "../../../core/TherionCommandLineModel.h"
 #include "../../../core/TherionTokenRules.h"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <memory>
@@ -789,7 +790,9 @@ QVector<SourceCoordinatePoint> sourceCoordinatePointsFromLine(const TherionParse
     return points;
 }
 
-void appendLineDataPoints(MapGeometryFeature *feature, const QVector<SourceCoordinatePoint> &linePoints)
+void appendLineDataPoints(MapGeometryFeature *feature,
+                          const QVector<SourceCoordinatePoint> &linePoints,
+                          const QString &activeSegmentSubtype)
 {
     if (feature == nullptr || linePoints.isEmpty()) {
         return;
@@ -817,6 +820,7 @@ void appendLineDataPoints(MapGeometryFeature *feature, const QVector<SourceCoord
 
             MapGeometryFeature::LineSegment segment;
             segment.type = MapGeometryFeature::LineSegment::Type::Linear;
+            segment.subtype = activeSegmentSubtype;
             segment.endVertexIndex = feature->lineVertices.size() - 1;
             feature->lineSegments.append(segment);
             ++pointIndex;
@@ -833,6 +837,7 @@ void appendLineDataPoints(MapGeometryFeature *feature, const QVector<SourceCoord
 
             MapGeometryFeature::LineSegment segment;
             segment.type = MapGeometryFeature::LineSegment::Type::Linear;
+            segment.subtype = activeSegmentSubtype;
             segment.endVertexIndex = feature->lineVertices.size() - 1;
             feature->lineSegments.append(segment);
             ++pointIndex;
@@ -870,6 +875,7 @@ void appendLineDataPoints(MapGeometryFeature *feature, const QVector<SourceCoord
             segment.type = (previousHasOutgoingControl || firstVertex.incomingControl.has_value())
                 ? MapGeometryFeature::LineSegment::Type::Cubic
                 : MapGeometryFeature::LineSegment::Type::Linear;
+            segment.subtype = activeSegmentSubtype;
             segment.endVertexIndex = 0;
             segment.control1VertexIndex = previousOutgoingSourceIndex;
             segment.control2VertexIndex = firstVertex.incomingSourceVertexIndex;
@@ -904,6 +910,7 @@ void appendLineDataPoints(MapGeometryFeature *feature, const QVector<SourceCoord
         segment.type = (previousHasOutgoingControl || nextVertex.incomingControl.has_value())
             ? MapGeometryFeature::LineSegment::Type::Cubic
             : MapGeometryFeature::LineSegment::Type::Linear;
+        segment.subtype = activeSegmentSubtype;
         segment.endVertexIndex = feature->lineVertices.size() - 1;
         segment.control1VertexIndex = previousOutgoingSourceIndex;
         segment.control2VertexIndex = nextVertex.incomingSourceVertexIndex;
@@ -952,6 +959,105 @@ QPainterPath linePathForFeature(const MapGeometryFeature &feature, const QRectF 
     }
 
     return path;
+}
+
+struct StyledLinePath
+{
+    QString subtype;
+    QPainterPath path;
+};
+
+int lineSegmentStartVertexIndex(const MapGeometryFeature &feature, int segmentIndex)
+{
+    if (segmentIndex < 0 || segmentIndex >= feature.lineSegments.size()) {
+        return -1;
+    }
+    if (segmentIndex == 0) {
+        return feature.lineVertices.isEmpty() ? -1 : 0;
+    }
+
+    return feature.lineSegments.at(segmentIndex - 1).endVertexIndex;
+}
+
+bool appendSegmentToPath(QPainterPath *path,
+                         const MapGeometryFeature &feature,
+                         const MapGeometryFeature::LineSegment &segment,
+                         int startVertexIndex,
+                         const std::function<QPointF(const QPointF &)> &toPreview)
+{
+    if (path == nullptr
+        || startVertexIndex < 0
+        || startVertexIndex >= feature.lineVertices.size()
+        || segment.endVertexIndex < 0
+        || segment.endVertexIndex >= feature.lineVertices.size()) {
+        return false;
+    }
+
+    const MapGeometryFeature::TH2LineVertex &startVertex = feature.lineVertices.at(startVertexIndex);
+    const MapGeometryFeature::TH2LineVertex &endVertex = feature.lineVertices.at(segment.endVertexIndex);
+    if (path->elementCount() == 0) {
+        path->moveTo(toPreview(startVertex.anchor));
+    }
+
+    const QPointF cp1 = startVertex.outgoingControl.value_or(startVertex.anchor);
+    const QPointF cp2 = endVertex.incomingControl.value_or(endVertex.anchor);
+    const bool hasCurveHandle =
+        segment.type == MapGeometryFeature::LineSegment::Type::Cubic
+        || startVertex.outgoingControl.has_value()
+        || endVertex.incomingControl.has_value();
+    if (hasCurveHandle) {
+        path->cubicTo(toPreview(cp1), toPreview(cp2), toPreview(endVertex.anchor));
+    } else {
+        path->lineTo(toPreview(endVertex.anchor));
+    }
+
+    return true;
+}
+
+QVector<StyledLinePath> styledLinePathsForFeature(const MapGeometryFeature &feature,
+                                                  const QRectF &sourceBounds,
+                                                  const QRectF &previewBounds)
+{
+    QVector<StyledLinePath> paths;
+    if (feature.lineVertices.size() < 2 || feature.lineSegments.isEmpty()) {
+        return paths;
+    }
+
+    auto toPreview = [&](const QPointF &point) {
+        return mapGeometryPointToPreview(point, sourceBounds, previewBounds);
+    };
+    StyledLinePath currentPath;
+    bool hasCurrentPath = false;
+    for (int segmentIndex = 0; segmentIndex < feature.lineSegments.size(); ++segmentIndex) {
+        const MapGeometryFeature::LineSegment &segment = feature.lineSegments.at(segmentIndex);
+        const int startVertexIndex = lineSegmentStartVertexIndex(feature, segmentIndex);
+        const QString segmentSubtype = segment.subtype.trimmed().isEmpty()
+            ? feature.subtype.trimmed().toLower()
+            : segment.subtype.trimmed().toLower();
+
+        if (!hasCurrentPath || currentPath.subtype != segmentSubtype) {
+            if (hasCurrentPath && currentPath.path.elementCount() > 1) {
+                paths.append(currentPath);
+            }
+            currentPath = StyledLinePath{};
+            currentPath.subtype = segmentSubtype;
+            hasCurrentPath = true;
+        }
+
+        if (!appendSegmentToPath(&currentPath.path,
+                                 feature,
+                                 segment,
+                                 startVertexIndex,
+                                 toPreview)) {
+            continue;
+        }
+    }
+
+    if (hasCurrentPath && currentPath.path.elementCount() > 1) {
+        paths.append(currentPath);
+    }
+
+    return paths;
 }
 
 struct WallClipPathCandidate
@@ -1972,9 +2078,17 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                                                                                        feature.subtype);
                 const qreal thickLineWidth = qBound(0.8, lineStyle.strokeWidth, 24.0);
                 const QPainterPath path = linePathForFeature(feature, sourceBounds, previewBounds);
+                const QVector<StyledLinePath> styledSegmentPaths = styledLinePathsForFeature(feature,
+                                                                                             sourceBounds,
+                                                                                             previewBounds);
+                const bool renderSegmentStyles = std::any_of(styledSegmentPaths.cbegin(),
+                                                             styledSegmentPaths.cend(),
+                                                             [&](const StyledLinePath &styledPath) {
+                    return styledPath.subtype != feature.subtype.trimmed().toLower();
+                });
                 QColor geometryStroke = lineStyle.strokeColor.value_or(canvasTheme.geometryStroke);
                 QColor baseLineStroke = geometryStroke;
-                if (!lineStyle.strokeVisible) {
+                if (!lineStyle.strokeVisible || renderSegmentStyles) {
                     baseLineStroke.setAlpha(0);
                 }
 
@@ -2008,6 +2122,29 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                 lineItem->setToolTip(featureTooltip);
                 markGeometryItem(lineItem);
                 lineItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+                if (renderSegmentStyles) {
+                    for (const StyledLinePath &styledPath : styledSegmentPaths) {
+                        const MapEditorResolvedLineStyle segmentStyle =
+                            resolveMapEditorLineStyle(styleCatalog, feature.label, styledPath.subtype);
+                        QColor segmentStroke = segmentStyle.strokeColor.value_or(canvasTheme.geometryStroke);
+                        if (!segmentStyle.strokeVisible) {
+                            segmentStroke.setAlpha(0);
+                        }
+                        auto *segmentItem = new MapZoomAwarePathItem(styledPath.path,
+                                                                     styledGeometricPen(segmentStroke,
+                                                                                        qBound(0.8, segmentStyle.strokeWidth, 24.0),
+                                                                                        segmentStyle.strokeVisible ? segmentStyle.penStyle : Qt::SolidLine,
+                                                                                        segmentStyle.strokeVisible ? segmentStyle.dashPattern : QVector<qreal>{},
+                                                                                        Qt::RoundCap,
+                                                                                        Qt::RoundJoin));
+                        scene->addItem(segmentItem);
+                        segmentItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
+                        segmentItem->setZValue(2.5);
+                        segmentItem->setToolTip(featureTooltip);
+                        markGeometryItem(segmentItem);
+                        segmentItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+                    }
+                }
                 const bool renderLineGuideSpine = lineStyle.guideSpineVisible || !lineStyle.decorations.isEmpty();
                 MapEditorLineDecorationItem *lineDecorationItem = nullptr;
                 if (!lineStyle.decorations.isEmpty()) {
@@ -2746,6 +2883,7 @@ QVector<MapGeometryFeature> collectGeometryFeatures(const QVector<TherionParsedL
     bool inAreaBlock = false;
     int lineSourceVertexIndex = 0;
     QString currentLineIdentifier;
+    QString currentLineSegmentSubtype;
     QStringList currentAreaBorderIdentifiers;
     QHash<QString, MapGeometryFeature> lineFeaturesByIdentifier;
     QVector<PendingReferencedArea> pendingReferencedAreas;
@@ -2813,6 +2951,7 @@ QVector<MapGeometryFeature> collectGeometryFeatures(const QVector<TherionParsedL
         inAreaBlock = false;
         lineSourceVertexIndex = 0;
         currentLineIdentifier.clear();
+        currentLineSegmentSubtype.clear();
         currentAreaBorderIdentifiers.clear();
     };
 
@@ -2922,13 +3061,16 @@ QVector<MapGeometryFeature> collectGeometryFeatures(const QVector<TherionParsedL
             currentFeature.category = mapEntryCategoryForLine(parsedLine);
             currentFeature.label = geometryFeatureTypePart(parsedLine.tokens.value(1));
             currentFeature.subtype = geometryFeatureSubtypeFromParsedLine(parsedLine, parsedLine.tokens.value(1));
+            currentLineSegmentSubtype = currentFeature.subtype.trimmed().toLower();
             currentFeature.subtitle = mapEntrySubtitleForLine(parsedLine);
             currentFeature.optionValues = commandOptionValuesByName(parsedLine.tokens);
             currentFeature.accent = mapEntryAccentForCategory(currentFeature.category);
             currentFeature.closed = commandOptionToggleValue(parsedLine.tokens, QStringLiteral("-close")).value_or(false);
             currentFeature.reversed = commandOptionToggleValue(parsedLine.tokens, QStringLiteral("-reverse")).value_or(false);
             currentLineIdentifier = commandOptionValue(parsedLine.tokens, QStringLiteral("-id"));
-            appendLineDataPoints(&currentFeature, sourceCoordinatePointsFromLine(parsedLine, 1, &lineSourceVertexIndex));
+            appendLineDataPoints(&currentFeature,
+                                 sourceCoordinatePointsFromLine(parsedLine, 1, &lineSourceVertexIndex),
+                                 currentLineSegmentSubtype);
             applyLinePointOptionsFromLine(parsedLine, &currentFeature);
             inLineBlock = true;
             continue;
@@ -2970,9 +3112,20 @@ QVector<MapGeometryFeature> collectGeometryFeatures(const QVector<TherionParsedL
                 continue;
             }
 
+            if (directive == QStringLiteral("subtype") && parsedLine.tokens.size() >= 2) {
+                currentLineSegmentSubtype = parsedLine.tokens.at(1).trimmed().toLower();
+                if (!currentFeature.lineVertices.isEmpty()) {
+                    const QString trimmedRow = parsedLine.rawText.trimmed();
+                    if (!trimmedRow.isEmpty()) {
+                        currentFeature.lineVertices.last().standaloneOptionRows.append(trimmedRow);
+                    }
+                }
+                continue;
+            }
+
             const QVector<SourceCoordinatePoint> sourcePoints =
                 sourceCoordinatePointsFromLine(parsedLine, 0, &lineSourceVertexIndex);
-            appendLineDataPoints(&currentFeature, sourcePoints);
+            appendLineDataPoints(&currentFeature, sourcePoints, currentLineSegmentSubtype);
             const ParsedLinePointOptionFlags parsedOptionFlags = applyLinePointOptionsFromLine(parsedLine, &currentFeature);
             if (sourcePoints.isEmpty()
                 && !currentFeature.lineVertices.isEmpty()) {

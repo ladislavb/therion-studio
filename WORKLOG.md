@@ -72,6 +72,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   back across the connector segment or stealing endpoint vertex drags.
 - Keep Selection inspector `line slope` orientation and `l-size` checkboxes explicitly re-enabled for selected slope vertices
   after pending draw or unsupported-option states leave the same controls disabled.
+- Keep map preview rendering line-point subtype changes within a single line so wall segments that switch to
+  `subtype invisible`, `subtype bedrock`, or other segment subtypes use the matching style instead of one header style.
 - Keep draft completion and draft auto-commit from recentering the map viewport or force-scrolling the Objects tree to
   the newly inserted object.
 - Keep pending point/line/area recent type/subtype MRU choices persisted across application restarts.
