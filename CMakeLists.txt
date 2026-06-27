@@ -993,6 +993,7 @@ therion_add_core_unit_test(TherionDocumentParserTest
 therion_add_core_qtest_runner(TherionCoreQTests
     tests/core/CoreQTestMain.cpp
     tests/CommandCatalogStoreTest.cpp
+    tests/PocketTopoImportTest.cpp
     tests/core/ThreeDViewerCameraTest.cpp
     tests/core/TherionFileTypesTest.cpp
     tests/core/ThreeDViewerLoxLoaderTest.cpp
@@ -1018,9 +1019,6 @@ therion_add_core_unit_test(MapBackgroundPlacementTest
 
 therion_add_core_unit_test(TherionBackgroundMetadataTest
     tests/TherionBackgroundMetadataTest.cpp)
-
-therion_add_core_unit_test(PocketTopoImportTest
-    tests/PocketTopoImportTest.cpp)
 
 therion_add_core_unit_test(TherionXviParserTest
     tests/TherionXviParserTest.cpp)
@@ -1525,7 +1523,6 @@ set(THERION_UNIT_TEST_TARGETS
     TherionProjectStructureIndexTest
     MapBackgroundPlacementTest
     TherionBackgroundMetadataTest
-    PocketTopoImportTest
     TherionXviParserTest
     MapGeometryFeatureParsingTest
     MapEditorSourceReferenceResolverTest

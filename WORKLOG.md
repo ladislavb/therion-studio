@@ -218,7 +218,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ### Test And Structure Hygiene
 
 - Use QTest for new C++ tests while keeping CTest as the runner.
-- Keep `tests/core/` and `TherionCoreQTests` as the baseline pattern for small core-only QTest cases.
+- Keep `tests/core/` and `TherionCoreQTests` as the baseline pattern for small core-only QTest cases, including lightweight import/conversion tests.
 - Keep `MainWindowServiceQTests` as the baseline pattern for small MainWindow project/session service tests that share `therion_app` dependencies.
 - Keep `TextEditorDocumentServiceQTests` as the baseline pattern for small text-editor document IO/state/precondition/workflow service tests.
 - Keep `BlockEditorLogicQTests` as the baseline pattern for small block-editor parsing, outline, and source-rewrite logic tests.
