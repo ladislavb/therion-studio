@@ -180,6 +180,8 @@ bool isMapInputPointerEvent(QEvent::Type type)
     case QEvent::TouchUpdate:
     case QEvent::TouchEnd:
     case QEvent::TouchCancel:
+    case QEvent::Wheel:
+    case QEvent::NativeGesture:
         return true;
     default:
         break;
@@ -378,6 +380,40 @@ bool isControlPanPress(const QMouseEvent *event)
     return event != nullptr
         && event->button() == Qt::LeftButton
         && event->modifiers().testFlag(Qt::ControlModifier);
+}
+
+QString scrollBarInputDetail(const QScrollBar *scrollBar,
+                             QStringView prefix,
+                             std::optional<int> valueBefore = std::nullopt)
+{
+    if (scrollBar == nullptr) {
+        return QStringLiteral("%1bar=null").arg(prefix);
+    }
+
+    QString detail;
+    if (valueBefore.has_value()) {
+        detail += QStringLiteral("%1bar_before=%2 ").arg(prefix).arg(*valueBefore);
+    }
+    detail += QStringLiteral("%1bar_value=%2 %1bar_min=%3 %1bar_max=%4 %1bar_page=%5")
+                  .arg(prefix)
+                  .arg(scrollBar->value())
+                  .arg(scrollBar->minimum())
+                  .arg(scrollBar->maximum())
+                  .arg(scrollBar->pageStep());
+    return detail;
+}
+
+QString viewportScrollBarInputDetail(const MapEditorViewportInputContext &context,
+                                     std::optional<int> horizontalBefore = std::nullopt,
+                                     std::optional<int> verticalBefore = std::nullopt)
+{
+    if (context.view == nullptr) {
+        return QStringLiteral("view=null");
+    }
+
+    return QStringLiteral("%1 %2")
+        .arg(scrollBarInputDetail(context.view->horizontalScrollBar(), QStringLiteral("h"), horizontalBefore),
+             scrollBarInputDetail(context.view->verticalScrollBar(), QStringLiteral("v"), verticalBefore));
 }
 
 void beginMapPanDrag(MapEditorViewportInputContext &context,
@@ -1645,6 +1681,12 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                 || isSpacePanPress(context_, mouseEvent)
                 || isControlPanPress(mouseEvent)) {
                 traceAction("begin-pan");
+                inputTrace.setDetail(QStringLiteral("space_down=%1 control_pan=%2 %3")
+                                         .arg(context_.mapSpacePanKeyDown != nullptr
+                                                  && (*context_.mapSpacePanKeyDown) ? 1 : 0)
+                                         .arg(isControlPanPress(mouseEvent) ? 1 : 0)
+                                         .arg(viewportScrollBarInputDetail(context_)));
+                inputTrace.forceLog();
                 beginMapPanDrag(context_, viewport, mouseEvent->pos(), isControlPanPress(mouseEvent));
                 event->accept();
                 return true;
@@ -1918,6 +1960,11 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                 constexpr int dragThreshold = 4;
                 const QPoint dragDelta = mouseEvent->pos() - (*context_.mapPanStartPosition);
                 if (std::abs(dragDelta.x()) < dragThreshold && std::abs(dragDelta.y()) < dragThreshold) {
+                    inputTrace.setDetail(QStringLiteral("threshold_passed=0 drag_delta=%1,%2 %3")
+                                             .arg(dragDelta.x())
+                                             .arg(dragDelta.y())
+                                             .arg(viewportScrollBarInputDetail(context_)));
+                    inputTrace.forceLog();
                     event->accept();
                     return true;
                 }
@@ -1926,6 +1973,12 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             }
             const QPoint delta = mouseEvent->pos() - (*context_.mapPanLastPosition);
             (*context_.mapPanLastPosition) = mouseEvent->pos();
+            const int horizontalBefore = context_.view->horizontalScrollBar() != nullptr
+                ? context_.view->horizontalScrollBar()->value()
+                : 0;
+            const int verticalBefore = context_.view->verticalScrollBar() != nullptr
+                ? context_.view->verticalScrollBar()->value()
+                : 0;
             if (context_.view->horizontalScrollBar() != nullptr) {
                 context_.view->horizontalScrollBar()->setValue(context_.view->horizontalScrollBar()->value() - delta.x());
             }
@@ -1936,6 +1989,11 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             (*context_.autoFitEnabled) = false;
             context_.syncZoomFactorFromView();
             context_.updateCommandSurfaceState();
+            inputTrace.setDetail(QStringLiteral("threshold_passed=1 delta=%1,%2 %3")
+                                     .arg(delta.x())
+                                     .arg(delta.y())
+                                     .arg(viewportScrollBarInputDetail(context_, horizontalBefore, verticalBefore)));
+            inputTrace.forceLog();
             event->accept();
             return true;
         }
@@ -2143,6 +2201,11 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                 const bool controlPan = context_.mapControlPanActive != nullptr
                     && (*context_.mapControlPanActive);
                 const bool moved = context_.mapPanMoved != nullptr && (*context_.mapPanMoved);
+                inputTrace.setDetail(QStringLiteral("moved=%1 control_pan=%2 %3")
+                                         .arg(moved ? 1 : 0)
+                                         .arg(controlPan ? 1 : 0)
+                                         .arg(viewportScrollBarInputDetail(context_)));
+                inputTrace.forceLog();
                 (*context_.mapPanActive) = false;
                 if (context_.mapControlPanActive != nullptr) {
                     (*context_.mapControlPanActive) = false;
@@ -2167,11 +2230,18 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             const bool recentNativeZoom = (*context_.lastNativeZoomGestureUtc).isValid()
                 && (*context_.lastNativeZoomGestureUtc).msecsTo(QDateTime::currentDateTimeUtc()) <= 150;
             if ((*context_.nativeZoomGestureActive) || recentNativeZoom) {
+                traceAction("wheel-suppress-native-zoom");
+                inputTrace.setDetail(QStringLiteral("native_zoom_active=%1 recent_native_zoom=%2")
+                                         .arg((*context_.nativeZoomGestureActive) ? 1 : 0)
+                                         .arg(recentNativeZoom ? 1 : 0));
+                inputTrace.forceLog();
                 event->accept();
                 return true;
             }
 
             if ((*context_.primaryPointerInteractionActive)) {
+                traceAction("wheel-suppress-primary-pointer");
+                inputTrace.forceLog();
                 event->accept();
                 return true;
             }
@@ -2183,6 +2253,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                                                                                  preciseScroll,
                                                                                  cmdModifier);
             if (wheelAction == MapEditorWheelAction::Zoom) {
+                traceAction("wheel-zoom");
                 const QPoint pixelDelta = wheelEvent->pixelDelta();
                 const QPoint angleDelta = wheelEvent->angleDelta();
                 qreal delta = !pixelDelta.isNull()
@@ -2197,16 +2268,35 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                     context_.applyZoomAtViewportPosition(factor, wheelEvent->position());
                 }
 
+                inputTrace.setDetail(QStringLiteral(
+                                         "resolved_action=Zoom precise_scroll=%1 modifier_zoom=%2 touch_friendly=%3 "
+                                         "pixel_delta=%4,%5 angle_delta=%6,%7 zoom_delta=%8")
+                                         .arg(preciseScroll ? 1 : 0)
+                                         .arg(cmdModifier ? 1 : 0)
+                                         .arg((*context_.touchFriendlyControlsEnabled) ? 1 : 0)
+                                         .arg(pixelDelta.x())
+                                         .arg(pixelDelta.y())
+                                         .arg(angleDelta.x())
+                                         .arg(angleDelta.y())
+                                         .arg(delta, 0, 'f', 3));
+                inputTrace.forceLog();
                 event->accept();
                 return true;
             }
 
+            traceAction("wheel-pan");
             QPoint panDelta = wheelEvent->pixelDelta();
             if (panDelta.isNull()) {
                 const QPoint angleDelta = wheelEvent->angleDelta();
                 panDelta = QPoint(qRound(angleDelta.x() / 4.0), qRound(angleDelta.y() / 4.0));
             }
 
+            const int horizontalBefore = context_.view->horizontalScrollBar() != nullptr
+                ? context_.view->horizontalScrollBar()->value()
+                : 0;
+            const int verticalBefore = context_.view->verticalScrollBar() != nullptr
+                ? context_.view->verticalScrollBar()->value()
+                : 0;
             if (!panDelta.isNull()) {
                 if (context_.view->horizontalScrollBar() != nullptr) {
                     context_.view->horizontalScrollBar()->setValue(context_.view->horizontalScrollBar()->value() - panDelta.x());
@@ -2220,35 +2310,65 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                 context_.updateCommandSurfaceState();
             }
 
+            inputTrace.setDetail(QStringLiteral(
+                                     "resolved_action=Pan precise_scroll=%1 modifier_zoom=%2 touch_friendly=%3 "
+                                     "pixel_delta=%4,%5 angle_delta=%6,%7 pan_delta=%8,%9 %10")
+                                     .arg(preciseScroll ? 1 : 0)
+                                     .arg(cmdModifier ? 1 : 0)
+                                     .arg((*context_.touchFriendlyControlsEnabled) ? 1 : 0)
+                                     .arg(wheelEvent->pixelDelta().x())
+                                     .arg(wheelEvent->pixelDelta().y())
+                                     .arg(wheelEvent->angleDelta().x())
+                                     .arg(wheelEvent->angleDelta().y())
+                                     .arg(panDelta.x())
+                                     .arg(panDelta.y())
+                                     .arg(viewportScrollBarInputDetail(context_, horizontalBefore, verticalBefore)));
+            inputTrace.forceLog();
             event->accept();
             return true;
         }
         case QEvent::NativeGesture: {
             auto *gestureEvent = static_cast<QNativeGestureEvent *>(event);
             if ((*context_.primaryPointerInteractionActive)) {
+                traceAction("native-gesture-suppress-primary-pointer");
+                inputTrace.forceLog();
                 event->accept();
                 return true;
             }
 
             if (gestureEvent->gestureType() == Qt::BeginNativeGesture) {
+                traceAction("native-gesture-begin");
                 (*context_.nativeZoomGestureActive) = true;
                 (*context_.lastNativeZoomGestureUtc) = QDateTime::currentDateTimeUtc();
+                inputTrace.setDetail(QStringLiteral("gesture_type=%1 value=%2")
+                                         .arg(static_cast<int>(gestureEvent->gestureType()))
+                                         .arg(gestureEvent->value(), 0, 'f', 3));
+                inputTrace.forceLog();
                 event->accept();
                 return true;
             }
 
             if (gestureEvent->gestureType() == Qt::EndNativeGesture) {
+                traceAction("native-gesture-end");
                 (*context_.nativeZoomGestureActive) = false;
                 (*context_.lastNativeZoomGestureUtc) = QDateTime::currentDateTimeUtc();
+                inputTrace.setDetail(QStringLiteral("gesture_type=%1 value=%2")
+                                         .arg(static_cast<int>(gestureEvent->gestureType()))
+                                         .arg(gestureEvent->value(), 0, 'f', 3));
+                inputTrace.forceLog();
                 event->accept();
                 return true;
             }
 
             if (gestureEvent->gestureType() == Qt::ZoomNativeGesture) {
+                traceAction("native-gesture-zoom");
                 (*context_.nativeZoomGestureActive) = true;
                 (*context_.lastNativeZoomGestureUtc) = QDateTime::currentDateTimeUtc();
                 const qreal rawValue = gestureEvent->value();
                 if (!std::isfinite(rawValue)) {
+                    inputTrace.setDetail(QStringLiteral("gesture_type=%1 value=nonfinite")
+                                             .arg(static_cast<int>(gestureEvent->gestureType())));
+                    inputTrace.forceLog();
                     event->accept();
                     return true;
                 }
@@ -2259,6 +2379,12 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                 if (factor > 0.0) {
                     context_.applyZoomAtViewportPosition(factor, gestureEvent->position());
                 }
+                inputTrace.setDetail(QStringLiteral("gesture_type=%1 raw_value=%2 clamped_delta=%3 factor=%4")
+                                         .arg(static_cast<int>(gestureEvent->gestureType()))
+                                         .arg(rawValue, 0, 'f', 3)
+                                         .arg(clampedDelta, 0, 'f', 3)
+                                         .arg(factor, 0, 'f', 3));
+                inputTrace.forceLog();
                 event->accept();
                 return true;
             }
@@ -2268,7 +2394,12 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             if ((*context_.nativeZoomGestureActive)
                 && (gestureEvent->gestureType() == Qt::PanNativeGesture
                     || gestureEvent->gestureType() == Qt::RotateNativeGesture)) {
+                traceAction("native-gesture-suppress-during-zoom");
                 (*context_.lastNativeZoomGestureUtc) = QDateTime::currentDateTimeUtc();
+                inputTrace.setDetail(QStringLiteral("gesture_type=%1 value=%2")
+                                         .arg(static_cast<int>(gestureEvent->gestureType()))
+                                         .arg(gestureEvent->value(), 0, 'f', 3));
+                inputTrace.forceLog();
                 event->accept();
                 return true;
             }
@@ -2278,28 +2409,52 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             if (!shouldEnableTouchPanCandidate((*context_.touchFriendlyControlsEnabled),
                                                (*context_.selectModeActive),
                                                (*context_.primaryPointerInteractionActive))) {
+                traceAction("touch-begin-suppress-pan-candidate");
+                inputTrace.setDetail(QStringLiteral("touch_friendly=%1 select_mode=%2 primary_active=%3")
+                                         .arg((*context_.touchFriendlyControlsEnabled) ? 1 : 0)
+                                         .arg((*context_.selectModeActive) ? 1 : 0)
+                                         .arg((*context_.primaryPointerInteractionActive) ? 1 : 0));
+                inputTrace.forceLog();
                 event->accept();
                 return true;
             }
 
             auto *touchEvent = static_cast<QTouchEvent *>(event);
             if (touchEvent->points().size() == 2) {
+                traceAction("touch-begin-pan-candidate");
                 const QPointF centroid = (touchEvent->points().at(0).position() + touchEvent->points().at(1).position()) / 2.0;
                 (*context_.touchPanCandidate) = true;
                 (*context_.touchPanActive) = false;
                 (*context_.touchPanStartPosition) = centroid;
                 (*context_.touchPanLastPosition) = centroid;
+                inputTrace.setDetail(QStringLiteral("points=2 centroid=%1,%2 %3")
+                                         .arg(centroid.x(), 0, 'f', 1)
+                                         .arg(centroid.y(), 0, 'f', 1)
+                                         .arg(viewportScrollBarInputDetail(context_)));
+                inputTrace.forceLog();
+            } else {
+                traceAction("touch-begin-ignore");
+                inputTrace.setDetail(QStringLiteral("points=%1").arg(touchEvent->points().size()));
+                inputTrace.forceLog();
             }
             break;
         }
         case QEvent::TouchUpdate: {
             if (!(*context_.touchPanCandidate) || (*context_.primaryPointerInteractionActive)) {
+                traceAction("touch-update-suppress-pan");
+                inputTrace.setDetail(QStringLiteral("candidate=%1 primary_active=%2")
+                                         .arg((*context_.touchPanCandidate) ? 1 : 0)
+                                         .arg((*context_.primaryPointerInteractionActive) ? 1 : 0));
+                inputTrace.forceLog();
                 event->accept();
                 return true;
             }
 
             auto *touchEvent = static_cast<QTouchEvent *>(event);
             if (touchEvent->points().size() != 2) {
+                traceAction("touch-update-cancel-pan-candidate");
+                inputTrace.setDetail(QStringLiteral("points=%1").arg(touchEvent->points().size()));
+                inputTrace.forceLog();
                 (*context_.touchPanCandidate) = false;
                 (*context_.touchPanActive) = false;
                 break;
@@ -2309,14 +2464,29 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             if (!(*context_.touchPanActive)) {
                 const qreal threshold = 8.0;
                 if (QLineF((*context_.touchPanStartPosition), centroid).length() < threshold) {
+                    traceAction("touch-pan-threshold-wait");
+                    inputTrace.setDetail(QStringLiteral("centroid=%1,%2 start=%3,%4 threshold=%5")
+                                             .arg(centroid.x(), 0, 'f', 1)
+                                             .arg(centroid.y(), 0, 'f', 1)
+                                             .arg(context_.touchPanStartPosition->x(), 0, 'f', 1)
+                                             .arg(context_.touchPanStartPosition->y(), 0, 'f', 1)
+                                             .arg(threshold, 0, 'f', 1));
+                    inputTrace.forceLog();
                     event->accept();
                     return true;
                 }
                 (*context_.touchPanActive) = true;
             }
 
+            traceAction("touch-pan-move");
             const QPointF delta = centroid - (*context_.touchPanLastPosition);
             (*context_.touchPanLastPosition) = centroid;
+            const int horizontalBefore = context_.view->horizontalScrollBar() != nullptr
+                ? context_.view->horizontalScrollBar()->value()
+                : 0;
+            const int verticalBefore = context_.view->verticalScrollBar() != nullptr
+                ? context_.view->verticalScrollBar()->value()
+                : 0;
             if (context_.view->horizontalScrollBar() != nullptr) {
                 context_.view->horizontalScrollBar()->setValue(context_.view->horizontalScrollBar()->value() - qRound(delta.x()));
             }
@@ -2327,11 +2497,24 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             (*context_.autoFitEnabled) = false;
             context_.syncZoomFactorFromView();
             context_.updateCommandSurfaceState();
+            inputTrace.setDetail(QStringLiteral("centroid=%1,%2 delta=%3,%4 %5")
+                                     .arg(centroid.x(), 0, 'f', 1)
+                                     .arg(centroid.y(), 0, 'f', 1)
+                                     .arg(delta.x(), 0, 'f', 1)
+                                     .arg(delta.y(), 0, 'f', 1)
+                                     .arg(viewportScrollBarInputDetail(context_, horizontalBefore, verticalBefore)));
+            inputTrace.forceLog();
             event->accept();
             return true;
         }
         case QEvent::TouchEnd:
         case QEvent::TouchCancel:
+            traceAction(event->type() == QEvent::TouchEnd ? "touch-end" : "touch-cancel");
+            inputTrace.setDetail(QStringLiteral("candidate=%1 active=%2 %3")
+                                     .arg((*context_.touchPanCandidate) ? 1 : 0)
+                                     .arg((*context_.touchPanActive) ? 1 : 0)
+                                     .arg(viewportScrollBarInputDetail(context_)));
+            inputTrace.forceLog();
             (*context_.touchPanCandidate) = false;
             (*context_.touchPanActive) = false;
             break;

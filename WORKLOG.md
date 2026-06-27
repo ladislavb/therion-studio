@@ -51,6 +51,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   preserving right-button drag, precision-scroll panning, context menus, and the currently selected drawing tool.
 - Keep map mouse-panning regression coverage asserting that right-button drag and `Space` + primary-button drag move the
   viewport scrollbars, so cursor-only regressions do not mask broken panning.
+- Keep opt-in map input diagnostics logging panning begin/move/release, wheel pan/zoom resolution, native gesture routing,
+  touch pan candidates, and scrollbar before/after values for Windows input investigations.
 - Keep map vertex and Bezier control point markers large enough to target comfortably on HiDPI/Windows-scaled displays
   without changing source coordinates or map geometry.
 - Keep Bezier control point markers visually distinct as solid blue square handles.
