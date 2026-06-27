@@ -48,6 +48,9 @@ constexpr qreal kMaximumPathPrimaryHitDistancePixels = 5.0;
 constexpr qint64 kHandledTabletMouseSuppressionMs = 250;
 constexpr qint64 kSlowMapInputEventMs = 8;
 constexpr qint64 kFreehandPreviewRefreshIntervalMs = 16;
+constexpr int kInteractiveDrawControlHitRadiusPixels = 8;
+constexpr int kInteractiveDrawDragThresholdPixels = 4;
+constexpr int kInteractiveDrawCloseHitRadiusPixels = 6;
 
 bool diagnosticMapInputLoggingEnabled()
 {
@@ -1163,6 +1166,38 @@ qreal sceneRadiusForViewportPixels(const QGraphicsView *view, const QPoint &view
     return QLineF(scenePoint, sceneOffsetPoint).length();
 }
 
+qreal interactiveDrawControlHitSceneRadius(const MapEditorViewportInputContext &context,
+                                           const QPoint &viewportPoint)
+{
+    return sceneRadiusForViewportPixels(context.view,
+                                        viewportPoint,
+                                        kInteractiveDrawControlHitRadiusPixels);
+}
+
+qreal interactiveDrawDragThresholdSceneRadius(const MapEditorViewportInputContext &context,
+                                              const QPoint &viewportPoint)
+{
+    return sceneRadiusForViewportPixels(context.view,
+                                        viewportPoint,
+                                        kInteractiveDrawDragThresholdPixels);
+}
+
+qreal interactiveDrawCloseHitSceneRadius(const MapEditorViewportInputContext &context,
+                                         const QPoint &viewportPoint)
+{
+    return sceneRadiusForViewportPixels(context.view,
+                                        viewportPoint,
+                                        kInteractiveDrawCloseHitRadiusPixels);
+}
+
+QRectF sceneSearchRectAround(const QPointF &scenePoint, qreal sceneRadius)
+{
+    return QRectF(scenePoint.x() - sceneRadius,
+                  scenePoint.y() - sceneRadius,
+                  sceneRadius * 2.0,
+                  sceneRadius * 2.0);
+}
+
 std::optional<QPointF> nearestGeometryAnchorSnapPoint(const QGraphicsScene *scene,
                                                       const QPointF &scenePoint,
                                                       qreal sceneRadius)
@@ -1174,7 +1209,9 @@ std::optional<QPointF> nearestGeometryAnchorSnapPoint(const QGraphicsScene *scen
     const qreal maxDistanceSquared = sceneRadius * sceneRadius;
     qreal bestDistanceSquared = std::numeric_limits<qreal>::max();
     std::optional<QPointF> bestPoint;
-    const QList<QGraphicsItem *> items = scene->items();
+    const QList<QGraphicsItem *> items = scene->items(sceneSearchRectAround(scenePoint, sceneRadius),
+                                                      Qt::IntersectsItemBoundingRect,
+                                                      Qt::DescendingOrder);
     for (QGraphicsItem *item : items) {
         QPointF candidatePoint;
         int candidateLineNumber = 0;
@@ -1230,24 +1267,32 @@ QPointF snapInteractiveDrawAnchorIfAvailable(const MapEditorViewportInputContext
     return snappedPoint.value_or(scenePoint);
 }
 
-int nearestNeighborGeometryLineNumberForSnapGuides(const MapEditorViewportInputContext &context,
-                                                   const QPoint &viewportPoint,
-                                                   const QPointF &scenePoint)
+struct SnapGuideLineCandidate
+{
+    int lineNumber = 0;
+    QRectF sceneBounds;
+};
+
+SnapGuideLineCandidate nearestNeighborGeometryLineForSnapGuides(const MapEditorViewportInputContext &context,
+                                                                const QPoint &viewportPoint,
+                                                                const QPointF &scenePoint)
 {
     if (context.scene == nullptr || context.view == nullptr) {
-        return 0;
+        return {};
     }
 
     const qreal guideRadius = sceneRadiusForViewportPixels(context.view,
                                                            viewportPoint,
                                                            kMapEditorSnapGuideRadiusPixels);
     if (guideRadius <= 0.0) {
-        return 0;
+        return {};
     }
 
     qreal bestDistanceSquared = std::numeric_limits<qreal>::max();
-    int bestLineNumber = 0;
-    const QList<QGraphicsItem *> items = context.scene->items();
+    SnapGuideLineCandidate bestCandidate;
+    const QList<QGraphicsItem *> items = context.scene->items(sceneSearchRectAround(scenePoint, guideRadius),
+                                                              Qt::IntersectsItemShape,
+                                                              Qt::DescendingOrder);
     for (QGraphicsItem *item : items) {
         auto *pathItem = dynamic_cast<QGraphicsPathItem *>(item);
         if (pathItem == nullptr) {
@@ -1284,10 +1329,11 @@ int nearestNeighborGeometryLineNumberForSnapGuides(const MapEditorViewportInputC
         }
 
         bestDistanceSquared = distanceSquared;
-        bestLineNumber = candidateLineNumber;
+        bestCandidate.lineNumber = candidateLineNumber;
+        bestCandidate.sceneBounds = pathItem->sceneBoundingRect();
     }
 
-    return bestLineNumber;
+    return bestCandidate;
 }
 
 QVector<QPointF> snapGuidePointsForNearbyGeometry(const MapEditorViewportInputContext &context,
@@ -1299,18 +1345,20 @@ QVector<QPointF> snapGuidePointsForNearbyGeometry(const MapEditorViewportInputCo
         return guidePoints;
     }
 
-    const int guideLineNumber = nearestNeighborGeometryLineNumberForSnapGuides(context, viewportPoint, scenePoint);
-    if (guideLineNumber <= 0) {
+    const SnapGuideLineCandidate guideLine = nearestNeighborGeometryLineForSnapGuides(context, viewportPoint, scenePoint);
+    if (guideLine.lineNumber <= 0 || guideLine.sceneBounds.isNull()) {
         return guidePoints;
     }
 
-    const QList<QGraphicsItem *> items = context.scene->items();
+    const QList<QGraphicsItem *> items = context.scene->items(guideLine.sceneBounds.adjusted(-1.0, -1.0, 1.0, 1.0),
+                                                              Qt::IntersectsItemBoundingRect,
+                                                              Qt::DescendingOrder);
     for (QGraphicsItem *item : items) {
         if (item == nullptr) {
             continue;
         }
         if (auto *vertexItem = dynamic_cast<MapEditableGeometryVertexItem *>(item)) {
-            if (guideLineNumber <= 0 || vertexItem->lineNumber() != guideLineNumber) {
+            if (vertexItem->lineNumber() != guideLine.lineNumber) {
                 continue;
             }
             if (vertexItem->geometryKind() == QStringLiteral("line")
@@ -1643,8 +1691,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                     traceAction("line-area-press");
                     const QPointF scenePoint = context_.view->mapToScene(mouseEvent->pos());
                     const QPointF anchorScenePoint = snapInteractiveDrawAnchorIfAvailable(context_, mouseEvent->pos(), scenePoint);
-                    const QPointF sceneOffset = context_.view->mapToScene(mouseEvent->pos() + QPoint(8, 0));
-                    const qreal controlHitRadius = std::max<qreal>(4.0, QLineF(scenePoint, sceneOffset).length());
+                    const qreal controlHitRadius = interactiveDrawControlHitSceneRadius(context_, mouseEvent->pos());
                     if (const auto handle = context_.interactiveLineControlAt(scenePoint, controlHitRadius)) {
                         traceAction("line-area-control-drag-begin");
                         (*context_.interactiveDrawControlDragActive) = true;
@@ -1769,9 +1816,11 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                  || drawMode() == MapEditorInteractiveDrawMode::Area)
                 && (*context_.interactiveDrawAnchorPressActive)) {
                 traceAction("line-area-anchor-drag-preview");
-                const QPointF scenePoint = context_.view->mapToScene(static_cast<QMouseEvent *>(event)->pos());
-                constexpr qreal dragThreshold = 4.0;
+                auto *mouseEvent = static_cast<QMouseEvent *>(event);
+                const QPointF scenePoint = context_.view->mapToScene(mouseEvent->pos());
+                const qreal dragThreshold = interactiveDrawDragThresholdSceneRadius(context_, mouseEvent->pos());
                 if (!(*context_.interactiveDrawAnchorDragActive)
+                    && dragThreshold > 0.0
                     && QLineF((*context_.interactiveDrawAnchorPressScenePoint), scenePoint).length() >= dragThreshold) {
                     (*context_.interactiveDrawAnchorDragActive) = true;
                 }
@@ -1816,8 +1865,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                 if (drawMode() == MapEditorInteractiveDrawMode::Point) {
                     applyDefaultMapViewportCursor(context_, viewport);
                 } else if (!(*context_.interactiveDrawLineVertices).isEmpty()) {
-                    const QPointF sceneOffset = context_.view->mapToScene(mousePosition + QPoint(8, 0));
-                    const qreal controlHitRadius = std::max<qreal>(4.0, QLineF(scenePoint, sceneOffset).length());
+                    const qreal controlHitRadius = interactiveDrawControlHitSceneRadius(context_, mousePosition);
                     if (context_.interactiveLineControlAt(scenePoint, controlHitRadius).has_value()) {
                         viewport->setCursor(Qt::OpenHandCursor);
                     } else {
@@ -1902,10 +1950,10 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                 bool anchorAlreadyCaptured = false;
                 if (context_.interactiveDrawLineVertices != nullptr
                     && !context_.interactiveDrawLineVertices->isEmpty()) {
-                    const QPointF probe = context_.view->mapToScene(mouseEvent->pos() + QPoint(10, 0));
-                    const qreal hitRadius = std::max<qreal>(5.0, QLineF(scenePoint, probe).length());
+                    const qreal hitRadius = interactiveDrawCloseHitSceneRadius(context_, mouseEvent->pos());
                     anchorAlreadyCaptured =
-                        QLineF(context_.interactiveDrawLineVertices->last().anchorScene, anchorScenePoint).length() <= hitRadius;
+                        hitRadius > 0.0
+                        && QLineF(context_.interactiveDrawLineVertices->last().anchorScene, anchorScenePoint).length() <= hitRadius;
                 }
                 if (!anchorAlreadyCaptured && context_.captureInteractiveLineAnchor) {
                     context_.captureInteractiveLineAnchor(anchorScenePoint, std::nullopt);
@@ -1936,10 +1984,10 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                     && context_.interactiveDrawLineVertices != nullptr
                     && dragHandle.vertexIndex == 0
                     && context_.interactiveDrawLineVertices->size() >= (drawMode() == MapEditorInteractiveDrawMode::Line ? 2 : 3)) {
-                    const QPointF closeHitProbe = context_.view->mapToScene(mouseEvent->pos() + QPoint(10, 0));
-                    const qreal closeHitRadius = std::max<qreal>(5.0, QLineF(scenePoint, closeHitProbe).length());
+                    const qreal closeHitRadius = interactiveDrawCloseHitSceneRadius(context_, mouseEvent->pos());
                     const QPointF firstAnchorScenePoint = context_.interactiveDrawLineVertices->first().anchorScene;
-                    if (QLineF(scenePoint, firstAnchorScenePoint).length() <= closeHitRadius
+                    if (closeHitRadius > 0.0
+                        && QLineF(scenePoint, firstAnchorScenePoint).length() <= closeHitRadius
                         && context_.commitInteractiveDrawSession != nullptr) {
                         (*context_.interactiveDrawControlDragActive) = false;
                         traceAction("line-area-control-drag-close");
@@ -1950,8 +1998,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                 }
                 context_.setInteractiveLineControlScenePoint((*context_.interactiveDrawControlDragHandle), scenePoint);
                 (*context_.interactiveDrawControlDragActive) = false;
-                const QPointF sceneOffset = context_.view->mapToScene(mouseEvent->pos() + QPoint(8, 0));
-                const qreal controlHitRadius = std::max<qreal>(4.0, QLineF(scenePoint, sceneOffset).length());
+                const qreal controlHitRadius = interactiveDrawControlHitSceneRadius(context_, mouseEvent->pos());
                 if (context_.interactiveLineControlAt(scenePoint, controlHitRadius).has_value()) {
                     viewport->setCursor(Qt::OpenHandCursor);
                 } else {
@@ -1984,8 +2031,9 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                 const QPointF releaseScenePoint = context_.view->mapToScene(mouseEvent->pos());
                 std::optional<QPointF> dragScenePoint;
                 if ((*context_.interactiveDrawAnchorDragActive)) {
-                    constexpr qreal dragThreshold = 4.0;
-                    if (QLineF((*context_.interactiveDrawAnchorPressScenePoint), releaseScenePoint).length() >= dragThreshold) {
+                    const qreal dragThreshold = interactiveDrawDragThresholdSceneRadius(context_, mouseEvent->pos());
+                    if (dragThreshold > 0.0
+                        && QLineF((*context_.interactiveDrawAnchorPressScenePoint), releaseScenePoint).length() >= dragThreshold) {
                         dragScenePoint = releaseScenePoint;
                     }
                 }
@@ -1996,10 +2044,10 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                     && !(*context_.interactiveDrawAnchorDragActive)
                     && context_.interactiveDrawLineVertices != nullptr
                     && context_.interactiveDrawLineVertices->size() >= (currentDrawMode == MapEditorInteractiveDrawMode::Line ? 2 : 3)) {
-                    const QPointF closeHitProbe = context_.view->mapToScene(mouseEvent->pos() + QPoint(10, 0));
-                    const qreal closeHitRadius = std::max<qreal>(5.0, QLineF(releaseScenePoint, closeHitProbe).length());
+                    const qreal closeHitRadius = interactiveDrawCloseHitSceneRadius(context_, mouseEvent->pos());
                     const QPointF firstAnchorScenePoint = context_.interactiveDrawLineVertices->first().anchorScene;
-                    completeClosedDraftByClick = QLineF(releaseScenePoint, firstAnchorScenePoint).length() <= closeHitRadius;
+                    completeClosedDraftByClick = closeHitRadius > 0.0
+                        && QLineF(releaseScenePoint, firstAnchorScenePoint).length() <= closeHitRadius;
                 }
 
                 (*context_.interactiveDrawAnchorPressActive) = false;

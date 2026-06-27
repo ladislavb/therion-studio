@@ -1530,6 +1530,181 @@ int runHoveredPathDoesNotStealSlopeOrientationHandlePressTest()
     return 0;
 }
 
+int runInteractiveDrawControlHitRadiusScalesWithZoomTest()
+{
+    QGraphicsScene scene;
+    QGraphicsView view(&scene);
+    view.setSceneRect(QRectF(0.0, 0.0, 100.0, 100.0));
+    view.resize(320, 260);
+    view.scale(100.0, 100.0);
+    view.show();
+
+    QString toolbarStatus;
+    bool primaryPointerInteractionActive = false;
+    QVector<QPointF> sourceVertices;
+    QVector<QPointF> sceneVertices;
+    QVector<MapEditorInteractiveLineDraftVertex> lineVertices;
+    bool strokeActive = false;
+    bool anchorPressActive = false;
+    QPointF anchorPressScenePoint;
+    bool anchorDragActive = false;
+    QPointF anchorDragScenePoint;
+    bool controlDragActive = false;
+    MapEditorInteractiveLineControlHandleRef controlDragHandle;
+    bool hoverActive = false;
+    QPointF hoverScenePoint;
+    bool hoverSnapActive = false;
+    QPointF hoverSnapScenePoint;
+    QVector<QPointF> hoverSnapGuideScenePoints;
+    qreal capturedControlHitRadius = -1.0;
+
+    MapEditorViewportInputContext context;
+    context.scene = &scene;
+    context.view = &view;
+    context.toolbarStatusNote = &toolbarStatus;
+    context.primaryPointerInteractionActive = &primaryPointerInteractionActive;
+    context.interactiveDrawSourceVertices = &sourceVertices;
+    context.interactiveDrawSceneVertices = &sceneVertices;
+    context.interactiveDrawLineVertices = &lineVertices;
+    context.interactiveDrawStrokeActive = &strokeActive;
+    context.interactiveDrawAnchorPressActive = &anchorPressActive;
+    context.interactiveDrawAnchorPressScenePoint = &anchorPressScenePoint;
+    context.interactiveDrawAnchorDragActive = &anchorDragActive;
+    context.interactiveDrawAnchorDragScenePoint = &anchorDragScenePoint;
+    context.interactiveDrawControlDragActive = &controlDragActive;
+    context.interactiveDrawControlDragHandle = &controlDragHandle;
+    context.interactiveDrawHoverActive = &hoverActive;
+    context.interactiveDrawHoverScenePoint = &hoverScenePoint;
+    context.interactiveDrawHoverSnapActive = &hoverSnapActive;
+    context.interactiveDrawHoverSnapScenePoint = &hoverSnapScenePoint;
+    context.interactiveDrawHoverSnapGuideScenePoints = &hoverSnapGuideScenePoints;
+    context.drawMode = []() { return MapEditorInteractiveDrawMode::Line; };
+    context.updateInteractiveDrawPreview = []() {};
+    context.refreshToolbarSummary = []() {};
+    context.updateCommandSurfaceState = []() {};
+    context.interactiveLineControlAt = [&capturedControlHitRadius](const QPointF &, qreal sceneRadius) {
+        capturedControlHitRadius = sceneRadius;
+        return std::optional<MapEditorInteractiveLineControlHandleRef>();
+    };
+
+    MapEditorViewportInputController controller(context);
+    const QPoint pressPosition = view.mapFromScene(QPointF(10.0, 10.0));
+    QMouseEvent press(QEvent::MouseButtonPress,
+                      QPointF(pressPosition),
+                      QPointF(view.viewport()->mapToGlobal(pressPosition)),
+                      Qt::LeftButton,
+                      Qt::LeftButton,
+                      Qt::NoModifier);
+
+    if (!expect(controller.handleEvent(view.viewport(), &press).value_or(false),
+                "Line draw press should be handled by the viewport input controller.")) {
+        return 1;
+    }
+    if (!expect(anchorPressActive && !controlDragActive,
+                "Line draw press at high zoom should begin an anchor press when no handle is within the pixel radius.")) {
+        return 1;
+    }
+    if (!expect(capturedControlHitRadius > 0.0 && capturedControlHitRadius < 0.2,
+                "Line draw control hit radius should scale down with high zoom instead of using a fixed scene-unit floor.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int runInteractiveDrawCloseHitRadiusScalesWithZoomTest()
+{
+    QGraphicsScene scene;
+    QGraphicsView view(&scene);
+    view.setSceneRect(QRectF(0.0, 0.0, 100.0, 100.0));
+    view.resize(320, 260);
+    view.scale(100.0, 100.0);
+    view.show();
+
+    QString toolbarStatus;
+    bool primaryPointerInteractionActive = false;
+    QVector<QPointF> sourceVertices;
+    QVector<QPointF> sceneVertices;
+    QVector<MapEditorInteractiveLineDraftVertex> lineVertices;
+    MapEditorInteractiveLineDraftVertex firstVertex;
+    firstVertex.anchorScene = QPointF(10.0, 10.0);
+    firstVertex.anchorSource = firstVertex.anchorScene;
+    lineVertices.append(firstVertex);
+    MapEditorInteractiveLineDraftVertex secondVertex;
+    secondVertex.anchorScene = QPointF(20.0, 10.0);
+    secondVertex.anchorSource = secondVertex.anchorScene;
+    lineVertices.append(secondVertex);
+    bool strokeActive = false;
+    bool anchorPressActive = true;
+    QPointF anchorPressScenePoint(10.2, 10.0);
+    bool anchorDragActive = false;
+    QPointF anchorDragScenePoint;
+    bool controlDragActive = false;
+    MapEditorInteractiveLineControlHandleRef controlDragHandle;
+    bool hoverActive = false;
+    QPointF hoverScenePoint;
+    bool hoverSnapActive = false;
+    QPointF hoverSnapScenePoint;
+    QVector<QPointF> hoverSnapGuideScenePoints;
+    int captureCalls = 0;
+    int commitCalls = 0;
+
+    MapEditorViewportInputContext context;
+    context.scene = &scene;
+    context.view = &view;
+    context.toolbarStatusNote = &toolbarStatus;
+    context.primaryPointerInteractionActive = &primaryPointerInteractionActive;
+    context.interactiveDrawSourceVertices = &sourceVertices;
+    context.interactiveDrawSceneVertices = &sceneVertices;
+    context.interactiveDrawLineVertices = &lineVertices;
+    context.interactiveDrawStrokeActive = &strokeActive;
+    context.interactiveDrawAnchorPressActive = &anchorPressActive;
+    context.interactiveDrawAnchorPressScenePoint = &anchorPressScenePoint;
+    context.interactiveDrawAnchorDragActive = &anchorDragActive;
+    context.interactiveDrawAnchorDragScenePoint = &anchorDragScenePoint;
+    context.interactiveDrawControlDragActive = &controlDragActive;
+    context.interactiveDrawControlDragHandle = &controlDragHandle;
+    context.interactiveDrawHoverActive = &hoverActive;
+    context.interactiveDrawHoverScenePoint = &hoverScenePoint;
+    context.interactiveDrawHoverSnapActive = &hoverSnapActive;
+    context.interactiveDrawHoverSnapScenePoint = &hoverSnapScenePoint;
+    context.interactiveDrawHoverSnapGuideScenePoints = &hoverSnapGuideScenePoints;
+    context.drawMode = []() { return MapEditorInteractiveDrawMode::Line; };
+    context.captureInteractiveLineAnchor = [&captureCalls](const QPointF &, const std::optional<QPointF> &) {
+        ++captureCalls;
+    };
+    context.commitInteractiveDrawSession = [&commitCalls](bool) {
+        ++commitCalls;
+        return true;
+    };
+    context.refreshToolbarSummary = []() {};
+    context.updateCommandSurfaceState = []() {};
+
+    MapEditorViewportInputController controller(context);
+    const QPoint releasePosition = view.mapFromScene(anchorPressScenePoint);
+    QMouseEvent release(QEvent::MouseButtonRelease,
+                        QPointF(releasePosition),
+                        QPointF(view.viewport()->mapToGlobal(releasePosition)),
+                        Qt::LeftButton,
+                        Qt::NoButton,
+                        Qt::NoModifier);
+
+    if (!expect(controller.handleEvent(view.viewport(), &release).value_or(false),
+                "Line draw anchor release should be handled by the viewport input controller.")) {
+        return 1;
+    }
+    if (!expect(commitCalls == 0,
+                "High-zoom line draw release near the first anchor should not close the draft outside the pixel hit radius.")) {
+        return 1;
+    }
+    if (!expect(captureCalls == 1,
+                "High-zoom line draw release near the first anchor but outside the pixel hit radius should add a new anchor.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 }
 
 int main(int argc, char **argv)
@@ -1572,6 +1747,12 @@ int main(int argc, char **argv)
         return rc;
     }
     if (const int rc = runHoveredPathDoesNotStealSlopeOrientationHandlePressTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runInteractiveDrawControlHitRadiusScalesWithZoomTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runInteractiveDrawCloseHitRadiusScalesWithZoomTest(); rc != 0) {
         return rc;
     }
     return runResizeAutoFitSuppressesCommandSurfaceUpdateTest();
