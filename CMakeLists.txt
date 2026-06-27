@@ -992,6 +992,7 @@ therion_add_core_unit_test(TherionDocumentParserTest
 
 therion_add_core_qtest_runner(TherionCoreQTests
     tests/core/CoreQTestMain.cpp
+    tests/CommandCatalogStoreTest.cpp
     tests/core/ThreeDViewerCameraTest.cpp
     tests/core/TherionFileTypesTest.cpp
     tests/core/ThreeDViewerLoxLoaderTest.cpp
@@ -1005,9 +1006,6 @@ therion_add_core_qtest_runner(TherionCoreQTests
     tests/core/TherionSourceValidatorProjectionTest.cpp
     tests/core/TherionSourceTextTest.cpp
     tests/core/TherionTokenRulesTest.cpp)
-
-therion_add_core_unit_test(CommandCatalogStoreTest
-    tests/CommandCatalogStoreTest.cpp)
 
 therion_add_core_unit_test(CommandOptionParserTest
     tests/CommandOptionParserTest.cpp)
@@ -1279,25 +1277,20 @@ qt_add_executable(BlockEditorApplyExecutorTest
 
 target_link_libraries(BlockEditorApplyExecutorTest PRIVATE Qt6::Widgets)
 
-qt_add_executable(BlockEditorDocumentOutlineBuilderTest
+qt_add_executable(BlockEditorLogicQTests
+    tests/BlockEditorLogicQTestMain.cpp
     tests/BlockEditorDocumentOutlineBuilderTest.cpp
+    tests/BlockEditorMoveSourceRewriterTest.cpp
     src/app/text_editor/block_editor/BlockEditorDirectiveRules.cpp
     src/app/text_editor/block_editor/BlockEditorDirectiveRules.h
     src/app/text_editor/block_editor/BlockEditorDocumentOutlineBuilder.cpp
     src/app/text_editor/block_editor/BlockEditorDocumentOutlineBuilder.h
-    src/app/text_editor/block_editor/BlockEditorSourceText.cpp
-    src/app/text_editor/block_editor/BlockEditorSourceText.h)
-
-target_link_libraries(BlockEditorDocumentOutlineBuilderTest PRIVATE therion_core Qt6::Core)
-
-qt_add_executable(BlockEditorMoveSourceRewriterTest
-    tests/BlockEditorMoveSourceRewriterTest.cpp
     src/app/text_editor/block_editor/BlockEditorMoveSourceRewriter.cpp
     src/app/text_editor/block_editor/BlockEditorMoveSourceRewriter.h
     src/app/text_editor/block_editor/BlockEditorSourceText.cpp
     src/app/text_editor/block_editor/BlockEditorSourceText.h)
 
-target_link_libraries(BlockEditorMoveSourceRewriterTest PRIVATE therion_core Qt6::Core)
+target_link_libraries(BlockEditorLogicQTests PRIVATE therion_core Qt6::Core Qt6::Test)
 
 qt_add_executable(BlockEditorCanvasRebuildControllerTest
     tests/BlockEditorCanvasRebuildControllerTest.cpp
@@ -1523,7 +1516,6 @@ target_link_libraries(MapEditorValidationFixRefreshTest PRIVATE
     Qt6::Test)
 
 set(THERION_UNIT_TEST_TARGETS
-    CommandCatalogStoreTest
     CommandOptionParserTest
     TherionDocumentEditorTest
     TherionSourceValidatorTest
@@ -1565,8 +1557,7 @@ set(THERION_UNIT_TEST_TARGETS
     MainWindowTherionRunnerControllerTest
     BlockEditorApplyExecutorTest
     BlockEditorCanvasRebuildControllerTest
-    BlockEditorDocumentOutlineBuilderTest
-    BlockEditorMoveSourceRewriterTest
+    BlockEditorLogicQTests
     BlockEditorToolboxControllerTest
     TherionRunnerSupportQTests
     TherionRunnerServiceTest

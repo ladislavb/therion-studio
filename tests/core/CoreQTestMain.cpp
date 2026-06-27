@@ -1,5 +1,6 @@
 #include <QtTest/QtTest>
 
+int runCommandCatalogStoreTest(int argc, char **argv);
 int runTherionSourceTextTest(int argc, char **argv);
 int runTherionSourceDocumentTest(int argc, char **argv);
 int runTherionSourceLogicalDocumentTest(int argc, char **argv);
@@ -17,6 +18,7 @@ int runTherionFileTypesTest(int argc, char **argv);
 int main(int argc, char **argv)
 {
     int status = 0;
+    status |= runCommandCatalogStoreTest(argc, argv);
     status |= runTherionFileTypesTest(argc, argv);
     status |= runThreeDViewerCameraTest(argc, argv);
     status |= runThreeDViewerLoxLoaderTest(argc, argv);

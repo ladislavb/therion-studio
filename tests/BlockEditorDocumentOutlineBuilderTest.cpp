@@ -2,22 +2,13 @@
 #include "../src/app/text_editor/block_editor/BlockEditorDocumentOutlineBuilder.h"
 
 #include <QString>
-
-#include <iostream>
+#include <QtTest/QtTest>
 
 using namespace TherionStudio;
 using namespace TherionStudio::BlockEditorDirectiveRules;
 
 namespace
 {
-bool expect(bool condition, const char *message)
-{
-    if (!condition) {
-        std::cerr << message << '\n';
-    }
-    return condition;
-}
-
 BlockEditorDocumentOutlineContext outlineContext()
 {
     BlockEditorDocumentOutlineContext context;
@@ -46,7 +37,16 @@ BlockEditorDocumentOutlineContext outlineContext()
     return context;
 }
 
-int runDataEntryConsumesExtendRowsTest()
+class BlockEditorDocumentOutlineBuilderTest final : public QObject
+{
+    Q_OBJECT
+
+private slots:
+    void dataEntryConsumesExtendRows();
+};
+}
+
+void BlockEditorDocumentOutlineBuilderTest::dataEntryConsumesExtendRows()
 {
     const QString contents = QStringLiteral(
         "encoding utf-8\n"
@@ -64,45 +64,26 @@ int runDataEntryConsumesExtendRowsTest()
 
     const BlockEditorDocumentOutline outline = BlockEditorDocumentOutlineBuilder(outlineContext()).buildFromContents(contents);
     const auto dataEntryIndex = outline.entryIndexByStartLine.constFind(5);
-    if (!expect(dataEntryIndex != outline.entryIndexByStartLine.constEnd(),
-                "Outline should contain the centerline data block entry.")) {
-        return 1;
-    }
+    QVERIFY(dataEntryIndex != outline.entryIndexByStartLine.constEnd());
 
     const BlockEditorDocumentEntry dataEntry = outline.entries.at(*dataEntryIndex);
-    if (!expect(dataEntry.kind == QStringLiteral("data"),
-                "Data outline entry should keep kind data.")) {
-        return 1;
-    }
-    if (!expect(dataEntry.startLine == 5 && dataEntry.endLine == 9,
-                "Data outline entry should consume extend markers and measurement rows until the next centerline command.")) {
-        return 1;
-    }
+    QCOMPARE(dataEntry.kind, QStringLiteral("data"));
+    QCOMPARE(dataEntry.startLine, 5);
+    QCOMPARE(dataEntry.endLine, 9);
 
     for (const BlockEditorDocumentEntry &entry : outline.entries) {
-        if (!expect(entry.kind != QStringLiteral("extend"),
-                    "Extend rows inside a data block should not become standalone block entries.")) {
-            return 1;
-        }
+        QVERIFY(entry.kind != QStringLiteral("extend"));
     }
 
     const auto teamEntryIndex = outline.entryIndexByStartLine.constFind(10);
-    if (!expect(teamEntryIndex != outline.entryIndexByStartLine.constEnd(),
-                "The first command after the data body should still become its own entry.")) {
-        return 1;
-    }
-    return expect(outline.entries.at(*teamEntryIndex).kind == QStringLiteral("team"),
-                  "The command after the data body should be parsed as a team entry.")
-        ? 0
-        : 1;
-}
+    QVERIFY(teamEntryIndex != outline.entryIndexByStartLine.constEnd());
+    QCOMPARE(outline.entries.at(*teamEntryIndex).kind, QStringLiteral("team"));
 }
 
-int main()
+int runBlockEditorDocumentOutlineBuilderTest(int argc, char **argv)
 {
-    if (runDataEntryConsumesExtendRowsTest() != 0) {
-        return 1;
-    }
-
-    return 0;
+    BlockEditorDocumentOutlineBuilderTest test;
+    return QTest::qExec(&test, argc, argv);
 }
+
+#include "BlockEditorDocumentOutlineBuilderTest.moc"
