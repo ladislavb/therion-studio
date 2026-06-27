@@ -70,6 +70,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   deleting a whole selected line unless an actual vertex/control handle is selected.
 - Keep `line slope` orientation/size arrow handles targetable directly at the arrow head without extending their hit area
   back across the connector segment or stealing endpoint vertex drags.
+- Keep Selection inspector `line slope` orientation and `l-size` checkboxes explicitly re-enabled for selected slope vertices
+  after pending draw or unsupported-option states leave the same controls disabled.
 - Keep draft completion and draft auto-commit from recentering the map viewport or force-scrolling the Objects tree to
   the newly inserted object.
 - Keep pending point/line/area recent type/subtype MRU choices persisted across application restarts.

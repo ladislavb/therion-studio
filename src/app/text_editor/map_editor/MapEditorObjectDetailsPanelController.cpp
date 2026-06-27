@@ -1105,8 +1105,10 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
     context_.orientationEnabledCheck->setText(effectiveKind == QStringLiteral("line")
                                                   ? tr("Orientation (-orientation)")
                                                   : tr("Orientation override (-orientation)"));
+    context_.orientationEnabledCheck->setEnabled(orientationApplicable);
     context_.orientationSpin->setVisible(orientationApplicable);
     context_.linePointLeftSizeEnabledCheck->setVisible(linePointLeftSizeApplicable);
+    context_.linePointLeftSizeEnabledCheck->setEnabled(linePointLeftSizeApplicable);
     context_.linePointLeftSizeSpin->setVisible(linePointLeftSizeApplicable);
     context_.pointAlignEditor->setVisible(pointAlignApplicable);
     context_.pointAlignLabel->setVisible(pointAlignApplicable);
