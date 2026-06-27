@@ -85,6 +85,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   movable without writing source text until the draft is completed.
 - Keep high-zoom line/area drafting hit targets based on viewport pixels rather than fixed scene units so small objects
   can still add anchors without accidentally grabbing existing draft controls or closing drafts near the first anchor.
+- Keep interactive point/line/area draft insert transactions applying source text immediately while deferring the
+  map-scene projection refresh out of the pointer event so draft completion does not stall on full scene rebuild policies.
 - Keep map draft geometry insertion from writing into TH2 files with unclosed scraps; the map editor should surface the
   missing `endscrap` instead of appending fallback geometry into an ambiguous source structure.
 - Keep unclosed `.th2` `scrap`, `line`, and `area` validation findings fixable through explicit `Apply Fix` insertions of

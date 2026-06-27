@@ -608,6 +608,11 @@ private:
         const QString &afterText,
         int insertedLineNumber,
         std::function<void()> selectionRestoreHook = {});
+    TextEditorSourceTransactionResult applySourceTextChangeWithSnapshotDeferredProjection(const QString &label,
+                                                                                         const QString &beforeText,
+                                                                                         const QString &afterText,
+                                                                                         int insertedLineNumber,
+                                                                                         std::function<void()> afterProjectionHook = {});
     bool insertLineVertexFromSelection(bool before);
     bool insertLineVertexAtSelectionCoordinate();
     bool splitLineAtSelection();

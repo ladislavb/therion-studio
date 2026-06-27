@@ -65,6 +65,8 @@ struct MapEditorInteractiveDrawContext
     std::function<QPointF(const QPointF &)> sourcePointFromScenePosition;
     std::function<TextEditorSourceTransactionResult(const QString &, const QString &, const QString &, int, std::function<void()>)>
         applySourceTextChangeWithSnapshot;
+    std::function<TextEditorSourceTransactionResult(const QString &, const QString &, const QString &, int, std::function<void()>)>
+        applySourceTextChangeWithSnapshotDeferredProjection;
     std::function<TherionDraftObjectOptions(const QString &)> draftObjectOptions;
     std::function<void(const QString &, const TherionDraftObjectOptions &)> recordCommittedDraftObjectOptions;
     std::function<std::optional<QRectF>()> initialAreaAdjustRectForDraftInsertion;

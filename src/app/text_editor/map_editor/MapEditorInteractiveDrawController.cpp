@@ -180,8 +180,28 @@ SourceApplyResult applyInsertWithSnapshot(const MapEditorInteractiveDrawContext 
                                           const QString &label,
                                           const QString &beforeText,
                                           const QString &afterText,
-                                          int insertedLineNumber)
+                                          int insertedLineNumber,
+                                          std::function<void()> afterDeferredProjection = {})
 {
+    if (context.applySourceTextChangeWithSnapshotDeferredProjection) {
+        const TextEditorSourceTransactionResult result =
+            context.applySourceTextChangeWithSnapshotDeferredProjection(label,
+                                                                        beforeText,
+                                                                        afterText,
+                                                                        insertedLineNumber,
+                                                                        std::move(afterDeferredProjection));
+        if (result == TextEditorSourceTransactionResult::Applied
+            || (result == TextEditorSourceTransactionResult::NoChange
+                && context.textEditor != nullptr
+                && context.textEditor->text() == afterText)) {
+            return SourceApplyResult::Applied;
+        }
+        if (result == TextEditorSourceTransactionResult::Unavailable) {
+            return SourceApplyResult::Unavailable;
+        }
+        return SourceApplyResult::NotApplied;
+    }
+
     if (!context.applySourceTextChangeWithSnapshot) {
         return SourceApplyResult::Unavailable;
     }
@@ -440,8 +460,20 @@ bool MapEditorInteractiveDrawController::commitInteractiveDrawSession(bool close
             context_.refreshToolbarSummary();
             return true;
         }
+        std::function<void()> afterDeferredProjection;
+        if (closeLineDraft && insertedLineNumber > 0 && context_.selectCommittedDraftObject) {
+            afterDeferredProjection = [selectCommittedDraftObject = context_.selectCommittedDraftObject,
+                                       insertedLineNumber]() {
+                selectCommittedDraftObject(insertedLineNumber);
+            };
+        }
         const SourceApplyResult applyResult =
-            applyInsertWithSnapshot(context_, tr("Insert Line"), beforeText, afterText, insertedLineNumber);
+            applyInsertWithSnapshot(context_,
+                                    tr("Insert Line"),
+                                    beforeText,
+                                    afterText,
+                                    insertedLineNumber,
+                                    std::move(afterDeferredProjection));
         if (applyResult == SourceApplyResult::Unavailable) {
             (*context_.toolbarStatusNote) = tr("Complete Draft failed: source transaction callback is unavailable.");
             context_.refreshToolbarSummary();
@@ -495,7 +527,9 @@ bool MapEditorInteractiveDrawController::commitInteractiveDrawSession(bool close
 
     if (modeAtCommit == MapEditorInteractiveDrawMode::Line && closeLineDraft) {
         clearInteractiveDrawSession(true);
-        if (committedDraftLineNumber > 0 && context_.selectCommittedDraftObject) {
+        if (committedDraftLineNumber > 0
+            && context_.selectCommittedDraftObject
+            && !context_.applySourceTextChangeWithSnapshotDeferredProjection) {
             context_.selectCommittedDraftObject(committedDraftLineNumber);
         }
         (*context_.toolbarStatusNote) = tr("Selection mode: draft committed.");

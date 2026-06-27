@@ -259,6 +259,319 @@ int runDraftAnchorMovePreservesControlOffsetsTest()
 
     return 0;
 }
+
+int runPointInsertPrefersDeferredProjectionTransactionTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Failed to create temporary directory.")) {
+        return 1;
+    }
+
+    const QString filePath = createTestFile(tempDir,
+                                            "scrap s1 -projection plan\n"
+                                            "endscrap\n");
+    if (!expect(!filePath.isEmpty(), "Failed to create interactive-draw deferred transaction test file.")) {
+        return 1;
+    }
+
+    QtFileSystem fileSystem;
+    TextEditorTab tab{fileSystem, CommandCatalogStore()};
+    if (!expect(loadTestTab(&tab, filePath), "Failed to load interactive-draw deferred transaction test tab.")) {
+        return 1;
+    }
+
+    QString toolbarStatus;
+    bool selectModeActive = true;
+    bool commandApplyInProgress = false;
+    bool panActive = false;
+    QVector<QPointF> sourceVertices;
+    QVector<QPointF> sceneVertices;
+    QVector<MapEditorInteractiveLineDraftVertex> lineVertices;
+    bool strokeActive = false;
+    bool anchorPressActive = false;
+    QPointF anchorPressScenePoint;
+    bool anchorDragActive = false;
+    QPointF anchorDragScenePoint;
+    bool controlDragActive = false;
+    bool hoverActive = false;
+    QPointF hoverScenePoint;
+    bool hoverSnapActive = false;
+    QPointF hoverSnapScenePoint;
+    QGraphicsPathItem *previewPath = nullptr;
+    QVector<QGraphicsItem *> previewMarkers;
+
+    MapEditorInteractiveDrawMode mode = MapEditorInteractiveDrawMode::None;
+    int synchronousTransactionCalls = 0;
+    int deferredTransactionCalls = 0;
+
+    MapEditorInteractiveDrawContext context;
+    context.textEditor = &tab;
+    context.toolbarStatusNote = &toolbarStatus;
+    context.selectModeActive = &selectModeActive;
+    context.commandApplyInProgress = &commandApplyInProgress;
+    context.panActive = &panActive;
+    context.sourceVertices = &sourceVertices;
+    context.sceneVertices = &sceneVertices;
+    context.lineVertices = &lineVertices;
+    context.strokeActive = &strokeActive;
+    context.anchorPressActive = &anchorPressActive;
+    context.anchorPressScenePoint = &anchorPressScenePoint;
+    context.anchorDragActive = &anchorDragActive;
+    context.anchorDragScenePoint = &anchorDragScenePoint;
+    context.controlDragActive = &controlDragActive;
+    context.hoverActive = &hoverActive;
+    context.hoverScenePoint = &hoverScenePoint;
+    context.hoverSnapActive = &hoverSnapActive;
+    context.hoverSnapScenePoint = &hoverSnapScenePoint;
+    context.previewPath = &previewPath;
+    context.previewMarkers = &previewMarkers;
+
+    context.drawMode = [&mode]() {
+        return mode;
+    };
+    context.setDrawMode = [&mode](MapEditorInteractiveDrawMode newMode) {
+        mode = newMode;
+    };
+    context.translate = [](const char *text) {
+        return QString::fromUtf8(text);
+    };
+    context.emitModeStatusChanged = []() {};
+    context.sourcePointFromScenePosition = [](const QPointF &point) {
+        return point;
+    };
+    context.applySourceTextChangeWithSnapshot = [&](const QString &,
+                                                    const QString &,
+                                                    const QString &,
+                                                    int,
+                                                    std::function<void()>) {
+        ++synchronousTransactionCalls;
+        return TextEditorSourceTransactionResult::Applied;
+    };
+    context.applySourceTextChangeWithSnapshotDeferredProjection = [&](const QString &,
+                                                                      const QString &,
+                                                                      const QString &,
+                                                                      int,
+                                                                      std::function<void()> afterProjectionHook) {
+        ++deferredTransactionCalls;
+        if (afterProjectionHook) {
+            afterProjectionHook();
+        }
+        return TextEditorSourceTransactionResult::Applied;
+    };
+    context.draftObjectOptions = [](const QString &) {
+        return TherionDraftObjectOptions{};
+    };
+    context.initialAreaAdjustRectForDraftInsertion = []() -> std::optional<QRectF> {
+        return std::nullopt;
+    };
+    context.lineCoordinateRowsForInteractiveDraft = []() {
+        return QStringList{};
+    };
+    context.areaCoordinateRowsForInteractiveDraft = []() {
+        return QStringList{};
+    };
+    context.captureInteractiveLineAnchor = [](const QPointF &, const std::optional<QPointF> &) {};
+    context.previewSmartAreaAt = [](const QPointF &) {
+        return false;
+    };
+    context.hasSmartAreaPreview = []() {
+        return false;
+    };
+    context.commitSmartAreaPreview = []() {
+        return false;
+    };
+    context.hasCompletableInteractiveDrawSession = []() {
+        return false;
+    };
+    context.refreshObjectDetailsPanel = []() {};
+    context.refreshToolbarSummary = []() {};
+    context.updateCommandSurfaceState = []() {};
+    context.updateHelpPanel = []() {};
+
+    MapEditorInteractiveDrawController controller(context);
+    controller.setInteractiveDrawMode(MapEditorInteractiveDrawMode::Point);
+
+    if (!expect(controller.handleInteractiveDrawClick(QPointF(10.0, 20.0)),
+                "Interactive point insert should report handled click with deferred projection support.")) {
+        return 1;
+    }
+    if (!expect(deferredTransactionCalls == 1,
+                "Interactive point insert should use the deferred projection transaction callback when available.")) {
+        return 1;
+    }
+    if (!expect(synchronousTransactionCalls == 0,
+                "Interactive point insert should not fall back to the synchronous transaction callback when deferred projection is available.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int runClosedLineCommitDefersSelectionUntilProjectionRefreshTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Failed to create temporary directory.")) {
+        return 1;
+    }
+
+    const QString filePath = createTestFile(tempDir,
+                                            "scrap s1 -projection plan\n"
+                                            "endscrap\n");
+    if (!expect(!filePath.isEmpty(), "Failed to create closed-line deferred transaction test file.")) {
+        return 1;
+    }
+
+    QtFileSystem fileSystem;
+    TextEditorTab tab{fileSystem, CommandCatalogStore()};
+    if (!expect(loadTestTab(&tab, filePath), "Failed to load closed-line deferred transaction test tab.")) {
+        return 1;
+    }
+
+    QString toolbarStatus;
+    bool selectModeActive = false;
+    bool commandApplyInProgress = false;
+    bool panActive = false;
+    QVector<QPointF> sourceVertices;
+    QVector<QPointF> sceneVertices;
+    QVector<MapEditorInteractiveLineDraftVertex> lineVertices;
+    MapEditorInteractiveLineDraftVertex firstVertex;
+    firstVertex.anchorScene = QPointF(0.0, 0.0);
+    firstVertex.anchorSource = QPointF(0.0, 0.0);
+    lineVertices.append(firstVertex);
+    MapEditorInteractiveLineDraftVertex secondVertex;
+    secondVertex.anchorScene = QPointF(1.0, 1.0);
+    secondVertex.anchorSource = QPointF(1.0, 1.0);
+    lineVertices.append(secondVertex);
+    bool strokeActive = false;
+    bool anchorPressActive = false;
+    QPointF anchorPressScenePoint;
+    bool anchorDragActive = false;
+    QPointF anchorDragScenePoint;
+    bool controlDragActive = false;
+    bool hoverActive = false;
+    QPointF hoverScenePoint;
+    bool hoverSnapActive = false;
+    QPointF hoverSnapScenePoint;
+    QGraphicsPathItem *previewPath = nullptr;
+    QVector<QGraphicsItem *> previewMarkers;
+
+    MapEditorInteractiveDrawMode mode = MapEditorInteractiveDrawMode::Line;
+    int synchronousTransactionCalls = 0;
+    int deferredTransactionCalls = 0;
+    int selectedLineNumber = 0;
+    std::function<void()> deferredProjectionHook;
+
+    MapEditorInteractiveDrawContext context;
+    context.textEditor = &tab;
+    context.toolbarStatusNote = &toolbarStatus;
+    context.selectModeActive = &selectModeActive;
+    context.commandApplyInProgress = &commandApplyInProgress;
+    context.panActive = &panActive;
+    context.sourceVertices = &sourceVertices;
+    context.sceneVertices = &sceneVertices;
+    context.lineVertices = &lineVertices;
+    context.strokeActive = &strokeActive;
+    context.anchorPressActive = &anchorPressActive;
+    context.anchorPressScenePoint = &anchorPressScenePoint;
+    context.anchorDragActive = &anchorDragActive;
+    context.anchorDragScenePoint = &anchorDragScenePoint;
+    context.controlDragActive = &controlDragActive;
+    context.hoverActive = &hoverActive;
+    context.hoverScenePoint = &hoverScenePoint;
+    context.hoverSnapActive = &hoverSnapActive;
+    context.hoverSnapScenePoint = &hoverSnapScenePoint;
+    context.previewPath = &previewPath;
+    context.previewMarkers = &previewMarkers;
+
+    context.drawMode = [&mode]() {
+        return mode;
+    };
+    context.setDrawMode = [&mode](MapEditorInteractiveDrawMode newMode) {
+        mode = newMode;
+    };
+    context.translate = [](const char *text) {
+        return QString::fromUtf8(text);
+    };
+    context.emitModeStatusChanged = []() {};
+    context.sourcePointFromScenePosition = [](const QPointF &point) {
+        return point;
+    };
+    context.applySourceTextChangeWithSnapshot = [&](const QString &,
+                                                    const QString &,
+                                                    const QString &,
+                                                    int,
+                                                    std::function<void()>) {
+        ++synchronousTransactionCalls;
+        return TextEditorSourceTransactionResult::Applied;
+    };
+    context.applySourceTextChangeWithSnapshotDeferredProjection = [&](const QString &,
+                                                                      const QString &,
+                                                                      const QString &,
+                                                                      int,
+                                                                      std::function<void()> afterProjectionHook) {
+        ++deferredTransactionCalls;
+        deferredProjectionHook = std::move(afterProjectionHook);
+        return TextEditorSourceTransactionResult::Applied;
+    };
+    context.draftObjectOptions = [](const QString &) {
+        return TherionDraftObjectOptions{};
+    };
+    context.initialAreaAdjustRectForDraftInsertion = []() -> std::optional<QRectF> {
+        return std::nullopt;
+    };
+    context.lineCoordinateRowsForInteractiveDraft = []() {
+        return QStringList{QStringLiteral("0 0"), QStringLiteral("1 1")};
+    };
+    context.areaCoordinateRowsForInteractiveDraft = []() {
+        return QStringList{};
+    };
+    context.captureInteractiveLineAnchor = [](const QPointF &, const std::optional<QPointF> &) {};
+    context.previewSmartAreaAt = [](const QPointF &) {
+        return false;
+    };
+    context.hasSmartAreaPreview = []() {
+        return false;
+    };
+    context.commitSmartAreaPreview = []() {
+        return false;
+    };
+    context.hasCompletableInteractiveDrawSession = []() {
+        return true;
+    };
+    context.selectCommittedDraftObject = [&selectedLineNumber](int lineNumber) {
+        selectedLineNumber = lineNumber;
+    };
+    context.refreshObjectDetailsPanel = []() {};
+    context.refreshToolbarSummary = []() {};
+    context.updateCommandSurfaceState = []() {};
+    context.updateHelpPanel = []() {};
+
+    MapEditorInteractiveDrawController controller(context);
+    if (!expect(controller.commitInteractiveDrawSession(true),
+                "Closed line commit should be handled by the interactive draw controller.")) {
+        return 1;
+    }
+    if (!expect(deferredTransactionCalls == 1 && synchronousTransactionCalls == 0,
+                "Closed line commit should use the deferred projection transaction path.")) {
+        return 1;
+    }
+    if (!expect(selectedLineNumber == 0,
+                "Closed line commit should not select the inserted object before the deferred projection refresh runs.")) {
+        return 1;
+    }
+    if (!expect(static_cast<bool>(deferredProjectionHook),
+                "Closed line commit should provide a post-projection selection hook.")) {
+        return 1;
+    }
+
+    deferredProjectionHook();
+    if (!expect(selectedLineNumber > 0,
+                "Closed line commit should select the inserted object after the deferred projection refresh hook runs.")) {
+        return 1;
+    }
+
+    return 0;
+}
 }
 
 int main(int argc, char **argv)
@@ -269,6 +582,12 @@ int main(int argc, char **argv)
         return 1;
     }
     if (runDraftAnchorMovePreservesControlOffsetsTest() != 0) {
+        return 1;
+    }
+    if (runPointInsertPrefersDeferredProjectionTransactionTest() != 0) {
+        return 1;
+    }
+    if (runClosedLineCommitDefersSelectionUntilProjectionRefreshTest() != 0) {
         return 1;
     }
 

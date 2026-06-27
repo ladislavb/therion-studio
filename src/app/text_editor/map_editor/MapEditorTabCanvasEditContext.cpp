@@ -4,6 +4,9 @@
 #include "MapEditorCanvasEditController.h"
 #include "../TextEditorTab.h"
 
+#include <QPointer>
+#include <QTimer>
+
 namespace TherionStudio
 {
 MapEditorCanvasEditContext MapEditorTab::canvasEditContext()
@@ -158,6 +161,33 @@ TextEditorSourceTransactionResult MapEditorTab::applySourceTextChangeWithSnapsho
     }
 
     return controller.applySourceTextChangeWithSnapshot(label, beforeText, afterText, insertedLineNumber);
+}
+
+TextEditorSourceTransactionResult MapEditorTab::applySourceTextChangeWithSnapshotDeferredProjection(
+    const QString &label,
+    const QString &beforeText,
+    const QString &afterText,
+    int insertedLineNumber,
+    std::function<void()> afterProjectionHook)
+{
+    auto deferredProjectionRefresh = [guarded = QPointer<MapEditorTab>(this),
+                                      afterProjectionHook = std::move(afterProjectionHook)]() mutable {
+        QTimer::singleShot(0, guarded, [guarded, afterProjectionHook = std::move(afterProjectionHook)]() mutable {
+            if (guarded == nullptr) {
+                return;
+            }
+            guarded->flushPendingMapSceneRefreshAfterCommand();
+            if (afterProjectionHook) {
+                afterProjectionHook();
+            }
+        });
+    };
+    return MapEditorCanvasEditController(canvasEditContext())
+        .applySourceTextChangeWithSnapshotDeferredProjection(label,
+                                                             beforeText,
+                                                             afterText,
+                                                             insertedLineNumber,
+                                                             std::move(deferredProjectionRefresh));
 }
 
 bool MapEditorTab::insertLineVertexFromSelection(bool before)

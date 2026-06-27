@@ -101,6 +101,17 @@ MapEditorInteractiveDrawContext MapEditorTab::interactiveDrawContext()
                                                      insertedLineNumber,
                                                      std::move(selectionRestoreHook));
         },
+        .applySourceTextChangeWithSnapshotDeferredProjection = [this](const QString &label,
+                                                                      const QString &beforeText,
+                                                                      const QString &afterText,
+                                                                      int insertedLineNumber,
+                                                                      std::function<void()> afterProjectionHook) {
+            return applySourceTextChangeWithSnapshotDeferredProjection(label,
+                                                                       beforeText,
+                                                                       afterText,
+                                                                       insertedLineNumber,
+                                                                       std::move(afterProjectionHook));
+        },
         .draftObjectOptions = [this](const QString &commandKind) {
             return pendingDraftObjectOptions(commandKind);
         },
