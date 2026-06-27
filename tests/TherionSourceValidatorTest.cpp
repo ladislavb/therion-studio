@@ -96,6 +96,57 @@ void reportsAndFixesDuplicateOptionRows()
             "Duplicate option diagnostics should point at the duplicate option/value token range.");
 }
 
+void reportsAndFixesDuplicateLinePointSmoothOffRows()
+{
+    const QString contents = QStringLiteral("line rock-border\n"
+                                            "  0 0\n"
+                                            "  smooth off\n"
+                                            "  smooth off\n"
+                                            "  1 1\n"
+                                            "  smooth off\n"
+                                            "  smooth off\n"
+                                            "endline\n");
+    const TherionSourceValidationResult result = TherionSourceValidator::validate(contents);
+
+    require(result.diagnostics.size() == 2,
+            "Duplicate line-point smooth off rows should produce one warning per redundant row.");
+    require(result.diagnostics.at(0).code == QStringLiteral("duplicate-line-point-smooth-off"),
+            "Duplicate line-point smooth off diagnostics should use a dedicated code.");
+    require(result.diagnostics.at(0).severity == TherionSourceDiagnosticSeverity::Warning,
+            "Duplicate line-point smooth off diagnostics should be warnings.");
+    require(result.diagnostics.at(0).lineNumber == 4
+                && result.diagnostics.at(1).lineNumber == 7,
+            "Duplicate line-point smooth off diagnostics should point at redundant rows.");
+    require(result.diagnostics.at(0).hasFix && result.diagnostics.at(1).hasFix,
+            "Duplicate line-point smooth off diagnostics should provide safe removal fixes.");
+
+    const QString fixed = TherionSourceValidator::applyFixes(contents,
+                                                             {result.diagnostics.at(0).fix,
+                                                              result.diagnostics.at(1).fix});
+    require(fixed == QStringLiteral("line rock-border\n"
+                                    "  0 0\n"
+                                    "  smooth off\n"
+                                    "  1 1\n"
+                                    "  smooth off\n"
+                                    "endline\n"),
+            "Applying duplicate line-point smooth off fixes should remove only redundant rows.");
+}
+
+void acceptsSingleLinePointSmoothOffBeforeEndline()
+{
+    const QString contents = QStringLiteral("line rock-border\n"
+                                            "  0 0\n"
+                                            "  1 1\n"
+                                            "  smooth off\n"
+                                            "endline\n");
+    const TherionSourceValidationResult result = TherionSourceValidator::validate(contents);
+
+    for (const TherionSourceDiagnostic &diagnostic : result.diagnostics) {
+        require(diagnostic.code != QStringLiteral("duplicate-line-point-smooth-off"),
+                "A single smooth off before endline is valid XTherion line-point metadata.");
+    }
+}
+
 void reportsAndFixesOptionLikeSubtype()
 {
     const QString contents = QStringLiteral("line rock-border -close on -clip off -subtype \"-clip off\"\n");
@@ -754,8 +805,10 @@ int main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
     reportsAndFixesMalformedClipTokens();
-        plansValidationFixesAsSourceEdits();
+    plansValidationFixesAsSourceEdits();
     reportsAndFixesDuplicateOptionRows();
+    reportsAndFixesDuplicateLinePointSmoothOffRows();
+    acceptsSingleLinePointSmoothOffBeforeEndline();
     reportsAndFixesOptionLikeSubtype();
     keepsQuotedTextValuesStartingWithDash();
     reportsDuplicateObjectIdsInSameSourceScope();

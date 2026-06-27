@@ -74,6 +74,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   after pending draw or unsupported-option states leave the same controls disabled.
 - Keep map preview rendering line-point subtype changes within a single line so wall segments that switch to
   `subtype invisible`, `subtype bedrock`, or other segment subtypes use the matching style instead of one header style.
+- Keep validation warning about duplicate TH2 line-point `smooth off` rows scoped to repeated rows for the same
+  line point, with a safe fix that removes only redundant rows.
 - Keep draft completion and draft auto-commit from recentering the map viewport or force-scrolling the Objects tree to
   the newly inserted object.
 - Keep pending point/line/area recent type/subtype MRU choices persisted across application restarts.

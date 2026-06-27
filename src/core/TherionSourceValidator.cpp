@@ -7,6 +7,7 @@
 #include "TherionSourceDocument.h"
 #include "TherionSourceLogicalDocument.h"
 #include "TherionSourceSnapshotCache.h"
+#include "TherionTokenRules.h"
 
 #include <QCoreApplication>
 #include <QSet>
@@ -394,6 +395,29 @@ bool isScrapObjectBlockDirective(const QString &directive)
         || directive == QStringLiteral("area");
 }
 
+bool lineContentRowHasCoordinates(const TherionParsedLine &parsedLine)
+{
+    int numericTokenCount = 0;
+    for (int index = 0; index < parsedLine.tokens.size(); ++index) {
+        if (index < parsedLine.tokenSpans.size()
+            && parsedLine.tokenSpans.at(index).type == TherionTokenType::QuotedString) {
+            continue;
+        }
+        if (!TherionTokenRules::isNumericToken(parsedLine.tokens.at(index))) {
+            return numericTokenCount >= 2 && numericTokenCount % 2 == 0;
+        }
+        ++numericTokenCount;
+    }
+    return numericTokenCount >= 2 && numericTokenCount % 2 == 0;
+}
+
+bool lineContentRowIsSmoothOff(const TherionParsedLine &parsedLine)
+{
+    return parsedLine.tokens.size() >= 2
+        && parsedLine.tokens.at(0).compare(QStringLiteral("smooth"), Qt::CaseInsensitive) == 0
+        && parsedLine.tokens.at(1).compare(QStringLiteral("off"), Qt::CaseInsensitive) == 0;
+}
+
 bool blockIsInsideScrap(const TherionSourceBlockRange &blockRange)
 {
     for (const TherionSourceBlockFrame &frame : blockRange.parentStack) {
@@ -548,6 +572,31 @@ TherionSourceDiagnostic diagnosticForUnknownAreaLineReference(
     diagnostic.currentText = referenceRange.physicalRange.lineText;
     diagnostic.suggestedText = QString();
     diagnostic.hasFix = false;
+    return diagnostic;
+}
+
+TherionSourceDiagnostic diagnosticForDuplicateLinePointSmoothOff(
+    const TherionSourceDocumentLine &line)
+{
+    TherionSourceDiagnostic diagnostic;
+    diagnostic.code = QStringLiteral("duplicate-line-point-smooth-off");
+    diagnostic.severity = TherionSourceDiagnosticSeverity::Warning;
+    diagnostic.lineNumber = line.sourceLine.lineNumber;
+    diagnostic.columnNumber = 1;
+    diagnostic.columnLength = line.sourceLine.textLength;
+    setRangeFromTokenIndex(line.sourceLine.parsed,
+                           0,
+                           &diagnostic.columnNumber,
+                           &diagnostic.columnLength);
+    diagnostic.title = QCoreApplication::translate("TherionStudio::TherionSourceValidator", "Duplicate line-point smooth option");
+    diagnostic.message = QCoreApplication::translate("TherionStudio::TherionSourceValidator", "This line point already has a `smooth off` option before the next coordinate row.");
+    diagnostic.currentText = line.sourceLine.text;
+    diagnostic.suggestedText = QString();
+    diagnostic.hasFix = true;
+    diagnostic.fix.startOffset = line.sourceLine.startOffset;
+    diagnostic.fix.length = line.sourceLine.textLength + line.sourceLine.lineEndingLength;
+    diagnostic.fix.replacementText = QString();
+    diagnostic.fix.description = QCoreApplication::translate("TherionStudio::TherionSourceValidator", "Remove duplicate smooth off on line %1").arg(line.sourceLine.lineNumber);
     return diagnostic;
 }
 
@@ -1023,12 +1072,61 @@ void appendEmptyScrapObjectDiagnostics(TherionSourceValidationResult *result,
     }
 }
 
+void appendDuplicateLinePointSmoothOffDiagnostics(TherionSourceValidationResult *result,
+                                                  const TherionSourceDocument &sourceDocument)
+{
+    if (result == nullptr) {
+        return;
+    }
+
+    bool inLineBlock = false;
+    bool hasCurrentLinePoint = false;
+    bool currentLinePointHasSmoothOff = false;
+    for (const TherionSourceDocumentLine &line : sourceDocument.lines()) {
+        if (line.opensBlock && line.normalizedDirective == QStringLiteral("line")) {
+            inLineBlock = true;
+            hasCurrentLinePoint = false;
+            currentLinePointHasSmoothOff = false;
+            continue;
+        }
+        if (!inLineBlock) {
+            continue;
+        }
+        if (line.closesBlock && line.closeMatchesOpenDirective == QStringLiteral("line")) {
+            inLineBlock = false;
+            hasCurrentLinePoint = false;
+            currentLinePointHasSmoothOff = false;
+            continue;
+        }
+        if (line.role != TherionSourceLineRole::BlockContent || line.sourceLine.parsed.tokens.isEmpty()) {
+            continue;
+        }
+
+        if (lineContentRowHasCoordinates(line.sourceLine.parsed)) {
+            hasCurrentLinePoint = true;
+            currentLinePointHasSmoothOff = false;
+            continue;
+        }
+
+        if (!lineContentRowIsSmoothOff(line.sourceLine.parsed) || !hasCurrentLinePoint) {
+            continue;
+        }
+
+        if (currentLinePointHasSmoothOff) {
+            result->diagnostics.append(diagnosticForDuplicateLinePointSmoothOff(line));
+            continue;
+        }
+        currentLinePointHasSmoothOff = true;
+    }
+}
+
 TherionSourceValidationResult validateSourceDocuments(const TherionSourceDocument &sourceDocument,
                                                       const TherionSourceLogicalDocument &logicalDocument,
                                                       bool validateCatalog)
 {
     TherionSourceValidationResult result;
     appendEmptyScrapObjectDiagnostics(&result, sourceDocument);
+    appendDuplicateLinePointSmoothOffDiagnostics(&result, sourceDocument);
 
     QHash<QString, QSet<QString>> lineIdsByScrapScope;
     for (const TherionSourceLogicalCommand &command : logicalDocument.commands()) {
