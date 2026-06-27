@@ -1075,17 +1075,11 @@ target_link_libraries(MapEditorSourceReferenceResolverTest PRIVATE therion_core 
 therion_add_core_unit_test(DocumentFileEncodingTest
     tests/DocumentFileEncodingTest.cpp)
 
-qt_add_executable(MapEditorInputPolicyTest
-    tests/MapEditorInputPolicyTest.cpp
-    src/app/text_editor/map_editor/MapEditorInputPolicy.cpp
-    src/app/text_editor/map_editor/MapEditorInputPolicy.h)
-
-target_link_libraries(MapEditorInputPolicyTest PRIVATE Qt6::Widgets)
-
 qt_add_executable(MapEditorLogicQTests
     tests/MapEditorLogicQTestMain.cpp
     tests/MapEditorAreaReferenceResolverTest.cpp
     tests/MapEditorFreehandSimplificationTest.cpp
+    tests/MapEditorInputPolicyTest.cpp
     tests/MapEditorObjectDeletePlannerTest.cpp
     tests/MapEditorObjectMovePlannerTest.cpp
     tests/MapEditorPointSymbolGeometryTest.cpp
@@ -1095,6 +1089,8 @@ qt_add_executable(MapEditorLogicQTests
     src/app/text_editor/map_editor/MapEditorAreaReferenceResolver.h
     src/app/text_editor/map_editor/MapEditorInteractiveDrawLogic.cpp
     src/app/text_editor/map_editor/MapEditorInteractiveDrawLogic.h
+    src/app/text_editor/map_editor/MapEditorInputPolicy.cpp
+    src/app/text_editor/map_editor/MapEditorInputPolicy.h
     src/app/text_editor/map_editor/MapEditorSvgBackgroundMetadata.cpp
     src/app/text_editor/map_editor/MapEditorSvgBackgroundMetadata.h
     src/app/text_editor/map_editor/MapEditorObjectDeletePlanner.cpp
@@ -1196,10 +1192,6 @@ target_link_libraries(MapEditorLineExtensionPlannerTest PRIVATE Qt6::Widgets Qt6
 therion_add_core_unit_test(SessionStoreTest
     tests/SessionStoreTest.cpp)
 
-therion_add_app_unit_test(TextEditorOptionValidationTest
-    tests/TextEditorOptionValidationTest.cpp
-    src/app/text_editor/TextEditorOptionValidation.cpp)
-
 therion_add_app_unit_test(ProjectStructureScannerTest
     tests/ProjectStructureScannerTest.cpp)
 
@@ -1251,28 +1243,27 @@ therion_add_app_unit_test(MainWindowProjectControllerTest
 
 qt_add_executable(MainWindowServiceQTests
     tests/MainWindowServiceQTestMain.cpp
+    tests/MainWindowHelpDocumentTest.cpp
     tests/MainWindowProjectLifecycleServiceTest.cpp
     tests/MainWindowProjectOrchestrationServiceTest.cpp
     tests/MainWindowProjectUiFlowServiceTest.cpp
     tests/MainWindowProjectWorkspaceServiceTest.cpp
+    tests/MainWindowRecentFilesServiceTest.cpp
+    tests/MainWindowRecentProjectsServiceTest.cpp
     tests/MainWindowSessionDocumentServiceTest.cpp
     tests/MainWindowSessionProjectServiceTest.cpp
     tests/MainWindowSessionRestoreOrchestrationServiceTest.cpp
     tests/MainWindowSessionRestoreUiFlowServiceTest.cpp
     tests/MainWindowSessionStateServiceTest.cpp
     tests/MainWindowSessionWindowRestoreServiceTest.cpp
-    tests/MainWindowStructureNameOverridesServiceTest.cpp)
+    tests/MainWindowStructureNameOverridesServiceTest.cpp
+    src/app/MainWindowHelpDocument.cpp
+    src/app/MainWindowHelpDocument.h)
 
 target_link_libraries(MainWindowServiceQTests PRIVATE therion_app Qt6::Test)
 
 therion_add_app_unit_test(ProjectTemplateServiceTest
     tests/ProjectTemplateServiceTest.cpp)
-
-therion_add_app_unit_test(MainWindowRecentProjectsServiceTest
-    tests/MainWindowRecentProjectsServiceTest.cpp)
-
-therion_add_app_unit_test(MainWindowRecentFilesServiceTest
-    tests/MainWindowRecentFilesServiceTest.cpp)
 
 therion_add_app_unit_test(MainWindowValidationFixApplyServiceTest
     tests/MainWindowValidationFixApplyServiceTest.cpp)
@@ -1426,6 +1417,7 @@ qt_add_executable(TextEditorDocumentServiceQTests
     tests/TextEditorDocumentPersistenceStateServiceTest.cpp
     tests/TextEditorDocumentPreconditionsServiceTest.cpp
     tests/TextEditorDocumentWorkflowControllerTest.cpp
+    tests/TextEditorOptionValidationTest.cpp
     src/app/text_editor/TextEditorDocumentIoService.cpp
     src/app/text_editor/TextEditorDocumentIoService.h
     src/app/text_editor/TextEditorDocumentPersistenceStateService.cpp
@@ -1433,7 +1425,9 @@ qt_add_executable(TextEditorDocumentServiceQTests
     src/app/text_editor/TextEditorDocumentPreconditionsService.cpp
     src/app/text_editor/TextEditorDocumentPreconditionsService.h
     src/app/text_editor/TextEditorDocumentWorkflowController.cpp
-    src/app/text_editor/TextEditorDocumentWorkflowController.h)
+    src/app/text_editor/TextEditorDocumentWorkflowController.h
+    src/app/text_editor/TextEditorOptionValidation.cpp
+    src/app/text_editor/TextEditorOptionValidation.h)
 
 target_link_libraries(TextEditorDocumentServiceQTests PRIVATE therion_core Qt6::Core Qt6::Test)
 
@@ -1443,13 +1437,6 @@ qt_add_executable(TextEditorTabInteractionControllerTest
     src/app/text_editor/TextEditorTabInteractionController.h)
 
 target_link_libraries(TextEditorTabInteractionControllerTest PRIVATE therion_core Qt6::Core Qt6::Widgets)
-
-qt_add_executable(MainWindowHelpDocumentTest
-    tests/MainWindowHelpDocumentTest.cpp
-    src/app/MainWindowHelpDocument.cpp
-    src/app/MainWindowHelpDocument.h)
-
-target_link_libraries(MainWindowHelpDocumentTest PRIVATE Qt6::Core Qt6::Gui)
 
 set(THERION_MAP_EDITOR_UI_TEST_SOURCES
     ${THERION_MAP_EDITOR_SOURCES})
@@ -1551,7 +1538,6 @@ set(THERION_UNIT_TEST_TARGETS
     MapGeometryFeatureParsingTest
     MapEditorSourceReferenceResolverTest
     DocumentFileEncodingTest
-    MapEditorInputPolicyTest
     MapEditorLogicQTests
     ThreeDViewerQTests
     MapEditorInspectorDataTest
@@ -1562,9 +1548,7 @@ set(THERION_UNIT_TEST_TARGETS
     TextEditorRawEditorQTests
     TextEditorDocumentControllerTest
     TextEditorDocumentServiceQTests
-    TextEditorOptionValidationTest
     TextEditorTabInteractionControllerTest
-    MainWindowHelpDocumentTest
     ProjectStructureScannerTest
     ProjectSearchScannerTest
     ProjectValidationScannerTest
@@ -1575,8 +1559,6 @@ set(THERION_UNIT_TEST_TARGETS
     MainWindowSessionControllerTest
     MainWindowProjectControllerTest
     ProjectTemplateServiceTest
-    MainWindowRecentFilesServiceTest
-    MainWindowRecentProjectsServiceTest
     MainWindowDocumentControllerTest
     MainWindowDocumentOpenControllerTest
     MainWindowDocumentTabOpenControllerTest

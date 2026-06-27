@@ -221,6 +221,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Keep `tests/core/` and `TherionCoreQTests` as the baseline pattern for small core-only QTest cases.
 - Keep `MainWindowServiceQTests` as the baseline pattern for small MainWindow project/session service tests that share `therion_app` dependencies.
 - Keep `TextEditorDocumentServiceQTests` as the baseline pattern for small text-editor document IO/state/precondition/workflow service tests.
+- Keep `MapEditorLogicQTests` as the baseline pattern for small map-editor pure logic and input-policy tests that do not need the full map UI fixture.
 - Keep `TherionRunnerSupportQTests` as the baseline pattern for Therion runner config, executable-selection, and presenter support tests; keep real process runner tests isolated.
 - Continue migrating touched hand-rolled tests to QTest where the dependency/runtime boundary is already clear.
 - Keep `python3 scripts/check_structure_constraints.py` green and preserve guardrails against map-editor source mutation bypasses.

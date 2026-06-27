@@ -11,14 +11,20 @@ int runMainWindowSessionRestoreUiFlowServiceTest(int argc, char **argv);
 int runMainWindowSessionStateServiceTest(int argc, char **argv);
 int runMainWindowSessionWindowRestoreServiceTest(int argc, char **argv);
 int runMainWindowStructureNameOverridesServiceTest(int argc, char **argv);
+int runMainWindowHelpDocumentTest(int argc, char **argv);
+int runMainWindowRecentFilesServiceTest(int argc, char **argv);
+int runMainWindowRecentProjectsServiceTest(int argc, char **argv);
 
 int main(int argc, char **argv)
 {
     int status = 0;
+    status |= runMainWindowHelpDocumentTest(argc, argv);
     status |= runMainWindowProjectLifecycleServiceTest(argc, argv);
     status |= runMainWindowProjectOrchestrationServiceTest(argc, argv);
     status |= runMainWindowProjectUiFlowServiceTest(argc, argv);
     status |= runMainWindowProjectWorkspaceServiceTest(argc, argv);
+    status |= runMainWindowRecentFilesServiceTest(argc, argv);
+    status |= runMainWindowRecentProjectsServiceTest(argc, argv);
     status |= runMainWindowSessionDocumentServiceTest(argc, argv);
     status |= runMainWindowSessionProjectServiceTest(argc, argv);
     status |= runMainWindowSessionRestoreOrchestrationServiceTest(argc, argv);

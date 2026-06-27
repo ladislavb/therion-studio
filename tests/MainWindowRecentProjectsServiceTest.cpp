@@ -1,23 +1,24 @@
 #include "../src/app/MainWindowRecentProjectsService.h"
 
-#include <QCoreApplication>
 #include <QStringList>
-
-#include <iostream>
+#include <QtTest/QtTest>
 
 using namespace TherionStudio;
 
 namespace
 {
-bool expect(bool condition, const char *message)
+class MainWindowRecentProjectsServiceTest final : public QObject
 {
-    if (!condition) {
-        std::cerr << message << '\n';
-    }
-    return condition;
+    Q_OBJECT
+
+private slots:
+    void recordsOpenedProject();
+    void keepsMaxRecentProjectCount();
+    void normalizesRecentProjects();
+};
 }
 
-int runRecordOpenedProjectTest()
+void MainWindowRecentProjectsServiceTest::recordsOpenedProject()
 {
     const QStringList currentPaths = {
         QStringLiteral("/tmp/alpha"),
@@ -32,15 +33,10 @@ int runRecordOpenedProjectTest()
         MainWindowRecentProjectsService::normalizedProjectPath(QStringLiteral("/tmp/beta")),
         MainWindowRecentProjectsService::normalizedProjectPath(QStringLiteral("/tmp/alpha")),
         MainWindowRecentProjectsService::normalizedProjectPath(QStringLiteral("/tmp/gamma"))};
-    if (!expect(updatedPaths == expectedPaths,
-                "Opening an existing recent project should move it to the front without duplicates.")) {
-        return 1;
-    }
-
-    return 0;
+    QCOMPARE(updatedPaths, expectedPaths);
 }
 
-int runMaxRecentProjectCountTest()
+void MainWindowRecentProjectsServiceTest::keepsMaxRecentProjectCount()
 {
     const QStringList currentPaths = {
         QStringLiteral("/tmp/one"),
@@ -59,15 +55,10 @@ int runMaxRecentProjectCountTest()
         MainWindowRecentProjectsService::normalizedProjectPath(QStringLiteral("/tmp/two")),
         MainWindowRecentProjectsService::normalizedProjectPath(QStringLiteral("/tmp/three")),
         MainWindowRecentProjectsService::normalizedProjectPath(QStringLiteral("/tmp/four"))};
-    if (!expect(updatedPaths == expectedPaths,
-                "Recent project history should keep only the five newest entries.")) {
-        return 1;
-    }
-
-    return 0;
+    QCOMPARE(updatedPaths, expectedPaths);
 }
 
-int runNormalizationTest()
+void MainWindowRecentProjectsServiceTest::normalizesRecentProjects()
 {
     const QStringList normalizedPaths =
         MainWindowRecentProjectsService::normalizedRecentProjectPaths({
@@ -79,28 +70,13 @@ int runNormalizationTest()
     const QStringList expectedPaths = {
         MainWindowRecentProjectsService::normalizedProjectPath(QStringLiteral("/tmp/project")),
         MainWindowRecentProjectsService::normalizedProjectPath(QStringLiteral("/tmp/other"))};
-    if (!expect(normalizedPaths == expectedPaths,
-                "Recent project normalization should trim, absolutize, clean, and deduplicate paths.")) {
-        return 1;
-    }
-
-    return 0;
-}
+    QCOMPARE(normalizedPaths, expectedPaths);
 }
 
-int main(int argc, char **argv)
+int runMainWindowRecentProjectsServiceTest(int argc, char **argv)
 {
-    QCoreApplication app(argc, argv);
-
-    if (runRecordOpenedProjectTest() != 0) {
-        return 1;
-    }
-    if (runMaxRecentProjectCountTest() != 0) {
-        return 1;
-    }
-    if (runNormalizationTest() != 0) {
-        return 1;
-    }
-
-    return 0;
+    MainWindowRecentProjectsServiceTest test;
+    return QTest::qExec(&test, argc, argv);
 }
+
+#include "MainWindowRecentProjectsServiceTest.moc"

@@ -1,20 +1,19 @@
 #include "../src/app/text_editor/TextEditorOptionValidation.h"
 
-#include <QCoreApplication>
-
-#include <cstdio>
+#include <QtTest/QtTest>
 
 namespace
 {
-void require(bool condition, const char *message)
+class TextEditorOptionValidationTest final : public QObject
 {
-    if (!condition) {
-        std::fprintf(stderr, "TextEditorOptionValidationTest failed: %s\n", message);
-        std::exit(1);
-    }
+    Q_OBJECT
+
+private slots:
+    void deduplicatesIdenticalSerializedOptions();
+};
 }
 
-void deduplicatesIdenticalSerializedOptions()
+void TextEditorOptionValidationTest::deduplicatesIdenticalSerializedOptions()
 {
     const TherionStudio::TextEditorOptionValidationResult result =
         TherionStudio::validateAndSerializeCommandOptions(
@@ -28,18 +27,18 @@ void deduplicatesIdenticalSerializedOptions()
             {},
             false);
 
-    require(result.ok, "duplicate valid option rows should still validate");
-    require(result.serializedOptions == QStringList({QStringLiteral("-clip"),
-                                                     QStringLiteral("off"),
-                                                     QStringLiteral("-close"),
-                                                     QStringLiteral("on")}),
-            "duplicate identical option rows should serialize only once");
-}
+    QVERIFY(result.ok);
+    QCOMPARE(result.serializedOptions,
+             QStringList({QStringLiteral("-clip"),
+                          QStringLiteral("off"),
+                          QStringLiteral("-close"),
+                          QStringLiteral("on")}));
 }
 
-int main(int argc, char **argv)
+int runTextEditorOptionValidationTest(int argc, char **argv)
 {
-    QCoreApplication app(argc, argv);
-    deduplicatesIdenticalSerializedOptions();
-    return 0;
+    TextEditorOptionValidationTest test;
+    return QTest::qExec(&test, argc, argv);
 }
+
+#include "TextEditorOptionValidationTest.moc"

@@ -1,20 +1,19 @@
 #include "../src/app/MainWindowHelpDocument.h"
 
-#include <iostream>
+#include <QtTest/QtTest>
 
 namespace
 {
-bool expect(bool condition, const char *message)
+class MainWindowHelpDocumentTest final : public QObject
 {
-    if (!condition) {
-        std::cerr << message << '\n';
-        return false;
-    }
-    return true;
-}
+    Q_OBJECT
+
+private slots:
+    void parsesMarkdownSectionsAndAnchors();
+};
 }
 
-int main()
+void MainWindowHelpDocumentTest::parsesMarkdownSectionsAndAnchors()
 {
     const QString markdown = QStringLiteral(
         "# Therion Studio User Manual\n"
@@ -34,37 +33,26 @@ int main()
     const QVector<TherionStudio::MainWindowHelpSection> sections =
         TherionStudio::parseMarkdownHelpSections(markdown);
 
-    if (!expect(sections.size() == 5, "Expected five real markdown headings.")) {
-        return 1;
-    }
-    if (!expect(sections.at(0).level == 1
-                    && sections.at(0).title == QStringLiteral("Therion Studio User Manual")
-                    && sections.at(0).anchor == QStringLiteral("therion-studio-user-manual"),
-                "Unexpected top-level manual heading.")) {
-        return 1;
-    }
-    if (!expect(sections.at(2).title == QStringLiteral("Visual Map Editing (.th2)")
-                    && sections.at(2).anchor == QStringLiteral("visual-map-editing-th2"),
-                "Expected cleaned title and stable anchor for first map heading.")) {
-        return 1;
-    }
-    if (!expect(sections.at(3).level == 3
-                    && sections.at(3).anchor == QStringLiteral("navigation"),
-                "Expected nested Navigation heading.")) {
-        return 1;
-    }
-    if (!expect(sections.at(4).anchor == QStringLiteral("visual-map-editing-th2-2"),
-                "Expected duplicate heading anchor suffix.")) {
-        return 1;
-    }
+    QCOMPARE(sections.size(), 5);
+    QCOMPARE(sections.at(0).level, 1);
+    QCOMPARE(sections.at(0).title, QStringLiteral("Therion Studio User Manual"));
+    QCOMPARE(sections.at(0).anchor, QStringLiteral("therion-studio-user-manual"));
+    QCOMPARE(sections.at(2).title, QStringLiteral("Visual Map Editing (.th2)"));
+    QCOMPARE(sections.at(2).anchor, QStringLiteral("visual-map-editing-th2"));
+    QCOMPARE(sections.at(3).level, 3);
+    QCOMPARE(sections.at(3).anchor, QStringLiteral("navigation"));
+    QCOMPARE(sections.at(4).anchor, QStringLiteral("visual-map-editing-th2-2"));
 
     const QString html = TherionStudio::markdownToHtmlWithHeadingAnchors(markdown);
-    if (!expect(html.contains(QStringLiteral("id=\"visual-map-editing-th2\""))
-                    && html.contains(QStringLiteral("id=\"visual-map-editing-th2-2\""))
-                    && !html.contains(QStringLiteral("ignored-code-heading")),
-                "Expected HTML anchors for real headings only.")) {
-        return 1;
-    }
-
-    return 0;
+    QVERIFY(html.contains(QStringLiteral("id=\"visual-map-editing-th2\"")));
+    QVERIFY(html.contains(QStringLiteral("id=\"visual-map-editing-th2-2\"")));
+    QVERIFY(!html.contains(QStringLiteral("ignored-code-heading")));
 }
+
+int runMainWindowHelpDocumentTest(int argc, char **argv)
+{
+    MainWindowHelpDocumentTest test;
+    return QTest::qExec(&test, argc, argv);
+}
+
+#include "MainWindowHelpDocumentTest.moc"

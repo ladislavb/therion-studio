@@ -1,23 +1,25 @@
 #include "../src/app/MainWindowRecentFilesService.h"
 
-#include <QCoreApplication>
 #include <QStringList>
-
-#include <iostream>
+#include <QtTest/QtTest>
 
 using namespace TherionStudio;
 
 namespace
 {
-bool expect(bool condition, const char *message)
+class MainWindowRecentFilesServiceTest final : public QObject
 {
-    if (!condition) {
-        std::cerr << message << '\n';
-    }
-    return condition;
+    Q_OBJECT
+
+private slots:
+    void normalizesProjectScopedPaths();
+    void recordsOpenedFile();
+    void keepsMaxRecentFileCount();
+    void rejectsOutsideProjectFiles();
+};
 }
 
-int runProjectScopedNormalizationTest()
+void MainWindowRecentFilesServiceTest::normalizesProjectScopedPaths()
 {
     const QString projectPath = QStringLiteral("/tmp/project");
     const QStringList normalizedPaths =
@@ -32,15 +34,10 @@ int runProjectScopedNormalizationTest()
     const QStringList expectedPaths = {
         MainWindowRecentFilesService::normalizedFilePath(QStringLiteral("/tmp/project/a.th")),
         MainWindowRecentFilesService::normalizedFilePath(QStringLiteral("/tmp/project/maps/map.th2"))};
-    if (!expect(normalizedPaths == expectedPaths,
-                "Recent file normalization should deduplicate and keep only files inside the project.")) {
-        return 1;
-    }
-
-    return 0;
+    QCOMPARE(normalizedPaths, expectedPaths);
 }
 
-int runRecordOpenedFileTest()
+void MainWindowRecentFilesServiceTest::recordsOpenedFile()
 {
     const QString projectPath = QStringLiteral("/tmp/project");
     const QStringList currentPaths = {
@@ -56,15 +53,10 @@ int runRecordOpenedFileTest()
         MainWindowRecentFilesService::normalizedFilePath(QStringLiteral("/tmp/project/b.th")),
         MainWindowRecentFilesService::normalizedFilePath(QStringLiteral("/tmp/project/a.th")),
         MainWindowRecentFilesService::normalizedFilePath(QStringLiteral("/tmp/project/c.th2"))};
-    if (!expect(updatedPaths == expectedPaths,
-                "Opening an existing recent file should move it to the front without duplicates.")) {
-        return 1;
-    }
-
-    return 0;
+    QCOMPARE(updatedPaths, expectedPaths);
 }
 
-int runMaxRecentFileCountTest()
+void MainWindowRecentFilesServiceTest::keepsMaxRecentFileCount()
 {
     const QString projectPath = QStringLiteral("/tmp/project");
     const QStringList currentPaths = {
@@ -94,15 +86,10 @@ int runMaxRecentFileCountTest()
         MainWindowRecentFilesService::normalizedFilePath(QStringLiteral("/tmp/project/seven.th")),
         MainWindowRecentFilesService::normalizedFilePath(QStringLiteral("/tmp/project/eight.th")),
         MainWindowRecentFilesService::normalizedFilePath(QStringLiteral("/tmp/project/nine.th"))};
-    if (!expect(updatedPaths == expectedPaths,
-                "Recent file history should keep only the ten newest entries.")) {
-        return 1;
-    }
-
-    return 0;
+    QCOMPARE(updatedPaths, expectedPaths);
 }
 
-int runOutsideProjectRejectedTest()
+void MainWindowRecentFilesServiceTest::rejectsOutsideProjectFiles()
 {
     const QStringList updatedPaths =
         MainWindowRecentFilesService::recordOpenedFile(QStringLiteral("/tmp/project"),
@@ -110,31 +97,13 @@ int runOutsideProjectRejectedTest()
                                                        QStringLiteral("/tmp/outside.th"));
     const QStringList expectedPaths = {
         MainWindowRecentFilesService::normalizedFilePath(QStringLiteral("/tmp/project/a.th"))};
-    if (!expect(updatedPaths == expectedPaths,
-                "Opening a file outside the project should not enter project-scoped recent files.")) {
-        return 1;
-    }
-
-    return 0;
-}
+    QCOMPARE(updatedPaths, expectedPaths);
 }
 
-int main(int argc, char **argv)
+int runMainWindowRecentFilesServiceTest(int argc, char **argv)
 {
-    QCoreApplication app(argc, argv);
-
-    if (runProjectScopedNormalizationTest() != 0) {
-        return 1;
-    }
-    if (runRecordOpenedFileTest() != 0) {
-        return 1;
-    }
-    if (runMaxRecentFileCountTest() != 0) {
-        return 1;
-    }
-    if (runOutsideProjectRejectedTest() != 0) {
-        return 1;
-    }
-
-    return 0;
+    MainWindowRecentFilesServiceTest test;
+    return QTest::qExec(&test, argc, argv);
 }
+
+#include "MainWindowRecentFilesServiceTest.moc"
