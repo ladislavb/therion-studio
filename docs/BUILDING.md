@@ -147,10 +147,13 @@ runs package the default branch with Qt 6.8.3 as `Release`; manual runs can sele
 commit SHA, Qt version, and CMake build type. When the checked-out commit is exactly tagged with a
 CalVer release tag such as `v2026.5.0`, the workflow derives
 `THERION_STUDIO_VERSION=2026.5.0` and passes it to CMake so CPack uses the tag version without
-editing `CMakeLists.txt`. Branch and SHA builds derive a CalVer development application version
-such as `2026.5.0` and a human-readable package label such as `dev-a1b2c3d`, matching the Linux
-snapshot artifact convention. The workflow also validates that the produced installer file name
-matches the resolved package label and emits a manifest JSON with installer SHA256.
+editing `CMakeLists.txt`. Prerelease package builds may pass a version such as
+`2026.5.0-beta.1`; CMake derives the numeric project and bundle version from the leading
+numeric part while preserving the full application version string and package label. Branch and
+SHA builds derive a CalVer development application version such as `2026.5.0` and a human-readable
+package label such as `dev-a1b2c3d`, matching the Linux snapshot artifact convention. The workflow
+also validates that the produced installer file name matches the resolved package label and emits a
+manifest JSON with installer SHA256.
 
 CI build workflows also run staged install-layout smoke checks via
 `scripts/verify_install_layout.py`:

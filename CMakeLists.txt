@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.21)
 
 set(THERION_STUDIO_VERSION "2026.6.9" CACHE STRING
-    "Therion Studio numeric application version. CI may override this from release tags.")
-if(NOT THERION_STUDIO_VERSION MATCHES "^[0-9]+(\\.[0-9]+)?(\\.[0-9]+)?(\\.[0-9]+)?$")
-    message(FATAL_ERROR "THERION_STUDIO_VERSION must be numeric, for example 2026.5.0")
+    "Therion Studio application version. CI may override this from release tags.")
+if(NOT THERION_STUDIO_VERSION MATCHES "^([0-9]+(\\.[0-9]+)?(\\.[0-9]+)?(\\.[0-9]+)?)(-[A-Za-z0-9][A-Za-z0-9._-]*)?$")
+    message(FATAL_ERROR "THERION_STUDIO_VERSION must start with a numeric version, for example 2026.5.0 or 2026.5.0-beta.1")
 endif()
+set(THERION_STUDIO_PROJECT_VERSION "${CMAKE_MATCH_1}")
 
 set(THERION_STUDIO_PACKAGE_LABEL "${THERION_STUDIO_VERSION}" CACHE STRING
     "Therion Studio package/artifact label. CI may include a short commit hash for development builds.")
@@ -31,7 +32,7 @@ if(NOT THERION_STUDIO_DEB_ARCHITECTURE_LABEL MATCHES "^[A-Za-z0-9._-]+$")
 endif()
 
 project(TherionStudio
-    VERSION "${THERION_STUDIO_VERSION}"
+    VERSION "${THERION_STUDIO_PROJECT_VERSION}"
     LANGUAGES CXX)
 
 include(GNUInstallDirs)
@@ -821,7 +822,7 @@ endif()
 target_link_libraries(TherionStudio PRIVATE therion_app therion_core therion_platform Qt6::Widgets Qt6::Svg Qt6::Concurrent)
 
 target_compile_definitions(TherionStudio PRIVATE
-    THERION_STUDIO_VERSION_STRING="${PROJECT_VERSION}"
+    THERION_STUDIO_VERSION_STRING="${THERION_STUDIO_VERSION}"
     THERION_STUDIO_PACKAGE_LABEL_STRING="${THERION_STUDIO_PACKAGE_LABEL}"
     QT_NO_CAST_FROM_ASCII
     QT_NO_CAST_TO_ASCII)
