@@ -158,6 +158,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Keep point `-align` rendering anchored like Therion so map canvas placement matches saved point options.
 - Clear pending Selection inspector insert state when Smart Area confirmation returns to Select mode.
 - Keep release notes, README, package metadata, and CI artifact workflow aligned with `v2026.6.9`.
+- Keep unpublished `2026.6.8` release notes folded into the `2026.6.9` notes, with the final notes grouped by
+  `New Features`, `Improvements`, and `Bug Fixes`.
 - Keep prerelease package labels such as `2026.6.9-beta.1` accepted by CMake while preserving
   numeric project/bundle versions for CMake and platform metadata.
 - Keep Therion executable auto-detection fallback candidates build-clean after the detector PR so release packaging
