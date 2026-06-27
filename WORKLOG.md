@@ -49,6 +49,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   accumulate unbounded full-source snapshots.
 - Keep map panning discoverable through temporary `Space` + primary-button drag and `Ctrl` + primary-button drag while
   preserving right-button drag, precision-scroll panning, context menus, and the currently selected drawing tool.
+- Keep map mouse-panning regression coverage asserting that right-button drag and `Space` + primary-button drag move the
+  viewport scrollbars, so cursor-only regressions do not mask broken panning.
 - Keep map vertex and Bezier control point markers large enough to target comfortably on HiDPI/Windows-scaled displays
   without changing source coordinates or map geometry.
 - Keep Bezier control point markers visually distinct as solid blue square handles.

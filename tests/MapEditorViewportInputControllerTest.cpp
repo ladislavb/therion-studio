@@ -14,6 +14,7 @@
 #include <QGraphicsView>
 #include <QKeyEvent>
 #include <QMouseEvent>
+#include <QScrollBar>
 
 #include <cmath>
 #include <iostream>
@@ -160,6 +161,144 @@ int runResizeAutoFitSuppressesCommandSurfaceUpdateTest()
     }
     if (!expect(zoomStatusUpdates > 0,
                 "Resize autofit lifecycle path should still synchronize zoom status.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int runMousePanDragMovesScrollBarsTest()
+{
+    QGraphicsScene scene;
+    scene.setSceneRect(QRectF(0.0, 0.0, 2000.0, 2000.0));
+    QGraphicsView view(&scene);
+    view.resize(320, 240);
+    view.show();
+    view.centerOn(QPointF(1000.0, 1000.0));
+    qApp->processEvents();
+
+    bool autoFitEnabled = true;
+    bool mapPanActive = false;
+    bool mapPanMoved = false;
+    bool mapSpacePanKeyDown = false;
+    bool mapControlPanActive = false;
+    bool primaryPointerInteractionActive = false;
+    QPoint mapPanStartPosition;
+    QPoint mapPanLastPosition;
+    int commandSurfaceUpdates = 0;
+    int zoomSyncs = 0;
+
+    MapEditorViewportInputContext context;
+    context.scene = &scene;
+    context.view = &view;
+    context.autoFitEnabled = &autoFitEnabled;
+    context.mapPanActive = &mapPanActive;
+    context.mapPanMoved = &mapPanMoved;
+    context.mapSpacePanKeyDown = &mapSpacePanKeyDown;
+    context.mapControlPanActive = &mapControlPanActive;
+    context.mapPanStartPosition = &mapPanStartPosition;
+    context.mapPanLastPosition = &mapPanLastPosition;
+    context.primaryPointerInteractionActive = &primaryPointerInteractionActive;
+    context.drawMode = []() { return MapEditorInteractiveDrawMode::None; };
+    context.syncZoomFactorFromView = [&zoomSyncs]() {
+        ++zoomSyncs;
+    };
+    context.updateCommandSurfaceState = [&commandSurfaceUpdates]() {
+        ++commandSurfaceUpdates;
+    };
+
+    MapEditorViewportInputController controller(context);
+
+    QScrollBar *horizontalScrollBar = view.horizontalScrollBar();
+    QScrollBar *verticalScrollBar = view.verticalScrollBar();
+    if (!expect(horizontalScrollBar != nullptr && verticalScrollBar != nullptr,
+                "Map pan regression test requires graphics-view scrollbars.")) {
+        return 1;
+    }
+    if (!expect(horizontalScrollBar->maximum() > horizontalScrollBar->minimum()
+                    && verticalScrollBar->maximum() > verticalScrollBar->minimum(),
+                "Map pan regression test requires a scene larger than the viewport.")) {
+        return 1;
+    }
+
+    const auto performPanDrag = [&](Qt::MouseButton button,
+                                    Qt::MouseButtons pressedButtons,
+                                    Qt::KeyboardModifiers modifiers,
+                                    const QPoint &start,
+                                    const QPoint &end) -> bool {
+        QMouseEvent press(QEvent::MouseButtonPress,
+                          QPointF(start),
+                          QPointF(view.viewport()->mapToGlobal(start)),
+                          button,
+                          pressedButtons,
+                          modifiers);
+        if (!expect(controller.handleEvent(view.viewport(), &press).value_or(false),
+                    "Mouse pan press should be handled by the viewport input controller.")) {
+            return false;
+        }
+        QMouseEvent move(QEvent::MouseMove,
+                         QPointF(end),
+                         QPointF(view.viewport()->mapToGlobal(end)),
+                         Qt::NoButton,
+                         pressedButtons,
+                         modifiers);
+        if (!expect(controller.handleEvent(view.viewport(), &move).value_or(false),
+                    "Mouse pan move should be handled by the viewport input controller.")) {
+            return false;
+        }
+        QMouseEvent release(QEvent::MouseButtonRelease,
+                            QPointF(end),
+                            QPointF(view.viewport()->mapToGlobal(end)),
+                            button,
+                            Qt::NoButton,
+                            modifiers);
+        if (!expect(controller.handleEvent(view.viewport(), &release).value_or(false),
+                    "Mouse pan release should be handled by the viewport input controller.")) {
+            return false;
+        }
+        return true;
+    };
+
+    const QPoint firstStart(120, 100);
+    const QPoint firstEnd(150, 125);
+    const int rightDragHorizontalBefore = horizontalScrollBar->value();
+    const int rightDragVerticalBefore = verticalScrollBar->value();
+    if (!performPanDrag(Qt::RightButton, Qt::RightButton, Qt::NoModifier, firstStart, firstEnd)) {
+        return 1;
+    }
+    if (!expect(horizontalScrollBar->value() != rightDragHorizontalBefore
+                    || verticalScrollBar->value() != rightDragVerticalBefore,
+                "Right-button drag should move at least one map viewport scrollbar.")) {
+        return 1;
+    }
+    if (!expect(!mapPanActive && mapPanMoved && !autoFitEnabled && commandSurfaceUpdates > 0 && zoomSyncs > 0,
+                "Right-button drag should finish pan state and update viewport state.")) {
+        return 1;
+    }
+
+    view.centerOn(QPointF(1000.0, 1000.0));
+    qApp->processEvents();
+    autoFitEnabled = true;
+    mapPanActive = false;
+    mapPanMoved = false;
+    commandSurfaceUpdates = 0;
+    zoomSyncs = 0;
+    mapSpacePanKeyDown = true;
+
+    const QPoint secondStart(160, 130);
+    const QPoint secondEnd(125, 105);
+    const int spaceDragHorizontalBefore = horizontalScrollBar->value();
+    const int spaceDragVerticalBefore = verticalScrollBar->value();
+    if (!performPanDrag(Qt::LeftButton, Qt::LeftButton, Qt::NoModifier, secondStart, secondEnd)) {
+        return 1;
+    }
+    if (!expect(horizontalScrollBar->value() != spaceDragHorizontalBefore
+                    || verticalScrollBar->value() != spaceDragVerticalBefore,
+                "Space + left-button drag should move at least one map viewport scrollbar.")) {
+        return 1;
+    }
+    if (!expect(!mapPanActive && mapPanMoved && !autoFitEnabled && commandSurfaceUpdates > 0 && zoomSyncs > 0,
+                "Space + left-button drag should finish pan state and update viewport state.")) {
         return 1;
     }
 
@@ -1714,6 +1853,9 @@ int main(int argc, char **argv)
         return rc;
     }
     if (const int rc = runSecondaryClickOpensContextMenuTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runMousePanDragMovesScrollBarsTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runNearestPathWinsPrimaryClickTest(); rc != 0) {
