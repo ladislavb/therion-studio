@@ -786,6 +786,133 @@ int runHoveredPathWinsPrimaryClickTest()
     return 0;
 }
 
+int runDistantPathPrimaryClickFallsThroughTest()
+{
+    QGraphicsScene scene;
+    QGraphicsView view(&scene);
+    view.resize(240, 180);
+    view.show();
+
+    QString toolbarStatus;
+    bool primaryPointerInteractionActive = false;
+    bool pendingClickSelection = false;
+    QPointF pendingClickScenePosition;
+    QElapsedTimer pendingClickElapsed;
+    int pendingClickLineNumber = 0;
+    int pendingClickSourceVertexIndex = -1;
+    QString pendingClickGeometryKind;
+    int selectionSyncCalls = 0;
+
+    MapEditorViewportInputContext context;
+    context.scene = &scene;
+    context.view = &view;
+    context.toolbarStatusNote = &toolbarStatus;
+    context.primaryPointerInteractionActive = &primaryPointerInteractionActive;
+    context.pendingClickSelection = &pendingClickSelection;
+    context.pendingClickScenePosition = &pendingClickScenePosition;
+    context.pendingClickElapsed = &pendingClickElapsed;
+    context.pendingClickLineNumber = &pendingClickLineNumber;
+    context.pendingClickSourceVertexIndex = &pendingClickSourceVertexIndex;
+    context.pendingClickGeometryKind = &pendingClickGeometryKind;
+    context.drawMode = []() { return MapEditorInteractiveDrawMode::None; };
+    context.handleInteractiveDrawClick = [](const QPointF &) {
+        return false;
+    };
+    context.refreshToolbarSummary = []() {};
+    context.updateCommandSurfaceState = []() {};
+    context.syncMapSelectionFromScene = [&selectionSyncCalls]() {
+        ++selectionSyncCalls;
+    };
+
+    MapEditorViewportInputController controller(context);
+
+    QPainterPath contourPath;
+    contourPath.moveTo(10.0, 40.0);
+    contourPath.lineTo(90.0, 40.0);
+    auto *contourItem = scene.addPath(contourPath, QPen(Qt::cyan, 2.0));
+    contourItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
+    contourItem->setAcceptedMouseButtons(Qt::LeftButton);
+    contourItem->setData(kMapSceneLineNumberRole, 91);
+    contourItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineDetail);
+
+    const QPoint clickPosition = view.mapFromScene(QPointF(50.0, 47.0));
+    QMouseEvent press(QEvent::MouseButtonPress,
+                      QPointF(clickPosition),
+                      QPointF(view.viewport()->mapToGlobal(clickPosition)),
+                      Qt::LeftButton,
+                      Qt::LeftButton,
+                      Qt::NoModifier);
+    const std::optional<bool> handled = controller.handleEvent(view.viewport(), &press);
+    if (!expect(!handled.value_or(false),
+                "Primary click seven pixels from a path should not select it.")) {
+        return 1;
+    }
+    if (!expect(!contourItem->isSelected()
+                    && pendingClickLineNumber == 0
+                    && pendingClickSourceVertexIndex == -1
+                    && pendingClickGeometryKind.isEmpty()
+                    && selectionSyncCalls == 0,
+                "Distant path click should not update selection or pending source metadata.")) {
+        return 1;
+    }
+
+    auto *thickPathItem = scene.addPath(contourPath.translated(0.0, 80.0), QPen(Qt::magenta, 30.0));
+    thickPathItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
+    thickPathItem->setAcceptedMouseButtons(Qt::LeftButton);
+    thickPathItem->setData(kMapSceneLineNumberRole, 93);
+    thickPathItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeGeneric);
+
+    const QPoint thickPathClickPosition = view.mapFromScene(QPointF(50.0, 132.0));
+    QMouseEvent thickPathPress(QEvent::MouseButtonPress,
+                               QPointF(thickPathClickPosition),
+                               QPointF(view.viewport()->mapToGlobal(thickPathClickPosition)),
+                               Qt::LeftButton,
+                               Qt::LeftButton,
+                               Qt::NoModifier);
+    const std::optional<bool> thickPathHandled = controller.handleEvent(view.viewport(), &thickPathPress);
+    if (!expect(thickPathHandled.value_or(false),
+                "Rejected raw path hits should be consumed so QGraphicsScene cannot select oversized item shapes.")) {
+        return 1;
+    }
+    if (!expect(!thickPathItem->isSelected()
+                    && pendingClickLineNumber == 0
+                    && pendingClickSourceVertexIndex == -1
+                    && pendingClickGeometryKind.isEmpty()
+                    && selectionSyncCalls == 0,
+                "Rejected raw path hit should not update selection or pending source metadata.")) {
+        return 1;
+    }
+
+    auto *connectorItem = scene.addLine(QLineF(QPointF(10.0, 80.0), QPointF(90.0, 80.0)), QPen(Qt::red, 30.0));
+    connectorItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
+    connectorItem->setAcceptedMouseButtons(Qt::LeftButton);
+    connectorItem->setData(kMapSceneLineNumberRole, 92);
+    connectorItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControlConnector);
+
+    const QPoint connectorClickPosition = view.mapFromScene(QPointF(50.0, 92.0));
+    QMouseEvent connectorPress(QEvent::MouseButtonPress,
+                               QPointF(connectorClickPosition),
+                               QPointF(view.viewport()->mapToGlobal(connectorClickPosition)),
+                               Qt::LeftButton,
+                               Qt::LeftButton,
+                               Qt::NoModifier);
+    const std::optional<bool> connectorHandled = controller.handleEvent(view.viewport(), &connectorPress);
+    if (!expect(connectorHandled.value_or(false),
+                "Rejected raw line connector hits should be consumed so QGraphicsScene cannot select oversized item shapes.")) {
+        return 1;
+    }
+    if (!expect(!connectorItem->isSelected()
+                    && pendingClickLineNumber == 0
+                    && pendingClickSourceVertexIndex == -1
+                    && pendingClickGeometryKind.isEmpty()
+                    && selectionSyncCalls == 0,
+                "Distant line connector click should not update selection or pending source metadata.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 int runVisibleVertexPressFallsThroughForDragTest()
 {
     QGraphicsScene scene;
@@ -1291,6 +1418,9 @@ int main(int argc, char **argv)
         return rc;
     }
     if (const int rc = runHoveredPathWinsPrimaryClickTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runDistantPathPrimaryClickFallsThroughTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runVisibleVertexPressFallsThroughForDragTest(); rc != 0) {

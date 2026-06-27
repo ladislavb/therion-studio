@@ -24,6 +24,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Keep low-zoom map path hit-testing deterministic: the highlighted object under the cursor must be the object selected
   by click, selected/hovered stale items must not steal clicks, and path candidates outside the current screen-space hit
   radius must not become inspector primary selections.
+- Keep primary path hit-testing narrow enough that nearby clicks do not select map objects from visibly empty space, while
+  preserving larger vertex/control-handle affordances for direct manipulation.
 - Keep hidden gated map vertices reachable for context-menu selection paths without making ordinary hidden handles steal primary clicks.
 - Keep visible map vertex/control-handle affordances ahead of thick selected paths in viewport hit-testing so clicks near
   the drawn handle fall through to QGraphicsItem drag handling instead of being consumed as path reselection.

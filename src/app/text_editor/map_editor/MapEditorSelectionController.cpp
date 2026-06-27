@@ -12,6 +12,7 @@
 #include <QCursor>
 #include <QElapsedTimer>
 #include <QGraphicsItem>
+#include <QGraphicsLineItem>
 #include <QGraphicsPathItem>
 #include <QGraphicsScene>
 #include <QGraphicsView>
@@ -30,7 +31,7 @@ namespace TherionStudio
 namespace
 {
 constexpr qreal kFilledPathInteriorHitDistancePixels = 6.0;
-constexpr qreal kMaximumPathPrimaryHitDistancePixels = 10.0;
+constexpr qreal kMaximumPathPrimaryHitDistancePixels = 5.0;
 
 bool isInteractiveMapSelectionItem(const QGraphicsItem *item)
 {
@@ -130,6 +131,15 @@ qreal genericPathItemHitDistancePixels(const QGraphicsItem *item,
         return decorationItem->hitDistancePixels(scenePosition, viewTransform);
     }
 
+    if (const auto *lineItem = dynamic_cast<const QGraphicsLineItem *>(item)) {
+        const QPointF localPosition = lineItem->mapFromScene(scenePosition);
+        const qreal viewScale = itemUnitToViewPixels(lineItem, viewTransform);
+        const qreal strokeRadiusPixels = lineItem->pen().widthF() * 0.5;
+        const qreal tolerance = (strokeRadiusPixels + 2.0) / viewScale;
+        const qreal distance = distanceToSegment(localPosition, lineItem->line().p1(), lineItem->line().p2());
+        return distance <= tolerance ? distance * viewScale : std::numeric_limits<qreal>::max();
+    }
+
     const auto *pathItem = dynamic_cast<const QGraphicsPathItem *>(item);
     if (pathItem == nullptr) {
         return 0.0;
@@ -183,7 +193,16 @@ bool isDistanceRankedPathSubtype(int subtype)
 {
     return subtype == kMapSceneSelectionSubtypeGeneric
         || subtype == kMapSceneSelectionSubtypeLineDetail
-        || subtype == kMapSceneSelectionSubtypeAreaFill;
+        || subtype == kMapSceneSelectionSubtypeAreaFill
+        || subtype == kMapSceneSelectionSubtypeLineControlConnector;
+}
+
+bool isDistanceRankedPathItem(const QGraphicsItem *item, int subtype)
+{
+    return isDistanceRankedPathSubtype(subtype)
+        && (dynamic_cast<const QGraphicsPathItem *>(item) != nullptr
+            || dynamic_cast<const QGraphicsLineItem *>(item) != nullptr
+            || dynamic_cast<const MapEditorLineDecorationItem *>(item) != nullptr);
 }
 
 QGraphicsItem *preferredMapHitItem(const QList<QGraphicsItem *> &hitItems,
@@ -209,7 +228,7 @@ QGraphicsItem *preferredMapHitItem(const QList<QGraphicsItem *> &hitItems,
 
         const int subtype = item->data(kMapSceneSelectionSubtypeRole).toInt();
         qreal distancePixels = 0.0;
-        const bool usesDistanceRanking = scenePosition.has_value() && isDistanceRankedPathSubtype(subtype);
+        const bool usesDistanceRanking = scenePosition.has_value() && isDistanceRankedPathItem(item, subtype);
         if (scenePosition.has_value()) {
             if (usesDistanceRanking) {
                 distancePixels = genericPathItemHitDistancePixels(item, scenePosition.value(), viewTransform);
@@ -269,10 +288,7 @@ QList<QGraphicsItem *> expandedMapHitItemsAtScenePosition(QGraphicsScene *scene,
         }
 
         const int subtype = candidate->data(kMapSceneSelectionSubtypeRole).toInt();
-        const bool pathSelectionCandidate = dynamic_cast<QGraphicsPathItem *>(candidate) != nullptr
-            && (subtype == kMapSceneSelectionSubtypeGeneric
-                || subtype == kMapSceneSelectionSubtypeAreaFill
-                || subtype == kMapSceneSelectionSubtypeLineDetail);
+        const bool pathSelectionCandidate = isDistanceRankedPathItem(candidate, subtype);
         if (!pathSelectionCandidate
             || !isInteractiveMapSelectionItem(candidate)
             || (requireSelected && !candidate->isSelected())
