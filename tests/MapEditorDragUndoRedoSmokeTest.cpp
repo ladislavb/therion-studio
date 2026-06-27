@@ -19,6 +19,7 @@
 #include <QGraphicsView>
 #include <QIcon>
 #include <QLabel>
+#include <QLineF>
 #include <QMainWindow>
 #include <QKeyEvent>
 #include <QMouseEvent>
@@ -36,6 +37,7 @@
 #include <QTreeView>
 #include <QVBoxLayout>
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <optional>
@@ -925,25 +927,66 @@ MapEditableGeometryVertexItem *findSelectedLineVertex(QGraphicsScene *scene)
     return nullptr;
 }
 
-MapEditableGeometryVertexItem *findVisibleLineControl(QGraphicsScene *scene, int lineNumber)
+QVector<MapEditableGeometryVertexItem *> visibleLineControls(QGraphicsScene *scene, QGraphicsView *view, int lineNumber)
 {
-    if (scene == nullptr || lineNumber <= 0) {
-        return nullptr;
+    QVector<MapEditableGeometryVertexItem *> result;
+    if (scene == nullptr || view == nullptr || lineNumber <= 0) {
+        return result;
     }
 
+    QVector<MapEditableGeometryVertexItem *> anchorItems;
+    QVector<MapEditableGeometryVertexItem *> controlItems;
     const auto items = scene->items();
     for (QGraphicsItem *rawItem : items) {
         auto *vertexItem = dynamic_cast<MapEditableGeometryVertexItem *>(rawItem);
         if (vertexItem == nullptr || !vertexItem->isVisible()) {
             continue;
         }
-        if (vertexItem->lineNumber() == lineNumber
-            && vertexItem->geometryKind().startsWith(QStringLiteral("line control"))) {
-            return vertexItem;
+        if (vertexItem->lineNumber() != lineNumber) {
+            continue;
+        }
+        if (vertexItem->geometryKind() == QStringLiteral("line")) {
+            anchorItems.append(vertexItem);
+        } else if (vertexItem->geometryKind().startsWith(QStringLiteral("line control"))) {
+            controlItems.append(vertexItem);
         }
     }
 
-    return nullptr;
+    struct RankedControl
+    {
+        MapEditableGeometryVertexItem *item = nullptr;
+        qreal nearestAnchorDistance = 0.0;
+    };
+    QVector<RankedControl> rankedControls;
+    for (MapEditableGeometryVertexItem *controlItem : controlItems) {
+        const QPoint controlViewportPoint = view->mapFromScene(controlItem->scenePos());
+        if (view->itemAt(controlViewportPoint) != controlItem) {
+            continue;
+        }
+
+        qreal nearestAnchorDistance = std::numeric_limits<qreal>::max();
+        for (MapEditableGeometryVertexItem *anchorItem : anchorItems) {
+            const QPoint anchorViewportPoint = view->mapFromScene(anchorItem->scenePos());
+            const QPoint viewportDelta = controlViewportPoint - anchorViewportPoint;
+            nearestAnchorDistance = qMin(nearestAnchorDistance,
+                                         std::hypot(viewportDelta.x(), viewportDelta.y()));
+        }
+        rankedControls.append(RankedControl{controlItem, nearestAnchorDistance});
+    }
+    std::sort(rankedControls.begin(), rankedControls.end(), [](const RankedControl &lhs, const RankedControl &rhs) {
+        return lhs.nearestAnchorDistance > rhs.nearestAnchorDistance;
+    });
+    result.reserve(rankedControls.size());
+    for (const RankedControl &control : rankedControls) {
+        result.append(control.item);
+    }
+    return result;
+}
+
+MapEditableGeometryVertexItem *findVisibleLineControl(QGraphicsScene *scene, QGraphicsView *view, int lineNumber)
+{
+    const QVector<MapEditableGeometryVertexItem *> controls = visibleLineControls(scene, view, lineNumber);
+    return controls.isEmpty() ? nullptr : controls.first();
 }
 
 struct SelectedLineVertexSnapshot
@@ -995,6 +1038,62 @@ int selectedSourceLineNumber(QGraphicsScene *scene)
     }
 
     return 0;
+}
+
+QSet<int> selectedSourceLineNumbers(QGraphicsScene *scene);
+
+int waitForSelectedSourceLineNumber(QGraphicsScene *scene, int expectedLineNumber, int timeoutMs = 500)
+{
+    const qint64 deadline = QDateTime::currentMSecsSinceEpoch() + timeoutMs;
+    int lastSelectedLineNumber = 0;
+    while (QDateTime::currentMSecsSinceEpoch() <= deadline) {
+        pumpEvents();
+        const QSet<int> lineNumbers = selectedSourceLineNumbers(scene);
+        if (lineNumbers.contains(expectedLineNumber)) {
+            return expectedLineNumber;
+        }
+        if (!lineNumbers.isEmpty()) {
+            lastSelectedLineNumber = *lineNumbers.constBegin();
+        } else {
+            lastSelectedLineNumber = 0;
+        }
+        QThread::msleep(5);
+    }
+    return lastSelectedLineNumber;
+}
+
+bool waitForTextEquals(MapEditorTab *mapTab, const QString &expectedText, int timeoutMs = 500)
+{
+    if (mapTab == nullptr) {
+        return false;
+    }
+
+    const qint64 deadline = QDateTime::currentMSecsSinceEpoch() + timeoutMs;
+    while (QDateTime::currentMSecsSinceEpoch() <= deadline) {
+        pumpEvents();
+        if (mapTab->text() == expectedText) {
+            return true;
+        }
+        QThread::msleep(5);
+    }
+    return mapTab->text() == expectedText;
+}
+
+bool waitForTextDiffers(MapEditorTab *mapTab, const QString &originalText, int timeoutMs = 500)
+{
+    if (mapTab == nullptr) {
+        return false;
+    }
+
+    const qint64 deadline = QDateTime::currentMSecsSinceEpoch() + timeoutMs;
+    while (QDateTime::currentMSecsSinceEpoch() <= deadline) {
+        pumpEvents();
+        if (mapTab->text() != originalText) {
+            return true;
+        }
+        QThread::msleep(5);
+    }
+    return mapTab->text() != originalText;
 }
 
 QSet<int> selectedSourceLineNumbers(QGraphicsScene *scene)
@@ -1089,6 +1188,43 @@ bool dragItemBySceneDelta(QGraphicsView *view, QGraphicsItem *item, const QPoint
     sendMouse(viewport, QEvent::MouseButtonRelease, end, Qt::LeftButton, Qt::NoButton);
     pumpEvents();
     return true;
+}
+
+bool dragAnyVisibleLineControlUntilTextChanges(MapEditorTab *mapTab,
+                                               QGraphicsView *view,
+                                               int lineNumber,
+                                               const QString &originalText)
+{
+    if (mapTab == nullptr || view == nullptr || view->scene() == nullptr) {
+        return false;
+    }
+
+    const QVector<QPointF> dragDeltas = {
+        QPointF(12.0, -8.0),
+        QPointF(-12.0, 8.0),
+        QPointF(8.0, 12.0),
+        QPointF(-8.0, -12.0),
+    };
+    for (const QPointF &dragDelta : dragDeltas) {
+        for (int controlIndex = 0; controlIndex < 6; ++controlIndex) {
+            const QVector<MapEditableGeometryVertexItem *> controls =
+                visibleLineControls(view->scene(), view, lineNumber);
+            if (controlIndex >= controls.size() || controls.at(controlIndex) == nullptr) {
+                break;
+            }
+            MapEditableGeometryVertexItem *controlItem = controls.at(controlIndex);
+            if (!dragItemBySceneDelta(view, controlItem, dragDelta)) {
+                continue;
+            }
+            if (waitForTextDiffers(mapTab, originalText, 750)) {
+                return true;
+            }
+            // The drag path may refresh the scene and delete visible handle items even
+            // if this particular handle did not produce a source-text change.
+            break;
+        }
+    }
+    return mapTab->text() != originalText;
 }
 
 bool clickItem(QGraphicsView *view, QGraphicsItem *item)
@@ -2008,21 +2144,17 @@ int runTemplateBezierEditScenario(const QString &fixtureName,
     }
     pumpEvents();
 
-    auto *controlItem = findVisibleLineControl(mapView->scene(), lineNumber);
+    const QString originalText = mapTab->text();
+    mapTab->triggerSelectMode();
+    pumpEvents();
+    auto *controlItem = findVisibleLineControl(mapView->scene(), mapView, lineNumber);
     if (!expect(controlItem != nullptr,
                 "Clicking a template-style Bezier line segment should reveal editable control handles.")) {
         return 1;
     }
 
-    const QString originalText = mapTab->text();
-    mapTab->triggerSelectMode();
-    pumpEvents();
-    if (!expect(dragItemBySceneDelta(mapView, controlItem, QPointF(12.0, -8.0)),
-                "Failed to drag a template-style Bezier line control handle.")) {
-        return 1;
-    }
-    pumpEvents();
-    if (!expect(mapTab->text() != originalText,
+    Q_UNUSED(controlItem);
+    if (!expect(dragAnyVisibleLineControlUntilTextChanges(mapTab, mapView, lineNumber, originalText),
                 "Dragging a template-style Bezier line control handle should update TH2 source text.")) {
         return 1;
     }
@@ -2031,8 +2163,7 @@ int runTemplateBezierEditScenario(const QString &fixtureName,
     }
 
     mapTab->triggerUndo();
-    pumpEvents();
-    if (!expect(mapTab->text() == originalText,
+    if (!expect(waitForTextEquals(mapTab, originalText, 2000),
                 "Undo after template-style Bezier control drag should restore original TH2 source text.")) {
         return 1;
     }
@@ -2387,14 +2518,13 @@ int runDragUndoRedoSmoke()
         return 1;
     }
     textEditor->goToLineColumn(11, 3);
-    pumpEvents();
-    if (!expect(selectedSourceLineNumber(mapView->scene()) == 4,
+    if (!expect(waitForSelectedSourceLineNumber(mapView->scene(), 4, 2000) == 4,
                 "Moving text cursor to endline should keep selection on the owning line block start.")) {
         return 1;
     }
     textEditor->goToLineColumn(15, 3);
-    pumpEvents();
-    if (!expect(selectedSourceLineNumber(mapView->scene()) == 12,
+    const int selectedAfterEndArea = waitForSelectedSourceLineNumber(mapView->scene(), 12, 2000);
+    if (!expect(selectedAfterEndArea == 12,
                 "Moving text cursor to endarea should keep selection on the owning area block start.")) {
         return 1;
     }

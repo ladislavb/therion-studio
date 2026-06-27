@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-set(THERION_STUDIO_VERSION "2026.6.8" CACHE STRING
+set(THERION_STUDIO_VERSION "2026.6.9" CACHE STRING
     "Therion Studio numeric application version. CI may override this from release tags.")
 if(NOT THERION_STUDIO_VERSION MATCHES "^[0-9]+(\\.[0-9]+)?(\\.[0-9]+)?(\\.[0-9]+)?$")
     message(FATAL_ERROR "THERION_STUDIO_VERSION must be numeric, for example 2026.5.0")

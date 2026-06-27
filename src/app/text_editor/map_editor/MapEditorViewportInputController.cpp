@@ -41,7 +41,7 @@ namespace TherionStudio
 {
 namespace
 {
-constexpr qreal kFilledPathInteriorHitDistancePixels = 6.0;
+constexpr qreal kFilledPathInteriorHitDistancePixels = 0.0;
 constexpr qreal kDirectVertexCenterHitDistance = 1.0;
 constexpr qreal kDirectVertexAffordanceHitDistancePixels = 12.0;
 constexpr qreal kMaximumPathPrimaryHitDistancePixels = 5.0;
@@ -643,6 +643,20 @@ QGraphicsItem *nearestDirectVertexLikeItemForViewportPosition(MapEditorViewportI
     return nearestDirectVertexItem;
 }
 
+QRectF sceneProbeRectForViewportRadius(const QGraphicsView *view,
+                                       const QPoint &viewportPosition,
+                                       qreal radiusPixels)
+{
+    if (view == nullptr) {
+        return {};
+    }
+
+    const int radius = static_cast<int>(std::ceil(radiusPixels));
+    const QRect viewportRect(viewportPosition - QPoint(radius, radius),
+                             QSize((radius * 2) + 1, (radius * 2) + 1));
+    return view->mapToScene(viewportRect).boundingRect();
+}
+
 QGraphicsItem *preferredMapHitItemForViewportPosition(MapEditorViewportInputContext &context,
                                                       const QPoint &viewportPosition,
                                                       bool requireSelected,
@@ -660,14 +674,20 @@ QGraphicsItem *preferredMapHitItemForViewportPosition(MapEditorViewportInputCont
                                                            Qt::IntersectsItemShape,
                                                            Qt::DescendingOrder,
                                                            context.view->transform());
+    const QRectF pathProbeRect =
+        sceneProbeRectForViewportRadius(context.view, viewportPosition, kMaximumPathPrimaryHitDistancePixels + 1.0);
+    const QList<QGraphicsItem *> nearbyPathCandidates =
+        context.scene->items(pathProbeRect,
+                             Qt::IntersectsItemBoundingRect,
+                             Qt::DescendingOrder,
+                             context.view->transform());
     QGraphicsItem *nearestDirectVertexItem =
         nearestDirectVertexLikeItemForViewportPosition(context,
                                                        viewportPosition,
                                                        requireSelected,
                                                        false);
     qreal nearestDistance = std::numeric_limits<qreal>::max();
-    const QList<QGraphicsItem *> allItems = context.scene->items();
-    for (QGraphicsItem *candidate : allItems) {
+    for (QGraphicsItem *candidate : nearbyPathCandidates) {
         if (candidate == nullptr) {
             continue;
         }
@@ -687,11 +707,11 @@ QGraphicsItem *preferredMapHitItemForViewportPosition(MapEditorViewportInputCont
                 }
             }
         }
-        if (candidate == nearestDirectVertexItem) {
-            const QPoint candidateCenter = context.view->mapFromScene(viewportHitCenterScenePoint(candidate));
-            const QPoint delta = viewportPosition - candidateCenter;
-            nearestDistance = std::hypot(delta.x(), delta.y());
-        }
+    }
+    if (nearestDirectVertexItem != nullptr) {
+        const QPoint candidateCenter = context.view->mapFromScene(viewportHitCenterScenePoint(nearestDirectVertexItem));
+        const QPoint delta = viewportPosition - candidateCenter;
+        nearestDistance = std::hypot(delta.x(), delta.y());
     }
 
     QGraphicsItem *item = preferredMapHitItem(hitItems, requireSelected, scenePosition, context.view->transform());
@@ -721,8 +741,14 @@ QGraphicsItem *preferredHoveredPathHitItemForViewportPosition(MapEditorViewportI
 
     const QPointF scenePosition = context.view->mapToScene(viewportPosition);
     QList<QGraphicsItem *> hoverHitItems;
-    const QList<QGraphicsItem *> allItems = context.scene->items();
-    for (QGraphicsItem *candidate : allItems) {
+    const QRectF pathProbeRect =
+        sceneProbeRectForViewportRadius(context.view, viewportPosition, kMaximumPathPrimaryHitDistancePixels + 1.0);
+    const QList<QGraphicsItem *> nearbyPathCandidates =
+        context.scene->items(pathProbeRect,
+                             Qt::IntersectsItemBoundingRect,
+                             Qt::DescendingOrder,
+                             context.view->transform());
+    for (QGraphicsItem *candidate : nearbyPathCandidates) {
         if (candidate == nullptr || !candidate->data(kMapSceneInteractionHoverRole).toBool()) {
             continue;
         }
@@ -1707,6 +1733,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                                              + QLatin1Char(' ')
                                              + mapInputRawSceneHitSummary(context_, mouseEvent->pos()));
                         inputTrace.forceLog();
+                        event->ignore();
                     } else {
                         traceAction("primary-press-fallthrough-empty");
                         inputTrace.setDetail(mapInputHitItemSummary(context_, nullptr, mouseEvent->pos())
@@ -1719,6 +1746,7 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                             event->accept();
                             return true;
                         }
+                        event->ignore();
                     }
                 }
             }

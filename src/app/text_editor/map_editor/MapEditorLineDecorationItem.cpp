@@ -561,7 +561,7 @@ qreal MapEditorLineDecorationItem::hitDistancePixels(const QPointF &scenePositio
     }
 
     if (bestDistance == std::numeric_limits<qreal>::max()) {
-        return paintBounds_.contains(localPosition) ? 5.0 : std::numeric_limits<qreal>::max();
+        return std::numeric_limits<qreal>::max();
     }
 
     const qreal bestDistancePixels = bestDistance * viewScale;

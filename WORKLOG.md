@@ -4,7 +4,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Current Focus
 
-1. Release readiness for `v2026.6.8`.
+1. Release readiness for `v2026.6.9`.
 2. Unified Source DOM and source transaction ownership.
 3. Test infrastructure hygiene and structure guardrails.
 4. 3D viewer GPU-backed viewport rollout and shell migration.
@@ -14,7 +14,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ### Release Readiness
 
 - Run local validation before tagging or packaging handoff, including focused map inspector regressions touched during release stabilization.
-- Keep Selection inspector point-geometry ordering, `-clip off`, and narrow-width layout regressions covered while stabilizing `v2026.6.8`.
+- Keep Selection inspector point-geometry ordering, `-clip off`, and narrow-width layout regressions covered while stabilizing `v2026.6.9`.
 - Keep status-bar mode/compiler badges readable without visually competing with primary actions.
 - Keep Selection inspector terminology consistent: use `Options` for object-level settings and reserve `Line Point` for vertex workflows.
 - Keep Selection inspector object-level actions grouped under `Options`, including `Name`/`Text`/`Value`, scrap projection, and the full object-settings entrypoint.
@@ -24,11 +24,15 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Keep low-zoom map path hit-testing deterministic: the highlighted object under the cursor must be the object selected
   by click, selected/hovered stale items must not steal clicks, and path candidates outside the current screen-space hit
   radius must not become inspector primary selections.
+- Keep map path hit-testing local to the viewport-space click radius so large scenes do not recompute distances for
+  every path and decoration item on each pointer press.
 - Keep primary path hit-testing narrow enough that nearby clicks do not select map objects from visibly empty space, while
   preserving larger vertex/control-handle affordances for direct manipulation.
+- Keep area-fill interior clicks selectable even near referenced border lines after path hit-testing is narrowed.
 - Keep hidden gated map vertices reachable for context-menu selection paths without making ordinary hidden handles steal primary clicks.
 - Keep visible map vertex/control-handle affordances ahead of thick selected paths in viewport hit-testing so clicks near
   the drawn handle fall through to QGraphicsItem drag handling instead of being consumed as path reselection.
+- Keep map viewport fallthrough mouse presses explicitly ignored so QGraphicsItem drag handlers receive vertex/control-handle drags reliably.
 - Keep direct map vertex/control-handle presses carrying pending line/vertex metadata so selection refreshes restore the
   clicked line point instead of drifting to another selected item on the same or nearby geometry.
 - Keep Windows pen-tablet and stylus input normalized through the map viewport controller so selecting, line/area
@@ -149,7 +153,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Keep Selection quick-field label/input visibility synchronized with wrapper visibility across clear/refresh cycles.
 - Keep point `-align` rendering anchored like Therion so map canvas placement matches saved point options.
 - Clear pending Selection inspector insert state when Smart Area confirmation returns to Select mode.
-- Keep release notes, README, package metadata, and CI artifact workflow aligned with `v2026.6.8`.
+- Keep release notes, README, package metadata, and CI artifact workflow aligned with `v2026.6.9`.
 - Keep Therion executable auto-detection fallback candidates build-clean after the detector PR so release packaging
   and desktop startup validation do not fail on a trivial compile regression.
 - Keep Linux CI and package-builder Qt dependency lists aligned with the Qt Quick/QML-backed 3D viewer surface.

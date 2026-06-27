@@ -1,4 +1,5 @@
 #include "../src/app/text_editor/map_editor/MapEditorViewportInputController.h"
+#include "../src/app/text_editor/map_editor/MapEditorLineDecorationItem.h"
 #include "../src/app/text_editor/map_editor/MapEditorSceneLifecycleController.h"
 #include "../src/app/text_editor/map_editor/MapEditorSceneInternals.h"
 #include "../src/app/text_editor/map_editor/MapEditorSceneSupport.h"
@@ -14,7 +15,9 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 
+#include <cmath>
 #include <iostream>
+#include <limits>
 
 using namespace TherionStudio;
 
@@ -913,6 +916,122 @@ int runDistantPathPrimaryClickFallsThroughTest()
     return 0;
 }
 
+int runAreaFillInteriorBeatsOversizedBorderShapeTest()
+{
+    QGraphicsScene scene;
+    QGraphicsView view(&scene);
+    view.resize(240, 180);
+    view.scale(6.0, 6.0);
+    view.show();
+
+    QString toolbarStatus;
+    bool primaryPointerInteractionActive = false;
+    bool pendingClickSelection = false;
+    QPointF pendingClickScenePosition;
+    QElapsedTimer pendingClickElapsed;
+    int pendingClickLineNumber = 0;
+    int pendingClickSourceVertexIndex = -1;
+    QString pendingClickGeometryKind;
+    int selectionSyncCalls = 0;
+
+    MapEditorViewportInputContext context;
+    context.scene = &scene;
+    context.view = &view;
+    context.toolbarStatusNote = &toolbarStatus;
+    context.primaryPointerInteractionActive = &primaryPointerInteractionActive;
+    context.pendingClickSelection = &pendingClickSelection;
+    context.pendingClickScenePosition = &pendingClickScenePosition;
+    context.pendingClickElapsed = &pendingClickElapsed;
+    context.pendingClickLineNumber = &pendingClickLineNumber;
+    context.pendingClickSourceVertexIndex = &pendingClickSourceVertexIndex;
+    context.pendingClickGeometryKind = &pendingClickGeometryKind;
+    context.drawMode = []() { return MapEditorInteractiveDrawMode::None; };
+    context.handleInteractiveDrawClick = [](const QPointF &) {
+        return false;
+    };
+    context.refreshToolbarSummary = []() {};
+    context.updateCommandSurfaceState = []() {};
+    context.syncMapSelectionFromScene = [&selectionSyncCalls, &pendingClickLineNumber]() {
+        ++selectionSyncCalls;
+        expect(pendingClickLineNumber == 11,
+               "Selection sync after an area-fill click should still see the pending area source line.");
+    };
+
+    MapEditorViewportInputController controller(context);
+
+    QPainterPath areaPath;
+    areaPath.addRect(QRectF(10.0, 40.0, 80.0, 50.0));
+    auto *areaFillItem = scene.addPath(areaPath, QPen(Qt::NoPen), QBrush(Qt::green));
+    areaFillItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
+    areaFillItem->setAcceptedMouseButtons(Qt::LeftButton);
+    areaFillItem->setData(kMapSceneLineNumberRole, 11);
+    areaFillItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeAreaFill);
+
+    QPainterPath borderPath;
+    borderPath.moveTo(10.0, 40.0);
+    borderPath.lineTo(90.0, 40.0);
+    auto *borderItem = scene.addPath(borderPath, QPen(Qt::black, 30.0));
+    borderItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
+    borderItem->setAcceptedMouseButtons(Qt::LeftButton);
+    borderItem->setData(kMapSceneLineNumberRole, 4);
+    borderItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeGeneric);
+    borderItem->setZValue(areaFillItem->zValue() + 1.0);
+
+    const QPoint clickPosition = view.mapFromScene(QPointF(50.0, 44.0));
+    QMouseEvent press(QEvent::MouseButtonPress,
+                      QPointF(clickPosition),
+                      QPointF(view.viewport()->mapToGlobal(clickPosition)),
+                      Qt::LeftButton,
+                      Qt::LeftButton,
+                      Qt::NoModifier);
+    if (!expect(controller.handleEvent(view.viewport(), &press).value_or(false),
+                "Primary click inside area fill should be handled by the viewport input controller.")) {
+        return 1;
+    }
+    if (!expect(areaFillItem->isSelected() && !borderItem->isSelected(),
+                "Primary click inside area fill should select the area instead of an oversized border shape.")) {
+        return 1;
+    }
+    if (!expect(pendingClickLineNumber == 11,
+                "Primary click inside area fill should store the area source line as pending selection.")) {
+        return 1;
+    }
+    if (!expect(selectionSyncCalls == 1,
+                "Primary area-fill click should explicitly sync map selection once after the atomic selection update.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int runLineDecorationPaintBoundsDoesNotCreateFarHitTest()
+{
+    QPainterPath linePath;
+    linePath.moveTo(10.0, 40.0);
+    linePath.lineTo(90.0, 40.0);
+
+    MapEditorLineDecorationStyle tickDecoration;
+    tickDecoration.kind = MapEditorLineDecorationKind::Ticks;
+    tickDecoration.length = 80.0;
+    tickDecoration.size = 80.0;
+    tickDecoration.spacing = 20.0;
+
+    MapEditorLineDecorationItem decorationItem(linePath,
+                                               {tickDecoration},
+                                               Qt::black,
+                                               false,
+                                               0);
+    const QRectF bounds = decorationItem.boundingRect();
+    const QPointF farDecorationPoint(bounds.center().x(), bounds.bottom() - 2.0);
+    const qreal distancePixels = decorationItem.hitDistancePixels(farDecorationPoint, QTransform());
+    if (!expect(!std::isfinite(distancePixels) || distancePixels == std::numeric_limits<qreal>::max(),
+                "Line decoration paint bounds should not create a fallback selectable hit far from the line path.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 int runVisibleVertexPressFallsThroughForDragTest()
 {
     QGraphicsScene scene;
@@ -987,6 +1106,10 @@ int runVisibleVertexPressFallsThroughForDragTest()
     const std::optional<bool> handled = controller.handleEvent(view.viewport(), &press);
     if (!expect(!handled.has_value(),
                 "Primary press on a visible vertex should fall through so the scene can start dragging it.")) {
+        return 1;
+    }
+    if (!expect(!press.isAccepted(),
+                "Primary press falling through to a visible vertex should leave the mouse event ignored.")) {
         return 1;
     }
     if (!expect(pendingClickSelection
@@ -1076,6 +1199,10 @@ int runNearVisibleVertexPressFallsThroughForDragTest()
     const std::optional<bool> handled = controller.handleEvent(view.viewport(), &press);
     if (!expect(!handled.has_value(),
                 "A thick selected path must not steal press events near a visible Bezier control handle affordance.")) {
+        return 1;
+    }
+    if (!expect(!press.isAccepted(),
+                "Press near a visible Bezier control handle should be ignored when falling through to item drag.")) {
         return 1;
     }
     if (!expect(pendingClickSelection
@@ -1421,6 +1548,12 @@ int main(int argc, char **argv)
         return rc;
     }
     if (const int rc = runDistantPathPrimaryClickFallsThroughTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runAreaFillInteriorBeatsOversizedBorderShapeTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runLineDecorationPaintBoundsDoesNotCreateFarHitTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runVisibleVertexPressFallsThroughForDragTest(); rc != 0) {

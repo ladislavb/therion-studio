@@ -30,7 +30,7 @@ namespace TherionStudio
 {
 namespace
 {
-constexpr qreal kFilledPathInteriorHitDistancePixels = 6.0;
+constexpr qreal kFilledPathInteriorHitDistancePixels = 0.0;
 constexpr qreal kMaximumPathPrimaryHitDistancePixels = 5.0;
 
 bool isInteractiveMapSelectionItem(const QGraphicsItem *item)
@@ -205,6 +205,28 @@ bool isDistanceRankedPathItem(const QGraphicsItem *item, int subtype)
             || dynamic_cast<const MapEditorLineDecorationItem *>(item) != nullptr);
 }
 
+QRectF sceneProbeRectForViewRadius(const QPointF &scenePosition,
+                                   const QTransform &viewTransform,
+                                   qreal radiusPixels)
+{
+    bool invertible = false;
+    const QTransform sceneFromView = viewTransform.inverted(&invertible);
+    if (!invertible) {
+        const qreal fallbackRadius = qMax<qreal>(1.0, radiusPixels);
+        return QRectF(scenePosition.x() - fallbackRadius,
+                      scenePosition.y() - fallbackRadius,
+                      fallbackRadius * 2.0,
+                      fallbackRadius * 2.0);
+    }
+
+    const QPointF viewPosition = viewTransform.map(scenePosition);
+    const QRectF viewRect(viewPosition.x() - radiusPixels,
+                          viewPosition.y() - radiusPixels,
+                          radiusPixels * 2.0,
+                          radiusPixels * 2.0);
+    return sceneFromView.mapRect(viewRect);
+}
+
 QGraphicsItem *preferredMapHitItem(const QList<QGraphicsItem *> &hitItems,
                                    bool requireSelected = false,
                                    std::optional<QPointF> scenePosition = std::nullopt,
@@ -281,8 +303,14 @@ QList<QGraphicsItem *> expandedMapHitItemsAtScenePosition(QGraphicsScene *scene,
                                                    Qt::IntersectsItemShape,
                                                    Qt::DescendingOrder,
                                                    viewTransform);
-    const QList<QGraphicsItem *> allItems = scene->items();
-    for (QGraphicsItem *candidate : allItems) {
+    const QRectF pathProbeRect =
+        sceneProbeRectForViewRadius(scenePosition, viewTransform, kMaximumPathPrimaryHitDistancePixels + 1.0);
+    const QList<QGraphicsItem *> nearbyPathCandidates =
+        scene->items(pathProbeRect,
+                     Qt::IntersectsItemBoundingRect,
+                     Qt::DescendingOrder,
+                     viewTransform);
+    for (QGraphicsItem *candidate : nearbyPathCandidates) {
         if (candidate == nullptr || hitItems.contains(candidate)) {
             continue;
         }
