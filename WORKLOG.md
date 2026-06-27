@@ -73,7 +73,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Keep Selection inspector `line slope` orientation and `l-size` checkboxes explicitly re-enabled for selected slope vertices
   after pending draw or unsupported-option states leave the same controls disabled.
 - Keep map preview rendering line-point subtype changes within a single line so wall segments that switch to
-  `subtype invisible`, `subtype bedrock`, or other segment subtypes use the matching style instead of one header style.
+  `subtype invisible`, `subtype bedrock`, `subtype blocks`, or other segment subtypes use the matching stroke and
+  decoration style instead of one header style, including a visible guide spine for decorated segment subtypes.
 - Keep validation warning about duplicate TH2 line-point `smooth off` rows scoped to repeated rows for the same
   line point, with a safe fix that removes only redundant rows.
 - Keep draft completion and draft auto-commit from recentering the map viewport or force-scrolling the Objects tree to

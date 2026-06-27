@@ -314,6 +314,73 @@ int runLinePointSubtypeSegmentParsingTest()
     return 0;
 }
 
+int runLinePointSubtypeBlocksGuideRenderingTest()
+{
+    const QString text =
+        QStringLiteral("line wall\n"
+                       "  0 0\n"
+                       "  10 0\n"
+                       "  subtype blocks\n"
+                       "  20 0\n"
+                       "  30 0\n"
+                       "endline\n");
+
+    const QVector<TherionParsedLine> parsedLines = TherionDocumentParser::parseTokenLines(text);
+    const QVector<MapGeometryFeature> features = collectGeometryFeatures(parsedLines);
+    const MapGeometryFeature *line = firstLineFeature(features);
+    if (!expect(line != nullptr, "Expected one parsed line feature for wall:blocks segment guide test.")) {
+        return 1;
+    }
+    if (!expect(line->lineSegments.size() == 3
+                    && line->lineSegments.at(1).subtype == QStringLiteral("blocks")
+                    && line->lineSegments.at(2).subtype == QStringLiteral("blocks"),
+                "Expected line-point subtype blocks to apply to following wall segments.")) {
+        return 1;
+    }
+
+    QGraphicsScene scene;
+    QHash<int, QGraphicsItem *> mapItemsByLine;
+    renderMapWorkspaceScene(&scene,
+                            QStringLiteral("fixture.th2"),
+                            collectMapSceneEntries(parsedLines),
+                            features,
+                            std::nullopt,
+                            false,
+                            &mapItemsByLine,
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {});
+
+    bool foundBlocksSegmentGuide = false;
+    for (QGraphicsItem *item : scene.items()) {
+        if (item == nullptr || item->data(kMapSceneLineNumberRole).toInt() != line->lineNumber) {
+            continue;
+        }
+        auto *pathItem = dynamic_cast<QGraphicsPathItem *>(item);
+        if (pathItem == nullptr) {
+            continue;
+        }
+        const QPen pen = pathItem->pen();
+        if (std::abs(item->zValue() - 2.58) < 0.001
+            && item->data(kMapSceneSelectionSubtypeRole).toInt() == kMapSceneSelectionSubtypeLineDetail
+            && pen.style() == Qt::CustomDashLine
+            && pen.color().alpha() > 0) {
+            foundBlocksSegmentGuide = true;
+            break;
+        }
+    }
+
+    if (!expect(foundBlocksSegmentGuide,
+                "Expected decorated wall:blocks line-point subtype segments to render an editable guide spine above decorations.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 int runInlineSubtypeParsingTest()
 {
     const QString text =
@@ -1850,6 +1917,9 @@ int main(int argc, char **argv)
         return rc;
     }
     if (const int rc = runLinePointSubtypeSegmentParsingTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runLinePointSubtypeBlocksGuideRenderingTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runInlineSubtypeParsingTest(); rc != 0) {

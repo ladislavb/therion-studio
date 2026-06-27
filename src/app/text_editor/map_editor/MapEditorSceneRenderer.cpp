@@ -1060,6 +1060,18 @@ QVector<StyledLinePath> styledLinePathsForFeature(const MapGeometryFeature &feat
     return paths;
 }
 
+bool lineSegmentNeedsGuideSpine(const MapEditorResolvedLineStyle &style,
+                                const QString &rawType,
+                                const QString &subtype)
+{
+    if (style.guideSpineVisible || !style.decorations.isEmpty()) {
+        return true;
+    }
+
+    return rawType.trimmed().compare(QStringLiteral("wall"), Qt::CaseInsensitive) == 0
+        && subtype.trimmed().compare(QStringLiteral("blocks"), Qt::CaseInsensitive) == 0;
+}
+
 struct WallClipPathCandidate
 {
     QPainterPath path;
@@ -2145,9 +2157,65 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                         segmentItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
                     }
                 }
+                auto addGuideSpineItem = [&](const QPainterPath &guidePath, qreal referenceStrokeWidth) {
+                    QColor guideStroke = canvasTheme.mutedText;
+                    guideStroke.setAlpha(210);
+                    QVector<qreal> guideDashPattern;
+                    guideDashPattern << 2.0 << 2.4;
+                    auto *guideItem = new MapZoomAwarePathItem(guidePath,
+                                                               styledGeometricPen(guideStroke,
+                                                                                  qBound(0.7,
+                                                                                         referenceStrokeWidth * 0.34,
+                                                                                         2.2),
+                                                                                  Qt::DashLine,
+                                                                                  guideDashPattern,
+                                                                                  Qt::RoundCap,
+                                                                                  Qt::RoundJoin));
+                    scene->addItem(guideItem);
+                    guideItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
+                    guideItem->setHoverInteractionOverlayStroke(1.3, 0.15);
+                    guideItem->setZValue(2.58);
+                    guideItem->setToolTip(featureTooltip);
+                    markGeometryItem(guideItem);
+                    guideItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+                    guideItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineDetail);
+                    return guideItem;
+                };
                 const bool renderLineGuideSpine = lineStyle.guideSpineVisible || !lineStyle.decorations.isEmpty();
                 MapEditorLineDecorationItem *lineDecorationItem = nullptr;
-                if (!lineStyle.decorations.isEmpty()) {
+                if (renderSegmentStyles) {
+                    for (const StyledLinePath &styledPath : styledSegmentPaths) {
+                        const MapEditorResolvedLineStyle segmentStyle =
+                            resolveMapEditorLineStyle(styleCatalog, feature.label, styledPath.subtype);
+                        if (segmentStyle.decorations.isEmpty()) {
+                            continue;
+                        }
+
+                        QColor segmentGeometryStroke = segmentStyle.strokeColor.value_or(canvasTheme.geometryStroke);
+                        auto *segmentDecorationItem = new MapEditorLineDecorationItem(styledPath.path,
+                                                                                      segmentStyle.decorations,
+                                                                                      segmentGeometryStroke,
+                                                                                      feature.reversed,
+                                                                                      feature.lineNumber,
+                                                                                      {},
+                                                                                      mapScale);
+                        scene->addItem(segmentDecorationItem);
+                        segmentDecorationItem->setZValue(2.55);
+                        markGeometryItem(segmentDecorationItem);
+                        segmentDecorationItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
+                        segmentDecorationItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+                        segmentDecorationItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineDetail);
+                    }
+                    for (const StyledLinePath &styledPath : styledSegmentPaths) {
+                        const MapEditorResolvedLineStyle segmentStyle =
+                            resolveMapEditorLineStyle(styleCatalog, feature.label, styledPath.subtype);
+                        if (!lineSegmentNeedsGuideSpine(segmentStyle, feature.label, styledPath.subtype)) {
+                            continue;
+                        }
+
+                        addGuideSpineItem(styledPath.path, qBound(0.8, segmentStyle.strokeWidth, 24.0));
+                    }
+                } else if (!lineStyle.decorations.isEmpty()) {
                     lineDecorationItem = new MapEditorLineDecorationItem(path,
                                                                          lineStyle.decorations,
                                                                          geometryStroke,
@@ -2165,24 +2233,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                     lineDecorationItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineDetail);
                 }
                 if (renderLineGuideSpine) {
-                    QColor guideStroke = canvasTheme.mutedText;
-                    guideStroke.setAlpha(210);
-                    QVector<qreal> guideDashPattern;
-                    guideDashPattern << 2.0 << 2.4;
-                    auto *lineGuideItem = new MapZoomAwarePathItem(path,
-                                                                    styledGeometricPen(guideStroke,
-                                                                                       qBound(0.7, thickLineWidth * 0.34, 2.2),
-                                                                                       Qt::DashLine,
-                                                                                       guideDashPattern,
-                                                                                       Qt::RoundCap,
-                                                                                       Qt::RoundJoin));
-                    scene->addItem(lineGuideItem);
-                    lineGuideItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
-                    lineGuideItem->setHoverInteractionOverlayStroke(1.3, 0.15);
-                    lineGuideItem->setZValue(2.58);
-                    lineGuideItem->setToolTip(featureTooltip);
-                    markGeometryItem(lineGuideItem);
-                    lineGuideItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+                    addGuideSpineItem(path, thickLineWidth);
                 }
                 const qreal lineDirectionTickLength = qBound(12.0, 18.0 * mapScale, 24.0);
                 auto *directionTickItem = new QGraphicsLineItem;
