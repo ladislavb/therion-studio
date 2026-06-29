@@ -1467,6 +1467,10 @@ therion_add_map_editor_ui_test(MapEditorDragUndoRedoSmokeTest
     tests/MapEditorDragUndoRedoSmokeTest.cpp
     "MapEditorDragUndoRedoSmokeResources")
 
+therion_add_map_editor_ui_test(MapEditorLargeScenePerformanceSmokeTest
+    tests/MapEditorLargeScenePerformanceSmokeTest.cpp
+    "MapEditorLargeScenePerformanceSmokeResources")
+
 therion_add_map_editor_ui_test(MapEditorSplitAreaBorderSmokeTest
     tests/MapEditorSplitAreaBorderSmokeTest.cpp
     "MapEditorSplitAreaBorderSmokeResources")
@@ -1575,6 +1579,7 @@ set(THERION_UI_TEST_TARGETS
     TextEditorSystemNormalizationTransactionTest
     MapEditorDetachedPaneTest
     MapEditorDragUndoRedoSmokeTest
+    MapEditorLargeScenePerformanceSmokeTest
     MapEditorSplitAreaBorderSmokeTest
     MapEditorSelectionPanelTypeOptionsTest
     MapEditorBackgroundLayerVisibilityTest

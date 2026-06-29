@@ -18,8 +18,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
   `THERION_STUDIO_ENABLE_LOG=1`.
 - Confirm the next follow-up log keeps `Move line Vertex` source transactions near the current sub-150 ms range with
   `policies_ms=0`, and compare panning `elapsed_ms` before/after the reduced per-move command-surface refresh.
-- Use `map-scene-refresh` stage timings to identify any remaining post-edit responsiveness drops before changing more
-  map-editor refresh paths.
+- Confirm the indexed map vertex selection restore lowers post-edit `map-scene-refresh selection_ms`; only then decide
+  whether remaining Windows lag needs `clear_ms` or `final_ui_ms` optimization.
+- Use `MapEditorLargeScenePerformanceSmokeTest` as the local generated large-map harness when comparing map refresh
+  changes; it targets roughly 2k parsed lines and 6k scene items without relying on external cave data.
 - Keep broad Map/TH2 projection rewrites out of release stabilization until Windows feedback confirms the deferred
   vertex-refresh fix is stable.
 - Before tagging or packaging handoff, run local validation focused on recent map-input, source-transaction, installer,

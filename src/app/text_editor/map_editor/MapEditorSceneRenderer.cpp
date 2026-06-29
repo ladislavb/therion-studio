@@ -1951,6 +1951,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                              const std::optional<QRectF> &sourceBoundsOverride,
                              bool showEmptyDocumentGuides,
                              QHash<int, QGraphicsItem *> *mapItemsByLine,
+                             QHash<QString, QGraphicsItem *> *mapVertexItemsByKey,
                              const std::function<void(int, const QPointF &, const QPointF &)> &recordCardMove,
                              const std::function<void(int, bool, bool)> &recordCardVisibility,
                              const std::function<void(int, const QPointF &, const QPointF &)> &recordPointGeometryMove,
@@ -1969,6 +1970,20 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
     if (mapItemsByLine != nullptr) {
         mapItemsByLine->clear();
     }
+    if (mapVertexItemsByKey != nullptr) {
+        mapVertexItemsByKey->clear();
+    }
+
+    const auto registerVertexItem = [mapVertexItemsByKey](MapEditableGeometryVertexItem *item) {
+        if (mapVertexItemsByKey == nullptr || item == nullptr) {
+            return;
+        }
+        const QString key = QStringLiteral("%1:%2:%3")
+            .arg(item->lineNumber())
+            .arg(item->vertexIndex())
+            .arg(item->geometryKind().trimmed().toLower());
+        mapVertexItemsByKey->insert(key, item);
+    };
 
     const MapCanvasTheme canvasTheme = mapCanvasThemeForScene(scene);
     const QRectF sceneFrame(0, 0, 1200, 900);
@@ -2338,6 +2353,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                     vertexItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineAnchor);
                     vertexItem->setData(kMapSceneOwnerVertexRole, anchorSourceVertexIndex);
                     vertexItem->setVisible(false);
+                    registerVertexItem(vertexItem);
                     anchorItemsByOrder->operator[](vertexIndex) = vertexItem;
                 }
 
@@ -2418,6 +2434,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                         controlItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControl);
                         controlItem->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
                         controlItem->setVisible(false);
+                        registerVertexItem(controlItem);
                         controlItemsBySourceVertex->insert(previousVertex.outgoingSourceVertexIndex, controlItem);
                     }
 
@@ -2461,6 +2478,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                         controlItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControl);
                         controlItem->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
                         controlItem->setVisible(false);
+                        registerVertexItem(controlItem);
                         controlItemsBySourceVertex->insert(currentVertex.incomingSourceVertexIndex, controlItem);
                     }
                 }
@@ -2508,6 +2526,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                         controlItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControl);
                         controlItem->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
                         controlItem->setVisible(false);
+                        registerVertexItem(controlItem);
                         controlItemsBySourceVertex->insert(lastVertex.outgoingSourceVertexIndex, controlItem);
                     }
 
@@ -2551,6 +2570,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                         controlItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControl);
                         controlItem->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
                         controlItem->setVisible(false);
+                        registerVertexItem(controlItem);
                         controlItemsBySourceVertex->insert(firstVertex.incomingSourceVertexIndex, controlItem);
                     }
                 }
@@ -2861,6 +2881,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                         vertexItem->setData(kMapSceneSelectionGatedRole, true);
                         vertexItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeAreaVertex);
                         vertexItem->setVisible(false);
+                        registerVertexItem(vertexItem);
                         areaVertexItemsByOrder->operator[](vertexIndex) = vertexItem;
                     }
 

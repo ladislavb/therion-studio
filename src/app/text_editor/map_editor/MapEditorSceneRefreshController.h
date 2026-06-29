@@ -29,6 +29,7 @@ struct MapEditorSceneRefreshContext
     QGraphicsView *view = nullptr;
     QUndoStack *undoStack = nullptr;
     QHash<int, QGraphicsItem *> *itemsByLine = nullptr;
+    QHash<QString, QGraphicsItem *> *vertexItemsByKey = nullptr;
     bool *commandApplyInProgress = nullptr;
     bool *sceneRefreshPending = nullptr;
     bool *autoFitEnabled = nullptr;

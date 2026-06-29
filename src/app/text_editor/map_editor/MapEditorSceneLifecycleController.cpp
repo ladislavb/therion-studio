@@ -35,6 +35,9 @@ QGraphicsScene *MapEditorSceneLifecycleController::scene() const
 void MapEditorSceneLifecycleController::clearMapScene()
 {
     context_.itemsByLine->clear();
+    if (context_.vertexItemsByKey != nullptr) {
+        context_.vertexItemsByKey->clear();
+    }
     *context_.interactiveDrawStrokeActive = false;
     *context_.interactiveDrawPreviewPath = nullptr;
     context_.interactiveDrawPreviewMarkers->clear();

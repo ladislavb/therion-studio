@@ -27,6 +27,7 @@ struct MapEditorCanvasEditContext
     QGraphicsScene *scene = nullptr;
     QUndoStack *undoStack = nullptr;
     QHash<int, QGraphicsItem *> *itemsByLine = nullptr;
+    QHash<QString, QGraphicsItem *> *vertexItemsByKey = nullptr;
     QVector<QGraphicsRectItem *> *draftGeometryItems = nullptr;
     QString *toolbarStatusNote = nullptr;
     bool *commandApplyInProgress = nullptr;

@@ -17,6 +17,7 @@ MapEditorCanvasEditContext MapEditorTab::canvasEditContext()
         .scene = mapScene_,
         .undoStack = undoStack_,
         .itemsByLine = &mapItemsByLine_,
+        .vertexItemsByKey = &mapVertexItemsByKey_,
         .draftGeometryItems = &draftGeometryItems_,
         .toolbarStatusNote = &toolbarStatusNote_,
         .commandApplyInProgress = &mapCommandApplyInProgress_,

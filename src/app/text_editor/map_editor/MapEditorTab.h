@@ -835,6 +835,7 @@ private:
     int selectedBackgroundLayerIndex_ = -1;
     bool mapCommandApplyInProgress_ = false;
     MapEditorUndoOwnershipState undoOwnershipState_;
+    QHash<QString, QGraphicsItem *> mapVertexItemsByKey_;
     bool preserveNextSourceDrivenMapRefresh_ = false;
     int preserveMapUndoForSourceRevision_ = 0;
     bool mapSceneRefreshPending_ = false;

@@ -21,6 +21,7 @@ struct MapEditorSceneLifecycleContext
     QGraphicsScene **scene = nullptr;
     QGraphicsView *view = nullptr;
     QHash<int, QGraphicsItem *> *itemsByLine = nullptr;
+    QHash<QString, QGraphicsItem *> *vertexItemsByKey = nullptr;
     QVector<QGraphicsRectItem *> *draftGeometryItems = nullptr;
     QVector<QGraphicsPixmapItem *> *backgroundImageItems = nullptr;
     bool *interactiveDrawStrokeActive = nullptr;

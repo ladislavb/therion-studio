@@ -22,6 +22,30 @@ namespace TherionStudio
 {
 namespace
 {
+QString mapVertexItemKey(int lineNumber, int vertexIndex, const QString &geometryKind)
+{
+    return QStringLiteral("%1:%2:%3")
+        .arg(lineNumber)
+        .arg(vertexIndex)
+        .arg(geometryKind.trimmed().toLower());
+}
+
+MapEditableGeometryVertexItem *indexedGeometryVertexItem(const MapEditorSceneRefreshContext &context,
+                                                         int lineNumber,
+                                                         int vertexIndex,
+                                                         const QString &geometryKind)
+{
+    if (context.vertexItemsByKey == nullptr || lineNumber <= 0 || vertexIndex < 0) {
+        return nullptr;
+    }
+
+    auto itemIt = context.vertexItemsByKey->constFind(mapVertexItemKey(lineNumber, vertexIndex, geometryKind));
+    if (itemIt == context.vertexItemsByKey->constEnd()) {
+        return nullptr;
+    }
+    return dynamic_cast<MapEditableGeometryVertexItem *>(itemIt.value());
+}
+
 bool diagnosticMapInputLoggingEnabled()
 {
     static const bool enabled = [] {
@@ -61,6 +85,12 @@ bool restoreSceneRefreshSelection(const MapEditorSceneRefreshContext &context)
         ? context.sceneRefreshSelectionVertexIndex()
         : -1;
     if (vertexIndex >= 0 && !kind.isEmpty() && context.scene != nullptr && *context.scene != nullptr) {
+        if (MapEditableGeometryVertexItem *vertexItem = indexedGeometryVertexItem(context, lineNumber, vertexIndex, kind)) {
+            (*context.scene)->clearSelection();
+            vertexItem->setVisible(true);
+            vertexItem->setSelected(true);
+            return true;
+        }
         const auto items = (*context.scene)->items();
         for (QGraphicsItem *item : items) {
             auto *vertexItem = dynamic_cast<MapEditableGeometryVertexItem *>(item);
@@ -242,6 +272,7 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
                             sourceBoundsOverride,
                             showEmptyDocumentGuides,
                             context_.itemsByLine,
+                            context_.vertexItemsByKey,
                             context_.recordCardMove,
                             context_.recordCardVisibility,
                             context_.recordPointGeometryMove,
