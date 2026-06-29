@@ -481,6 +481,20 @@ const TherionSourceLogicalCommand *TherionSourceLogicalDocument::commandAtPhysic
     return nullptr;
 }
 
+const TherionSourceLogicalCommand *TherionSourceLogicalDocument::commandAtOffset(int offset) const
+{
+    if (offset < 0) {
+        return nullptr;
+    }
+
+    for (const TherionSourceLogicalCommand &command : commands_) {
+        if (offset >= command.startOffset && offset < command.endOffset) {
+            return &command;
+        }
+    }
+    return nullptr;
+}
+
 const TherionSourceLogicalTokenRange *TherionSourceLogicalDocument::tokenAtPhysicalPosition(int lineNumber,
                                                                                            int columnNumber) const
 {
@@ -500,6 +514,25 @@ const TherionSourceLogicalTokenRange *TherionSourceLogicalDocument::tokenAtPhysi
         const int startColumn = range.columnNumber;
         const int endColumn = startColumn + range.columnLength;
         if (columnNumber >= startColumn && columnNumber <= endColumn) {
+            return &tokenRange;
+        }
+    }
+    return nullptr;
+}
+
+const TherionSourceLogicalTokenRange *TherionSourceLogicalDocument::tokenAtOffset(int offset) const
+{
+    const TherionSourceLogicalCommand *command = commandAtOffset(offset);
+    if (command == nullptr) {
+        return nullptr;
+    }
+
+    for (const TherionSourceLogicalTokenRange &tokenRange : command->tokenRanges) {
+        if (tokenRange.type == TherionTokenType::Comment) {
+            continue;
+        }
+        const TherionSourcePhysicalRange &range = tokenRange.physicalRange;
+        if (offset >= range.startOffset && offset < range.startOffset + range.length) {
             return &tokenRange;
         }
     }

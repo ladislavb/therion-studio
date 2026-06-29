@@ -208,6 +208,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   Structure, Validation, Blocks, and Map projections toward the shared DOM.
 - Keep unclosed-block validation fix planning on `TherionSourceDocument` line lookup helpers rather than local line
   scans, and use it as the pattern for similarly small projection migrations.
+- Keep logical command and token lookup available by absolute source offset so future editor projections can share DOM
+  cursor mapping instead of rebuilding line/column scans per mode.
 - Keep source transaction helpers result-aware so callers can distinguish applied, stale, no-op, unavailable, and invalid
   source edits without relying on selection-restore hooks as success signals.
 - Continue propagating transaction results through map-editor inspector/object-details contexts before migrating broader

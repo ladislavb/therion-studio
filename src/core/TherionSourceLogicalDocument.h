@@ -144,8 +144,10 @@ public:
     [[nodiscard]] const TherionSourceDocumentMetadata &metadata() const;
     [[nodiscard]] const QVector<TherionSourceLogicalCommand> &commands() const;
     [[nodiscard]] const TherionSourceLogicalCommand *commandAtPhysicalLine(int lineNumber) const;
+    [[nodiscard]] const TherionSourceLogicalCommand *commandAtOffset(int offset) const;
     [[nodiscard]] const TherionSourceLogicalTokenRange *tokenAtPhysicalPosition(int lineNumber,
                                                                                int columnNumber) const;
+    [[nodiscard]] const TherionSourceLogicalTokenRange *tokenAtOffset(int offset) const;
 
 private:
     [[nodiscard]] static TherionSourceLogicalDocument fromSourceDocument(

@@ -17,6 +17,7 @@ private slots:
     void exposesPhysicalRangesForParsedTokens();
     void exposesPositionalAndOptionEntryRanges();
     void findsLogicalCommandsAndTokensByPhysicalCursorPosition();
+    void findsLogicalCommandsAndTokensByAbsoluteOffset();
     void attachesCatalogMetadataToLogicalCommands();
     void keepsBlockContentRowsAsNonCommandLogicalEntries();
     void normalizesCentrelineAliasOnLogicalCommands();
@@ -198,6 +199,40 @@ void TherionSourceLogicalDocumentTest::findsLogicalCommandsAndTokensByPhysicalCu
     QVERIFY(quotedTitle->type == TherionTokenType::QuotedString);
 
     QVERIFY(document.tokenAtPhysicalPosition(3, 20) == nullptr);
+}
+
+void TherionSourceLogicalDocumentTest::findsLogicalCommandsAndTokensByAbsoluteOffset()
+{
+    const QString contents = QStringLiteral(
+        "survey cave -title \"Cave\" \\\n"
+        "  -person-rename \"Old Name\" \"New Name\"\n"
+        "endsurvey\n");
+    const TherionSourceLogicalDocument document = TherionSourceLogicalDocument::fromText(contents);
+
+    const int continuationOffset = contents.indexOf(QStringLiteral("-person-rename"));
+    QVERIFY(continuationOffset > 0);
+    const TherionSourceLogicalCommand *continuedCommand = document.commandAtOffset(continuationOffset);
+    QVERIFY(continuedCommand != nullptr);
+    QCOMPARE(continuedCommand->startLineNumber, 1);
+    QCOMPARE(continuedCommand->endLineNumber, 2);
+    QCOMPARE(continuedCommand->normalizedDirective, QStringLiteral("survey"));
+
+    const TherionSourceLogicalTokenRange *continuedOption = document.tokenAtOffset(continuationOffset + 2);
+    QVERIFY(continuedOption != nullptr);
+    QCOMPARE(continuedOption->text, QStringLiteral("-person-rename"));
+    QCOMPARE(continuedOption->physicalRange.lineNumber, 2);
+
+    const int titleOffset = contents.indexOf(QStringLiteral("\"Cave\""));
+    QVERIFY(titleOffset > 0);
+    const TherionSourceLogicalTokenRange *quotedTitle = document.tokenAtOffset(titleOffset + 1);
+    QVERIFY(quotedTitle != nullptr);
+    QCOMPARE(quotedTitle->text, QStringLiteral("Cave"));
+    QVERIFY(quotedTitle->type == TherionTokenType::QuotedString);
+
+    const int lineEndingOffset = contents.indexOf(QLatin1Char('\n'));
+    QVERIFY(document.tokenAtOffset(lineEndingOffset) == nullptr);
+    QVERIFY(document.commandAtOffset(-1) == nullptr);
+    QVERIFY(document.commandAtOffset(contents.size()) == nullptr);
 }
 
 void TherionSourceLogicalDocumentTest::attachesCatalogMetadataToLogicalCommands()
