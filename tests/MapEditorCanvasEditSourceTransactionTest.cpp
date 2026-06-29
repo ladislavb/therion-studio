@@ -348,6 +348,72 @@ int runLineVertexMoveUsesSourceEditSnapshotTest()
     return 0;
 }
 
+int runSegmentStyledLineVertexMoveKeepsFullRefreshTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Failed to create temporary directory.")) {
+        return 1;
+    }
+
+    const QString filePath = createTestFile(tempDir,
+                                            "line wall\n"
+                                            "  0.0 0.0\n"
+                                            "  subtype blocks\n"
+                                            "  1.0 1.0\n"
+                                            "endline\n");
+    if (!expect(!filePath.isEmpty(), "Failed to create segment-styled line vertex move test file.")) {
+        return 1;
+    }
+
+    QtFileSystem fileSystem;
+    TextEditorTab tab{fileSystem, CommandCatalogStore()};
+    if (!expect(loadTestTab(&tab, filePath), "Failed to load segment-styled line vertex move test tab.")) {
+        return 1;
+    }
+
+    QUndoStack undoStack;
+    QString toolbarStatus;
+    bool commandApplyInProgress = false;
+    int refreshCount = 0;
+    int flushCount = 0;
+    int discardCount = 0;
+    MapEditorCanvasEditController controller =
+        makeController(&tab,
+                       &undoStack,
+                       &toolbarStatus,
+                       &commandApplyInProgress,
+                       &refreshCount,
+                       &flushCount,
+                       &discardCount);
+
+    const QString afterText = QStringLiteral("line wall\n"
+                                             "  0.0 0.0\n"
+                                             "  subtype blocks\n"
+                                             "  2.0 3.0\n"
+                                             "endline\n");
+    controller.recordLineAreaVertexMove(1,
+                                        QStringLiteral("line"),
+                                        1,
+                                        QPointF(1.0, 1.0),
+                                        QPointF(2.0, 3.0));
+
+    if (!expect(tab.text() == afterText, "Segment-styled line vertex move should apply source-edit planned coordinates.")) {
+        return 1;
+    }
+    if (!expect(flushCount == 0, "Segment-styled line vertex move should defer scene refresh out of the source transaction.")) {
+        return 1;
+    }
+    pumpEvents();
+    if (!expect(flushCount == 1, "Segment-styled line vertex move should keep the full refresh for decorations.")) {
+        return 1;
+    }
+    if (!expect(discardCount == 0, "Segment-styled line vertex move should not discard the pending full scene refresh.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 int runStaleSourceChangeIsSkippedTest()
 {
     QTemporaryDir tempDir;
@@ -515,6 +581,9 @@ int main(int argc, char **argv)
         return 1;
     }
     if (runLineVertexMoveUsesSourceEditSnapshotTest() != 0) {
+        return 1;
+    }
+    if (runSegmentStyledLineVertexMoveKeepsFullRefreshTest() != 0) {
         return 1;
     }
     if (runStaleSourceChangeIsSkippedTest() != 0) {

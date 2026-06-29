@@ -383,6 +383,84 @@ int runLinePointSubtypeBlocksGuideRenderingTest()
     return 0;
 }
 
+int runLinePointSubtypeBlocksPreviewRefreshTest()
+{
+    const QString text =
+        QStringLiteral("line wall\n"
+                       "  0 0\n"
+                       "  10 0\n"
+                       "  subtype blocks\n"
+                       "  20 0\n"
+                       "  30 0\n"
+                       "endline\n");
+
+    const QVector<TherionParsedLine> parsedLines = TherionDocumentParser::parseTokenLines(text);
+    const QVector<MapGeometryFeature> features = collectGeometryFeatures(parsedLines);
+    const MapGeometryFeature *line = firstLineFeature(features);
+    if (!expect(line != nullptr, "Expected one parsed line feature for wall:blocks preview refresh test.")) {
+        return 1;
+    }
+
+    QGraphicsScene scene;
+    QHash<int, QGraphicsItem *> mapItemsByLine;
+    renderMapWorkspaceScene(&scene,
+                            QStringLiteral("fixture.th2"),
+                            collectMapSceneEntries(parsedLines),
+                            features,
+                            std::nullopt,
+                            false,
+                            &mapItemsByLine,
+                            nullptr,
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {});
+
+    QGraphicsItem *anchorItem = nullptr;
+    QGraphicsPathItem *blocksGuideItem = nullptr;
+    for (QGraphicsItem *item : scene.items()) {
+        if (item == nullptr || item->data(kMapSceneLineNumberRole).toInt() != line->lineNumber) {
+            continue;
+        }
+        if (item->data(kMapSceneSelectionSubtypeRole).toInt() == kMapSceneSelectionSubtypeLineAnchor
+            && item->data(kMapSceneOwnerVertexRole).toInt() == 2) {
+            anchorItem = item;
+            continue;
+        }
+
+        auto *pathItem = dynamic_cast<QGraphicsPathItem *>(item);
+        if (pathItem == nullptr) {
+            continue;
+        }
+        if (std::abs(item->zValue() - 2.58) < 0.001
+            && item->data(kMapSceneSelectionSubtypeRole).toInt() == kMapSceneSelectionSubtypeLineDetail
+            && pathItem->pen().style() == Qt::CustomDashLine) {
+            blocksGuideItem = pathItem;
+            continue;
+        }
+    }
+
+    if (!expect(anchorItem != nullptr, "Expected editable line anchor for the blocks segment preview test.")) {
+        return 1;
+    }
+    if (!expect(blocksGuideItem != nullptr, "Expected blocks segment guide item before preview movement.")) {
+        return 1;
+    }
+    const QRectF guideBoundsBefore = blocksGuideItem->path().boundingRect();
+    anchorItem->setPos(anchorItem->pos() + QPointF(0.0, 80.0));
+    const QRectF guideBoundsAfter = blocksGuideItem->path().boundingRect();
+
+    if (!expect(std::abs(guideBoundsAfter.top() - guideBoundsBefore.top()) > 1e-6
+                    || std::abs(guideBoundsAfter.bottom() - guideBoundsBefore.bottom()) > 1e-6,
+                "Expected blocks segment guide path to update during line vertex preview movement.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 int runInlineSubtypeParsingTest()
 {
     const QString text =
@@ -1925,6 +2003,9 @@ int main(int argc, char **argv)
         return rc;
     }
     if (const int rc = runLinePointSubtypeBlocksGuideRenderingTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runLinePointSubtypeBlocksPreviewRefreshTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runInlineSubtypeParsingTest(); rc != 0) {

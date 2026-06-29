@@ -618,6 +618,21 @@ std::function<void()> deferredMapSelectionRestoreHook(const MapEditorCanvasEditC
     };
 }
 
+bool lineVertexMoveCanSkipFullSceneRefresh(const MapGeometryFeature &lineFeature)
+{
+    if (lineFeature.closed || !lineFeature.subtype.trimmed().isEmpty()) {
+        return false;
+    }
+
+    for (const MapGeometryFeature::LineSegment &segment : lineFeature.lineSegments) {
+        if (!segment.subtype.trimmed().isEmpty()) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 MapEditableGeometryVertexItem *resolveSelectedLineVertexItemForContext(const MapEditorCanvasEditContext &context)
 {
     if (context.scene == nullptr) {
@@ -819,10 +834,12 @@ void MapEditorCanvasEditController::recordLineAreaVertexMove(int lineNumber,
 
     QVector<MapLineAreaVertexSecondaryMove> secondaryMoves;
     int lineOwnerIndexToRestore = -1;
+    bool canSkipFullSceneRefresh = false;
     if (rewriteKind == QStringLiteral("line")) {
         const std::optional<MapGeometryFeature> lineFeature = lineFeatureForLineNumber(context_.textEditor->text(), lineNumber);
         if (lineFeature.has_value()) {
             lineOwnerIndexToRestore = lineVertexOwnerIndexForSourceVertex(lineFeature.value(), vertexIndex);
+            canSkipFullSceneRefresh = lineVertexMoveCanSkipFullSceneRefresh(lineFeature.value());
             secondaryMoves = coupledLineVertexMoveSet(lineFeature.value(), vertexIndex, oldPoint, newPoint).secondaryMoves;
             for (auto it = secondaryMoves.begin(); it != secondaryMoves.end();) {
                 if (it->vertexIndex == vertexIndex) {
@@ -892,7 +909,9 @@ void MapEditorCanvasEditController::recordLineAreaVertexMove(int lineNumber,
                                  afterText,
                                  lineNumber);
     request.projectionInvalidationPolicy = TextEditorSourceProjectionInvalidationPolicy::CustomHook;
-    request.projectionInvalidationHook = deferredMapSelectionRestoreHook(context_, std::move(selectionRestoreHook));
+    request.projectionInvalidationHook = canSkipFullSceneRefresh
+        ? deferredMapSelectionRestoreHook(context_, std::move(selectionRestoreHook))
+        : deferredMapSceneRefreshHook(context_, std::move(selectionRestoreHook));
     sourceTransactionController(context_).applyChangeWithSnapshot(request);
     (*context_.toolbarStatusNote) = tr("Updated %1 vertex %2 at source line %3.")
         .arg(rewriteKind)

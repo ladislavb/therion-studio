@@ -42,6 +42,18 @@ struct LineControlConnectorBinding
     QGraphicsLineItem *lineItem = nullptr;
 };
 
+struct StyledPathItemBinding
+{
+    int styledPathIndex = -1;
+    QGraphicsPathItem *pathItem = nullptr;
+};
+
+struct StyledLineDecorationBinding
+{
+    int styledPathIndex = -1;
+    MapEditorLineDecorationItem *decorationItem = nullptr;
+};
+
 struct MapCanvasTheme
 {
     bool lightMode = false;
@@ -2149,8 +2161,12 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                 lineItem->setToolTip(featureTooltip);
                 markGeometryItem(lineItem);
                 lineItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+                auto styledLineItems = std::make_shared<QVector<StyledPathItemBinding>>();
+                auto styledDecorationItems = std::make_shared<QVector<StyledLineDecorationBinding>>();
+                auto styledGuideItems = std::make_shared<QVector<StyledPathItemBinding>>();
                 if (renderSegmentStyles) {
-                    for (const StyledLinePath &styledPath : styledSegmentPaths) {
+                    for (int styledPathIndex = 0; styledPathIndex < styledSegmentPaths.size(); ++styledPathIndex) {
+                        const StyledLinePath &styledPath = styledSegmentPaths.at(styledPathIndex);
                         const MapEditorResolvedLineStyle segmentStyle =
                             resolveMapEditorLineStyle(styleCatalog, feature.label, styledPath.subtype);
                         QColor segmentStroke = segmentStyle.strokeColor.value_or(canvasTheme.geometryStroke);
@@ -2170,6 +2186,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                         segmentItem->setToolTip(featureTooltip);
                         markGeometryItem(segmentItem);
                         segmentItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+                        styledLineItems->append(StyledPathItemBinding{styledPathIndex, segmentItem});
                     }
                 }
                 auto addGuideSpineItem = [&](const QPainterPath &guidePath, qreal referenceStrokeWidth) {
@@ -2198,8 +2215,10 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                 };
                 const bool renderLineGuideSpine = lineStyle.guideSpineVisible || !lineStyle.decorations.isEmpty();
                 MapEditorLineDecorationItem *lineDecorationItem = nullptr;
+                QGraphicsPathItem *lineGuideSpineItem = nullptr;
                 if (renderSegmentStyles) {
-                    for (const StyledLinePath &styledPath : styledSegmentPaths) {
+                    for (int styledPathIndex = 0; styledPathIndex < styledSegmentPaths.size(); ++styledPathIndex) {
+                        const StyledLinePath &styledPath = styledSegmentPaths.at(styledPathIndex);
                         const MapEditorResolvedLineStyle segmentStyle =
                             resolveMapEditorLineStyle(styleCatalog, feature.label, styledPath.subtype);
                         if (segmentStyle.decorations.isEmpty()) {
@@ -2220,15 +2239,19 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                         segmentDecorationItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
                         segmentDecorationItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
                         segmentDecorationItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineDetail);
+                        styledDecorationItems->append(StyledLineDecorationBinding{styledPathIndex, segmentDecorationItem});
                     }
-                    for (const StyledLinePath &styledPath : styledSegmentPaths) {
+                    for (int styledPathIndex = 0; styledPathIndex < styledSegmentPaths.size(); ++styledPathIndex) {
+                        const StyledLinePath &styledPath = styledSegmentPaths.at(styledPathIndex);
                         const MapEditorResolvedLineStyle segmentStyle =
                             resolveMapEditorLineStyle(styleCatalog, feature.label, styledPath.subtype);
                         if (!lineSegmentNeedsGuideSpine(segmentStyle, feature.label, styledPath.subtype)) {
                             continue;
                         }
 
-                        addGuideSpineItem(styledPath.path, qBound(0.8, segmentStyle.strokeWidth, 24.0));
+                        styledGuideItems->append(StyledPathItemBinding{
+                            styledPathIndex,
+                            addGuideSpineItem(styledPath.path, qBound(0.8, segmentStyle.strokeWidth, 24.0))});
                     }
                 } else if (!lineStyle.decorations.isEmpty()) {
                     lineDecorationItem = new MapEditorLineDecorationItem(path,
@@ -2248,7 +2271,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                     lineDecorationItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineDetail);
                 }
                 if (renderLineGuideSpine) {
-                    addGuideSpineItem(path, thickLineWidth);
+                    lineGuideSpineItem = addGuideSpineItem(path, thickLineWidth);
                 }
                 const qreal lineDirectionTickLength = qBound(12.0, 18.0 * mapScale, 24.0);
                 auto *directionTickItem = new QGraphicsLineItem;
@@ -2584,6 +2607,10 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                 auto couplingGuard = std::make_shared<bool>(false);
                 const auto updateInteractiveLinePreview = [lineItem,
                                                            lineDecorationItem,
+                                                           lineGuideSpineItem,
+                                                           styledLineItems,
+                                                           styledDecorationItems,
+                                                           styledGuideItems,
                                                            directionTickItem,
                                                            lineDirectionTickLength,
                                                            feature,
@@ -2611,69 +2638,68 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                         return QPointF();
                     };
 
-                    QPainterPath interactivePath;
-                    interactivePath.moveTo(anchorPreviewAt(0));
-                    for (int index = 1; index < anchorItemsByOrder->size(); ++index) {
-                        const MapGeometryFeature::TH2LineVertex &previousVertex = feature.lineVertices.at(index - 1);
-                        const MapGeometryFeature::TH2LineVertex &currentVertex = feature.lineVertices.at(index);
-                        const QPointF previousAnchor = anchorPreviewAt(index - 1);
-                        const QPointF currentAnchor = anchorPreviewAt(index);
+                    const auto previewToSourcePoint = [sourceBounds, previewBounds](const QPointF &previewPoint) {
+                        return mapGeometryPreviewToSource(previewPoint, sourceBounds, previewBounds);
+                    };
 
-                        QPointF cp1 = previousAnchor;
-                        QPointF cp2 = currentAnchor;
-                        if (previousVertex.outgoingSourceVertexIndex >= 0) {
-                            if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(previousVertex.outgoingSourceVertexIndex, nullptr)) {
-                                cp1 = control->pos();
+                    MapGeometryFeature interactiveFeature = feature;
+                    for (int index = 0; index < interactiveFeature.lineVertices.size(); ++index) {
+                        MapGeometryFeature::TH2LineVertex &vertex = interactiveFeature.lineVertices[index];
+                        vertex.anchor = previewToSourcePoint(anchorPreviewAt(index));
+                        if (vertex.incomingSourceVertexIndex >= 0 && controlItemsBySourceVertex != nullptr) {
+                            if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(vertex.incomingSourceVertexIndex, nullptr)) {
+                                vertex.incomingControl = previewToSourcePoint(control->pos());
                             }
                         }
-                        if (currentVertex.incomingSourceVertexIndex >= 0) {
-                            if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(currentVertex.incomingSourceVertexIndex, nullptr)) {
-                                cp2 = control->pos();
+                        if (vertex.outgoingSourceVertexIndex >= 0 && controlItemsBySourceVertex != nullptr) {
+                            if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(vertex.outgoingSourceVertexIndex, nullptr)) {
+                                vertex.outgoingControl = previewToSourcePoint(control->pos());
                             }
-                        }
-
-                        const bool hasCurveHandle = previousVertex.outgoingControl.has_value() || currentVertex.incomingControl.has_value();
-                        if (hasCurveHandle) {
-                            interactivePath.cubicTo(cp1, cp2, currentAnchor);
-                        } else {
-                            interactivePath.lineTo(currentAnchor);
                         }
                     }
 
-                    if (feature.closed && anchorItemsByOrder->size() >= 2) {
-                        const MapGeometryFeature::TH2LineVertex &lastVertex = feature.lineVertices.last();
-                        const MapGeometryFeature::TH2LineVertex &firstVertex = feature.lineVertices.first();
-                        const QPointF lastAnchor = anchorPreviewAt(anchorItemsByOrder->size() - 1);
-                        const QPointF firstAnchor = anchorPreviewAt(0);
-
-                        QPointF cp1 = lastAnchor;
-                        QPointF cp2 = firstAnchor;
-                        if (lastVertex.outgoingSourceVertexIndex >= 0) {
-                            if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(lastVertex.outgoingSourceVertexIndex, nullptr)) {
-                                cp1 = control->pos();
-                            }
-                        }
-                        if (firstVertex.incomingSourceVertexIndex >= 0) {
-                            if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(firstVertex.incomingSourceVertexIndex, nullptr)) {
-                                cp2 = control->pos();
-                            }
-                        }
-
-                        const bool hasCurveHandle = lastVertex.outgoingControl.has_value() || firstVertex.incomingControl.has_value();
-                        if (hasCurveHandle) {
-                            interactivePath.cubicTo(cp1, cp2, firstAnchor);
-                        } else {
-                            interactivePath.lineTo(firstAnchor);
-                        }
-                        interactivePath.closeSubpath();
-                    }
-
+                    const QPainterPath interactivePath = linePathForFeature(interactiveFeature, sourceBounds, previewBounds);
                     lineItem->setPath(interactivePath);
                     if (lineDecorationItem != nullptr) {
                         lineDecorationItem->setDecorationPath(interactivePath);
                     }
+                    if (lineGuideSpineItem != nullptr) {
+                        lineGuideSpineItem->setPath(interactivePath);
+                    }
+                    const QVector<StyledLinePath> interactiveStyledPaths =
+                        styledLinePathsForFeature(interactiveFeature, sourceBounds, previewBounds);
+                    if (styledLineItems != nullptr) {
+                        for (const StyledPathItemBinding &binding : *styledLineItems) {
+                            if (binding.pathItem == nullptr
+                                || binding.styledPathIndex < 0
+                                || binding.styledPathIndex >= interactiveStyledPaths.size()) {
+                                continue;
+                            }
+                            binding.pathItem->setPath(interactiveStyledPaths.at(binding.styledPathIndex).path);
+                        }
+                    }
+                    if (styledDecorationItems != nullptr) {
+                        for (const StyledLineDecorationBinding &binding : *styledDecorationItems) {
+                            if (binding.decorationItem == nullptr
+                                || binding.styledPathIndex < 0
+                                || binding.styledPathIndex >= interactiveStyledPaths.size()) {
+                                continue;
+                            }
+                            binding.decorationItem->setDecorationPath(interactiveStyledPaths.at(binding.styledPathIndex).path);
+                        }
+                    }
+                    if (styledGuideItems != nullptr) {
+                        for (const StyledPathItemBinding &binding : *styledGuideItems) {
+                            if (binding.pathItem == nullptr
+                                || binding.styledPathIndex < 0
+                                || binding.styledPathIndex >= interactiveStyledPaths.size()) {
+                                continue;
+                            }
+                            binding.pathItem->setPath(interactiveStyledPaths.at(binding.styledPathIndex).path);
+                        }
+                    }
                     std::optional<QPointF> outgoingControlPreview;
-                    const MapGeometryFeature::TH2LineVertex &firstVertex = feature.lineVertices.first();
+                    const MapGeometryFeature::TH2LineVertex &firstVertex = interactiveFeature.lineVertices.first();
                     if (firstVertex.outgoingSourceVertexIndex >= 0 && controlItemsBySourceVertex != nullptr) {
                         if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(firstVertex.outgoingSourceVertexIndex, nullptr)) {
                             outgoingControlPreview = control->pos();

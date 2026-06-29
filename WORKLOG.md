@@ -22,8 +22,12 @@ Active planning only. Completed history belongs in archive files. Stable archite
   whether remaining Windows lag needs `clear_ms` or `final_ui_ms` optimization.
 - Use `MapEditorLargeScenePerformanceSmokeTest` as the local generated large-map harness when comparing map refresh
   changes; it targets roughly 2k parsed lines and 6k scene items without relying on external cave data.
-- Validate the next Windows build by feel rather than asking for another diagnostic log: pure line/area vertex moves now
-  avoid forcing a full scene rebuild immediately after the source transaction.
+- Validate the next Windows build by feel rather than asking for another diagnostic log: simple unstyled open-line vertex
+  moves avoid forcing a full scene rebuild immediately after the source transaction, while styled/decorated line edits
+  still keep the full refresh needed for generated block/slope/decorator geometry.
+- Keep the decorated-line preview path covered before widening the no-full-refresh optimization: `wall:blocks` line-point
+  segment guide paths now update during vertex preview movement, but full scene refresh remains the correctness fallback
+  for styled/decorated commits.
 - Keep broad Map/TH2 projection rewrites out of release stabilization until Windows feedback confirms the deferred
   vertex-refresh fix is stable.
 - Before tagging or packaging handoff, run local validation focused on recent map-input, source-transaction, installer,
