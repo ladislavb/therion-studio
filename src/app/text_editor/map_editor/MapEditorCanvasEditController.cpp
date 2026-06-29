@@ -596,6 +596,28 @@ std::function<void()> deferredMapSceneRefreshHook(const MapEditorCanvasEditConte
     };
 }
 
+std::function<void()> deferredMapSelectionRestoreHook(const MapEditorCanvasEditContext &context,
+                                                      std::function<void()> selectionRestoreHook = {})
+{
+    return [context, selectionRestoreHook = std::move(selectionRestoreHook)]() mutable {
+        auto restoreSelection = [context, selectionRestoreHook = std::move(selectionRestoreHook)]() mutable {
+            if (context.discardPendingSceneRefreshAfterCommand) {
+                context.discardPendingSceneRefreshAfterCommand();
+            }
+            if (selectionRestoreHook) {
+                selectionRestoreHook();
+            } else if (context.updateGeometrySelectionPresentation) {
+                context.updateGeometrySelectionPresentation();
+            }
+        };
+        if (context.callbackContext != nullptr) {
+            QTimer::singleShot(0, context.callbackContext, std::move(restoreSelection));
+        } else {
+            restoreSelection();
+        }
+    };
+}
+
 MapEditableGeometryVertexItem *resolveSelectedLineVertexItemForContext(const MapEditorCanvasEditContext &context)
 {
     if (context.scene == nullptr) {
@@ -870,7 +892,7 @@ void MapEditorCanvasEditController::recordLineAreaVertexMove(int lineNumber,
                                  afterText,
                                  lineNumber);
     request.projectionInvalidationPolicy = TextEditorSourceProjectionInvalidationPolicy::CustomHook;
-    request.projectionInvalidationHook = deferredMapSceneRefreshHook(context_, std::move(selectionRestoreHook));
+    request.projectionInvalidationHook = deferredMapSelectionRestoreHook(context_, std::move(selectionRestoreHook));
     sourceTransactionController(context_).applyChangeWithSnapshot(request);
     (*context_.toolbarStatusNote) = tr("Updated %1 vertex %2 at source line %3.")
         .arg(rewriteKind)

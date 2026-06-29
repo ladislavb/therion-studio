@@ -65,6 +65,7 @@ MapEditorCanvasEditController makeController(TextEditorTab *tab,
                                              bool *commandApplyInProgress,
                                              int *refreshCount,
                                              int *flushCount,
+                                             int *discardCount = nullptr,
                                              QGraphicsScene *scene = nullptr,
                                              QVector<QGraphicsRectItem *> *draftItems = nullptr)
 {
@@ -82,6 +83,11 @@ MapEditorCanvasEditController makeController(TextEditorTab *tab,
     context.flushPendingSceneRefreshAfterCommand = [flushCount]() {
         ++(*flushCount);
     };
+    if (discardCount != nullptr) {
+        context.discardPendingSceneRefreshAfterCommand = [discardCount]() {
+            ++(*discardCount);
+        };
+    }
     return MapEditorCanvasEditController(context);
 }
 
@@ -181,8 +187,9 @@ int runRecordSourceTextSnapshotForAlreadyAppliedChangeTest()
     bool commandApplyInProgress = false;
     int refreshCount = 0;
     int flushCount = 0;
+    int discardCount = 0;
     MapEditorCanvasEditController controller =
-        makeController(&tab, &undoStack, &toolbarStatus, &commandApplyInProgress, &refreshCount, &flushCount);
+        makeController(&tab, &undoStack, &toolbarStatus, &commandApplyInProgress, &refreshCount, &flushCount, &discardCount);
 
     const QString beforeText = tab.text();
     const QString afterText = beforeText + QStringLiteral("line wall\n  0 0\n  1 1\nendline\n");
@@ -291,8 +298,15 @@ int runLineVertexMoveUsesSourceEditSnapshotTest()
     bool commandApplyInProgress = false;
     int refreshCount = 0;
     int flushCount = 0;
+    int discardCount = 0;
     MapEditorCanvasEditController controller =
-        makeController(&tab, &undoStack, &toolbarStatus, &commandApplyInProgress, &refreshCount, &flushCount);
+        makeController(&tab,
+                       &undoStack,
+                       &toolbarStatus,
+                       &commandApplyInProgress,
+                       &refreshCount,
+                       &flushCount,
+                       &discardCount);
 
     const QString beforeText = tab.text();
     const QString afterText = QStringLiteral("line wall\n  0.0 0.0\n  2.0 3.0\nendline\n");
@@ -312,7 +326,10 @@ int runLineVertexMoveUsesSourceEditSnapshotTest()
         return 1;
     }
     pumpEvents();
-    if (!expect(flushCount == 1, "Line vertex move should flush pending scene refresh once after the event loop resumes.")) {
+    if (!expect(flushCount == 0, "Line vertex move should not force a full scene refresh after the event loop resumes.")) {
+        return 1;
+    }
+    if (!expect(discardCount == 1, "Line vertex move should discard the pending full scene refresh after restoring selection.")) {
         return 1;
     }
 
@@ -424,7 +441,15 @@ int runDraftCompletionUsesCentralSnapshotReplayTest()
     int refreshCount = 0;
     int flushCount = 0;
     MapEditorCanvasEditController controller =
-        makeController(&tab, &undoStack, &toolbarStatus, &commandApplyInProgress, &refreshCount, &flushCount, &scene, &draftItems);
+        makeController(&tab,
+                       &undoStack,
+                       &toolbarStatus,
+                       &commandApplyInProgress,
+                       &refreshCount,
+                       &flushCount,
+                       nullptr,
+                       &scene,
+                       &draftItems);
 
     auto *draftItem = new MapDraftGeometryItem(1, DraftGeometryKind::Point);
     scene.addItem(draftItem);

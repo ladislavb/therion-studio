@@ -47,6 +47,7 @@ struct MapEditorCanvasEditContext
     std::function<void()> markSourceChangeOriginatedFromMapTransaction;
     std::function<void()> refreshToolbarSummary;
     std::function<void()> flushPendingSceneRefreshAfterCommand;
+    std::function<void()> discardPendingSceneRefreshAfterCommand;
     std::function<QPointF(const QPointF &)> sourcePointFromScenePosition;
     std::function<void()> updateGeometrySelectionPresentation;
     std::function<void()> updateCommandSurfaceState;

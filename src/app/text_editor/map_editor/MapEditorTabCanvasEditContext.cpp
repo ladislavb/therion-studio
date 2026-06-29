@@ -45,6 +45,9 @@ MapEditorCanvasEditContext MapEditorTab::canvasEditContext()
         .flushPendingSceneRefreshAfterCommand = [this]() {
             flushPendingMapSceneRefreshAfterCommand();
         },
+        .discardPendingSceneRefreshAfterCommand = [this]() {
+            mapSceneRefreshPending_ = false;
+        },
         .sourcePointFromScenePosition = [this](const QPointF &scenePosition) {
             return sourcePointFromScenePosition(scenePosition);
         },
