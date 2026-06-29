@@ -16,6 +16,7 @@ private slots:
     void classifiesCommandAndBlockContentLines();
     void preservesCommentsBlankRowsAndMixedLineEndings();
     void exposesLosslessSourceTextSnapshot();
+    void looksUpLinesByLineNumberAndOffset();
     void recordsBlockCloseAndUnclosedState();
     void recordsNestedBlockRanges();
     void keepsUnclosedBlockRangesOpen();
@@ -100,6 +101,37 @@ void TherionSourceDocumentTest::exposesLosslessSourceTextSnapshot()
     QCOMPARE(spans.at(0).lineEndingLength, document.parsedDocument().lines.at(0).lineEndingLength);
     QCOMPARE(spans.at(0).endOffset, document.parsedDocument().lines.at(0).endOffset);
     QCOMPARE(spans.at(2).lineEndingLength, 0);
+}
+
+void TherionSourceDocumentTest::looksUpLinesByLineNumberAndOffset()
+{
+    const QString text = QStringLiteral("encoding utf-8\r\n# comment\nscrap s1");
+    const TherionSourceDocument document = TherionSourceDocument::fromText(text);
+
+    const TherionSourceDocumentLine *firstLine = document.lineAtLineNumber(1);
+    QVERIFY(firstLine != nullptr);
+    QCOMPARE(firstLine->sourceLine.text, QStringLiteral("encoding utf-8"));
+    QVERIFY(firstLine->role == TherionSourceLineRole::Command);
+
+    const TherionSourceDocumentLine *lineEndingLine = document.lineAtOffset(15);
+    QVERIFY(lineEndingLine != nullptr);
+    QCOMPARE(lineEndingLine->sourceLine.lineNumber, 1);
+    QCOMPARE(lineEndingLine->sourceLine.text, QStringLiteral("encoding utf-8"));
+
+    const TherionSourceDocumentLine *secondLine = document.lineAtOffset(16);
+    QVERIFY(secondLine != nullptr);
+    QCOMPARE(secondLine->sourceLine.lineNumber, 2);
+    QVERIFY(secondLine->role == TherionSourceLineRole::Comment);
+
+    const TherionSourceDocumentLine *endLine = document.lineAtOffset(text.size());
+    QVERIFY(endLine != nullptr);
+    QCOMPARE(endLine->sourceLine.lineNumber, 3);
+    QCOMPARE(endLine->sourceLine.text, QStringLiteral("scrap s1"));
+
+    QVERIFY(document.lineAtLineNumber(0) == nullptr);
+    QVERIFY(document.lineAtLineNumber(4) == nullptr);
+    QVERIFY(document.lineAtOffset(-1) == nullptr);
+    QVERIFY(document.lineAtOffset(text.size() + 1) == nullptr);
 }
 
 void TherionSourceDocumentTest::recordsBlockCloseAndUnclosedState()

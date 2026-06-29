@@ -251,26 +251,22 @@ TherionParsedSourceDocument TherionDocumentParser::parseSourceDocument(const The
 {
     TherionParsedSourceDocument document;
     const QVector<TherionSourceLine> &physicalLines = sourceText.physicalLines();
+    const QVector<TherionSourceLineSpan> lineSpans = sourceText.lineSpans();
     document.lines.reserve(physicalLines.size());
 
-    int offset = 0;
     for (int index = 0; index < physicalLines.size(); ++index) {
         const TherionSourceLine &sourceLine = physicalLines.at(index);
-        const int lineNumber = index + 1;
-        const int textLength = sourceLine.text.size();
-        const int lineEndingLength = sourceLine.lineEnding.size();
-        const int endOffset = offset + textLength + lineEndingLength;
+        const TherionSourceLineSpan &lineSpan = lineSpans.at(index);
         document.lines.append(TherionParsedSourceLine{
-            lineNumber,
-            offset,
-            textLength,
-            lineEndingLength,
-            endOffset,
+            lineSpan.lineNumber,
+            lineSpan.startOffset,
+            lineSpan.textLength,
+            lineSpan.lineEndingLength,
+            lineSpan.endOffset,
             sourceLine.text,
             sourceLine.lineEnding,
-            parseLine(sourceLine.text, lineNumber)
+            parseLine(sourceLine.text, lineSpan.lineNumber)
         });
-        offset = endOffset;
     }
 
     return document;

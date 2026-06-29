@@ -211,6 +211,23 @@ const QVector<TherionSourceDocumentLine> &TherionSourceDocument::lines() const
     return lines_;
 }
 
+const TherionSourceDocumentLine *TherionSourceDocument::lineAtLineNumber(int lineNumber) const
+{
+    if (lineNumber <= 0 || lineNumber > lines_.size()) {
+        return nullptr;
+    }
+    return &lines_.at(lineNumber - 1);
+}
+
+const TherionSourceDocumentLine *TherionSourceDocument::lineAtOffset(int offset) const
+{
+    const std::optional<TherionSourceTextLocation> location = sourceText_.locationForOffset(offset);
+    if (!location.has_value()) {
+        return nullptr;
+    }
+    return lineAtLineNumber(location->lineNumber);
+}
+
 const QVector<TherionSourceBlockRange> &TherionSourceDocument::blockRanges() const
 {
     return blockRanges_;

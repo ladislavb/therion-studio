@@ -3,6 +3,8 @@
 #include "TherionDocumentParser.h"
 #include "TherionSourceText.h"
 
+#include <optional>
+
 #include <QHash>
 #include <QString>
 #include <QVector>
@@ -82,6 +84,8 @@ public:
     [[nodiscard]] const TherionSourceText &sourceText() const;
     [[nodiscard]] const TherionParsedSourceDocument &parsedDocument() const;
     [[nodiscard]] const QVector<TherionSourceDocumentLine> &lines() const;
+    [[nodiscard]] const TherionSourceDocumentLine *lineAtLineNumber(int lineNumber) const;
+    [[nodiscard]] const TherionSourceDocumentLine *lineAtOffset(int offset) const;
     [[nodiscard]] const QVector<TherionSourceBlockRange> &blockRanges() const;
     [[nodiscard]] const QVector<TherionSourceBlockFrame> &openBlocksAtEnd() const;
     [[nodiscard]] QString toText() const;
