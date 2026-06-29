@@ -1,7 +1,11 @@
 #include "../src/core/SessionStore.h"
 
 #include <QCoreApplication>
+#include <QDate>
+#include <QDateTime>
 #include <QSettings>
+#include <QTime>
+#include <QTimeZone>
 #include <QTemporaryDir>
 
 #include <iostream>
@@ -43,6 +47,9 @@ int runInstanceBackedRoundTripTest()
         store.setStructureNameOverrides(QStringLiteral("{\"a\":\"A\"}"));
         store.setApplicationLanguage(QStringLiteral("cs"));
         store.setDefaultTextEditorMode(QStringLiteral("blocks"));
+        store.setAutomaticProjectValidationEnabled(true);
+        store.setTroubleshootingLogsEnabledUntilUtc(
+            QDateTime(QDate(2026, 6, 29), QTime(12, 30, 0, 123), QTimeZone::UTC));
         store.setTherionExecutablePath(QStringLiteral("/usr/bin/therion"));
         store.setTherionWorkingDirectory(QStringLiteral("/tmp/project"));
         store.setTherionRunTargetMode(QStringLiteral("project"));
@@ -100,6 +107,15 @@ int runInstanceBackedRoundTripTest()
     }
     if (!expect(store.defaultTextEditorMode() == QStringLiteral("blocks"),
                 "Default text editor mode should round-trip through the injected settings file.")) {
+        return 1;
+    }
+    if (!expect(store.automaticProjectValidationEnabled(),
+                "Automatic project validation flag should round-trip through the injected settings file.")) {
+        return 1;
+    }
+    if (!expect(store.troubleshootingLogsEnabledUntilUtc()
+                    == QDateTime(QDate(2026, 6, 29), QTime(12, 30, 0, 123), QTimeZone::UTC),
+                "Troubleshooting log expiration should round-trip through the injected settings file.")) {
         return 1;
     }
     if (!expect(store.therionExecutablePath() == QStringLiteral("/usr/bin/therion"),
@@ -226,6 +242,14 @@ int runDefaultsTest()
                 "Default text editor mode should be raw.")) {
         return 1;
     }
+    if (!expect(!store.automaticProjectValidationEnabled(),
+                "Default automatic project validation flag should be false.")) {
+        return 1;
+    }
+    if (!expect(!store.troubleshootingLogsEnabledUntilUtc().isValid(),
+                "Default troubleshooting log expiration should be unset.")) {
+        return 1;
+    }
     if (!expect(!store.therionMapTouchFriendlyControlsEnabled(),
                 "Default touch-friendly controls flag should be false.")) {
         return 1;
@@ -267,6 +291,14 @@ int runInMemoryStoreTest()
                 "In-memory store should default text editor mode to raw.")) {
         return 1;
     }
+    if (!expect(!store.automaticProjectValidationEnabled(),
+                "In-memory store should default automatic project validation to false.")) {
+        return 1;
+    }
+    if (!expect(!store.troubleshootingLogsEnabledUntilUtc().isValid(),
+                "In-memory store should default troubleshooting log expiration to unset.")) {
+        return 1;
+    }
     if (!expect(store.therionMapMagnifierEnabled(), "In-memory store should default map magnifier to true.")) {
         return 1;
     }
@@ -283,6 +315,9 @@ int runInMemoryStoreTest()
                                        {QStringLiteral("/tmp/project/recent.th")});
     store.setApplicationLanguage(QStringLiteral("sk"));
     store.setDefaultTextEditorMode(QStringLiteral("blocks"));
+    store.setAutomaticProjectValidationEnabled(true);
+    store.setTroubleshootingLogsEnabledUntilUtc(
+        QDateTime(QDate(2026, 6, 29), QTime(13, 45), QTimeZone::UTC));
     store.setTherionExecutablePath(QStringLiteral("/usr/bin/therion"));
     store.setTherionMapMagnifierEnabled(false);
     store.setTherionMapObjectsAutoCollapseExpandScrapsEnabled(true);
@@ -315,6 +350,15 @@ int runInMemoryStoreTest()
     }
     if (!expect(store.defaultTextEditorMode() == QStringLiteral("blocks"),
                 "In-memory store should retain default text editor mode in the current process.")) {
+        return 1;
+    }
+    if (!expect(store.automaticProjectValidationEnabled(),
+                "In-memory store should retain automatic project validation preference.")) {
+        return 1;
+    }
+    if (!expect(store.troubleshootingLogsEnabledUntilUtc()
+                    == QDateTime(QDate(2026, 6, 29), QTime(13, 45), QTimeZone::UTC),
+                "In-memory store should retain troubleshooting log expiration preference.")) {
         return 1;
     }
     if (!expect(store.therionExecutablePath() == QStringLiteral("/usr/bin/therion"),

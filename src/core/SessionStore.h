@@ -58,6 +58,12 @@ public:
     QString defaultTextEditorMode() const override;
     void setDefaultTextEditorMode(const QString &mode) override;
 
+    bool automaticProjectValidationEnabled() const override;
+    void setAutomaticProjectValidationEnabled(bool enabled) override;
+
+    QDateTime troubleshootingLogsEnabledUntilUtc() const override;
+    void setTroubleshootingLogsEnabledUntilUtc(const QDateTime &enabledUntilUtc) override;
+
     QString therionExecutablePath() const override;
     void setTherionExecutablePath(const QString &path) override;
 
@@ -125,6 +131,12 @@ public:
     QString defaultTextEditorMode() const override;
     void setDefaultTextEditorMode(const QString &mode) override;
 
+    bool automaticProjectValidationEnabled() const override;
+    void setAutomaticProjectValidationEnabled(bool enabled) override;
+
+    QDateTime troubleshootingLogsEnabledUntilUtc() const override;
+    void setTroubleshootingLogsEnabledUntilUtc(const QDateTime &enabledUntilUtc) override;
+
     QString therionExecutablePath() const override;
     void setTherionExecutablePath(const QString &path) override;
 
@@ -164,6 +176,8 @@ private:
     QString structureNameOverrides_;
     QString applicationLanguage_ = QStringLiteral("system");
     QString defaultTextEditorMode_ = QStringLiteral("raw");
+    bool automaticProjectValidationEnabled_ = false;
+    QDateTime troubleshootingLogsEnabledUntilUtc_;
     QString therionExecutablePath_;
     QString therionWorkingDirectory_;
     QString therionRunTargetMode_ = QStringLiteral("project");

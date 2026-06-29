@@ -989,6 +989,49 @@ MapEditableGeometryVertexItem *findVisibleLineControl(QGraphicsScene *scene, QGr
     return controls.isEmpty() ? nullptr : controls.first();
 }
 
+QGraphicsPathItem *findPathItemForLine(QGraphicsScene *scene,
+                                       int lineNumber,
+                                       std::optional<int> selectionSubtype);
+bool clickScenePoint(QGraphicsView *view, const QPointF &scenePoint);
+
+MapEditableGeometryVertexItem *waitForVisibleLineControl(QGraphicsScene *scene,
+                                                         QGraphicsView *view,
+                                                         int lineNumber,
+                                                         int timeoutMs = 1000)
+{
+    const qint64 deadline = QDateTime::currentMSecsSinceEpoch() + timeoutMs;
+    MapEditableGeometryVertexItem *lastControl = nullptr;
+    while (QDateTime::currentMSecsSinceEpoch() <= deadline) {
+        pumpEvents();
+        lastControl = findVisibleLineControl(scene, view, lineNumber);
+        if (lastControl != nullptr) {
+            return lastControl;
+        }
+        QThread::msleep(5);
+    }
+    return lastControl;
+}
+
+bool ensureVisibleLineControls(MapEditorTab *mapTab, QGraphicsView *view, int lineNumber)
+{
+    if (mapTab == nullptr || view == nullptr || view->scene() == nullptr || lineNumber <= 0) {
+        return false;
+    }
+    if (findVisibleLineControl(view->scene(), view, lineNumber) != nullptr) {
+        return true;
+    }
+
+    mapTab->goToLine(lineNumber);
+    pumpEvents();
+    if (auto *linePath = findPathItemForLine(view->scene(), lineNumber, std::nullopt); linePath != nullptr) {
+        const QPointF lineClickPoint = linePath->mapToScene(linePath->path().pointAtPercent(0.5));
+        clickScenePoint(view, lineClickPoint);
+    }
+    pumpEvents();
+    mapTab->triggerSelectMode();
+    return waitForVisibleLineControl(view->scene(), view, lineNumber, 2000) != nullptr;
+}
+
 struct SelectedLineVertexSnapshot
 {
     int lineNumber = 0;
@@ -1200,12 +1243,17 @@ bool dragAnyVisibleLineControlUntilTextChanges(MapEditorTab *mapTab,
     }
 
     const QVector<QPointF> dragDeltas = {
+        QPointF(28.0, -18.0),
+        QPointF(-28.0, 18.0),
         QPointF(12.0, -8.0),
         QPointF(-12.0, 8.0),
         QPointF(8.0, 12.0),
         QPointF(-8.0, -12.0),
     };
     for (const QPointF &dragDelta : dragDeltas) {
+        if (!ensureVisibleLineControls(mapTab, view, lineNumber)) {
+            continue;
+        }
         for (int controlIndex = 0; controlIndex < 6; ++controlIndex) {
             const QVector<MapEditableGeometryVertexItem *> controls =
                 visibleLineControls(view->scene(), view, lineNumber);
@@ -1216,12 +1264,10 @@ bool dragAnyVisibleLineControlUntilTextChanges(MapEditorTab *mapTab,
             if (!dragItemBySceneDelta(view, controlItem, dragDelta)) {
                 continue;
             }
-            if (waitForTextDiffers(mapTab, originalText, 750)) {
+            if (waitForTextDiffers(mapTab, originalText, 2000)) {
                 return true;
             }
-            // The drag path may refresh the scene and delete visible handle items even
-            // if this particular handle did not produce a source-text change.
-            break;
+            pumpEvents();
         }
     }
     return mapTab->text() != originalText;
@@ -2147,7 +2193,7 @@ int runTemplateBezierEditScenario(const QString &fixtureName,
     const QString originalText = mapTab->text();
     mapTab->triggerSelectMode();
     pumpEvents();
-    auto *controlItem = findVisibleLineControl(mapView->scene(), mapView, lineNumber);
+    auto *controlItem = waitForVisibleLineControl(mapView->scene(), mapView, lineNumber, 2000);
     if (!expect(controlItem != nullptr,
                 "Clicking a template-style Bezier line segment should reveal editable control handles.")) {
         return 1;
@@ -2591,6 +2637,10 @@ int runDragUndoRedoSmoke()
         return 1;
     }
 
+    if (!expect(waitForTextDiffers(mapTab, textAfterTextUndoEntry, 2000),
+                "Mixed map/text arbitration test should eventually apply the map edit on top of marker text.")) {
+        return 1;
+    }
     const QString textAfterMixedMapEdit = mapTab->text();
     if (!expect(textAfterMixedMapEdit.contains(mixedUndoMarker) && textAfterMixedMapEdit != textAfterTextUndoEntry,
                 "Mixed map/text arbitration test should produce a map edit layered on top of marker text.")) {

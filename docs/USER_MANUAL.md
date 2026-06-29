@@ -388,6 +388,10 @@ Settings include:
 - application language (`System Default`, English, Czech, Slovak)
 - Therion executable path
 - default editor for newly opened `.th` and Therion config tabs (`Raw` or `Blocks`)
+- automatic full-project validation after project, document, and file changes
+- troubleshooting logs for 24 hours, with actions to open the log folder or clear existing logs
+
+Troubleshooting log changes take effect after restarting Therion Studio. Logs are written to the application log folder, rotated automatically, and the preference expires after 24 hours so logging cannot stay enabled indefinitely.
 
 ## 9. Keyboard Shortcuts
 

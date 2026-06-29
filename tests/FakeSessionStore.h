@@ -48,6 +48,15 @@ public:
     QString defaultTextEditorMode() const override { return defaultTextEditorMode_; }
     void setDefaultTextEditorMode(const QString &mode) override { defaultTextEditorMode_ = mode; }
 
+    bool automaticProjectValidationEnabled() const override { return automaticProjectValidationEnabled_; }
+    void setAutomaticProjectValidationEnabled(bool enabled) override { automaticProjectValidationEnabled_ = enabled; }
+
+    QDateTime troubleshootingLogsEnabledUntilUtc() const override { return troubleshootingLogsEnabledUntilUtc_; }
+    void setTroubleshootingLogsEnabledUntilUtc(const QDateTime &enabledUntilUtc) override
+    {
+        troubleshootingLogsEnabledUntilUtc_ = enabledUntilUtc.isValid() ? enabledUntilUtc.toUTC() : QDateTime();
+    }
+
     QString therionExecutablePath() const override { return therionExecutablePath_; }
     void setTherionExecutablePath(const QString &path) override { therionExecutablePath_ = path; }
 
@@ -99,6 +108,8 @@ private:
     QString structureNameOverrides_;
     QString applicationLanguage_ = QStringLiteral("system");
     QString defaultTextEditorMode_ = QStringLiteral("raw");
+    bool automaticProjectValidationEnabled_ = false;
+    QDateTime troubleshootingLogsEnabledUntilUtc_;
     QString therionExecutablePath_;
     QString therionWorkingDirectory_;
     QString therionRunTargetMode_;

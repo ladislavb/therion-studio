@@ -42,6 +42,14 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ### Validation And Catalog Metadata
 
+- Treat full-project validation as an explicit/manual workflow by default; use the Settings toggle only when projects are
+  small enough or the user wants live full-project diagnostics.
+- Ask large-project Windows testers to collect `THERION_STUDIO_ENABLE_LOG=1` output and compare
+  `project-validation-scan` versus `project-validation-ui` timings before changing more validation architecture.
+- Prefer Settings -> troubleshooting logs for tester builds: the preference is time-limited, restart-applied, and uses
+  rotated application log files instead of requiring users to set environment variables.
+- Optimize future live validation with incremental file/revision caching, generation-keyed cancellation, and cheaper
+  Validation tree updates before making automatic full-project validation the default again.
 - Keep validation conservative while moving command, option, and positional argument interpretation into catalog-backed
   logical-command metadata.
 - Keep problem reporting centralized in the Validation panel while Structure remains an orientation/navigation view.
@@ -95,7 +103,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Replace remaining fixed-delay map selection-restore retry timers with explicit scene-refresh completion/generation callbacks.
 - Optional Structure graph view for relationships such as `preview`, `revise`, `join`, `equate`, relationship status, and station-network edges.
 - Compiler-confirmed project-index comparison once lightweight indexing is no longer sufficient.
-- Retire or demote the manual `Validate Project` action after live project diagnostics are reliable for edits, saves, file operations, project-open, and catalog/source-model refresh events.
+- Restore automatic full-project validation as the recommended/default mode only after live diagnostics are incremental,
+  cancellable, and UI-cheap for nested projects.
 - Broader Therion corpus regression tests for parsing, serialization, source rewrites, indexing, and map/text synchronization.
 - Add old-project integration fixtures for Therion/Metapost runner failures once a fixture exists.
 - Bounded `.xvi` cache policy for very large projects.

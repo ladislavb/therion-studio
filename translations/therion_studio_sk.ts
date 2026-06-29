@@ -569,6 +569,21 @@
     </message>
     <message>
         <location filename="../src/app/MainWindow.cpp" line="941"/>
+        <source>Troubleshooting log changes will take effect after restarting Therion Studio.</source>
+        <translation>Zmeny diagnostického logovania sa prejavia po reštarte Therion Studia.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindow.cpp" line="965"/>
+        <source>Restart Now</source>
+        <translation>Reštartovať teraz</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindow.cpp" line="966"/>
+        <source>Later</source>
+        <translation>Neskôr</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindow.cpp" line="941"/>
         <source>Open Therion Project</source>
         <translation>Otvoriť projekt Therion</translation>
     </message>
@@ -1798,6 +1813,16 @@ Ak je súbor otvorený, najprv sa zavrie.</translation>
         <translation>Validácia projektu beží pre projektové súbory automaticky. Pomocou Validovať projekt obnovíte otvorený projekt.</translation>
     </message>
     <message>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="374"/>
+        <source>Automatic project validation is enabled. Use Validate Project to refresh now.</source>
+        <translation>Automatická validácia projektu je zapnutá. Pomocou Validovať projekt ju môžete spustiť hneď.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="377"/>
+        <source>Automatic project validation is disabled. Use Validate Project to run it manually.</source>
+        <translation>Automatická validácia projektu je vypnutá. Pomocou Validovať projekt ju spustite ručne.</translation>
+    </message>
+    <message>
         <location filename="../src/app/MainWindowValidationSidebar.cpp" line="260"/>
         <source>Validate Project</source>
         <translation>Validovať projekt</translation>
@@ -1997,6 +2022,11 @@ Očakávané súbory sú `docs/USER_MANUAL.&lt;language&gt;.md` alebo `docs/USER
 </context>
 <context>
     <name>QObject</name>
+    <message>
+        <location filename="../src/platform/DiagnosticLogging.cpp" line="218"/>
+        <source>Could not remove log file `%1`.</source>
+        <translation>Súbor logu `%1` sa nepodarilo vymazať.</translation>
+    </message>
     <message>
         <location filename="../src/app/MainWindow.cpp" line="187"/>
         <location filename="../src/app/MainWindow.cpp" line="202"/>
@@ -3518,6 +3548,65 @@ Line-point options: %1</translation>
         <location filename="../src/app/MainWindowSettingsDialog.cpp" line="80"/>
         <source>Default .th / config editor</source>
         <translation>Predvolený editor pre .th / konfiguráciu</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="84"/>
+        <source>Run full project validation automatically</source>
+        <translation>Automaticky spúšťať úplnú validáciu projektu</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="87"/>
+        <source>When enabled, the Validation panel refreshes the whole project after project, document, and file changes.</source>
+        <translation>Keď je zapnuté, panel Validácia obnoví celý projekt po zmenách projektu, dokumentov a súborov.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="91"/>
+        <source>Enable troubleshooting logs for 24 hours</source>
+        <translation>Zapnúť diagnostické logy na 24 hodín</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="94"/>
+        <source>Diagnostic logging writes timing and input diagnostics to the application log folder and takes effect after restarting Therion Studio.</source>
+        <translation>Diagnostické logovanie zapisuje časovanie a diagnostiku vstupu do priečinka logov aplikácie a prejaví sa po reštarte Therion Studia.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="98"/>
+        <source>Troubleshooting logs are rotated automatically and the preference expires after 24 hours.</source>
+        <translation>Diagnostické logy sa automaticky rotujú a nastavenie vyprší po 24 hodinách.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="107"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="185"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="191"/>
+        <source>Open Log Folder</source>
+        <translation>Otvoriť priečinok logov</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="112"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="201"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="209"/>
+        <source>Clear Logs</source>
+        <translation>Vymazať logy</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="186"/>
+        <source>The diagnostic log folder is not available on this system.</source>
+        <translation>Priečinok diagnostických logov nie je na tomto systéme dostupný.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="192"/>
+        <source>Could not open the diagnostic log folder.</source>
+        <translation>Priečinok diagnostických logov sa nepodarilo otvoriť.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="202"/>
+        <source>Could not clear diagnostic logs.</source>
+        <translation>Diagnostické logy sa nepodarilo vymazať.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="210"/>
+        <source>Diagnostic logs were cleared.</source>
+        <translation>Diagnostické logy boli vymazané.</translation>
     </message>
     <message>
         <location filename="../src/app/MainWindowSettingsDialog.cpp" line="111"/>

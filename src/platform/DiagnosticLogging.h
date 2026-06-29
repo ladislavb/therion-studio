@@ -1,8 +1,13 @@
 #pragma once
 
+#include <QString>
+
 namespace TherionStudio
 {
 
-void initializeDiagnosticLogging();
+QString diagnosticLogDirectoryPath();
+QString diagnosticLogFilePath();
+bool clearDiagnosticLogs(QString *errorMessage = nullptr);
+void initializeDiagnosticLogging(bool enableFromPreference = false);
 
 } // namespace TherionStudio

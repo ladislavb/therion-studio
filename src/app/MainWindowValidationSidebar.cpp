@@ -11,7 +11,9 @@
 #include <QBrush>
 #include <QColor>
 #include <QCoreApplication>
+#include <QDebug>
 #include <QDir>
+#include <QElapsedTimer>
 #include <QFileInfo>
 #include <QHash>
 #include <QHeaderView>
@@ -42,6 +44,52 @@ enum ValidationResultRole
     ValidationDiagnosticIndexRole,
     ValidationSeverityRankRole,
 };
+
+bool diagnosticProjectValidationLoggingEnabled()
+{
+    static const bool enabled = []() {
+        const QString value = QString::fromLocal8Bit(qgetenv("THERION_STUDIO_ENABLE_LOG")).trimmed().toLower();
+        return value == QStringLiteral("1")
+            || value == QStringLiteral("true")
+            || value == QStringLiteral("yes")
+            || value == QStringLiteral("on");
+    }();
+    return enabled;
+}
+
+bool isAutomaticProjectValidationTrigger(TherionStudio::ProjectValidationController::Trigger trigger)
+{
+    switch (trigger) {
+    case TherionStudio::ProjectValidationController::Trigger::ManualRefresh:
+    case TherionStudio::ProjectValidationController::Trigger::FixApplied:
+        return false;
+    case TherionStudio::ProjectValidationController::Trigger::ProjectOpened:
+    case TherionStudio::ProjectValidationController::Trigger::ProjectFilesChanged:
+    case TherionStudio::ProjectValidationController::Trigger::DocumentSaved:
+    case TherionStudio::ProjectValidationController::Trigger::DocumentChanged:
+        return true;
+    }
+    return true;
+}
+
+QString validationTriggerLogName(TherionStudio::ProjectValidationController::Trigger trigger)
+{
+    switch (trigger) {
+    case TherionStudio::ProjectValidationController::Trigger::ManualRefresh:
+        return QStringLiteral("manual-refresh");
+    case TherionStudio::ProjectValidationController::Trigger::ProjectOpened:
+        return QStringLiteral("project-opened");
+    case TherionStudio::ProjectValidationController::Trigger::ProjectFilesChanged:
+        return QStringLiteral("project-files-changed");
+    case TherionStudio::ProjectValidationController::Trigger::DocumentSaved:
+        return QStringLiteral("document-saved");
+    case TherionStudio::ProjectValidationController::Trigger::DocumentChanged:
+        return QStringLiteral("document-changed");
+    case TherionStudio::ProjectValidationController::Trigger::FixApplied:
+        return QStringLiteral("fix-applied");
+    }
+    return QStringLiteral("unknown");
+}
 
 int severityRank(TherionStudio::TherionSourceDiagnosticSeverity severity)
 {
@@ -263,9 +311,10 @@ void MainWindow::buildValidationSidebar()
     });
     validationLayout->addWidget(validationScanProjectButton_);
 
-    validationStatusLabel_ = new QLabel(tr("Project validation runs automatically for project files. Use Validate Project to refresh the open project."), validationPage);
+    validationStatusLabel_ = new QLabel(validationPage);
     validationStatusLabel_->setWordWrap(true);
     validationLayout->addWidget(validationStatusLabel_);
+    updateProjectValidationStatusMessage();
 
     validationResultsModel_->clear();
     validationResultsModel_->setHorizontalHeaderLabels({tr("Problems")});
@@ -440,9 +489,27 @@ void MainWindow::requestProjectValidation()
                              true);
 }
 
+void MainWindow::updateProjectValidationStatusMessage()
+{
+    if (validationStatusLabel_ == nullptr || sessionStore_ == nullptr) {
+        return;
+    }
+
+    if (sessionStore_->automaticProjectValidationEnabled()) {
+        validationStatusLabel_->setText(
+            tr("Automatic project validation is enabled. Use Validate Project to refresh now."));
+    } else {
+        validationStatusLabel_->setText(
+            tr("Automatic project validation is disabled. Use Validate Project to run it manually."));
+    }
+}
+
 void MainWindow::requestRestoredProjectValidation()
 {
-    if (!projectRootPath_.trimmed().isEmpty() && QDir(projectRootPath_).exists()) {
+    if (!projectRootPath_.trimmed().isEmpty()
+        && QDir(projectRootPath_).exists()
+        && sessionStore_ != nullptr
+        && sessionStore_->automaticProjectValidationEnabled()) {
         requestProjectValidation(TherionStudio::ProjectValidationController::Trigger::ProjectOpened, false);
     }
 }
@@ -451,6 +518,20 @@ void MainWindow::requestProjectValidation(TherionStudio::ProjectValidationContro
                                           bool revealPanel)
 {
     if (projectValidationController_ == nullptr) {
+        return;
+    }
+
+    if (isAutomaticProjectValidationTrigger(trigger)
+        && (sessionStore_ == nullptr || !sessionStore_->automaticProjectValidationEnabled())) {
+        if (diagnosticProjectValidationLoggingEnabled()) {
+            qInfo().noquote()
+                << QStringLiteral("project-validation-request skipped trigger=%1 reason=automatic-disabled")
+                       .arg(validationTriggerLogName(trigger));
+        }
+        if (revealPanel) {
+            updateProjectValidationStatusMessage();
+            showSidebarPane(SidebarPane::Validation);
+        }
         return;
     }
 
@@ -596,6 +677,11 @@ void MainWindow::updateOpenEditorProjectValidationDiagnostics()
 void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidationController::Trigger trigger,
                                                  const TherionStudio::ProjectValidationScanner::Result &result)
 {
+    QElapsedTimer finishTimer;
+    finishTimer.start();
+    qint64 modelRebuildMs = 0;
+    qint64 diagnosticsApplyMs = 0;
+    qint64 treeUpdateMs = 0;
     const bool revealPanel = validationRevealByGeneration_.take(result.generation);
     const bool navigateAfterFix = trigger == TherionStudio::ProjectValidationController::Trigger::FixApplied;
     if (validationScanProjectButton_ != nullptr) {
@@ -607,6 +693,23 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
     if (validationResultsModel_ == nullptr) {
         return;
     }
+    auto logFinish = [&]() {
+        if (!diagnosticProjectValidationLoggingEnabled()) {
+            return;
+        }
+        qInfo().noquote()
+            << QStringLiteral("project-validation-ui trigger=%1 generation=%2 files=%3 findings=%4 limit_reached=%5 reveal=%6 model_ms=%7 diagnostics_ms=%8 tree_ms=%9 total_ms=%10")
+                   .arg(validationTriggerLogName(trigger))
+                   .arg(result.generation)
+                   .arg(result.searchedFileCount)
+                   .arg(result.findings.size())
+                   .arg(result.limitReached ? QStringLiteral("true") : QStringLiteral("false"))
+                   .arg(revealPanel ? QStringLiteral("true") : QStringLiteral("false"))
+                   .arg(modelRebuildMs)
+                   .arg(diagnosticsApplyMs)
+                   .arg(treeUpdateMs)
+                   .arg(finishTimer.elapsed());
+    };
 
     const int previousScrollValue = validationScrollValue(validationResultsTree_);
     QString selectedFilePath;
@@ -634,22 +737,30 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
 
     if (!result.errorMessage.isEmpty()) {
         clearValidationRailIndicator();
+        QElapsedTimer diagnosticsTimer;
+        diagnosticsTimer.start();
         updateOpenEditorProjectValidationDiagnostics();
+        diagnosticsApplyMs = diagnosticsTimer.elapsed();
         if (validationStatusLabel_ != nullptr) {
             validationStatusLabel_->setText(result.errorMessage);
         }
         handleValidationSelectionChanged({}, {});
+        logFinish();
         return;
     }
 
     if (result.findings.isEmpty()) {
         clearValidationRailIndicator();
+        QElapsedTimer diagnosticsTimer;
+        diagnosticsTimer.start();
         updateOpenEditorProjectValidationDiagnostics();
+        diagnosticsApplyMs = diagnosticsTimer.elapsed();
         if (validationStatusLabel_ != nullptr) {
             validationStatusLabel_->setText(tr("No validation problems found in %1 searched file(s).")
                                                 .arg(result.searchedFileCount));
         }
         handleValidationSelectionChanged({}, {});
+        logFinish();
         return;
     }
 
@@ -663,6 +774,8 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
     QHash<QString, QStandardItem *> fileItemsByPath;
     QHash<QString, QVector<TherionStudio::ProjectValidationScanner::Finding>> findingsByPath;
     QVector<QString> orderedFilePaths;
+    QElapsedTimer modelTimer;
+    modelTimer.start();
     for (const TherionStudio::ProjectValidationScanner::Finding &finding : result.findings) {
         if (!findingsByPath.contains(finding.filePath)) {
             orderedFilePaths.append(finding.filePath);
@@ -722,8 +835,12 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
             }
         }
     }
+    modelRebuildMs = modelTimer.elapsed();
 
+    QElapsedTimer diagnosticsTimer;
+    diagnosticsTimer.start();
     updateOpenEditorProjectValidationDiagnostics();
+    diagnosticsApplyMs = diagnosticsTimer.elapsed();
 
     if (validationStatusLabel_ != nullptr) {
         QString status = tr("%1 validation problem(s) found in %2 searched file(s).")
@@ -736,6 +853,8 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
         validationStatusLabel_->setText(status);
     }
     if (validationResultsTree_ != nullptr) {
+        QElapsedTimer treeTimer;
+        treeTimer.start();
         validationResultsTree_->expandAll();
         validationResultsTree_->resizeColumnToContents(0);
         const QModelIndex firstFinding =
@@ -753,10 +872,12 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
             handleValidationSelectionChanged({}, {});
         }
         restoreValidationScrollValue(validationResultsTree_, previousScrollValue);
+        treeUpdateMs = treeTimer.elapsed();
     }
     if (revealPanel) {
         showSidebarPane(SidebarPane::Validation);
     }
+    logFinish();
 }
 
 void MainWindow::handleValidationSelectionChanged(const QModelIndex &current, const QModelIndex &previous)

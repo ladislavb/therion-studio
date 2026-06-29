@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QByteArray>
+#include <QDateTime>
 #include <QString>
 #include <QStringList>
 
@@ -43,6 +44,12 @@ public:
 
     virtual QString defaultTextEditorMode() const = 0;
     virtual void setDefaultTextEditorMode(const QString &mode) = 0;
+
+    virtual bool automaticProjectValidationEnabled() const = 0;
+    virtual void setAutomaticProjectValidationEnabled(bool enabled) = 0;
+
+    virtual QDateTime troubleshootingLogsEnabledUntilUtc() const = 0;
+    virtual void setTroubleshootingLogsEnabledUntilUtc(const QDateTime &enabledUntilUtc) = 0;
 
     virtual QString therionExecutablePath() const = 0;
     virtual void setTherionExecutablePath(const QString &path) = 0;

@@ -3,6 +3,7 @@
 #include <QAction>
 #include <QApplication>
 #include <QColor>
+#include <QDateTime>
 #include <QDesktopServices>
 #include <QDialog>
 #include <QDockWidget>
@@ -24,6 +25,7 @@
 #include <QMessageBox>
 #include <QMenu>
 #include <QMenuBar>
+#include <QProcess>
 #include <QPushButton>
 #include <QHash>
 #include <QGuiApplication>
@@ -879,6 +881,8 @@ void MainWindow::createNewWindow()
         sessionStore->setDefaultTextEditorMode(sessionStore_->defaultTextEditorMode());
         sessionStore->setTherionExecutablePath(sessionStore_->therionExecutablePath());
         sessionStore->setTherionRunTargetMode(sessionStore_->therionRunTargetMode());
+        sessionStore->setAutomaticProjectValidationEnabled(sessionStore_->automaticProjectValidationEnabled());
+        sessionStore->setTroubleshootingLogsEnabledUntilUtc(sessionStore_->troubleshootingLogsEnabledUntilUtc());
         sessionStore->setTherionMapMagnifierEnabled(sessionStore_->therionMapMagnifierEnabled());
         sessionStore->setTherionMapObjectsAutoCollapseExpandScrapsEnabled(
             sessionStore_->therionMapObjectsAutoCollapseExpandScrapsEnabled());
@@ -907,6 +911,11 @@ void MainWindow::showSettingsDialog()
         : sessionStore_->applicationLanguage();
     initialSettings.therionExecutablePath = sessionStore_->therionExecutablePath();
     initialSettings.defaultTextEditorMode = sessionStore_->defaultTextEditorMode();
+    initialSettings.automaticProjectValidationEnabled =
+        sessionStore_->automaticProjectValidationEnabled();
+    initialSettings.troubleshootingLogsEnabled =
+        sessionStore_->troubleshootingLogsEnabledUntilUtc().isValid()
+        && sessionStore_->troubleshootingLogsEnabledUntilUtc() > QDateTime::currentDateTimeUtc();
 
     TherionStudio::MainWindowSettingsDialog dialog(initialSettings, this);
     if (dialog.exec() != QDialog::Accepted) {
@@ -921,17 +930,42 @@ void MainWindow::showSettingsDialog()
         updatedApplicationLanguage
         != TherionStudio::Platform::normalizeApplicationLanguageSetting(
             initialSettings.applicationLanguage);
+    const bool troubleshootingLogsChanged =
+        updatedSettings.troubleshootingLogsEnabled != initialSettings.troubleshootingLogsEnabled;
 
     sessionStore_->setApplicationLanguage(updatedApplicationLanguage);
     TherionStudio::Platform::setApplicationLanguageOverride(updatedApplicationLanguage);
     sessionStore_->setTherionExecutablePath(updatedSettings.therionExecutablePath);
     sessionStore_->setDefaultTextEditorMode(updatedSettings.defaultTextEditorMode);
+    sessionStore_->setAutomaticProjectValidationEnabled(
+        updatedSettings.automaticProjectValidationEnabled);
+    sessionStore_->setTroubleshootingLogsEnabledUntilUtc(
+        updatedSettings.troubleshootingLogsEnabled
+            ? QDateTime::currentDateTimeUtc().addSecs(24 * 60 * 60)
+            : QDateTime());
     refreshTherionConfigDisplay();
+    updateProjectValidationStatusMessage();
 
     if (languageChanged) {
-        QMessageBox::information(this,
-                                 tr("Settings"),
-                                 tr("Language changes will take effect after restarting Therion Studio."));
+        offerApplicationRestart(tr("Language changes will take effect after restarting Therion Studio."));
+    }
+    if (troubleshootingLogsChanged) {
+        offerApplicationRestart(tr("Troubleshooting log changes will take effect after restarting Therion Studio."));
+    }
+}
+
+void MainWindow::offerApplicationRestart(const QString &message)
+{
+    QMessageBox dialog(this);
+    dialog.setWindowTitle(tr("Settings"));
+    dialog.setIcon(QMessageBox::Information);
+    dialog.setText(message);
+    QPushButton *restartButton = dialog.addButton(tr("Restart Now"), QMessageBox::AcceptRole);
+    dialog.addButton(tr("Later"), QMessageBox::RejectRole);
+    dialog.exec();
+    if (dialog.clickedButton() == restartButton) {
+        restartAfterClose_ = true;
+        close();
     }
 }
 
@@ -2092,6 +2126,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
     shuttingDown_ = true;
     persistSessionState();
     QMainWindow::closeEvent(event);
+    if (event->isAccepted() && restartAfterClose_) {
+        QProcess::startDetached(QCoreApplication::applicationFilePath(), QCoreApplication::arguments().mid(1));
+    }
 }
 
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)

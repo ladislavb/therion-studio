@@ -20,6 +20,8 @@ const auto kActiveDocumentPathKey = QStringLiteral("session/activeDocumentPath")
 const auto kStructureNameOverridesKey = QStringLiteral("session/structureNameOverrides");
 const auto kApplicationLanguageKey = QStringLiteral("settings/applicationLanguage");
 const auto kDefaultTextEditorModeKey = QStringLiteral("settings/defaultTextEditorMode");
+const auto kAutomaticProjectValidationEnabledKey = QStringLiteral("settings/automaticProjectValidationEnabled");
+const auto kTroubleshootingLogsEnabledUntilUtcKey = QStringLiteral("settings/troubleshootingLogsEnabledUntilUtc");
 const auto kTherionExecutablePathKey = QStringLiteral("session/therionExecutablePath");
 const auto kTherionWorkingDirectoryKey = QStringLiteral("session/therionWorkingDirectory");
 const auto kTherionArgumentsKey = QStringLiteral("session/therionArguments");
@@ -195,6 +197,40 @@ QString SessionSettingsStore::defaultTextEditorMode() const
 void SessionSettingsStore::setDefaultTextEditorMode(const QString &mode)
 {
     settings_->setValue(kDefaultTextEditorModeKey, mode);
+}
+
+bool SessionSettingsStore::automaticProjectValidationEnabled() const
+{
+    return settings_->value(kAutomaticProjectValidationEnabledKey, false).toBool();
+}
+
+void SessionSettingsStore::setAutomaticProjectValidationEnabled(bool enabled)
+{
+    settings_->setValue(kAutomaticProjectValidationEnabledKey, enabled);
+}
+
+QDateTime SessionSettingsStore::troubleshootingLogsEnabledUntilUtc() const
+{
+    const QString value = settings_->value(kTroubleshootingLogsEnabledUntilUtcKey).toString();
+    if (value.trimmed().isEmpty()) {
+        return {};
+    }
+
+    QDateTime enabledUntilUtc = QDateTime::fromString(value, Qt::ISODateWithMs);
+    if (!enabledUntilUtc.isValid()) {
+        enabledUntilUtc = QDateTime::fromString(value, Qt::ISODate);
+    }
+    return enabledUntilUtc.isValid() ? enabledUntilUtc.toUTC() : QDateTime();
+}
+
+void SessionSettingsStore::setTroubleshootingLogsEnabledUntilUtc(const QDateTime &enabledUntilUtc)
+{
+    if (!enabledUntilUtc.isValid()) {
+        settings_->remove(kTroubleshootingLogsEnabledUntilUtcKey);
+        return;
+    }
+    settings_->setValue(kTroubleshootingLogsEnabledUntilUtcKey,
+                        enabledUntilUtc.toUTC().toString(Qt::ISODateWithMs));
 }
 
 QString SessionSettingsStore::therionExecutablePath() const
@@ -399,6 +435,26 @@ QString InMemorySessionStore::defaultTextEditorMode() const
 void InMemorySessionStore::setDefaultTextEditorMode(const QString &mode)
 {
     defaultTextEditorMode_ = mode;
+}
+
+bool InMemorySessionStore::automaticProjectValidationEnabled() const
+{
+    return automaticProjectValidationEnabled_;
+}
+
+void InMemorySessionStore::setAutomaticProjectValidationEnabled(bool enabled)
+{
+    automaticProjectValidationEnabled_ = enabled;
+}
+
+QDateTime InMemorySessionStore::troubleshootingLogsEnabledUntilUtc() const
+{
+    return troubleshootingLogsEnabledUntilUtc_;
+}
+
+void InMemorySessionStore::setTroubleshootingLogsEnabledUntilUtc(const QDateTime &enabledUntilUtc)
+{
+    troubleshootingLogsEnabledUntilUtc_ = enabledUntilUtc.isValid() ? enabledUntilUtc.toUTC() : QDateTime();
 }
 
 QString InMemorySessionStore::therionExecutablePath() const

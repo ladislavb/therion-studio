@@ -8,8 +8,10 @@
 #include "../core/TherionSourceSnapshotCache.h"
 
 #include <QDir>
+#include <QElapsedTimer>
 #include <QFileInfo>
 #include <QFutureWatcher>
+#include <QDebug>
 #include <QSet>
 #include <QTimer>
 #include <QtConcurrent>
@@ -20,6 +22,18 @@ namespace
 {
 constexpr int kMaximumProjectValidationFindings = 2000;
 constexpr qsizetype kMaximumValidatableFileBytes = 4 * 1024 * 1024;
+
+bool diagnosticProjectValidationLoggingEnabled()
+{
+    static const bool enabled = []() {
+        const QString value = QString::fromLocal8Bit(qgetenv("THERION_STUDIO_ENABLE_LOG")).trimmed().toLower();
+        return value == QStringLiteral("1")
+            || value == QStringLiteral("true")
+            || value == QStringLiteral("yes")
+            || value == QStringLiteral("on");
+    }();
+    return enabled;
+}
 
 bool hasValidatableTherionTextFileName(const QString &filePath)
 {
@@ -460,13 +474,39 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
                                                           const QHash<QString, QString> &inMemoryProjectContentsByPath,
                                                           quint64 generation)
 {
+    QElapsedTimer totalTimer;
+    totalTimer.start();
+    qint64 collectMs = 0;
+    qint64 validateMs = 0;
+    qint64 projectIndexMs = 0;
+    QVector<QString> filePaths;
+
     ProjectValidationScanner::Result result;
     result.generation = generation;
     result.projectRootPath = projectRootPath;
 
+    auto logAndReturn = [&](ProjectValidationScanner::Result value) {
+        if (diagnosticProjectValidationLoggingEnabled()) {
+            qInfo().noquote()
+                << QStringLiteral("project-validation-scan generation=%1 files=%2 searched=%3 findings=%4 limit_reached=%5 collect_ms=%6 validate_ms=%7 project_index_ms=%8 total_ms=%9 root=\"%10\" error=\"%11\"")
+                       .arg(value.generation)
+                       .arg(filePaths.size())
+                       .arg(value.searchedFileCount)
+                       .arg(value.findings.size())
+                       .arg(value.limitReached ? QStringLiteral("true") : QStringLiteral("false"))
+                       .arg(collectMs)
+                       .arg(validateMs)
+                       .arg(projectIndexMs)
+                       .arg(totalTimer.elapsed())
+                       .arg(value.projectRootPath)
+                       .arg(value.errorMessage);
+        }
+        return value;
+    };
+
     if (result.projectRootPath.trimmed().isEmpty() || !QDir(result.projectRootPath).exists()) {
         result.errorMessage = QObject::tr("Open a project before validating.");
-        return result;
+        return logAndReturn(result);
     }
 
     QHash<QString, QString> normalizedInMemoryProjectContentsByPath;
@@ -483,8 +523,12 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
     QHash<QString, QString> searchedTextByPath;
     TherionSourceSnapshotCache sourceSnapshotCache;
     int sourceRevisionCounter = 0;
-    QVector<QString> filePaths;
-    collectValidatableFiles(result.projectRootPath, &filePaths);
+    {
+        QElapsedTimer collectTimer;
+        collectTimer.start();
+        collectValidatableFiles(result.projectRootPath, &filePaths);
+        collectMs = collectTimer.elapsed();
+    }
     QSet<QString> knownProjectFilePaths;
     for (const QString &candidatePath : filePaths) {
         knownProjectFilePaths.insert(canonicalOrAbsoluteFilePath(candidatePath));
@@ -495,58 +539,70 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
         knownProjectFilePaths.insert(it.key());
     }
 
-    for (const QString &candidatePath : filePaths) {
-        const QString filePath = canonicalOrAbsoluteFilePath(candidatePath);
-        searchedPaths.insert(filePath);
-        ++result.searchedFileCount;
+    {
+        QElapsedTimer validateTimer;
+        validateTimer.start();
+        for (const QString &candidatePath : filePaths) {
+            const QString filePath = canonicalOrAbsoluteFilePath(candidatePath);
+            searchedPaths.insert(filePath);
+            ++result.searchedFileCount;
 
-        const auto memoryIt = normalizedInMemoryProjectContentsByPath.constFind(filePath);
-        const QString text = memoryIt != normalizedInMemoryProjectContentsByPath.constEnd()
-            ? *memoryIt
-            : readValidatableFileText(filePath);
-        searchedTextByPath.insert(filePath, text);
-        appendFindingsForText(&result,
-                              filePath,
-                              text,
-                              validationCatalog,
-                              knownProjectFilePaths,
-                              sourceSnapshotCache,
-                              ++sourceRevisionCounter);
-        if (result.limitReached) {
-            return result;
+            const auto memoryIt = normalizedInMemoryProjectContentsByPath.constFind(filePath);
+            const QString text = memoryIt != normalizedInMemoryProjectContentsByPath.constEnd()
+                ? *memoryIt
+                : readValidatableFileText(filePath);
+            searchedTextByPath.insert(filePath, text);
+            appendFindingsForText(&result,
+                                  filePath,
+                                  text,
+                                  validationCatalog,
+                                  knownProjectFilePaths,
+                                  sourceSnapshotCache,
+                                  ++sourceRevisionCounter);
+            if (result.limitReached) {
+                validateMs = validateTimer.elapsed();
+                return logAndReturn(result);
+            }
         }
+
+        for (auto it = normalizedInMemoryProjectContentsByPath.constBegin();
+             it != normalizedInMemoryProjectContentsByPath.constEnd();
+             ++it) {
+            const QString filePath = it.key();
+            if (searchedPaths.contains(filePath) || !hasValidatableTherionTextFileName(filePath)) {
+                continue;
+            }
+            searchedPaths.insert(filePath);
+            ++result.searchedFileCount;
+            searchedTextByPath.insert(filePath, *it);
+            appendFindingsForText(&result,
+                                  filePath,
+                                  *it,
+                                  validationCatalog,
+                                  knownProjectFilePaths,
+                                  sourceSnapshotCache,
+                                  ++sourceRevisionCounter);
+            if (result.limitReached) {
+                validateMs = validateTimer.elapsed();
+                return logAndReturn(result);
+            }
+        }
+        validateMs = validateTimer.elapsed();
     }
 
-    for (auto it = normalizedInMemoryProjectContentsByPath.constBegin();
-         it != normalizedInMemoryProjectContentsByPath.constEnd();
-         ++it) {
-        const QString filePath = it.key();
-        if (searchedPaths.contains(filePath) || !hasValidatableTherionTextFileName(filePath)) {
-            continue;
-        }
-        searchedPaths.insert(filePath);
-        ++result.searchedFileCount;
-        searchedTextByPath.insert(filePath, *it);
-        appendFindingsForText(&result,
-                              filePath,
-                              *it,
-                              validationCatalog,
-                              knownProjectFilePaths,
-                              sourceSnapshotCache,
-                              ++sourceRevisionCounter);
-        if (result.limitReached) {
-            return result;
-        }
+    {
+        QElapsedTimer projectIndexTimer;
+        projectIndexTimer.start();
+        appendProjectIndexFindings(&result,
+                                   result.projectRootPath,
+                                   normalizedInMemoryProjectContentsByPath,
+                                   searchedTextByPath,
+                                   sourceSnapshotCache,
+                                   sourceRevisionCounter);
+        projectIndexMs = projectIndexTimer.elapsed();
     }
 
-    appendProjectIndexFindings(&result,
-                               result.projectRootPath,
-                               normalizedInMemoryProjectContentsByPath,
-                               searchedTextByPath,
-                               sourceSnapshotCache,
-                               sourceRevisionCounter);
-
-    return result;
+    return logAndReturn(result);
 }
 }
 

@@ -4,6 +4,7 @@
 #include <QString>
 
 class QComboBox;
+class QCheckBox;
 class QLineEdit;
 class QPushButton;
 
@@ -19,6 +20,8 @@ public:
         QString applicationLanguage = QStringLiteral("system");
         QString therionExecutablePath;
         QString defaultTextEditorMode = QStringLiteral("raw");
+        bool automaticProjectValidationEnabled = false;
+        bool troubleshootingLogsEnabled = false;
     };
 
     explicit MainWindowSettingsDialog(const Settings &settings, QWidget *parent = nullptr);
@@ -28,6 +31,8 @@ public:
 private:
     void browseTherionExecutable();
     void autoDetectTherionExecutable();
+    void openDiagnosticLogFolder();
+    void clearDiagnosticLogs();
     void selectComboData(QComboBox *combo, const QString &data, const QString &fallbackData);
 
     QComboBox *languageCombo_ = nullptr;
@@ -35,5 +40,9 @@ private:
     QPushButton *therionExecutableBrowseButton_ = nullptr;
     QPushButton *therionExecutableAutoDetectButton_ = nullptr;
     QComboBox *defaultTextEditorModeCombo_ = nullptr;
+    QCheckBox *automaticProjectValidationCheckBox_ = nullptr;
+    QCheckBox *troubleshootingLogsCheckBox_ = nullptr;
+    QPushButton *openLogFolderButton_ = nullptr;
+    QPushButton *clearLogsButton_ = nullptr;
 };
 }

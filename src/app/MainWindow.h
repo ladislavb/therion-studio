@@ -105,6 +105,7 @@ private slots:
     void runTherionCurrentConfig();
     void stopTherion();
     void showSettingsDialog();
+    void offerApplicationRestart(const QString &message);
     void browseTherionTargetConfig();
     void browseTherionWorkingDirectoryOverride();
     void handleTherionRunnerStandardOutput(const QString &output);
@@ -168,6 +169,7 @@ private:
     void requestProjectValidation();
     void requestProjectValidation(TherionStudio::ProjectValidationController::Trigger trigger, bool revealPanel);
     void requestRestoredProjectValidation();
+    void updateProjectValidationStatusMessage();
     bool isDocumentPathInsideOpenProject(const QString &filePath) const;
     void handleDocumentTextChanged(QWidget *documentWidget);
     void handleProjectValidationStarted(TherionStudio::ProjectValidationController::Trigger trigger,
@@ -387,6 +389,7 @@ private:
     QAction *contextHelpCollapseAction_ = nullptr;
     QAction *mapMagnifierAction_ = nullptr;
     QAction *fullScreenAction_ = nullptr;
+    bool restartAfterClose_ = false;
     QPlainTextEdit *consoleView_ = nullptr;
     QLineEdit *therionWorkingDirectoryEdit_ = nullptr;
     QLineEdit *projectSearchEdit_ = nullptr;
