@@ -23,6 +23,11 @@ bool expect(bool condition, const char *message)
     return condition;
 }
 
+QDateTime utcDateTime(const QDate &date, const QTime &time)
+{
+    return QDateTime(date, time, QTimeZone::fromSecondsAheadOfUtc(0));
+}
+
 int runInstanceBackedRoundTripTest()
 {
     QTemporaryDir temporarySettingsDir;
@@ -49,7 +54,7 @@ int runInstanceBackedRoundTripTest()
         store.setDefaultTextEditorMode(QStringLiteral("blocks"));
         store.setAutomaticProjectValidationEnabled(true);
         store.setTroubleshootingLogsEnabledUntilUtc(
-            QDateTime(QDate(2026, 6, 29), QTime(12, 30, 0, 123), QTimeZone::UTC));
+            utcDateTime(QDate(2026, 6, 29), QTime(12, 30, 0, 123)));
         store.setTherionExecutablePath(QStringLiteral("/usr/bin/therion"));
         store.setTherionWorkingDirectory(QStringLiteral("/tmp/project"));
         store.setTherionRunTargetMode(QStringLiteral("project"));
@@ -114,7 +119,7 @@ int runInstanceBackedRoundTripTest()
         return 1;
     }
     if (!expect(store.troubleshootingLogsEnabledUntilUtc()
-                    == QDateTime(QDate(2026, 6, 29), QTime(12, 30, 0, 123), QTimeZone::UTC),
+                    == utcDateTime(QDate(2026, 6, 29), QTime(12, 30, 0, 123)),
                 "Troubleshooting log expiration should round-trip through the injected settings file.")) {
         return 1;
     }
@@ -317,7 +322,7 @@ int runInMemoryStoreTest()
     store.setDefaultTextEditorMode(QStringLiteral("blocks"));
     store.setAutomaticProjectValidationEnabled(true);
     store.setTroubleshootingLogsEnabledUntilUtc(
-        QDateTime(QDate(2026, 6, 29), QTime(13, 45), QTimeZone::UTC));
+        utcDateTime(QDate(2026, 6, 29), QTime(13, 45)));
     store.setTherionExecutablePath(QStringLiteral("/usr/bin/therion"));
     store.setTherionMapMagnifierEnabled(false);
     store.setTherionMapObjectsAutoCollapseExpandScrapsEnabled(true);
@@ -357,7 +362,7 @@ int runInMemoryStoreTest()
         return 1;
     }
     if (!expect(store.troubleshootingLogsEnabledUntilUtc()
-                    == QDateTime(QDate(2026, 6, 29), QTime(13, 45), QTimeZone::UTC),
+                    == utcDateTime(QDate(2026, 6, 29), QTime(13, 45)),
                 "In-memory store should retain troubleshooting log expiration preference.")) {
         return 1;
     }
