@@ -576,6 +576,26 @@ void scheduleLineVertexOwnerSelectionRecovery(const MapEditorCanvasEditContext &
     }
 }
 
+std::function<void()> deferredMapSceneRefreshHook(const MapEditorCanvasEditContext &context,
+                                                  std::function<void()> afterRefreshHook = {})
+{
+    return [context, afterRefreshHook = std::move(afterRefreshHook)]() mutable {
+        auto refresh = [context, afterRefreshHook = std::move(afterRefreshHook)]() mutable {
+            if (context.flushPendingSceneRefreshAfterCommand) {
+                context.flushPendingSceneRefreshAfterCommand();
+            }
+            if (afterRefreshHook) {
+                afterRefreshHook();
+            }
+        };
+        if (context.callbackContext != nullptr) {
+            QTimer::singleShot(0, context.callbackContext, std::move(refresh));
+        } else {
+            refresh();
+        }
+    };
+}
+
 MapEditableGeometryVertexItem *resolveSelectedLineVertexItemForContext(const MapEditorCanvasEditContext &context)
 {
     if (context.scene == nullptr) {
@@ -836,21 +856,22 @@ void MapEditorCanvasEditController::recordLineAreaVertexMove(int lineNumber,
         return;
     }
 
-    auto selectionRestoreHook = [this, lineNumber, lineOwnerIndexToRestore]() {
+    auto selectionRestoreHook = [context = context_, lineNumber, lineOwnerIndexToRestore]() {
         if (lineOwnerIndexToRestore < 0) {
             return;
         }
-        restoreLineVertexOwnerSelection(lineNumber, lineOwnerIndexToRestore);
-        scheduleLineVertexOwnerSelectionRecovery(context_, lineNumber, lineOwnerIndexToRestore);
+        restoreLineVertexOwnerSelectionForContext(context, lineNumber, lineOwnerIndexToRestore);
+        scheduleLineVertexOwnerSelectionRecovery(context, lineNumber, lineOwnerIndexToRestore);
     };
-    sourceTransactionController(context_).applyChangeWithSnapshot(
+    TextEditorSourceTransactionRequest request =
         sourceTransactionRequest(context_,
                                  tr("Move %1 Vertex").arg(rewriteKind),
                                  beforeText,
                                  afterText,
-                                 lineNumber,
-                                 TextEditorSourceSelectionRestorePolicy::CustomHook,
-                                 std::move(selectionRestoreHook)));
+                                 lineNumber);
+    request.projectionInvalidationPolicy = TextEditorSourceProjectionInvalidationPolicy::CustomHook;
+    request.projectionInvalidationHook = deferredMapSceneRefreshHook(context_, std::move(selectionRestoreHook));
+    sourceTransactionController(context_).applyChangeWithSnapshot(request);
     (*context_.toolbarStatusNote) = tr("Updated %1 vertex %2 at source line %3.")
         .arg(rewriteKind)
         .arg(vertexIndex + 1)

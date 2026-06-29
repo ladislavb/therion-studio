@@ -69,6 +69,7 @@ MapEditorCanvasEditController makeController(TextEditorTab *tab,
                                              QVector<QGraphicsRectItem *> *draftItems = nullptr)
 {
     MapEditorCanvasEditContext context;
+    context.callbackContext = tab;
     context.textEditor = tab;
     context.scene = scene;
     context.undoStack = undoStack;
@@ -300,7 +301,6 @@ int runLineVertexMoveUsesSourceEditSnapshotTest()
                                         1,
                                         QPointF(1.0, 1.0),
                                         QPointF(2.0, 3.0));
-    pumpEvents();
 
     if (!expect(tab.text() == afterText, "Line vertex move should apply source-edit planned coordinates.")) {
         return 1;
@@ -308,7 +308,11 @@ int runLineVertexMoveUsesSourceEditSnapshotTest()
     if (!expect(undoStack.count() == 1, "Line vertex move should push one undo command.")) {
         return 1;
     }
-    if (!expect(flushCount == 1, "Line vertex move should flush pending scene refresh once.")) {
+    if (!expect(flushCount == 0, "Line vertex move should defer scene refresh out of the source transaction.")) {
+        return 1;
+    }
+    pumpEvents();
+    if (!expect(flushCount == 1, "Line vertex move should flush pending scene refresh once after the event loop resumes.")) {
         return 1;
     }
 
