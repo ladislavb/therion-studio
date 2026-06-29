@@ -15,6 +15,7 @@ class TherionSourceDocumentTest : public QObject
 private slots:
     void classifiesCommandAndBlockContentLines();
     void preservesCommentsBlankRowsAndMixedLineEndings();
+    void exposesLosslessSourceTextSnapshot();
     void recordsBlockCloseAndUnclosedState();
     void recordsNestedBlockRanges();
     void keepsUnclosedBlockRangesOpen();
@@ -81,6 +82,24 @@ void TherionSourceDocumentTest::preservesCommentsBlankRowsAndMixedLineEndings()
     QVERIFY(lineAt(document, 5)->role == TherionSourceLineRole::Command);
     QCOMPARE(lineAt(document, 2)->sourceLine.text, QStringLiteral("# keep comment"));
     QCOMPARE(lineAt(document, 4)->sourceLine.text, QStringLiteral("  # indented comment"));
+}
+
+void TherionSourceDocumentTest::exposesLosslessSourceTextSnapshot()
+{
+    const QString text = QStringLiteral("encoding utf-8\r\nscrap s1\nendscrap");
+    const TherionSourceDocument document = TherionSourceDocument::fromText(text);
+    const TherionSourceText &sourceText = document.sourceText();
+
+    QCOMPARE(sourceText.toText(), text);
+    QCOMPARE(sourceText.physicalLines().size(), document.parsedDocument().lines.size());
+
+    const QVector<TherionSourceLineSpan> spans = sourceText.lineSpans();
+    QCOMPARE(spans.size(), 3);
+    QCOMPARE(spans.at(0).startOffset, document.parsedDocument().lines.at(0).startOffset);
+    QCOMPARE(spans.at(0).textLength, document.parsedDocument().lines.at(0).textLength);
+    QCOMPARE(spans.at(0).lineEndingLength, document.parsedDocument().lines.at(0).lineEndingLength);
+    QCOMPARE(spans.at(0).endOffset, document.parsedDocument().lines.at(0).endOffset);
+    QCOMPARE(spans.at(2).lineEndingLength, 0);
 }
 
 void TherionSourceDocumentTest::recordsBlockCloseAndUnclosedState()

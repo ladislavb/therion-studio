@@ -244,8 +244,12 @@ QVector<TherionParsedLine> TherionDocumentParser::parseTokenLines(const QString 
 
 TherionParsedSourceDocument TherionDocumentParser::parseSourceDocument(const QString &text)
 {
+    return parseSourceDocument(TherionSourceText::fromText(text));
+}
+
+TherionParsedSourceDocument TherionDocumentParser::parseSourceDocument(const TherionSourceText &sourceText)
+{
     TherionParsedSourceDocument document;
-    const TherionSourceText sourceText = TherionSourceText::fromText(text);
     const QVector<TherionSourceLine> &physicalLines = sourceText.physicalLines();
     document.lines.reserve(physicalLines.size());
 

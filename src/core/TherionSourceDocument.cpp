@@ -106,7 +106,8 @@ TherionSourceDocument TherionSourceDocument::fromText(
 {
     TherionSourceDocument document;
     document.metadata_ = metadata;
-    document.parsedDocument_ = TherionDocumentParser::parseSourceDocument(contents);
+    document.sourceText_ = TherionSourceText::fromText(contents);
+    document.parsedDocument_ = TherionDocumentParser::parseSourceDocument(document.sourceText_);
     document.lines_.reserve(document.parsedDocument_.lines.size());
 
     const QHash<QString, QString> openToClose = therionOpenToCloseDirectiveMap();
@@ -193,6 +194,11 @@ QString TherionSourceDocument::encodingName() const
 int TherionSourceDocument::revisionId() const
 {
     return metadata_.revisionId;
+}
+
+const TherionSourceText &TherionSourceDocument::sourceText() const
+{
+    return sourceText_;
 }
 
 const TherionParsedSourceDocument &TherionSourceDocument::parsedDocument() const

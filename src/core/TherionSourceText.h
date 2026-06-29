@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <QVector>
 #include <QString>
 #include <QStringList>
@@ -10,6 +12,31 @@ struct TherionSourceLine
 {
     QString text;
     QString lineEnding;
+};
+
+struct TherionSourceLineSpan
+{
+    int lineNumber = 0;
+    int startOffset = 0;
+    int textLength = 0;
+    int lineEndingLength = 0;
+    int endOffset = 0;
+
+    [[nodiscard]] int textEndOffset() const
+    {
+        return startOffset + textLength;
+    }
+
+    [[nodiscard]] bool containsOffset(int offset) const
+    {
+        return offset >= startOffset && offset < endOffset;
+    }
+};
+
+struct TherionSourceTextLocation
+{
+    int lineNumber = 0;
+    int columnOffset = 0;
 };
 
 class TherionSourceText
@@ -66,6 +93,73 @@ public:
     const QVector<TherionSourceLine> &physicalLines() const
     {
         return lines_;
+    }
+
+    QVector<TherionSourceLineSpan> lineSpans() const
+    {
+        QVector<TherionSourceLineSpan> spans;
+        spans.reserve(lines_.size());
+
+        int offset = 0;
+        for (int index = 0; index < lines_.size(); ++index) {
+            const TherionSourceLine &line = lines_.at(index);
+            const int textLength = line.text.size();
+            const int lineEndingLength = line.lineEnding.size();
+            const int endOffset = offset + textLength + lineEndingLength;
+            spans.append(TherionSourceLineSpan{index + 1,
+                                               offset,
+                                               textLength,
+                                               lineEndingLength,
+                                               endOffset});
+            offset = endOffset;
+        }
+        return spans;
+    }
+
+    std::optional<TherionSourceLineSpan> lineSpanForLineNumber(int lineNumber) const
+    {
+        if (lineNumber <= 0 || lineNumber > lines_.size()) {
+            return std::nullopt;
+        }
+
+        int offset = 0;
+        for (int index = 0; index < lines_.size(); ++index) {
+            const TherionSourceLine &line = lines_.at(index);
+            const int textLength = line.text.size();
+            const int lineEndingLength = line.lineEnding.size();
+            const int endOffset = offset + textLength + lineEndingLength;
+            if (index + 1 == lineNumber) {
+                return TherionSourceLineSpan{lineNumber,
+                                             offset,
+                                             textLength,
+                                             lineEndingLength,
+                                             endOffset};
+            }
+            offset = endOffset;
+        }
+        return std::nullopt;
+    }
+
+    std::optional<TherionSourceTextLocation> locationForOffset(int offset) const
+    {
+        if (offset < 0) {
+            return std::nullopt;
+        }
+
+        int currentOffset = 0;
+        for (int index = 0; index < lines_.size(); ++index) {
+            const TherionSourceLine &line = lines_.at(index);
+            const int textLength = line.text.size();
+            const int lineEndingLength = line.lineEnding.size();
+            const int endOffset = currentOffset + textLength + lineEndingLength;
+            if (offset < endOffset || (index == lines_.size() - 1 && offset == endOffset)) {
+                return TherionSourceTextLocation{index + 1,
+                                                 qMin(qMax(offset - currentOffset, 0), textLength)};
+            }
+            currentOffset = endOffset;
+        }
+
+        return std::nullopt;
     }
 
     QStringList textLines() const

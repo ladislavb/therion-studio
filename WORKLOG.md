@@ -202,6 +202,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ### Unified Source DOM / Transactions
 
 - Tighten source-file reference resolution while preserving Therion namespace semantics from `docs/THERION_COMPATIBILITY.md`.
+- Keep the shared source-text snapshot as the foundation for DOM work: physical line endings, absolute line spans,
+  and offset-to-line mapping should stay available through `TherionSourceDocument` before editor projections migrate.
 - Keep source transaction helpers result-aware so callers can distinguish applied, stale, no-op, unavailable, and invalid
   source edits without relying on selection-restore hooks as success signals.
 - Continue propagating transaction results through map-editor inspector/object-details contexts before migrating broader

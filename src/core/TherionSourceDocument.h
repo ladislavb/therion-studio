@@ -1,6 +1,7 @@
 #pragma once
 
 #include "TherionDocumentParser.h"
+#include "TherionSourceText.h"
 
 #include <QHash>
 #include <QString>
@@ -78,6 +79,7 @@ public:
     [[nodiscard]] TherionSourceDocumentType sourceType() const;
     [[nodiscard]] QString encodingName() const;
     [[nodiscard]] int revisionId() const;
+    [[nodiscard]] const TherionSourceText &sourceText() const;
     [[nodiscard]] const TherionParsedSourceDocument &parsedDocument() const;
     [[nodiscard]] const QVector<TherionSourceDocumentLine> &lines() const;
     [[nodiscard]] const QVector<TherionSourceBlockRange> &blockRanges() const;
@@ -87,6 +89,7 @@ public:
 
 private:
     TherionSourceDocumentMetadata metadata_;
+    TherionSourceText sourceText_;
     TherionParsedSourceDocument parsedDocument_;
     QVector<TherionSourceDocumentLine> lines_;
     QVector<TherionSourceBlockRange> blockRanges_;
