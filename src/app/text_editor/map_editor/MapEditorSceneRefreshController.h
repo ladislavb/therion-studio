@@ -39,6 +39,7 @@ struct MapEditorSceneRefreshContext
     std::function<QString()> documentText;
     std::function<QVector<TherionParsedLine>()> parsedLinesForCurrentDocument;
     std::function<int()> currentLineNumber;
+    std::function<int()> currentColumnNumber;
     std::function<int()> sceneRefreshSelectionLineNumber;
     std::function<int()> sceneRefreshSelectionVertexIndex;
     std::function<QString()> sceneRefreshSelectionKind;

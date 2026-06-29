@@ -75,6 +75,9 @@ MapEditorSceneRefreshContext MapEditorTab::sceneRefreshContext()
         .currentLineNumber = [self]() {
             return self != nullptr && self->textEditor_ != nullptr ? self->textEditor_->currentLineNumber() : 0;
         },
+        .currentColumnNumber = [self]() {
+            return self != nullptr && self->textEditor_ != nullptr ? self->textEditor_->currentColumnNumber() : 1;
+        },
         .sceneRefreshSelectionLineNumber = [self]() {
             return self != nullptr ? self->selectionSyncState_.sceneRefreshSelectionLineNumber_ : 0;
         },

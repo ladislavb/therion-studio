@@ -3,6 +3,7 @@
 #include "MapEditorObjectDetailsLogic.h"
 #include "MapEditorSceneInternals.h"
 #include "MapEditorSceneSupport.h"
+#include "MapEditorSourceReferenceResolver.h"
 #include "../../../core/TherionDocumentParser.h"
 
 #include <QGraphicsScene>
@@ -93,6 +94,22 @@ bool restoreSceneRefreshSelection(const MapEditorSceneRefreshContext &context)
 
     context.selectMapLine(lineNumber, false);
     return true;
+}
+
+int fallbackSceneRefreshSelectionLine(const MapEditorSceneRefreshContext &context,
+                                      const QVector<TherionParsedLine> &parsedLines)
+{
+    const int cursorLine = context.currentLineNumber ? context.currentLineNumber() : 0;
+    const int cursorColumn = context.currentColumnNumber ? context.currentColumnNumber() : 1;
+    if (cursorLine <= 0) {
+        return 0;
+    }
+
+    const CursorGeometrySelection cursorSelection =
+        cursorGeometrySelectionForTextCursor(parsedLines, cursorLine, cursorColumn);
+    return cursorSelection.featureLineNumber > 0
+        ? cursorSelection.featureLineNumber
+        : cursorLine;
 }
 
 const MapEditorOrientationApplicabilityByCommand &MapEditorSceneRefreshController::orientationApplicabilityByCommand() const
@@ -239,7 +256,7 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
     const qint64 backgroundMs = logTiming ? stageTimer.restart() : 0;
     const bool restoredSelection = restoreSceneRefreshSelection(context_);
     if (!restoredSelection) {
-        context_.selectMapLine(context_.currentLineNumber(), !preserveViewport);
+        context_.selectMapLine(fallbackSceneRefreshSelectionLine(context_, parsedLines), !preserveViewport);
     }
     const qint64 selectionMs = logTiming ? stageTimer.restart() : 0;
     context_.applyInspectorObjectVisibility();
