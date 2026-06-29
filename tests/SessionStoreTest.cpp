@@ -25,7 +25,7 @@ bool expect(bool condition, const char *message)
 
 QDateTime utcDateTime(const QDate &date, const QTime &time)
 {
-    return QDateTime(date, time, QTimeZone::fromSecondsAheadOfUtc(0));
+    return QDateTime(date, time, QTimeZone(QByteArrayLiteral("UTC")));
 }
 
 int runInstanceBackedRoundTripTest()
