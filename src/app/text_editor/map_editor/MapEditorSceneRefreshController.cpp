@@ -7,6 +7,8 @@
 
 #include <QGraphicsScene>
 #include <QGraphicsView>
+#include <QDebug>
+#include <QElapsedTimer>
 #include <QObject>
 #include <QScrollBar>
 #include <QTransform>
@@ -17,6 +19,21 @@
 
 namespace TherionStudio
 {
+namespace
+{
+bool diagnosticMapInputLoggingEnabled()
+{
+    static const bool enabled = [] {
+        const QString value = QString::fromLocal8Bit(qgetenv("THERION_STUDIO_ENABLE_LOG")).trimmed().toLower();
+        return value == QStringLiteral("1")
+            || value == QStringLiteral("true")
+            || value == QStringLiteral("yes")
+            || value == QStringLiteral("on");
+    }();
+    return enabled;
+}
+}
+
 MapEditorSceneRefreshController::MapEditorSceneRefreshController(MapEditorSceneRefreshContext context)
     : context_(std::move(context))
 {
@@ -128,6 +145,14 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
     if (mapScene == nullptr) {
         return;
     }
+    const bool logTiming = diagnosticMapInputLoggingEnabled();
+    QElapsedTimer totalTimer;
+    QElapsedTimer stageTimer;
+    if (logTiming) {
+        totalTimer.start();
+        stageTimer.start();
+    }
+    const int beforeItemCount = logTiming ? mapScene->items().size() : -1;
     if (context_.lineVertexSelectionRestoreGeneration != nullptr) {
         ++(*context_.lineVertexSelectionRestoreGeneration);
     }
@@ -152,16 +177,20 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
     const int preservedVerticalScrollValue = preservedVerticalScrollBar != nullptr
         ? preservedVerticalScrollBar->value()
         : 0;
+    const qint64 preserveMs = logTiming ? stageTimer.restart() : 0;
 
     if (context_.undoStack != nullptr) {
         context_.updateCommandSurfaceState();
     }
+    const qint64 commandSurfaceBeforeMs = logTiming ? stageTimer.restart() : 0;
 
     context_.clearMapScene();
+    const qint64 clearMs = logTiming ? stageTimer.restart() : 0;
 
     const QVector<TherionParsedLine> parsedLines = context_.parsedLinesForCurrentDocument
         ? context_.parsedLinesForCurrentDocument()
         : TherionDocumentParser::parseTokenLines(context_.documentText());
+    const qint64 parseMs = logTiming ? stageTimer.restart() : 0;
     const QVector<MapSceneEntry> entries = collectMapSceneEntries(parsedLines);
     QVector<MapGeometryFeature> geometryFeatures = collectGeometryFeatures(parsedLines);
     QHash<int, TherionParsedLine> parsedLinesByLineNumber;
@@ -179,6 +208,7 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
             feature.orientationDegrees = pointOrientationFromParsedLine(parsedLine);
         }
     }
+    const qint64 collectMs = logTiming ? stageTimer.restart() : 0;
     const QRectF sourceBounds = context_.mapSourceBoundsForCurrentDocument();
     const std::optional<QRectF> sourceBoundsOverride = sourceBounds.isValid()
         ? std::optional<QRectF>(sourceBounds)
@@ -201,15 +231,20 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
                             context_.recordLineAreaVertexMove,
                             context_.recordPointOrientationHandleChange,
                             context_.recordLinePointLeftHandleChange);
+    const qint64 renderMs = logTiming ? stageTimer.restart() : 0;
 
     context_.restoreBackgroundImageItems();
     context_.reprojectMetadataBackgroundLayersForCurrentDocument();
     context_.restoreDraftGeometryItems();
-    if (!restoreSceneRefreshSelection(context_)) {
+    const qint64 backgroundMs = logTiming ? stageTimer.restart() : 0;
+    const bool restoredSelection = restoreSceneRefreshSelection(context_);
+    if (!restoredSelection) {
         context_.selectMapLine(context_.currentLineNumber(), !preserveViewport);
     }
+    const qint64 selectionMs = logTiming ? stageTimer.restart() : 0;
     context_.applyInspectorObjectVisibility();
     context_.updateGeometrySelectionPresentation();
+    const qint64 presentationMs = logTiming ? stageTimer.restart() : 0;
     if (canPreserveViewport) {
         context_.view->setTransform(preservedTransform);
         if (preservedHorizontalScrollBar != nullptr && preservedVerticalScrollBar != nullptr) {
@@ -229,11 +264,42 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
     } else {
         context_.syncZoomFactorFromView();
     }
+    const qint64 viewportMs = logTiming ? stageTimer.restart() : 0;
     context_.updateInteractiveDrawPreview();
     context_.refreshStatus();
     context_.updateCommandSurfaceState();
     context_.updateHelpPanel();
     context_.refreshObjectDetailsPanel();
+    const qint64 finalUiMs = logTiming ? stageTimer.restart() : 0;
+
+    if (logTiming) {
+        const int afterItemCount = mapScene->items().size();
+        qInfo().noquote()
+            << QStringLiteral(
+                   "map-scene-refresh preserve_viewport=%1 before_items=%2 after_items=%3 parsed_lines=%4 entries=%5 "
+                   "geometry=%6 restored_selection=%7 preserve_ms=%8 command_surface_before_ms=%9 clear_ms=%10 "
+                   "parse_ms=%11 collect_ms=%12 render_ms=%13 background_ms=%14 selection_ms=%15 presentation_ms=%16 "
+                   "viewport_ms=%17 final_ui_ms=%18 total_ms=%19")
+                   .arg(preserveViewport ? 1 : 0)
+                   .arg(beforeItemCount)
+                   .arg(afterItemCount)
+                   .arg(parsedLines.size())
+                   .arg(entries.size())
+                   .arg(geometryFeatures.size())
+                   .arg(restoredSelection ? 1 : 0)
+                   .arg(preserveMs)
+                   .arg(commandSurfaceBeforeMs)
+                   .arg(clearMs)
+                   .arg(parseMs)
+                   .arg(collectMs)
+                   .arg(renderMs)
+                   .arg(backgroundMs)
+                   .arg(selectionMs)
+                   .arg(presentationMs)
+                   .arg(viewportMs)
+                   .arg(finalUiMs)
+                   .arg(totalTimer.elapsed());
+    }
 }
 
 void MapEditorSceneRefreshController::flushPendingMapSceneRefreshAfterCommand()

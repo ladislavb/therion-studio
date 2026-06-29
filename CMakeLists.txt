@@ -169,6 +169,12 @@ target_link_libraries(therion_platform
     PUBLIC
         Qt6::Core)
 
+target_compile_definitions(therion_platform PRIVATE
+    THERION_STUDIO_VERSION_STRING="${THERION_STUDIO_VERSION}"
+    THERION_STUDIO_PACKAGE_LABEL_STRING="${THERION_STUDIO_PACKAGE_LABEL}"
+    QT_NO_CAST_FROM_ASCII
+    QT_NO_CAST_TO_ASCII)
+
 if(APPLE)
     find_library(THERION_COREFOUNDATION_FRAMEWORK CoreFoundation)
     if(NOT THERION_COREFOUNDATION_FRAMEWORK)

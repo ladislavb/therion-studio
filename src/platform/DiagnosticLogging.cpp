@@ -9,7 +9,9 @@
 #include <QMutexLocker>
 #include <QDebug>
 #include <QStandardPaths>
+#include <QSysInfo>
 #include <QTextStream>
+#include <QtGlobal>
 
 #include <cstdio>
 #include <cstdlib>
@@ -19,6 +21,14 @@ namespace TherionStudio
 {
 namespace
 {
+#ifndef THERION_STUDIO_VERSION_STRING
+#define THERION_STUDIO_VERSION_STRING "unknown"
+#endif
+
+#ifndef THERION_STUDIO_PACKAGE_LABEL_STRING
+#define THERION_STUDIO_PACKAGE_LABEL_STRING THERION_STUDIO_VERSION_STRING
+#endif
+
 struct DiagnosticLogState
 {
     QFile file;
@@ -76,6 +86,23 @@ QString messageTypeName(QtMsgType type)
     return QStringLiteral("message");
 }
 
+QString buildString(const char *value)
+{
+    return QString::fromUtf8(value);
+}
+
+QString diagnosticStartupSummary()
+{
+    const QString platform = QStringLiteral("%1 (%2)")
+                                 .arg(QSysInfo::prettyProductName(),
+                                      QSysInfo::currentCpuArchitecture());
+    return QStringLiteral("Version: %1\nBuild: %2\nQt: %3\nPlatform: %4")
+        .arg(buildString(THERION_STUDIO_VERSION_STRING),
+             buildString(THERION_STUDIO_PACKAGE_LABEL_STRING),
+             QString::fromLatin1(QT_VERSION_STR),
+             platform);
+}
+
 void diagnosticMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &message)
 {
     if (auto &state = diagnosticLogState()) {
@@ -128,6 +155,7 @@ void initializeDiagnosticLogging()
     globalState = std::move(state);
     globalState->previousHandler = qInstallMessageHandler(diagnosticMessageHandler);
     qInfo("Therion Studio diagnostic logging enabled: %s", qPrintable(filePath));
+    qInfo().noquote() << diagnosticStartupSummary();
 }
 
 } // namespace TherionStudio

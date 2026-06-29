@@ -13,12 +13,13 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ### Release Readiness / Windows Map Input
 
-- Send a Windows build at or after `b6bfd28` to the tester and request the same mouse/stylus workflow with
+- Send the next Windows build with the panning update, diagnostic startup header, per-pan stage timings, and
+  `map-scene-refresh` diagnostics to the tester, and request the same mouse/stylus workflow with
   `THERION_STUDIO_ENABLE_LOG=1`.
-- Confirm the follow-up log no longer shows `Move line Vertex` source transactions with multi-second
-  `policies_ms` / `total_ms` timings.
-- If the follow-up log still shows responsiveness drops, identify the next slow source transaction by label before
-  changing more map-editor refresh paths.
+- Confirm the next follow-up log keeps `Move line Vertex` source transactions near the current sub-150 ms range with
+  `policies_ms=0`, and compare panning `elapsed_ms` before/after the reduced per-move command-surface refresh.
+- Use `map-scene-refresh` stage timings to identify any remaining post-edit responsiveness drops before changing more
+  map-editor refresh paths.
 - Keep broad Map/TH2 projection rewrites out of release stabilization until Windows feedback confirms the deferred
   vertex-refresh fix is stable.
 - Before tagging or packaging handoff, run local validation focused on recent map-input, source-transaction, installer,

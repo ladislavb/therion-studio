@@ -1979,19 +1979,32 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             const int verticalBefore = context_.view->verticalScrollBar() != nullptr
                 ? context_.view->verticalScrollBar()->value()
                 : 0;
+            QElapsedTimer panStageTimer;
+            const bool logPanStageTiming = diagnosticMapInputLoggingEnabled();
+            if (logPanStageTiming) {
+                panStageTimer.start();
+            }
             if (context_.view->horizontalScrollBar() != nullptr) {
                 context_.view->horizontalScrollBar()->setValue(context_.view->horizontalScrollBar()->value() - delta.x());
             }
             if (context_.view->verticalScrollBar() != nullptr) {
                 context_.view->verticalScrollBar()->setValue(context_.view->verticalScrollBar()->value() - delta.y());
             }
+            const qint64 scrollMs = logPanStageTiming ? panStageTimer.restart() : 0;
 
+            const bool autoFitWasEnabled = context_.autoFitEnabled != nullptr && (*context_.autoFitEnabled);
             (*context_.autoFitEnabled) = false;
-            context_.syncZoomFactorFromView();
-            context_.updateCommandSurfaceState();
-            inputTrace.setDetail(QStringLiteral("threshold_passed=1 delta=%1,%2 %3")
+            if (autoFitWasEnabled) {
+                context_.syncZoomFactorFromView();
+                context_.updateCommandSurfaceState();
+            }
+            const qint64 stateMs = logPanStageTiming ? panStageTimer.elapsed() : 0;
+            inputTrace.setDetail(QStringLiteral("threshold_passed=1 delta=%1,%2 auto_fit_update=%3 scroll_ms=%4 state_ms=%5 %6")
                                      .arg(delta.x())
                                      .arg(delta.y())
+                                     .arg(autoFitWasEnabled ? 1 : 0)
+                                     .arg(scrollMs)
+                                     .arg(stateMs)
                                      .arg(viewportScrollBarInputDetail(context_, horizontalBefore, verticalBefore)));
             inputTrace.forceLog();
             event->accept();
