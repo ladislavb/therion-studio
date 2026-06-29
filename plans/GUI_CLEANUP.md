@@ -33,6 +33,13 @@ Use `src/app/ui/` for application-wide UI primitives:
 
 This layer must not know about map objects, Therion commands, documents, validation findings, or project state.
 
+Current baseline:
+
+- `src/app/ui/` already contains application style tokens, style sheets, segmented-control styling, and control metrics.
+- Shared text-editor inspector foundations already exist under `src/app/text_editor/`, including inspector panel styling and context-help/document inspector components.
+- The map editor has several focused UI/context/controller files, including inspector background UI, inspector panel UI, object contexts, selection contexts, scene contexts, viewport input contexts, and detached-pane delegates.
+- Main window and runner code has already been split into multiple service/controller/builder/wiring files, but `MainWindow.cpp` and several top-level shell files remain orchestration-heavy.
+
 ### Feature UI Layers
 
 Keep feature-specific UI near the owning feature:
@@ -120,6 +127,11 @@ Verification:
 - Run `python3 scripts/check_structure_constraints.py`.
 - Compare light/dark screenshots of the map inspector and sidebars.
 
+Next slices:
+
+- Replace one repeated spacing/radius/icon-size literal cluster with `ApplicationControlMetrics` or `ApplicationStyleTokens`.
+- Keep feature-specific colors or map-rendering colors out of app-wide tokens unless another feature actually reuses them.
+
 ## Phase 2 - Continue Stylesheet Builder Extraction
 
 Move remaining long inline stylesheet strings out of widget constructors and keep existing style builders focused.
@@ -148,6 +160,12 @@ Verification:
 - Run focused UI smoke tests where available.
 - Manually check light/dark mode for inspector fields, combo boxes, sidebars, status badges, and toolbar buttons.
 
+Next slices:
+
+- Extract one remaining long inline stylesheet from a widget constructor into a focused style builder.
+- Prefer existing style files before adding new `*Style` modules.
+- Do not combine stylesheet extraction with layout, label, or behavior changes.
+
 ## Phase 3 - Add Semantic UI Object Names
 
 Replace broad stylesheet selectors with semantic object names and dynamic properties.
@@ -173,6 +191,11 @@ Verification:
 - Confirm style changes do not affect raw editor text widgets, map canvas, or native dialogs unintentionally.
 - Check dark/light screenshots of Raw, Blocks, Map, Search, Validation, Compiler, Settings, and Help.
 
+Next slices:
+
+- Add semantic object names only when replacing broad selectors or stabilizing a style builder.
+- Avoid object-name churn in widgets whose styling is not being touched.
+
 ## Phase 4 - Split UI Construction From Behavior Wiring
 
 Separate widget creation from controller/presenter wiring.
@@ -196,6 +219,12 @@ Candidate splits:
 - `MapEditorTabInspectorPanelUi.cpp` into selection/background/objects/file UI builders
 - `MainWindowSidebar.cpp` into structure/search/validation/compiler page builders
 - status bar badge construction vs status update logic
+
+Current preferred split order:
+
+1. Status bar badge construction vs status update logic, because it has limited source-model risk.
+2. `MainWindowSidebar.cpp` page-builder extraction, one sidebar page at a time.
+3. Map inspector file/background/selection/object UI split only when a concrete inspector change needs it.
 
 Verification:
 
@@ -239,6 +268,12 @@ Verification:
 
 - Add unit tests for view-model state transitions.
 - Check that core state and actions are not reachable only through widget internals.
+
+Next slices:
+
+- Start with a read-only panel or status surface before editable map inspector rows.
+- Define one narrow view model for an existing repeated row/list state rather than a whole inspector at once.
+- Avoid view-model work that would duplicate source parser, validation, project-index, or map selection state.
 
 ## Phase 6 - Define UI Intent Interfaces
 
@@ -336,3 +371,19 @@ Do not migrate the map canvas until:
   - one presenter or intent extraction
 - Update `WORKLOG.md` when a phase starts or changes scope.
 - Update `docs/USER_MANUAL.md` only when user-visible behavior changes, not for internal style refactors.
+
+## Recommended Next Slice Queue
+
+1. Extract one remaining long inline stylesheet into an existing style builder and verify light/dark behavior.
+2. Replace one repeated metric cluster with `ApplicationControlMetrics` / `ApplicationStyleTokens`.
+3. Split status badge construction from status update logic if the next status-bar change touches that area.
+4. Extract one `MainWindowSidebar` page builder only when modifying that sidebar page.
+5. Introduce one small read-only view model for a panel/list state with focused unit coverage.
+
+## Verification Gates
+
+- `python3 scripts/check_structure_constraints.py` for every GUI cleanup change.
+- Build the affected target; run focused UI tests when the touched surface has coverage.
+- Manual light/dark check for style or object-name changes.
+- Manual narrow-width check for inspector/sidebar changes.
+- No source-model, file IO, process execution, or source mutation behavior should change in a GUI cleanup commit unless that commit is intentionally re-scoped outside this plan.

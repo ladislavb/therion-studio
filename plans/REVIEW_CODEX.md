@@ -6,6 +6,14 @@ Scope: static review of repository structure, dead-code candidates, duplicate co
 
 This document is an active review record. Completed follow-ups should be removed from this file and tracked through code, tests, `ARCHITECTURE.md`, `WORKLOG.md`, or archive history as appropriate.
 
+Status update: 2026-06-29
+
+- The unified source DOM direction now has a dedicated operational plan in `plans/UNIFIED_SOURCE_DOM_PLAN.md`.
+- `TherionSourceText`, `TherionSourceDocument`, `TherionSourceLogicalDocument`, and `TherionSourceSnapshotCache` provide the current shared source snapshot and logical command foundation.
+- Source document line/offset lookup, logical command/token offset lookup, and selected validator migrations are implemented and covered by `TherionCoreQTests`.
+- Map editor release stabilization has a separate Windows-input diagnostic/fix trail; do not fold broad map projection rewrites into release-stabilization work without new evidence.
+- This review should now be read as an architecture risk register. Detailed implementation slices belong in the focused plans and `WORKLOG.md`.
+
 ## Executive Summary
 
 Therion Studio is close to a coherent architecture, but the biggest remaining maintenance risk is that the application still does not have one authoritative source parser/model for Therion documents. Existing source snapshot and token-line compatibility APIs are useful stepping stones, but Raw editor, Block editor, Map editor, Structure index, syntax highlighting, command help, background metadata, and source rewrite operations still need to converge on one shared lossless source model and one source-change transaction path.
@@ -18,7 +26,7 @@ For the first stable public release, avoid a broad parser rewrite. Keep current 
 
 Evidence:
 
-- The first lossless source snapshot API exists, but much of the application still consumes token-line compatibility projections or local interpretation code.
+- The first lossless source snapshot and logical command APIs exist, but much of the application still consumes token-line compatibility projections or local interpretation code.
 - Map, Block, Structure, completion, syntax validation, command help, source rewriting, and background metadata still have separate projection paths.
 - Some source rewrite paths have migrated to source ranges, but the document model is not yet the single canonical source of parsed command, block, option, geometry, and reference data.
 
@@ -34,6 +42,7 @@ Recommended direction:
 - Keep raw text as the canonical persisted output.
 - Build Raw, Blocks, Map, Structure, Context Help, completion, syntax, validation, and compiler-facing projections from the shared source model.
 - Keep legacy token-line APIs as temporary compatibility boundaries only while consumers migrate.
+- Follow `plans/UNIFIED_SOURCE_DOM_PLAN.md` for concrete slice order; prefer Raw/Blocks/Validation/Structure consumers before broad Map scene projection rewrites.
 
 ### P0 - Source Writes Are Not Yet One Cross-Editor Transaction
 
@@ -54,6 +63,7 @@ Recommended direction:
 - Continue expanding `TextEditorSourceTransactionController` or its successor until Raw, Blocks, Map, inspector, validation fixes, imports, normalization, and geometry/background edits submit through one required source-edit path.
 - Every source mutation should submit a single request containing before/revision identity, target source range or replacement, undo label, dirty-state policy, projection refresh policy, and selection/cursor restoration intent.
 - The service should own revision checks, replacement, undo snapshot creation, dirty-state updates, parsed-cache invalidation, and post-change projection refresh.
+- Release-stabilization exceptions should stay narrow and tested. For example, map vertex moves now defer scene refresh after source transactions to avoid UI stalls; broader transaction redesign should remain separate.
 
 ### P1 - Large Multi-Responsibility Files
 
@@ -180,6 +190,7 @@ Evidence:
 
 - Map scene refresh still clears/rebuilds broad scene state.
 - Some parsed document caching exists, but derived map geometry, structure, background metadata, and source bounds projections are not yet consistently cached as independent revision-keyed products.
+- Recent DOM work adds shared physical/logical snapshots and offset lookup APIs, but Map geometry and scene refresh still depend heavily on token-line compatibility projections.
 
 Risk:
 
@@ -221,6 +232,7 @@ Recommendation:
 
 - Replace retry timers with an explicit scene refresh completion signal or callback.
 - Selection restoration should run once after the relevant scene generation is available.
+- Keep the recent deferred-refresh fix for vertex moves as a release stabilization measure, not as the final scene-refresh architecture.
 
 ### Icons and Small Pixmaps
 
@@ -255,18 +267,20 @@ Recommendations:
 
 Introduce these layers incrementally:
 
-1. `TherionSourceText`: lossless physical source lines, newline preservation, line/byte offsets, and safe line-range replacement.
-2. `TherionSourceParser`: tokenizes every line, preserves empty/comment-only lines, annotates command lines, recognizes block starts/ends, and attaches catalog metadata where available.
-3. `TherionSourceDocument`: immutable parsed snapshot with document revision, file type, encoding, diagnostics, and source ranges.
-4. Projections: `TherionBlockProjection`, `TherionMapProjection`, `TherionStructureProjection`, and `TherionSyntaxProjection`.
-5. `TherionSourceChangeService`: line-range rewrite, text replacement, undo snapshot, parsed cache invalidation, and selection restoration.
+1. `TherionSourceText`: lossless physical source lines, newline preservation, line offsets, and safe line-range replacement. Initial implementation exists.
+2. `TherionSourceDocument`: immutable parsed physical snapshot with document revision metadata, file type, encoding metadata, block state, line roles, and source ranges. Initial implementation exists.
+3. `TherionSourceLogicalDocument`: continuation-aware logical command projection with argument/option/token ranges, catalog metadata, and cursor offset lookup. Initial implementation exists.
+4. Projections: future `TherionBlockProjection`, `Th2GeometryProjection`, `TherionStructureProjection`, and `TherionSyntaxProjection` should build from the shared source/logical documents.
+5. Source change service: continue converging on `TextEditorSourceTransactionController` or a narrow successor for line-range rewrite, text replacement, undo snapshot, parsed cache invalidation, and selection restoration.
 
 Migration path:
 
-1. Move geometry extraction from `MapEditorSceneRenderer.cpp` into a standalone `TherionMapProjection` or `Th2GeometryProjection`.
-2. Move project structure parsing from token-line compatibility onto the same source document/projection model.
-3. Move all editor writes to a shared transaction service.
-4. Delete or rename legacy wrappers once all call sites use the new service.
+1. Migrate low-risk Raw/Blocks/Validation/Structure consumers to the shared source/logical document APIs.
+2. Move one tested Map inspector/reference read-only path from token-line compatibility to logical commands.
+3. Define a standalone `Th2GeometryProjection` contract before moving geometry extraction out of `MapEditorSceneRenderer.cpp`.
+4. Move project structure parsing from remaining token-line compatibility paths onto the shared source document/projection model.
+5. Move all editor writes to a shared transaction service.
+6. Delete or rename legacy wrappers once all call sites use the new service and regression coverage exists.
 
 ## Release-Safe Improvements
 
@@ -275,6 +289,7 @@ Before public release, prefer low-risk guardrails over broad rewrites:
 - Add regression tests for remaining parser/token rules, including negative numbers, exponent notation, quoted strings, comments, comment-only lines, line-point option rows, and `revise ... -stations ...`.
 - Add a smoke benchmark for opening a large `.th2` file and toggling dark/light mode.
 - Keep structure constraints guarding against UI-side source mutation bypasses.
+- For Windows map-input issues, use opt-in diagnostics and focused fixes from logs before starting broad Map/TH2 projection migrations.
 
 ## Suggested Verification Strategy
 

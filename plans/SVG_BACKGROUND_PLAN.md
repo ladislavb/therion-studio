@@ -18,6 +18,14 @@ This plan is intentionally incremental, but the implementation target is full Ma
 - Existing Mapiah `format=svg` layers with intrinsic size and source viewBox metadata render as SVG background items in the map editor.
 - Adding a new SVG layer from the Backgrounds file picker is wired and writes Mapiah `format=svg` metadata.
 
+## Current Boundaries To Preserve
+
+- SVG is a background reference layer, not an editable vector document.
+- SVG source identity shall remain `TherionBackgroundLayerFormat::Svg` and Mapiah `format=svg`; it must not be rewritten as raster or XTherion image metadata.
+- Metadata parsing/serialization belongs in core background metadata code. Rendering/loading belongs in focused map-editor background modules.
+- Source writes for insertion and transform changes must keep using the existing background source transaction path.
+- Expensive SVG validation/loading should not be introduced into unrelated selection, theme, or map-scene refresh paths.
+
 ## Product Goal
 
 Users shall be able to add an SVG file as a map background reference, see it in the Map editor, transform it with the same position, scale, rotation, pivot, visibility, and opacity controls as other compatible backgrounds, and preserve it as Mapiah `format=svg` metadata.
@@ -43,14 +51,19 @@ Expected metadata form:
 
 ## Phase 1 - Safe Metadata and UX Recognition
 
-1. Extend Mapiah metadata writing so `TherionBackgroundLayerFormat::Svg` serializes as `format=svg`. Done.
-2. Keep `format=xvi` behavior unchanged, including `xviRoot`. Done.
-3. Keep `format=raster` behavior unchanged for normal raster images. Done.
-4. Parse and write SVG intrinsic metadata fields: `intrinsicWidth`, `intrinsicHeight`, `sourceViewBoxLeft`, `sourceViewBoxTop`, `sourceViewBoxWidth`, and `sourceViewBoxHeight`. Done.
-5. Update background file picker filters to include `*.svg`. Done.
-6. Update layer labels and inspector behavior so SVG is identified as SVG, not raster.
-7. Disable Gamma controls for SVG layers; Mapiah SVG handling does not model raster gamma correction.
-8. Update `SPECIFICATION.md` and `docs/USER_MANUAL.md` to replace the current "not supported yet" wording with the intended behavior.
+Done:
+
+1. Extend Mapiah metadata writing so `TherionBackgroundLayerFormat::Svg` serializes as `format=svg`.
+2. Keep `format=xvi` behavior unchanged, including `xviRoot`.
+3. Keep `format=raster` behavior unchanged for normal raster images.
+4. Parse and write SVG intrinsic metadata fields: `intrinsicWidth`, `intrinsicHeight`, `sourceViewBoxLeft`, `sourceViewBoxTop`, `sourceViewBoxWidth`, and `sourceViewBoxHeight`.
+5. Update background file picker filters to include `*.svg`.
+
+Remaining:
+
+1. Confirm layer labels and inspector behavior identify SVG as SVG, not raster, in all layer lists and details rows.
+2. Disable or hide Gamma controls for SVG layers; Mapiah SVG handling does not model raster gamma correction.
+3. Update `SPECIFICATION.md` and `docs/USER_MANUAL.md` if current user-facing wording still says SVG is unsupported.
 
 Verification:
 
@@ -96,6 +109,12 @@ Requirements:
 - Avoid excessive repaint cost for complex SVGs.
 - Keep SVG loading safe: no network fetches, no script execution, and no user-invisible external dependency behavior.
 
+Next slices:
+
+- Introduce a narrow `MapEditorBackgroundLayerItem` abstraction only when a second renderer-specific branch needs the same lifecycle operation.
+- Start with common operations that already exist for all formats: visibility, opacity, z-order, bounds, and placement transform.
+- Do not migrate source metadata or inspector state into the graphics item abstraction.
+
 ## Architecture Guidance
 
 - Keep metadata parsing and serialization in core/background metadata code, not in widgets.
@@ -114,6 +133,12 @@ Requirements:
 - Rotation, scale, position, and pivot should remain available through Mapiah metadata.
 - If SVG loading fails, the user should see an actionable warning or status message naming the file.
 
+Open checks:
+
+- Verify whether existing UI labels/tooltips are already translatable and current for SVG.
+- Verify whether failed SVG load is currently visible to the user or only logged/ignored.
+- Verify whether Fit With Background uses SVG bounds after insertion and after reopening an existing Mapiah layer.
+
 ## Risk Areas
 
 - SVG files can be very large or complex; avoid blocking the UI thread for expensive loads and avoid repainting unnecessarily.
@@ -131,3 +156,18 @@ Requirements:
 - Existing raster, XVI, and PocketTopo background workflows continue to pass their current tests.
 - The user manual documents SVG as a supported background layer after implementation.
 - No SVG support code introduces a new non-Qt dependency.
+
+## Recommended Next Slice Queue
+
+1. Audit current SVG UI labels, inspector rows, Gamma control state, Fit With Background behavior, and failed-load reporting.
+2. Add or update focused tests for transform rewrites preserving `format=svg` and intrinsic viewBox fields.
+3. Update `SPECIFICATION.md` and `docs/USER_MANUAL.md` only after verifying actual UI behavior.
+4. Add one UI/integration test that reopens a TH2 with Mapiah SVG metadata and confirms a background layer is restored.
+5. Consider `MapEditorBackgroundLayerItem` only after the remaining SVG-specific branches make lifecycle duplication concrete.
+
+## Verification Gates
+
+- Run background metadata tests for every metadata parser/writer change.
+- Run focused map background tests for insertion, reload, transform, visibility, opacity, and Fit With Background changes.
+- Run `python3 scripts/check_structure_constraints.py`.
+- Manually check one SVG with explicit width/height, one with only `viewBox`, and one with transparency.
