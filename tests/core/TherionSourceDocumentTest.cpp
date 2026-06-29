@@ -33,12 +33,7 @@ const TherionSourceDocumentLine *TherionSourceDocumentTest::lineAt(
     const TherionSourceDocument &document,
     int oneBasedLineNumber)
 {
-    for (const TherionSourceDocumentLine &line : document.lines()) {
-        if (line.sourceLine.lineNumber == oneBasedLineNumber) {
-            return &line;
-        }
-    }
-    return nullptr;
+    return document.lineAtLineNumber(oneBasedLineNumber);
 }
 
 void TherionSourceDocumentTest::classifiesCommandAndBlockContentLines()

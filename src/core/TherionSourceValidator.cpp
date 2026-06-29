@@ -105,13 +105,8 @@ UnclosedBlockFixPlan unclosedBlockFixPlan(const TherionSourceDocument &sourceDoc
 
     const QString contents = sourceDocument.toText();
     const QVector<TherionSourceDocumentLine> &lines = sourceDocument.lines();
-    int openLineIndex = -1;
-    for (int index = 0; index < lines.size(); ++index) {
-        if (lines.at(index).sourceLine.lineNumber == openBlock.lineNumber) {
-            openLineIndex = index;
-            break;
-        }
-    }
+    const TherionSourceDocumentLine *openLine = sourceDocument.lineAtLineNumber(openBlock.lineNumber);
+    const int openLineIndex = openLine != nullptr ? openLine->sourceLine.lineNumber - 1 : -1;
     if (openLineIndex < 0 || openLineIndex >= lines.size()) {
         return plan;
     }
@@ -125,7 +120,7 @@ UnclosedBlockFixPlan unclosedBlockFixPlan(const TherionSourceDocument &sourceDoc
         }
     }
 
-    const QString indentation = leadingWhitespace(lines.at(openLineIndex).sourceLine.text);
+    const QString indentation = leadingWhitespace(openLine->sourceLine.text);
     const QString insertedLine = indentation + closeDirective;
     const QString lineEnding = lineEndingForInsertion(sourceDocument, insertionLineIndex, contents);
     plan.valid = true;
@@ -435,15 +430,12 @@ bool blockHasOnlyBlankBody(const TherionSourceBlockRange &blockRange,
         return false;
     }
 
-    for (const TherionSourceDocumentLine &line : sourceDocument.lines()) {
-        const int lineNumber = line.sourceLine.lineNumber;
-        if (lineNumber <= blockRange.openLineNumber) {
-            continue;
+    for (int lineNumber = blockRange.openLineNumber + 1; lineNumber < blockRange.closeLineNumber; ++lineNumber) {
+        const TherionSourceDocumentLine *line = sourceDocument.lineAtLineNumber(lineNumber);
+        if (line == nullptr) {
+            return false;
         }
-        if (lineNumber >= blockRange.closeLineNumber) {
-            break;
-        }
-        if (!line.sourceLine.isBlank()) {
+        if (!line->sourceLine.isBlank()) {
             return false;
         }
     }
