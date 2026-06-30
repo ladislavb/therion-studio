@@ -22,6 +22,8 @@ This plan tracks the long-running migration toward one shared, lossless Therion 
 - `TherionSourceLogicalDocument` owns continuation grouping, logical command ranges, physical token/argument/option ranges, block context, catalog-aware command metadata, physical-line lookup, absolute-offset command lookup, and absolute-offset token lookup.
 - `TherionCommandLineModel`, `TherionTokenRules`, and `TherionStringUtils` are the current shared command/token/string rule seams.
 - `TherionSourceValidator`, `ProjectStructureIndex`, Raw completion/help/highlighting paths, and several Blocks/Map helpers already consume shared command/source parsing in focused areas.
+- `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md` tracks the detailed Structure/Validation project-scan cache path,
+  including shared project-index snapshots, per-file validation diagnostics cache, and later DOM-backed project projections.
 - `TextEditorSourceTransactionController` is the current central source-transaction seam for source snapshots, undo labels, revision checks, projection invalidation, and selection restoration hooks.
 - Map editor source writes are partially routed through `applySourceTextChangeWithSnapshot`, but several projection/rewrite helpers still own local source-shape knowledge.
 - `TherionSourceDocumentTest` and `TherionSourceLogicalDocumentTest` now run inside `TherionCoreQTests`, with QTest coverage for physical/logical source snapshot roles, ranges, metadata, continuation handling, and catalog metadata.
@@ -121,10 +123,12 @@ Goal: make source mutation semantics uniform across Raw, Blocks, Map, inspector,
 Goal: feed orientation and validation surfaces from cached DOM snapshots instead of independent reparsing.
 
 - Reuse cached logical documents for Structure, project indexing, namespace/reference resolution, search, and validation.
+- Follow `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md` for concrete scan/cache slice order; do not duplicate its
+  detailed Structure/Validation optimization queue here.
 - Keep Therion namespace semantics exactly as documented in `docs/THERION_COMPATIBILITY.md`.
 - Make live diagnostics debounced, cancellable, revision-keyed, and centralized in the Validation panel.
 - Next slices:
-  - Identify one `ProjectStructureIndex` pass that still rebuilds or rescans a logical document unnecessarily and route it through the existing per-run cache.
+  - Add shared project-index snapshot timing/reuse before attempting full incremental project-index dependency tracking.
   - Add a regression for qualified reference order (`object@child.parent`) before changing namespace/reference consumers.
   - Keep UI-side Structure refresh changes separate from core project-index projection changes.
 
@@ -139,6 +143,10 @@ Goal: delete duplicate parsing/rewrite code only after coverage and consumers ha
 - Keep direct `parseLine` calls for synthetic command snippets, user-entered token fields, and tests where a full document snapshot would add no source fidelity.
 
 ## Recommended Next Slice Queue
+
+If the current priority is large-project validation and repeated project scanning, follow
+`plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md` first, starting with project source request keys and source snapshot
+collection.
 
 1. Raw cursor-token consumer: use `TherionSourceLogicalDocument::tokenAtOffset()` in one existing Raw completion/context-help path and preserve quoted/comment/continuation behavior.
 2. Blocks read-only detail consumer: replace one local `parseLine(logicalLine.text, logicalLine.startLine)` call with a logical-command range helper.

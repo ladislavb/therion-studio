@@ -56,6 +56,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   small enough or the user wants live full-project diagnostics.
 - Ask large-project Windows testers to collect `THERION_STUDIO_ENABLE_LOG=1` output and compare
   `project-validation-scan` versus `project-validation-ui` timings before changing more validation architecture.
+- Use `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md` for the DOM-first project source snapshot slice queue; current
+  findings show Structure and Validation can duplicate project-index scans, and Validation also rebuilds local file
+  diagnostics every run.
 - Prefer Settings -> troubleshooting logs for tester builds: the preference is time-limited, restart-applied, and uses
   rotated application log files instead of requiring users to set environment variables.
 - Optimize future live validation with incremental file/revision caching, generation-keyed cancellation, and cheaper
@@ -114,6 +117,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Implement safe one-line map partial refresh according to `plans/MAP_PARTIAL_REFRESH_PLAN.md` after release stabilization.
 - Optional Structure graph view for relationships such as `preview`, `revise`, `join`, `equate`, relationship status, and station-network edges.
 - Compiler-confirmed project-index comparison once lightweight indexing is no longer sufficient.
+- Build project source snapshots first, then share Structure/Validation project-index snapshots and add per-file validation cache according to
+  `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md`.
 - Restore automatic full-project validation as the recommended/default mode only after live diagnostics are incremental,
   cancellable, and UI-cheap for nested projects.
 - Broader Therion corpus regression tests for parsing, serialization, source rewrites, indexing, and map/text synchronization.
