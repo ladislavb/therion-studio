@@ -2029,6 +2029,13 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                 if (!anchorAlreadyCaptured && context_.captureInteractiveLineAnchor) {
                     context_.captureInteractiveLineAnchor(anchorScenePoint, std::nullopt);
                 }
+                const int draftVertexCount = context_.interactiveDrawLineVertices != nullptr
+                    ? context_.interactiveDrawLineVertices->size()
+                    : -1;
+                inputTrace.setDetail(QStringLiteral("anchor_already_captured=%1 draft_vertices_before_commit=%2")
+                                         .arg(anchorAlreadyCaptured ? 1 : 0)
+                                         .arg(draftVertexCount));
+                inputTrace.forceLog();
                 (*context_.interactiveDrawAnchorPressActive) = false;
                 (*context_.interactiveDrawAnchorDragActive) = false;
                 (*context_.interactiveDrawControlDragActive) = false;
@@ -2136,6 +2143,23 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                 }
 
                 context_.captureInteractiveLineAnchor(anchorScenePoint, dragScenePoint);
+                if (context_.interactiveDrawLineVertices != nullptr
+                    && !context_.interactiveDrawLineVertices->isEmpty()) {
+                    const MapEditorInteractiveLineDraftVertex &capturedVertex =
+                        context_.interactiveDrawLineVertices->last();
+                    inputTrace.setDetail(QStringLiteral(
+                                             "captured=%1 dragged=%2 incoming_control=%3 outgoing_control=%4 "
+                                             "anchor_scene=%5,%6 release_scene=%7,%8")
+                                             .arg(context_.interactiveDrawLineVertices->size())
+                                             .arg(dragScenePoint.has_value() ? 1 : 0)
+                                             .arg(capturedVertex.incomingControlScene.has_value() ? 1 : 0)
+                                             .arg(capturedVertex.outgoingControlScene.has_value() ? 1 : 0)
+                                             .arg(capturedVertex.anchorScene.x(), 0, 'f', 2)
+                                             .arg(capturedVertex.anchorScene.y(), 0, 'f', 2)
+                                             .arg(releaseScenePoint.x(), 0, 'f', 2)
+                                             .arg(releaseScenePoint.y(), 0, 'f', 2));
+                    inputTrace.forceLog();
+                }
                 (*context_.toolbarStatusNote) = currentDrawMode == MapEditorInteractiveDrawMode::Line
                     ? tr("Line mode: %1 vertex/vertices captured. Press Enter or Complete Draft.")
                           .arg((*context_.interactiveDrawLineVertices).size())

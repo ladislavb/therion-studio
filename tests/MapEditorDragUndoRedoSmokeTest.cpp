@@ -265,6 +265,41 @@ bool runFreehandBezierRowLogicSmoke()
                 "XTherion-style draft rows should serialize each point's next control in the following segment row.")) {
         return false;
     }
+
+    QVector<MapEditorInteractiveLineDraftVertex> duplicateFinalAnchorDraft = xtherionDraft;
+    MapEditorInteractiveLineDraftVertex duplicateFinalAnchor;
+    duplicateFinalAnchor.anchorScene = QPointF(20.0, 0.0);
+    duplicateFinalAnchor.anchorSource = duplicateFinalAnchor.anchorScene;
+    duplicateFinalAnchorDraft.append(duplicateFinalAnchor);
+    const QStringList duplicateFinalAnchorRows = lineCoordinateRowsForInteractiveDraft(duplicateFinalAnchorDraft);
+    if (!expect(duplicateFinalAnchorRows == xtherionRows,
+                "A duplicate final draft anchor should not serialize an extra zero-length segment.")) {
+        return false;
+    }
+
+    QVector<MapEditorInteractiveLineDraftVertex> oneSidedSmoothDraft;
+    MapEditorInteractiveLineDraftVertex oneSidedFirst;
+    oneSidedFirst.anchorScene = QPointF(0.0, 0.0);
+    oneSidedFirst.anchorSource = oneSidedFirst.anchorScene;
+    oneSidedSmoothDraft.append(oneSidedFirst);
+    MapEditorInteractiveLineDraftVertex oneSidedMiddle;
+    oneSidedMiddle.anchorScene = QPointF(10.0, 0.0);
+    oneSidedMiddle.anchorSource = oneSidedMiddle.anchorScene;
+    oneSidedMiddle.incomingControlScene = QPointF(10.0, -5.0);
+    oneSidedMiddle.incomingControlSource = oneSidedMiddle.incomingControlScene;
+    oneSidedSmoothDraft.append(oneSidedMiddle);
+    MapEditorInteractiveLineDraftVertex oneSidedLast;
+    oneSidedLast.anchorScene = QPointF(20.0, 0.0);
+    oneSidedLast.anchorSource = oneSidedLast.anchorScene;
+    oneSidedSmoothDraft.append(oneSidedLast);
+    const QStringList oneSidedSmoothRows = lineCoordinateRowsForInteractiveDraft(oneSidedSmoothDraft);
+    if (!expect(oneSidedSmoothRows.size() == 3
+                    && oneSidedSmoothRows.at(1) == QStringLiteral("0.0 0.0 10.0 -5.0 10.0 0.0")
+                    && oneSidedSmoothRows.at(2) == QStringLiteral("10.0 5.0 20.0 0.0 20.0 0.0"),
+                "A smooth draft vertex with one captured handle should mirror the missing handle for the next segment.")) {
+        return false;
+    }
+
     QVector<MapEditorInteractiveLineDraftVertex> repeatedSubtypeDraft;
     captureInteractiveLineAnchor(&repeatedSubtypeDraft,
                                  QPointF(0.0, 0.0),

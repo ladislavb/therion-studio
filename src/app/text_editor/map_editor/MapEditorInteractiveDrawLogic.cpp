@@ -248,27 +248,116 @@ void appendInteractiveLinePointStandaloneRows(QStringList *rows,
         rows->append(QStringLiteral("l-size %1").arg(formatSourceCoordinate(std::max<qreal>(0.1, vertex.leftSize.value()))));
     }
 }
+
+bool pointsNearlyEqual(const QPointF &a, const QPointF &b)
+{
+    constexpr qreal kDuplicateAnchorEpsilon = 0.001;
+    return QLineF(a, b).length() <= kDuplicateAnchorEpsilon;
+}
+
+void mergeDuplicateDraftVertex(MapEditorInteractiveLineDraftVertex *target,
+                               const MapEditorInteractiveLineDraftVertex &duplicate)
+{
+    if (target == nullptr) {
+        return;
+    }
+    if (!target->incomingControlSource.has_value() && duplicate.incomingControlSource.has_value()) {
+        target->incomingControlSource = duplicate.incomingControlSource;
+    }
+    if (!target->incomingControlScene.has_value() && duplicate.incomingControlScene.has_value()) {
+        target->incomingControlScene = duplicate.incomingControlScene;
+    }
+    if (!target->outgoingControlSource.has_value() && duplicate.outgoingControlSource.has_value()) {
+        target->outgoingControlSource = duplicate.outgoingControlSource;
+    }
+    if (!target->outgoingControlScene.has_value() && duplicate.outgoingControlScene.has_value()) {
+        target->outgoingControlScene = duplicate.outgoingControlScene;
+    }
+}
+
+QVector<MapEditorInteractiveLineDraftVertex> compactDuplicateDraftAnchors(
+    const QVector<MapEditorInteractiveLineDraftVertex> &vertices)
+{
+    QVector<MapEditorInteractiveLineDraftVertex> compacted;
+    compacted.reserve(vertices.size());
+    for (const MapEditorInteractiveLineDraftVertex &vertex : vertices) {
+        if (!compacted.isEmpty()
+            && pointsNearlyEqual(compacted.last().anchorSource, vertex.anchorSource)) {
+            mergeDuplicateDraftVertex(&compacted.last(), vertex);
+            continue;
+        }
+        compacted.append(vertex);
+    }
+    return compacted;
+}
+
+void mirrorMissingSmoothDraftControls(QVector<MapEditorInteractiveLineDraftVertex> *vertices)
+{
+    if (vertices == nullptr) {
+        return;
+    }
+    for (int index = 0; index < vertices->size(); ++index) {
+        MapEditorInteractiveLineDraftVertex &vertex = (*vertices)[index];
+        if (!vertex.isSmooth) {
+            continue;
+        }
+        if (index + 1 < vertices->size()
+            && vertex.incomingControlSource.has_value()
+            && !vertex.outgoingControlSource.has_value()) {
+            vertex.outgoingControlSource =
+                vertex.anchorSource - (vertex.incomingControlSource.value() - vertex.anchorSource);
+        }
+        if (index + 1 < vertices->size()
+            && vertex.incomingControlScene.has_value()
+            && !vertex.outgoingControlScene.has_value()) {
+            vertex.outgoingControlScene =
+                vertex.anchorScene - (vertex.incomingControlScene.value() - vertex.anchorScene);
+        }
+        if (index > 0
+            && vertex.outgoingControlSource.has_value()
+            && !vertex.incomingControlSource.has_value()) {
+            vertex.incomingControlSource =
+                vertex.anchorSource - (vertex.outgoingControlSource.value() - vertex.anchorSource);
+        }
+        if (index > 0
+            && vertex.outgoingControlScene.has_value()
+            && !vertex.incomingControlScene.has_value()) {
+            vertex.incomingControlScene =
+                vertex.anchorScene - (vertex.outgoingControlScene.value() - vertex.anchorScene);
+        }
+    }
+}
+
+QVector<MapEditorInteractiveLineDraftVertex> normalizedInteractiveLineDraftVertices(
+    const QVector<MapEditorInteractiveLineDraftVertex> &vertices)
+{
+    QVector<MapEditorInteractiveLineDraftVertex> normalized = compactDuplicateDraftAnchors(vertices);
+    mirrorMissingSmoothDraftControls(&normalized);
+    return normalized;
+}
 }
 
 QStringList lineCoordinateRowsForInteractiveDraft(const QVector<MapEditorInteractiveLineDraftVertex> &vertices)
 {
     QStringList rows;
-    if (vertices.isEmpty()) {
+    const QVector<MapEditorInteractiveLineDraftVertex> normalizedVertices =
+        normalizedInteractiveLineDraftVertices(vertices);
+    if (normalizedVertices.isEmpty()) {
         return rows;
     }
 
-    rows.reserve(vertices.size());
+    rows.reserve(normalizedVertices.size());
     const auto formatPoint = [](const QPointF &point) {
         return QStringLiteral("%1 %2")
             .arg(formatSourceCoordinate(point.x()), formatSourceCoordinate(point.y()));
     };
 
-    rows.append(formatPoint(vertices.first().anchorSource));
+    rows.append(formatPoint(normalizedVertices.first().anchorSource));
     QString activeSegmentSubtype;
-    appendInteractiveLinePointStandaloneRows(&rows, vertices.first(), &activeSegmentSubtype);
-    for (int index = 1; index < vertices.size(); ++index) {
-        const MapEditorInteractiveLineDraftVertex &previous = vertices.at(index - 1);
-        const MapEditorInteractiveLineDraftVertex &current = vertices.at(index);
+    appendInteractiveLinePointStandaloneRows(&rows, normalizedVertices.first(), &activeSegmentSubtype);
+    for (int index = 1; index < normalizedVertices.size(); ++index) {
+        const MapEditorInteractiveLineDraftVertex &previous = normalizedVertices.at(index - 1);
+        const MapEditorInteractiveLineDraftVertex &current = normalizedVertices.at(index);
         QStringList tokens;
         if (previous.outgoingControlSource.has_value() || current.incomingControlSource.has_value()) {
             const QPointF control1 = previous.outgoingControlSource.value_or(previous.anchorSource);

@@ -47,6 +47,12 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Keep smooth Bezier control edits covered through the source rewrite path: newly fractional map coordinates now keep
   higher precision so repeated control-point drags do not visibly degrade tangent continuity through coarse rounding, and
   preview coupling now uses current scene-item anchor/control positions after skipped full-refresh line commits.
+- Bezier draft serialization now compacts duplicate consecutive anchors and mirrors a missing opposite smooth handle when
+  one side of a smooth draft vertex was captured; keep this covered while investigating intermittent segmented line
+  reports from Windows/tablet input.
+- Use the expanded `line-area-anchor-release` and `line-double-click-complete` diagnostics in the next Windows tester log
+  to distinguish intermittent Bezier draft segmentation between missing captured controls, source insertion, and
+  post-insert parse/render projection.
 - Manually recheck the reported line-884 rock-border workflow before release handoff: move a smooth anchor, then drag one
   control handle and confirm the opposite handle remains tangent around the moved anchor.
 - Keep broad Map/TH2 projection rewrites out of release stabilization until Windows feedback confirms the deferred
