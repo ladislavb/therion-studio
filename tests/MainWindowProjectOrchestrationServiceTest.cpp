@@ -52,6 +52,7 @@ void MainWindowProjectOrchestrationServiceTest::buildsCloseProjectSteps()
     const std::vector<MainWindowProjectOrchestrationService::CloseProjectStep> expected = {
         MainWindowProjectOrchestrationService::CloseProjectStep::ClearDocumentTabs,
         MainWindowProjectOrchestrationService::CloseProjectStep::ResetProjectBrowser,
+        MainWindowProjectOrchestrationService::CloseProjectStep::ClearProjectValidationResults,
         MainWindowProjectOrchestrationService::CloseProjectStep::PersistSessionLastProjectPath,
         MainWindowProjectOrchestrationService::CloseProjectStep::PersistOpenDocuments,
         MainWindowProjectOrchestrationService::CloseProjectStep::ResetProjectTherionRunContext,
