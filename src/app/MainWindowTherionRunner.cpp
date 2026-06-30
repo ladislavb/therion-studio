@@ -473,6 +473,10 @@ void MainWindow::runTherion()
         return;
     }
 
+    if (!therionRunnerService_->isRunning()) {
+        therionConsoleController_.clearConsoleOutput();
+    }
+
     const TherionStudio::TherionRunnerService::StartResult startResult =
         therionRunnerService_->start(state.executableInput, state.resolvedWorkingDirectory, state.runArguments);
     const TherionStudio::TherionRunnerStartResultPresenter::Presentation startPresentation =

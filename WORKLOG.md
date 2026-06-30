@@ -54,6 +54,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   style catalog regression test when tuning SKBB-style line decorations.
 - Closing a project now clears project-validation results, diagnostics, detail state, and the validation rail indicator;
   keep this in the project-close orchestration coverage so stale findings do not survive into the no-project state.
+- Compiler panel target config display now emphasizes the selected config file name and keeps the full path secondary;
+  starting a new Therion run clears the previous compiler output before process launch.
 - Use the expanded `line-area-anchor-release` and `line-double-click-complete` diagnostics in the next Windows tester log
   to distinguish intermittent Bezier draft segmentation between missing captured controls, source insertion, and
   post-insert parse/render projection.

@@ -346,6 +346,8 @@ Cestu ke spustitelnému souboru Therion nastavte v `Soubor -> Nastavení...`. Po
 
 Před spuštěním kompilace Therion Studio uloží všechny změněné otevřené záložky. Pokud některý otevřený dokument nejde uložit, kompilace se zruší a runner se nespustí.
 
+Vybraná cílová konfigurace se zobrazuje jako výrazný název souboru a pod ním plná cesta. Spuštění nové kompilace vyčistí předchozí výstup compileru před spuštěním Therionu.
+
 Zavření projektu vyčistí `Cílovou konfiguraci` a `Náhradní pracovní složku`, protože jsou projektové. Cesta ke spustitelnému souboru Therion je globální preference. Dodatečné argumenty jsou jen pro aktuální relaci.
 
 ### 7.2 Akce

@@ -99,7 +99,15 @@ MainWindowTherionConsoleBuilder::build(const BuildInput &input)
     addLabeledWidget(settingsLayout, QCoreApplication::translate("MainWindow", "Target Config"), targetConfigRow, widget);
 
     result.therionConfigNameValue = new QLabel(QCoreApplication::translate("MainWindow", "Auto-detect"), widget);
-    result.therionConfigNameValue->hide();
+    result.therionConfigNameValue->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    result.therionConfigNameValue->setWordWrap(true);
+    result.therionConfigNameValue->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+    {
+        QFont font = result.therionConfigNameValue->font();
+        font.setBold(true);
+        result.therionConfigNameValue->setFont(font);
+    }
+    settingsLayout->addWidget(result.therionConfigNameValue);
     result.therionConfigPathValue =
         new QLabel(QCoreApplication::translate("MainWindow", "No config file resolved from the current context"), widget);
     result.therionConfigPathValue->setTextInteractionFlags(Qt::TextSelectableByMouse);

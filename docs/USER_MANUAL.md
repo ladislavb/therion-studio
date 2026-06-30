@@ -370,6 +370,8 @@ Set the Therion executable path in `File -> Settings...`. If no explicit path is
 
 Before starting a compile, Therion Studio saves all modified open document tabs. If any open document cannot be saved, the compile is canceled and the runner is not started.
 
+The selected target config is shown as a prominent file name with its full path below it. Starting a new compile clears the previous compiler output before Therion is launched.
+
 Closing a project clears `Target Config` and `Working Directory Override` because those paths are project-specific. The Therion executable path is a global preference. Additional arguments are session-only.
 
 ### 7.2 Actions
