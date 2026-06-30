@@ -233,6 +233,8 @@ set(THERION_APP_SOURCES
     src/app/MainWindowStructureNameOverridesService.h
     src/app/MainWindowValidationFixApplyService.cpp
     src/app/MainWindowValidationFixApplyService.h
+    src/app/ProjectSourceSnapshot.cpp
+    src/app/ProjectSourceSnapshot.h
     src/app/ProjectSearchScanner.cpp
     src/app/ProjectSearchScanner.h
     src/app/ProjectValidationController.cpp
@@ -1197,6 +1199,10 @@ therion_add_core_unit_test(SessionStoreTest
 therion_add_app_unit_test(ProjectStructureScannerTest
     tests/ProjectStructureScannerTest.cpp)
 
+therion_add_app_unit_test(ProjectSourceSnapshotTest
+    tests/ProjectSourceSnapshotTest.cpp)
+target_link_libraries(ProjectSourceSnapshotTest PRIVATE Qt6::Test)
+
 therion_add_app_unit_test(ProjectSearchScannerTest
     tests/ProjectSearchScannerTest.cpp)
 
@@ -1549,6 +1555,7 @@ set(THERION_UNIT_TEST_TARGETS
     TextEditorDocumentServiceQTests
     TextEditorTabInteractionControllerTest
     ProjectStructureScannerTest
+    ProjectSourceSnapshotTest
     ProjectSearchScannerTest
     ProjectValidationScannerTest
     ProjectValidationControllerTest

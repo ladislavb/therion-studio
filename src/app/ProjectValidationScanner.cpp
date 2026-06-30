@@ -1,6 +1,7 @@
 #include "ProjectValidationScanner.h"
 
-#include "../core/DocumentFile.h"
+#include "ProjectSourceSnapshot.h"
+
 #include "../core/ProjectStructureIndex.h"
 #include "../core/TherionFileTypes.h"
 #include "../core/TherionSourceLogicalDocument.h"
@@ -9,7 +10,6 @@
 
 #include <QDir>
 #include <QElapsedTimer>
-#include <QFileInfo>
 #include <QFutureWatcher>
 #include <QDebug>
 #include <QSet>
@@ -21,7 +21,6 @@ namespace TherionStudio
 namespace
 {
 constexpr int kMaximumProjectValidationFindings = 2000;
-constexpr qsizetype kMaximumValidatableFileBytes = 4 * 1024 * 1024;
 
 bool diagnosticProjectValidationLoggingEnabled()
 {
@@ -33,72 +32,6 @@ bool diagnosticProjectValidationLoggingEnabled()
             || value == QStringLiteral("on");
     }();
     return enabled;
-}
-
-bool hasValidatableTherionTextFileName(const QString &filePath)
-{
-    const QFileInfo info(filePath);
-    if (isTherionConfigFileName(info.fileName())) {
-        return true;
-    }
-
-    const QString suffix = info.suffix().toLower();
-    return suffix == QStringLiteral("th")
-        || suffix == QStringLiteral("th2");
-}
-
-bool isValidatableTherionTextFile(const QString &filePath)
-{
-    const QFileInfo info(filePath);
-    return info.isFile() && hasValidatableTherionTextFileName(filePath);
-}
-
-bool shouldSkipDirectory(const QFileInfo &info)
-{
-    const QString name = info.fileName();
-    return name == QStringLiteral(".git")
-        || name == QStringLiteral(".svn")
-        || name == QStringLiteral(".hg")
-        || name == QStringLiteral("CMakeFiles")
-        || name == QStringLiteral("build")
-        || name.startsWith(QStringLiteral("cmake-build"));
-}
-
-void collectValidatableFiles(const QString &directoryPath, QVector<QString> *filePaths)
-{
-    if (filePaths == nullptr) {
-        return;
-    }
-
-    const QFileInfo directoryInfo(directoryPath);
-    if (!directoryInfo.isDir() || shouldSkipDirectory(directoryInfo)) {
-        return;
-    }
-
-    const QFileInfoList entries = QDir(directoryPath).entryInfoList(
-        QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot,
-        QDir::DirsFirst | QDir::Name);
-    for (const QFileInfo &entry : entries) {
-        if (entry.isDir()) {
-            collectValidatableFiles(entry.absoluteFilePath(), filePaths);
-        } else if (isValidatableTherionTextFile(entry.absoluteFilePath())) {
-            filePaths->append(entry.absoluteFilePath());
-        }
-    }
-}
-
-QString readValidatableFileText(const QString &filePath)
-{
-    const QFileInfo info(filePath);
-    if (info.size() > kMaximumValidatableFileBytes) {
-        return QString();
-    }
-
-    QString contents;
-    if (!DocumentFile::readTextFile(filePath, &contents, nullptr, nullptr, nullptr)) {
-        return QString();
-    }
-    return contents;
 }
 
 QString sourceLineTextAt(const QString &text, int oneBasedLineNumber)
@@ -479,7 +412,7 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
     qint64 collectMs = 0;
     qint64 validateMs = 0;
     qint64 projectIndexMs = 0;
-    QVector<QString> filePaths;
+    ProjectSourceSnapshot projectSourceSnapshot;
 
     ProjectValidationScanner::Result result;
     result.generation = generation;
@@ -490,7 +423,7 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
             qInfo().noquote()
                 << QStringLiteral("project-validation-scan generation=%1 files=%2 searched=%3 findings=%4 limit_reached=%5 collect_ms=%6 validate_ms=%7 project_index_ms=%8 total_ms=%9 root=\"%10\" error=\"%11\"")
                        .arg(value.generation)
-                       .arg(filePaths.size())
+                       .arg(projectSourceSnapshot.documents.size())
                        .arg(value.searchedFileCount)
                        .arg(value.findings.size())
                        .arg(value.limitReached ? QStringLiteral("true") : QStringLiteral("false"))
@@ -509,75 +442,34 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
         return logAndReturn(result);
     }
 
-    QHash<QString, QString> normalizedInMemoryProjectContentsByPath;
-    for (auto it = inMemoryProjectContentsByPath.constBegin();
-         it != inMemoryProjectContentsByPath.constEnd();
-         ++it) {
-        const QString normalizedPath = canonicalOrAbsoluteFilePath(it.key());
-        if (!normalizedPath.isEmpty()) {
-            normalizedInMemoryProjectContentsByPath.insert(normalizedPath, *it);
-        }
-    }
-
-    QSet<QString> searchedPaths;
     QHash<QString, QString> searchedTextByPath;
+    QHash<QString, QString> normalizedInMemoryProjectContentsByPath;
     TherionSourceSnapshotCache sourceSnapshotCache;
     int sourceRevisionCounter = 0;
     {
         QElapsedTimer collectTimer;
         collectTimer.start();
-        collectValidatableFiles(result.projectRootPath, &filePaths);
+        projectSourceSnapshot = collectProjectSourceSnapshot(result.projectRootPath, {}, inMemoryProjectContentsByPath);
         collectMs = collectTimer.elapsed();
     }
     QSet<QString> knownProjectFilePaths;
-    for (const QString &candidatePath : filePaths) {
-        knownProjectFilePaths.insert(canonicalOrAbsoluteFilePath(candidatePath));
-    }
-    for (auto it = normalizedInMemoryProjectContentsByPath.constBegin();
-         it != normalizedInMemoryProjectContentsByPath.constEnd();
-         ++it) {
-        knownProjectFilePaths.insert(it.key());
+    for (const ProjectSourceDocument &document : std::as_const(projectSourceSnapshot.documents)) {
+        knownProjectFilePaths.insert(document.normalizedPath);
+        if (document.origin == ProjectSourceDocumentOrigin::InMemoryOverride
+            || document.origin == ProjectSourceDocumentOrigin::InMemoryOnly) {
+            normalizedInMemoryProjectContentsByPath.insert(document.normalizedPath, document.text);
+        }
     }
 
     {
         QElapsedTimer validateTimer;
         validateTimer.start();
-        for (const QString &candidatePath : filePaths) {
-            const QString filePath = canonicalOrAbsoluteFilePath(candidatePath);
-            searchedPaths.insert(filePath);
+        for (const ProjectSourceDocument &document : std::as_const(projectSourceSnapshot.documents)) {
             ++result.searchedFileCount;
-
-            const auto memoryIt = normalizedInMemoryProjectContentsByPath.constFind(filePath);
-            const QString text = memoryIt != normalizedInMemoryProjectContentsByPath.constEnd()
-                ? *memoryIt
-                : readValidatableFileText(filePath);
-            searchedTextByPath.insert(filePath, text);
+            searchedTextByPath.insert(document.normalizedPath, document.text);
             appendFindingsForText(&result,
-                                  filePath,
-                                  text,
-                                  validationCatalog,
-                                  knownProjectFilePaths,
-                                  sourceSnapshotCache,
-                                  ++sourceRevisionCounter);
-            if (result.limitReached) {
-                validateMs = validateTimer.elapsed();
-                return logAndReturn(result);
-            }
-        }
-
-        for (auto it = normalizedInMemoryProjectContentsByPath.constBegin();
-             it != normalizedInMemoryProjectContentsByPath.constEnd();
-             ++it) {
-            const QString filePath = it.key();
-            if (searchedPaths.contains(filePath) || !hasValidatableTherionTextFileName(filePath)) {
-                continue;
-            }
-            searchedPaths.insert(filePath);
-            ++result.searchedFileCount;
-            searchedTextByPath.insert(filePath, *it);
-            appendFindingsForText(&result,
-                                  filePath,
-                                  *it,
+                                  document.normalizedPath,
+                                  document.text,
                                   validationCatalog,
                                   knownProjectFilePaths,
                                   sourceSnapshotCache,
