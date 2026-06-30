@@ -57,14 +57,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Ask large-project Windows testers to collect `THERION_STUDIO_ENABLE_LOG=1` output and compare
   `project-validation-scan` versus `project-validation-ui` timings before changing more validation architecture.
 - Use `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md` for the DOM-first project source snapshot slice queue; current
-  findings show Structure and Validation can duplicate project-index scans, and Validation also rebuilds local file
-  diagnostics every run.
-- Build the next validation/project-scan slice on the shared project source request key so Structure and Validation can
-  reuse one normalized source snapshot instead of deriving independent scan identities.
-- Use the project source snapshot collector as the next integration point for scanner migration; keep the first runtime
-  hookup behavior-preserving by comparing Structure and Validation outputs before removing their local traversal code.
-- Use the shared `ProjectStructureIndexSourceSet` path as the baseline for Structure and Validation; the next project
-  scan optimization should add cache ownership rather than reintroducing scanner-local file traversal.
+  findings show Structure and Validation now share snapshot-compatible collection/index input paths, while repeated
+  requests still need explicit cache ownership.
+- Build the next validation/project-scan slice as a focused cache owner for source snapshots and project-index snapshots;
+  do not reintroduce scanner-local file traversal or static/global cache state.
 - Prefer Settings -> troubleshooting logs for tester builds: the preference is time-limited, restart-applied, and uses
   rotated application log files instead of requiring users to set environment variables.
 - Optimize future live validation with incremental file/revision caching, generation-keyed cancellation, and cheaper

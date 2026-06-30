@@ -8,14 +8,14 @@ This plan replaces an optimization-first approach with a DOM-first sequence. The
 
 ## Current Findings
 
-- Structure uses `ProjectStructureScanner`, which runs `ProjectStructureIndex::scanProjectIndex()` in a worker thread.
-- Validation uses `ProjectValidationScanner`, which performs its own recursive validatable-file discovery, file reads/in-memory text capture, and per-file `TherionSourceValidator` pass.
-- During the same validation run, `ProjectValidationScanner` then calls `ProjectStructureIndex::scanProjectIndex()` again to obtain project-index diagnostics and source graph information.
-- `ProjectStructureIndex::scanProjectIndex()` performs its own recursive `QDirIterator` file discovery and owns a per-run `ParsedFileCache`.
+- Structure uses `ProjectStructureScanner`, which now collects `ProjectSourceSnapshot` inputs and passes them to `ProjectStructureIndex` through `ProjectStructureIndexSourceSet`.
+- Validation uses `ProjectValidationScanner`, which now collects `ProjectSourceSnapshot` inputs once and uses them for local validation and project-index diagnostics.
+- `ProjectStructureIndex::scanProjectIndex(ProjectStructureIndexSourceSet)` can build an index without rediscovering or rereading project files.
+- Legacy `ProjectStructureIndex::scanProjectIndex(projectRoot, ...)` entry points still perform their own recursive `QDirIterator` discovery for callers that do not yet have snapshots.
 - `ProjectValidationScanner` owns a per-run `TherionSourceSnapshotCache`; it does not persist across scans.
 - `ProjectStructureIndex` already uses `TherionSourceSnapshotCache` / `TherionSourceLogicalDocument` internally for several parsing passes, but the cache lifetime is one project-index scan.
 - `TextEditorTab::validateDocument()` has a document-revision keyed cache for the currently opened document, but project validation does not reuse that cache.
-- Structure and Validation can therefore scan and parse overlapping files independently when they run close together.
+- Structure and Validation can still compute equivalent project source snapshots and project indexes independently when they run close together; shared cache ownership is the next remaining duplication to remove.
 - Automatic project validation is disabled by default; manual validation is preferred until live diagnostics become incremental, cancellable, and cheap for nested projects.
 
 ## DOM-First Goals
@@ -59,13 +59,9 @@ The short-term implementation may still call existing `ProjectStructureIndex` in
 
 ### Duplication A - Validation Internal Double Work
 
-Validation currently:
+Status: resolved for discovery/read duplication.
 
-1. discovers validatable files and reads text for local validation;
-2. validates every file;
-3. calls `ProjectStructureIndex::scanProjectIndex()`, which discovers/parses project files again for project-index diagnostics.
-
-DOM-first target: validation should receive a `ProjectSourceSnapshotSet` and project index projection derived from the same source snapshot inputs.
+Validation now collects project source snapshots once, uses them for local validation, and builds project-index diagnostics through `ProjectStructureIndexSourceSet`. Remaining work is cache reuse of the local source/logical projections and project-index snapshot across repeated requests.
 
 ### Duplication B - Structure And Validation Independent Scans
 
@@ -197,29 +193,27 @@ Do not reuse cache entries when:
 
 Goal: create a shared project source input model without changing Structure or Validation behavior yet.
 
-Slice 1A - Project Source Request Key
+Slice 1A - Project Source Request Key - Done
 
-- Add a value type for project source collection inputs:
+- Added a value type for project source collection inputs:
   - normalized project root
   - preferred config path
   - normalized in-memory contents by path
   - file filters / maximum validatable size policy where relevant
-- Keep trigger/generation metadata outside the key.
-- Add tests that equivalent path forms and in-memory maps produce stable keys.
+- Kept trigger/generation metadata outside the key.
+- Added tests that equivalent path forms and in-memory maps produce stable keys.
 
-Slice 1B - Project Source Snapshot Collector
+Slice 1B - Project Source Snapshot Collector - Done
 
-- Extract file discovery and text collection into a reusable collector.
-- It should produce `ProjectSourceSnapshotSet`.
-- It should support:
+- Extracted file discovery and text collection into reusable `ProjectSourceSnapshot` collection.
+- It supports:
   - disk files under project root
   - open in-memory overrides
   - files open in the editor but not discovered on disk yet, where existing Validation behavior supports them
-  - source type detection by filename
   - size limit behavior compatible with current Validation
-- Keep this collector independent from Structure and Validation UI.
+- Kept this collector independent from Structure and Validation UI.
 
-Slice 1C - DOM Projection Access For Project Sources
+Slice 1C - DOM Projection Access For Project Sources - Pending
 
 - Add a small `ProjectSourceProjectionCache` that can build `TherionSourceDocument` and `TherionSourceLogicalDocument` for a `ProjectSourceSnapshot`.
 - Start with a per-run cache if persistent ownership would make the first slice too large.
@@ -239,27 +233,27 @@ Verification:
 
 Goal: route Structure/project index input through DOM-compatible project source snapshots before adding cross-consumer cache reuse.
 
-Slice 2A - ProjectStructureIndex Snapshot Input
+Slice 2A - ProjectStructureIndex Snapshot Input - Done
 
-- Add an overload or adapter that lets `ProjectStructureIndex` consume `ProjectSourceSnapshotSet`.
-- Internally it may still use existing parsing routines, but should not rediscover/read files when snapshots are provided.
-- Preserve root config resolution behavior.
-- Preserve in-memory document overrides.
+- Added `ProjectStructureIndexSourceSet` and a `ProjectStructureIndex::scanProjectIndex()` overload that consumes already collected source text.
+- Internally it still uses existing parsing routines, but it does not rediscover/read files when source-set text is provided.
+- Preserved root config resolution behavior.
+- Preserved in-memory document overrides.
 
-Slice 2B - ProjectStructureScanner Snapshot Collection
+Slice 2B - ProjectStructureScanner Snapshot Collection - Done
 
-- Update `ProjectStructureScanner` to collect `ProjectSourceSnapshotSet` and pass it to the index path.
-- Preserve existing result shape and debounce/supersede behavior.
-- Add diagnostics timing:
+- Updated `ProjectStructureScanner` to collect `ProjectSourceSnapshot` and pass `ProjectStructureIndexSourceSet` to the index path.
+- Preserved existing result shape and debounce/supersede behavior.
+- Diagnostics timing remains pending:
   - source collection ms
   - projection/index ms
   - source count
 
-Slice 2C - Structure Regression Coverage
+Slice 2C - Structure Regression Coverage - Done
 
 - Existing Structure scanner tests should pass unchanged.
-- Add a test where an open in-memory file changes the Structure output without requiring the disk file to be saved.
-- Add a test that Structure does not perform an extra discovery/read pass when given a snapshot set, if practical with instrumentation.
+- Existing in-memory Structure scanner coverage verifies open in-memory text changes Structure output without saving the disk file.
+- Added a direct `ProjectStructureIndexSourceSet` test proving provided snapshot text is used instead of stale disk text.
 
 Verification:
 
@@ -271,18 +265,18 @@ Verification:
 
 Goal: make project validation derive local diagnostics and project-index diagnostics from the same source snapshot set.
 
-Slice 3A - ProjectValidationScanner Snapshot Input
+Slice 3A - ProjectValidationScanner Snapshot Input - Done
 
-- Update validation to collect `ProjectSourceSnapshotSet`.
-- Use the snapshot set for per-file local validation.
-- Keep existing validatable file filters and file-size behavior.
-- Keep open in-memory document overrides identical to current behavior.
+- Updated validation to collect `ProjectSourceSnapshot`.
+- Uses the snapshot set for per-file local validation.
+- Kept existing validatable file filters and file-size behavior.
+- Kept open in-memory document overrides identical to current behavior.
 
-Slice 3B - Project Index From Validation Snapshot
+Slice 3B - Project Index From Validation Snapshot - Done
 
-- Replace Validation's internal unconditional `ProjectStructureIndex::scanProjectIndex(projectRootPath, inMemoryContents, ...)` call with the snapshot-input path.
-- Keep project-index/cross-file diagnostics identical.
-- Keep fallback full index scan only when snapshot input is unavailable or invalid.
+- Replaced Validation's internal unconditional `ProjectStructureIndex::scanProjectIndex(projectRootPath, inMemoryContents, ...)` call with the snapshot-input path.
+- Kept project-index/cross-file diagnostics stable.
+- Added regression coverage showing project-index diagnostics use unsaved in-memory source text.
 
 Slice 3C - Validation/Structure Compatibility Test
 
@@ -461,19 +455,13 @@ Do not remove until:
 
 ## Recommended Slice Queue
 
-1. Slice 1A: introduce normalized project source request key.
-2. Slice 1B: extract project source snapshot collector.
-3. Slice 1C: add project source DOM projection cache access.
-4. Slice 2A: let `ProjectStructureIndex` consume project source snapshots.
-5. Slice 2B: route `ProjectStructureScanner` through source snapshots.
-6. Slice 3A: route `ProjectValidationScanner` local validation through source snapshots.
-7. Slice 3B: route Validation project-index diagnostics through the snapshot-input index path.
-8. Slice 4A: add single-entry project source snapshot service.
-9. Slice 4B: add shared project index snapshot reuse for Structure/Validation.
-10. Slice 5A: add diagnostics-only per-file validation cache.
-11. Slice 5B: reuse unchanged local diagnostics and log hits/misses.
-12. Slice 6A: define stable validation finding identity for cheaper UI updates.
-13. Slice 7A: inventory dependency graph before incremental project-index implementation.
+1. Slice 4A: add single-entry project source snapshot service.
+2. Slice 4B: add shared project index snapshot reuse for Structure/Validation.
+3. Slice 1C: add project source DOM projection cache access, scoped to the shared service if practical.
+4. Slice 5A: add diagnostics-only per-file validation cache.
+5. Slice 5B: reuse unchanged local diagnostics and log hits/misses.
+6. Slice 6A: define stable validation finding identity for cheaper UI updates.
+7. Slice 7A: inventory dependency graph before incremental project-index implementation.
 
 ## Acceptance Criteria
 
