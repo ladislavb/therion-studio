@@ -3,6 +3,7 @@
 #include "../src/app/text_editor/TextEditorTab.h"
 #include "../src/core/CommandCatalogStore.h"
 #include "../src/core/QtFileSystem.h"
+#include "../src/core/TherionDocumentParser.h"
 
 #include <QApplication>
 #include <QCoreApplication>
@@ -10,10 +11,12 @@
 #include <QFile>
 #include <QGraphicsRectItem>
 #include <QGraphicsScene>
+#include <QHash>
 #include <QStringList>
 #include <QTemporaryDir>
 #include <QUndoStack>
 
+#include <functional>
 #include <iostream>
 
 using namespace TherionStudio;
@@ -67,13 +70,18 @@ MapEditorCanvasEditController makeController(TextEditorTab *tab,
                                              int *flushCount,
                                              int *discardCount = nullptr,
                                              QGraphicsScene *scene = nullptr,
-                                             QVector<QGraphicsRectItem *> *draftItems = nullptr)
+                                             QVector<QGraphicsRectItem *> *draftItems = nullptr,
+                                             QHash<int, QGraphicsItem *> *itemsByLine = nullptr,
+                                             QHash<QString, QGraphicsItem *> *vertexItemsByKey = nullptr,
+                                             std::function<QRectF()> mapSourceBoundsForCurrentDocument = {})
 {
     MapEditorCanvasEditContext context;
     context.callbackContext = tab;
     context.textEditor = tab;
     context.scene = scene;
     context.undoStack = undoStack;
+    context.itemsByLine = itemsByLine;
+    context.vertexItemsByKey = vertexItemsByKey;
     context.draftGeometryItems = draftItems;
     context.toolbarStatusNote = toolbarStatus;
     context.commandApplyInProgress = commandApplyInProgress;
@@ -88,7 +96,21 @@ MapEditorCanvasEditController makeController(TextEditorTab *tab,
             ++(*discardCount);
         };
     }
+    context.mapSourceBoundsForCurrentDocument = std::move(mapSourceBoundsForCurrentDocument);
     return MapEditorCanvasEditController(context);
+}
+
+int geometryItemCountForLine(const QGraphicsScene &scene, int lineNumber)
+{
+    int count = 0;
+    for (QGraphicsItem *item : scene.items()) {
+        if (item != nullptr
+            && item->data(kMapItemRole).toInt() == kMapItemGeometryValue
+            && item->data(kMapSceneLineNumberRole).toInt() == lineNumber) {
+            ++count;
+        }
+    }
+    return count;
 }
 
 int runApplySourceTextChangeWithSnapshotTest()
@@ -348,7 +370,7 @@ int runLineVertexMoveUsesSourceEditSnapshotTest()
     return 0;
 }
 
-int runSegmentStyledLineVertexMoveKeepsFullRefreshTest()
+int runSegmentStyledLineVertexMoveUsesPartialRefreshTest()
 {
     QTemporaryDir tempDir;
     if (!expect(tempDir.isValid(), "Failed to create temporary directory.")) {
@@ -377,6 +399,31 @@ int runSegmentStyledLineVertexMoveKeepsFullRefreshTest()
     int refreshCount = 0;
     int flushCount = 0;
     int discardCount = 0;
+    QGraphicsScene scene;
+    QHash<int, QGraphicsItem *> itemsByLine;
+    QHash<QString, QGraphicsItem *> vertexItemsByKey;
+    const QVector<TherionParsedLine> parsedLines = TherionDocumentParser::parseTokenLines(tab.text());
+    const QVector<MapGeometryFeature> features = collectGeometryFeatures(parsedLines);
+    renderMapWorkspaceScene(&scene,
+                            filePath,
+                            collectMapSceneEntries(parsedLines),
+                            features,
+                            geometryBoundsForFeatures(features),
+                            false,
+                            &itemsByLine,
+                            &vertexItemsByKey,
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {});
+    const int geometryItemCountBefore = geometryItemCountForLine(scene, 1);
+    if (!expect(geometryItemCountBefore > 1,
+                "Segment-styled line vertex move test should start with a multi-item rendered geometry group.")) {
+        return 1;
+    }
+
     MapEditorCanvasEditController controller =
         makeController(&tab,
                        &undoStack,
@@ -384,7 +431,16 @@ int runSegmentStyledLineVertexMoveKeepsFullRefreshTest()
                        &commandApplyInProgress,
                        &refreshCount,
                        &flushCount,
-                       &discardCount);
+                       &discardCount,
+                       &scene,
+                       nullptr,
+                       &itemsByLine,
+                       &vertexItemsByKey,
+                       [&tab]() {
+                           const QVector<TherionParsedLine> currentParsedLines =
+                               TherionDocumentParser::parseTokenLines(tab.text());
+                           return geometryBoundsForFeatures(collectGeometryFeatures(currentParsedLines));
+                       });
 
     const QString afterText = QStringLiteral("line wall\n"
                                              "  0.0 0.0\n"
@@ -404,10 +460,18 @@ int runSegmentStyledLineVertexMoveKeepsFullRefreshTest()
         return 1;
     }
     pumpEvents();
-    if (!expect(flushCount == 1, "Segment-styled line vertex move should keep the full refresh for decorations.")) {
+    if (!expect(flushCount == 0, "Segment-styled line vertex move should avoid the full scene refresh when partial refresh succeeds.")) {
         return 1;
     }
-    if (!expect(discardCount == 0, "Segment-styled line vertex move should not discard the pending full scene refresh.")) {
+    if (!expect(discardCount == 1, "Segment-styled line vertex move should discard the pending full scene refresh after partial refresh.")) {
+        return 1;
+    }
+    if (!expect(geometryItemCountForLine(scene, 1) == geometryItemCountBefore,
+                "Segment-styled line vertex move partial refresh should replace the complete geometry item group.")) {
+        return 1;
+    }
+    if (!expect(itemsByLine.contains(1) && vertexItemsByKey.size() > 0,
+                "Segment-styled line vertex move partial refresh should restore primary and vertex indexes.")) {
         return 1;
     }
 
@@ -583,7 +647,7 @@ int main(int argc, char **argv)
     if (runLineVertexMoveUsesSourceEditSnapshotTest() != 0) {
         return 1;
     }
-    if (runSegmentStyledLineVertexMoveKeepsFullRefreshTest() != 0) {
+    if (runSegmentStyledLineVertexMoveUsesPartialRefreshTest() != 0) {
         return 1;
     }
     if (runStaleSourceChangeIsSkippedTest() != 0) {

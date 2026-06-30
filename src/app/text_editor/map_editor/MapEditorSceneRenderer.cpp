@@ -1863,6 +1863,81 @@ MapGeometryItemGroupRemovalResult removeMapGeometryItemGroupForLine(QGraphicsSce
     return result;
 }
 
+MapGeometryItemGroupRenderResult renderMapGeometryItemGroupForFeature(
+    QGraphicsScene *scene,
+    const MapGeometryFeature &feature,
+    const QRectF &sourceBounds,
+    QHash<int, QGraphicsItem *> *mapItemsByLine,
+    QHash<QString, QGraphicsItem *> *mapVertexItemsByKey,
+    const std::function<void(int, const QPointF &, const QPointF &)> &recordPointGeometryMove,
+    const std::function<void(int, const QString &, int, const QPointF &, const QPointF &)> &recordLineAreaVertexMove,
+    const std::function<void(int, qreal)> &recordPointOrientationHandleChange,
+    const std::function<void(int, int, qreal, qreal)> &recordLinePointLeftHandleChange)
+{
+    MapGeometryItemGroupRenderResult result;
+    if (scene == nullptr || feature.lineNumber <= 0) {
+        return result;
+    }
+
+    QGraphicsScene temporaryScene;
+    temporaryScene.setPalette(scene->palette());
+    QHash<int, QGraphicsItem *> temporaryItemsByLine;
+    QHash<QString, QGraphicsItem *> temporaryVertexItemsByKey;
+    renderMapWorkspaceScene(&temporaryScene,
+                            QString(),
+                            {},
+                            QVector<MapGeometryFeature>{feature},
+                            sourceBounds.isValid() ? std::optional<QRectF>(sourceBounds) : std::nullopt,
+                            false,
+                            &temporaryItemsByLine,
+                            &temporaryVertexItemsByKey,
+                            {},
+                            {},
+                            recordPointGeometryMove,
+                            recordLineAreaVertexMove,
+                            recordPointOrientationHandleChange,
+                            recordLinePointLeftHandleChange);
+
+    auto isGeometryItemForFeature = [&feature](const QGraphicsItem *item) {
+        return item != nullptr
+            && item->data(kMapItemRole).toInt() == kMapItemGeometryValue
+            && item->data(kMapSceneLineNumberRole).toInt() == feature.lineNumber;
+    };
+
+    QList<QGraphicsItem *> itemsToMove;
+    for (QGraphicsItem *item : temporaryScene.items()) {
+        if (isGeometryItemForFeature(item)) {
+            itemsToMove.append(item);
+        }
+    }
+
+    for (QGraphicsItem *item : itemsToMove) {
+        temporaryScene.removeItem(item);
+        scene->addItem(item);
+        ++result.addedItems;
+    }
+
+    if (mapItemsByLine != nullptr) {
+        QGraphicsItem *primaryItem = temporaryItemsByLine.value(feature.lineNumber, nullptr);
+        if (isGeometryItemForFeature(primaryItem)) {
+            mapItemsByLine->insert(feature.lineNumber, primaryItem);
+            result.addedPrimaryItem = true;
+        }
+    }
+
+    if (mapVertexItemsByKey != nullptr) {
+        for (auto it = temporaryVertexItemsByKey.cbegin(); it != temporaryVertexItemsByKey.cend(); ++it) {
+            if (!isGeometryItemForFeature(it.value())) {
+                continue;
+            }
+            mapVertexItemsByKey->insert(it.key(), it.value());
+            ++result.addedVertexIndexEntries;
+        }
+    }
+
+    return result;
+}
+
 QString mapEntryCategoryForLine(const TherionParsedLine &parsedLine)
 {
     if (parsedLine.tokens.isEmpty()) {

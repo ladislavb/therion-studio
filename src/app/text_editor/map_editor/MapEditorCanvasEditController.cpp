@@ -492,6 +492,18 @@ bool restoreLineVertexOwnerSelectionForContext(const MapEditorCanvasEditContext 
     if (ownerAnchor == nullptr) {
         return false;
     }
+    if (context.updatingSelection == nullptr
+        || context.selectedObjectLineNumber == nullptr
+        || context.selectedObjectVertexIndex == nullptr
+        || context.selectedObjectKind == nullptr
+        || context.selectedObjectCoordinate == nullptr
+        || !context.sourcePointFromScenePosition
+        || !context.updateGeometrySelectionPresentation
+        || !context.updateCommandSurfaceState
+        || !context.updateHelpPanel
+        || !context.refreshObjectDetailsPanel) {
+        return false;
+    }
 
     {
         const QScopedValueRollback<bool> selectionGuard((*context.updatingSelection), true);
@@ -614,6 +626,95 @@ std::function<void()> deferredMapSelectionRestoreHook(const MapEditorCanvasEditC
             QTimer::singleShot(0, context.callbackContext, std::move(restoreSelection));
         } else {
             restoreSelection();
+        }
+    };
+}
+
+std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEditContext &context,
+                                                       int lineNumber,
+                                                       std::function<void()> selectionRestoreHook = {})
+{
+    return [context, lineNumber, selectionRestoreHook = std::move(selectionRestoreHook)]() mutable {
+        auto refreshLine = [context, lineNumber, selectionRestoreHook = std::move(selectionRestoreHook)]() mutable {
+            auto fallbackFullRefresh = [&context, &selectionRestoreHook]() {
+                if (context.flushPendingSceneRefreshAfterCommand) {
+                    context.flushPendingSceneRefreshAfterCommand();
+                }
+                if (selectionRestoreHook) {
+                    selectionRestoreHook();
+                } else if (context.updateGeometrySelectionPresentation) {
+                    context.updateGeometrySelectionPresentation();
+                }
+            };
+
+            if (context.scene == nullptr || context.textEditor == nullptr || context.itemsByLine == nullptr) {
+                fallbackFullRefresh();
+                return;
+            }
+
+            const std::optional<MapGeometryFeature> refreshedFeature =
+                lineFeatureForLineNumber(context.textEditor->text(), lineNumber);
+            if (!refreshedFeature.has_value()) {
+                fallbackFullRefresh();
+                return;
+            }
+
+            const MapGeometryItemGroupRemovalResult removalResult =
+                removeMapGeometryItemGroupForLine(context.scene,
+                                                  lineNumber,
+                                                  context.itemsByLine,
+                                                  context.vertexItemsByKey);
+            const MapGeometryItemGroupRenderResult renderResult =
+                renderMapGeometryItemGroupForFeature(
+                    context.scene,
+                    refreshedFeature.value(),
+                    context.mapSourceBoundsForCurrentDocument ? context.mapSourceBoundsForCurrentDocument() : QRectF(),
+                    context.itemsByLine,
+                    context.vertexItemsByKey,
+                    {},
+                    [context](int changedLineNumber,
+                              const QString &geometryKind,
+                              int sourceVertexIndex,
+                              const QPointF &oldPoint,
+                              const QPointF &newPoint) {
+                        MapEditorCanvasEditController(context)
+                            .recordLineAreaVertexMove(changedLineNumber,
+                                                      geometryKind,
+                                                      sourceVertexIndex,
+                                                      oldPoint,
+                                                      newPoint);
+                    },
+                    {},
+                    [context](int changedLineNumber,
+                              int sourceVertexIndex,
+                              qreal orientationDegrees,
+                              qreal leftSize) {
+                        MapEditorCanvasEditController(context)
+                            .recordLinePointLeftHandleChange(changedLineNumber,
+                                                             sourceVertexIndex,
+                                                             orientationDegrees,
+                                                             leftSize);
+                    });
+            if (removalResult.removedItems <= 0
+                || renderResult.addedItems <= 0
+                || !renderResult.addedPrimaryItem) {
+                fallbackFullRefresh();
+                return;
+            }
+
+            if (context.discardPendingSceneRefreshAfterCommand) {
+                context.discardPendingSceneRefreshAfterCommand();
+            }
+            if (selectionRestoreHook) {
+                selectionRestoreHook();
+            } else if (context.updateGeometrySelectionPresentation) {
+                context.updateGeometrySelectionPresentation();
+            }
+        };
+        if (context.callbackContext != nullptr) {
+            QTimer::singleShot(0, context.callbackContext, std::move(refreshLine));
+        } else {
+            refreshLine();
         }
     };
 }
@@ -909,9 +1010,13 @@ void MapEditorCanvasEditController::recordLineAreaVertexMove(int lineNumber,
                                  afterText,
                                  lineNumber);
     request.projectionInvalidationPolicy = TextEditorSourceProjectionInvalidationPolicy::CustomHook;
-    request.projectionInvalidationHook = canSkipFullSceneRefresh
-        ? deferredMapSelectionRestoreHook(context_, std::move(selectionRestoreHook))
-        : deferredMapSceneRefreshHook(context_, std::move(selectionRestoreHook));
+    if (canSkipFullSceneRefresh) {
+        request.projectionInvalidationHook = deferredMapSelectionRestoreHook(context_, std::move(selectionRestoreHook));
+    } else if (rewriteKind == QStringLiteral("line") && lineOwnerIndexToRestore >= 0) {
+        request.projectionInvalidationHook = deferredMapLinePartialRefreshHook(context_, lineNumber, std::move(selectionRestoreHook));
+    } else {
+        request.projectionInvalidationHook = deferredMapSceneRefreshHook(context_, std::move(selectionRestoreHook));
+    }
     sourceTransactionController(context_).applyChangeWithSnapshot(request);
     (*context_.toolbarStatusNote) = tr("Updated %1 vertex %2 at source line %3.")
         .arg(rewriteKind)

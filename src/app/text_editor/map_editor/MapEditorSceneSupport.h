@@ -150,6 +150,13 @@ struct MapGeometryItemGroupRemovalResult
     bool removedPrimaryItem = false;
 };
 
+struct MapGeometryItemGroupRenderResult
+{
+    int addedItems = 0;
+    int addedVertexIndexEntries = 0;
+    bool addedPrimaryItem = false;
+};
+
 struct CoordinateTransform
 {
     bool valid = false;
@@ -283,6 +290,16 @@ MapGeometryItemGroupRemovalResult removeMapGeometryItemGroupForLine(QGraphicsSce
                                                                     int lineNumber,
                                                                     QHash<int, QGraphicsItem *> *mapItemsByLine,
                                                                     QHash<QString, QGraphicsItem *> *mapVertexItemsByKey);
+MapGeometryItemGroupRenderResult renderMapGeometryItemGroupForFeature(
+    QGraphicsScene *scene,
+    const MapGeometryFeature &feature,
+    const QRectF &sourceBounds,
+    QHash<int, QGraphicsItem *> *mapItemsByLine,
+    QHash<QString, QGraphicsItem *> *mapVertexItemsByKey,
+    const std::function<void(int, const QPointF &, const QPointF &)> &recordPointGeometryMove,
+    const std::function<void(int, const QString &, int, const QPointF &, const QPointF &)> &recordLineAreaVertexMove,
+    const std::function<void(int, qreal)> &recordPointOrientationHandleChange,
+    const std::function<void(int, int, qreal, qreal)> &recordLinePointLeftHandleChange);
 
 QUndoCommand *createMapCardMoveCommand(MapCardItem *item, const QPointF &oldPosition, const QPointF &newPosition);
 QUndoCommand *createMapCardVisibilityCommand(MapCardItem *item, bool oldVisible, bool newVisible);

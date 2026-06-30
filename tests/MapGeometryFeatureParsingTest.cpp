@@ -531,6 +531,53 @@ int runLineGeometryItemGroupRemovalTest()
         return 1;
     }
 
+    const MapGeometryItemGroupRenderResult renderResult =
+        renderMapGeometryItemGroupForFeature(&scene,
+                                             *targetLine,
+                                             geometryBoundsForFeatures(features),
+                                             &mapItemsByLine,
+                                             &vertexItemsByKey,
+                                             {},
+                                             {},
+                                             {},
+                                             {});
+    if (!expect(renderResult.addedItems == targetGeometryBefore,
+                "Expected single-feature render to restore every target line geometry item.")) {
+        return 1;
+    }
+    if (!expect(renderResult.addedPrimaryItem,
+                "Expected single-feature render to restore the target primary item index entry.")) {
+        return 1;
+    }
+    if (!expect(renderResult.addedVertexIndexEntries == targetVertexEntriesBefore,
+                "Expected single-feature render to restore target vertex index entries.")) {
+        return 1;
+    }
+    if (!expect(countGeometryItemsForLine(scene, targetLine->lineNumber) == targetGeometryBefore,
+                "Expected target line geometry group to be present after single-feature render.")) {
+        return 1;
+    }
+    if (!expect(countGeometryItemsForLine(scene, otherLine->lineNumber) == otherLineGeometryBefore
+                    && countGeometryItemsForLine(scene, point->lineNumber) == pointGeometryBefore,
+                "Expected neighboring geometry groups to remain unchanged after single-feature render.")) {
+        return 1;
+    }
+    if (!expect(scene.items().contains(nonGeometryItem),
+                "Expected non-geometry items with the same line number to survive single-feature render.")) {
+        return 1;
+    }
+    if (!expect(mapItemsByLine.contains(targetLine->lineNumber)
+                    && mapItemsByLine.contains(otherLine->lineNumber)
+                    && mapItemsByLine.contains(point->lineNumber),
+                "Expected primary item index to include target and neighboring geometry after single-feature render.")) {
+        return 1;
+    }
+    if (!expect(countVertexIndexEntriesForLine(vertexItemsByKey, targetLine->lineNumber) == targetVertexEntriesBefore
+                    && countVertexIndexEntriesForLine(vertexItemsByKey, otherLine->lineNumber) > 0,
+                "Expected vertex index to include target and neighboring handles after single-feature render.")) {
+        return 1;
+    }
+
     return 0;
 }
 

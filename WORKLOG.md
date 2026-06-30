@@ -30,9 +30,11 @@ Active planning only. Completed history belongs in archive files. Stable archite
   for styled/decorated commits.
 - Use `plans/MAP_PARTIAL_REFRESH_PLAN.md` for the detailed slice queue before widening styled/decorated line commits from
   full scene refresh to safe one-line item-group refresh; the shared geometry item-group removal helper now covers
-  deleting one line's rendered scene items and vertex-index entries without touching neighboring geometry.
-- Next map partial-refresh slice: extract or add a single-line render path so an edited line can be re-rendered into the
-  cleared item group, then wire that path into the source-transaction projection hook behind full-refresh fallback.
+  deleting one line's rendered scene items and vertex-index entries without touching neighboring geometry, and the
+  single-feature render helper can repopulate that item group without clearing the scene indexes.
+- Styled/decorated line vertex commits now route through the one-line remove-and-render projection hook with full-refresh
+  fallback; verify the next Windows build by checking that decorated line drags avoid `map-scene-refresh` bursts after
+  release and that selection remains stable.
 - Keep broad Map/TH2 projection rewrites out of release stabilization until Windows feedback confirms the deferred
   vertex-refresh fix is stable.
 - Before tagging or packaging handoff, run local validation focused on recent map-input, source-transaction, installer,
