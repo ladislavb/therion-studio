@@ -2738,6 +2738,31 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                     return mapGeometryPointToPreview(sourcePoint, sourceBounds, previewBounds);
                 };
                 auto couplingGuard = std::make_shared<bool>(false);
+                const auto currentInteractiveLineFeature = [feature,
+                                                            previewToSource,
+                                                            anchorItemsByOrder,
+                                                            controlItemsBySourceVertex]() {
+                    MapGeometryFeature interactiveFeature = feature;
+                    for (int index = 0; index < interactiveFeature.lineVertices.size(); ++index) {
+                        MapGeometryFeature::TH2LineVertex &vertex = interactiveFeature.lineVertices[index];
+                        if (anchorItemsByOrder != nullptr && index >= 0 && index < anchorItemsByOrder->size()) {
+                            if (MapEditableGeometryVertexItem *item = anchorItemsByOrder->at(index)) {
+                                vertex.anchor = previewToSource(item->pos());
+                            }
+                        }
+                        if (vertex.incomingSourceVertexIndex >= 0 && controlItemsBySourceVertex != nullptr) {
+                            if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(vertex.incomingSourceVertexIndex, nullptr)) {
+                                vertex.incomingControl = previewToSource(control->pos());
+                            }
+                        }
+                        if (vertex.outgoingSourceVertexIndex >= 0 && controlItemsBySourceVertex != nullptr) {
+                            if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(vertex.outgoingSourceVertexIndex, nullptr)) {
+                                vertex.outgoingControl = previewToSource(control->pos());
+                            }
+                        }
+                    }
+                    return interactiveFeature;
+                };
                 const auto updateInteractiveLinePreview = [lineItem,
                                                            lineDecorationItem,
                                                            lineGuideSpineItem,
@@ -2752,7 +2777,8 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                                                            previewBounds,
                                                            anchorItemsByOrder,
                                                            controlItemsBySourceVertex,
-                                                           controlConnectors]() {
+                                                           controlConnectors,
+                                                           currentInteractiveLineFeature]() {
                     if (lineItem == nullptr || anchorItemsByOrder == nullptr) {
                         return;
                     }
@@ -2772,26 +2798,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                         return QPointF();
                     };
 
-                    const auto previewToSourcePoint = [sourceBounds, previewBounds](const QPointF &previewPoint) {
-                        return mapGeometryPreviewToSource(previewPoint, sourceBounds, previewBounds);
-                    };
-
-                    MapGeometryFeature interactiveFeature = feature;
-                    for (int index = 0; index < interactiveFeature.lineVertices.size(); ++index) {
-                        MapGeometryFeature::TH2LineVertex &vertex = interactiveFeature.lineVertices[index];
-                        vertex.anchor = previewToSourcePoint(anchorPreviewAt(index));
-                        if (vertex.incomingSourceVertexIndex >= 0 && controlItemsBySourceVertex != nullptr) {
-                            if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(vertex.incomingSourceVertexIndex, nullptr)) {
-                                vertex.incomingControl = previewToSourcePoint(control->pos());
-                            }
-                        }
-                        if (vertex.outgoingSourceVertexIndex >= 0 && controlItemsBySourceVertex != nullptr) {
-                            if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(vertex.outgoingSourceVertexIndex, nullptr)) {
-                                vertex.outgoingControl = previewToSourcePoint(control->pos());
-                            }
-                        }
-                    }
-
+                    const MapGeometryFeature interactiveFeature = currentInteractiveLineFeature();
                     const QPainterPath interactivePath = linePathForFeature(interactiveFeature, sourceBounds, previewBounds);
                     lineItem->setPath(interactivePath);
                     if (lineDecorationItem != nullptr) {
@@ -2878,7 +2885,8 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                                               previewToSource,
                                               sourceToPreview,
                                               couplingGuard,
-                                              updateInteractiveLinePreview](MapEditableGeometryVertexItem *movedItem,
+                                              updateInteractiveLinePreview,
+                                              currentInteractiveLineFeature](MapEditableGeometryVertexItem *movedItem,
                                                                             const QPointF &previousSourcePoint,
                                                                             const QPointF &newSourcePoint,
                                                                             bool dragActive) {
@@ -2911,7 +2919,8 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                         currentControlPoints.insert(it.key(), previewToSource(it.value()->pos()));
                     }
 
-                    const QVector<MapLineSecondaryMove> moves = collectLinePreviewCoupledUpdatesForVertexDrag(feature,
+                    const MapGeometryFeature interactiveFeature = currentInteractiveLineFeature();
+                    const QVector<MapLineSecondaryMove> moves = collectLinePreviewCoupledUpdatesForVertexDrag(interactiveFeature,
                                                                                                                movedSourceVertexIndex,
                                                                                                                previousSourcePoint,
                                                                                                                newSourcePoint,

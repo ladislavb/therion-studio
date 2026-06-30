@@ -45,9 +45,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Keep line-label preview parity covered: line labels now update their path during line vertex preview movement, not only
   after source commit/partial refresh.
 - Keep smooth Bezier control edits covered through the source rewrite path: newly fractional map coordinates now keep
-  higher precision so repeated control-point drags do not visibly degrade tangent continuity through coarse rounding.
-- If smooth-control screenshots still show large loops after this precision fix, inspect preview/selection owner mapping
-  for the dragged control handle versus the selected logical line vertex before changing the smooth coupling rule.
+  higher precision so repeated control-point drags do not visibly degrade tangent continuity through coarse rounding, and
+  preview coupling now uses current scene-item anchor/control positions after skipped full-refresh line commits.
+- Manually recheck the reported line-884 rock-border workflow before release handoff: move a smooth anchor, then drag one
+  control handle and confirm the opposite handle remains tangent around the moved anchor.
 - Keep broad Map/TH2 projection rewrites out of release stabilization until Windows feedback confirms the deferred
   vertex-refresh fix is stable.
 - Before tagging or packaging handoff, run local validation focused on recent map-input, source-transaction, installer,
