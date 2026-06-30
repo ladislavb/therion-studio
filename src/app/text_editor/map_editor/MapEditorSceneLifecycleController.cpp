@@ -16,12 +16,6 @@
 
 namespace TherionStudio
 {
-namespace
-{
-constexpr int kMapItemRole = Qt::UserRole + 120;
-constexpr int kMapItemGeometryValue = 1;
-}
-
 MapEditorSceneLifecycleController::MapEditorSceneLifecycleController(MapEditorSceneLifecycleContext context)
     : context_(std::move(context))
 {

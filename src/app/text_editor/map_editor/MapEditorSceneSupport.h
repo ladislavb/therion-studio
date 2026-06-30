@@ -24,6 +24,8 @@ class QWidget;
 
 namespace TherionStudio
 {
+constexpr int kMapItemRole = Qt::UserRole + 120;
+constexpr int kMapItemGeometryValue = 1;
 constexpr int kMapSceneLineNumberRole = Qt::UserRole + 121;
 constexpr int kMapSceneSelectionGatedRole = Qt::UserRole + 122;
 constexpr int kMapSceneSelectionSubtypeRole = Qt::UserRole + 123;
@@ -139,6 +141,13 @@ struct MapLineSecondaryMove
     int sourceVertexIndex = -1;
     QPointF oldPoint;
     QPointF newPoint;
+};
+
+struct MapGeometryItemGroupRemovalResult
+{
+    int removedItems = 0;
+    int removedVertexIndexEntries = 0;
+    bool removedPrimaryItem = false;
 };
 
 struct CoordinateTransform
@@ -270,6 +279,10 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                              const std::function<void(int, const QString &, int, const QPointF &, const QPointF &)> &recordLineAreaVertexMove,
                              const std::function<void(int, qreal)> &recordPointOrientationHandleChange,
                              const std::function<void(int, int, qreal, qreal)> &recordLinePointLeftHandleChange);
+MapGeometryItemGroupRemovalResult removeMapGeometryItemGroupForLine(QGraphicsScene *scene,
+                                                                    int lineNumber,
+                                                                    QHash<int, QGraphicsItem *> *mapItemsByLine,
+                                                                    QHash<QString, QGraphicsItem *> *mapVertexItemsByKey);
 
 QUndoCommand *createMapCardMoveCommand(MapCardItem *item, const QPointF &oldPosition, const QPointF &newPosition);
 QUndoCommand *createMapCardVisibilityCommand(MapCardItem *item, bool oldVisible, bool newVisible);

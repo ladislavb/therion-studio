@@ -31,8 +31,6 @@
 
 namespace TherionStudio {
 namespace {
-constexpr int kMapItemRole = Qt::UserRole + 120;
-constexpr int kMapItemGeometryValue = 1;
 constexpr qreal kMinimumMapGeometryStrokeLogicalPx = 1.15;
 
 struct LineControlConnectorBinding
@@ -1814,6 +1812,55 @@ QString mapWorkspaceHelpHtml()
         "<p>Background image layers are managed from the Map sidebar, including layer order, visibility, position, opacity, and gamma.</p>"
         "<p>When present, <code>##XTHERION## xth_me_image_insert</code> metadata is used to auto-load referenced background images.</p>"
         "<p>Drag parsed geometry handles to rewrite source coordinates. Select a draft item to move or toggle it.</p>");
+}
+
+MapGeometryItemGroupRemovalResult removeMapGeometryItemGroupForLine(QGraphicsScene *scene,
+                                                                    int lineNumber,
+                                                                    QHash<int, QGraphicsItem *> *mapItemsByLine,
+                                                                    QHash<QString, QGraphicsItem *> *mapVertexItemsByKey)
+{
+    MapGeometryItemGroupRemovalResult result;
+    if (scene == nullptr || lineNumber <= 0) {
+        return result;
+    }
+
+    auto isGeometryItemForLine = [lineNumber](const QGraphicsItem *item) {
+        return item != nullptr
+            && item->data(kMapItemRole).toInt() == kMapItemGeometryValue
+            && item->data(kMapSceneLineNumberRole).toInt() == lineNumber;
+    };
+
+    QList<QGraphicsItem *> itemsToRemove;
+    for (QGraphicsItem *item : scene->items()) {
+        if (isGeometryItemForLine(item)) {
+            itemsToRemove.append(item);
+        }
+    }
+
+    if (mapItemsByLine != nullptr && mapItemsByLine->contains(lineNumber)) {
+        mapItemsByLine->remove(lineNumber);
+        result.removedPrimaryItem = true;
+    }
+
+    if (mapVertexItemsByKey != nullptr) {
+        auto it = mapVertexItemsByKey->begin();
+        while (it != mapVertexItemsByKey->end()) {
+            if (isGeometryItemForLine(it.value())) {
+                it = mapVertexItemsByKey->erase(it);
+                ++result.removedVertexIndexEntries;
+            } else {
+                ++it;
+            }
+        }
+    }
+
+    for (QGraphicsItem *item : itemsToRemove) {
+        scene->removeItem(item);
+        delete item;
+        ++result.removedItems;
+    }
+
+    return result;
 }
 
 QString mapEntryCategoryForLine(const TherionParsedLine &parsedLine)

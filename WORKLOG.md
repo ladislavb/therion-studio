@@ -29,7 +29,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
   segment guide paths now update during vertex preview movement, but full scene refresh remains the correctness fallback
   for styled/decorated commits.
 - Use `plans/MAP_PARTIAL_REFRESH_PLAN.md` for the detailed slice queue before widening styled/decorated line commits from
-  full scene refresh to safe one-line item-group refresh.
+  full scene refresh to safe one-line item-group refresh; the shared geometry item-group removal helper now covers
+  deleting one line's rendered scene items and vertex-index entries without touching neighboring geometry.
+- Next map partial-refresh slice: extract or add a single-line render path so an edited line can be re-rendered into the
+  cleared item group, then wire that path into the source-transaction projection hook behind full-refresh fallback.
 - Keep broad Map/TH2 projection rewrites out of release stabilization until Windows feedback confirms the deferred
   vertex-refresh fix is stable.
 - Before tagging or packaging handoff, run local validation focused on recent map-input, source-transaction, installer,
@@ -116,7 +119,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ## Backlog
 
 - Replace remaining fixed-delay map selection-restore retry timers with explicit scene-refresh completion/generation callbacks.
-- Implement safe one-line map partial refresh according to `plans/MAP_PARTIAL_REFRESH_PLAN.md` after release stabilization.
+- Complete safe one-line map partial refresh according to `plans/MAP_PARTIAL_REFRESH_PLAN.md` after release stabilization.
 - Optional Structure graph view for relationships such as `preview`, `revise`, `join`, `equate`, relationship status, and station-network edges.
 - Compiler-confirmed project-index comparison once lightweight indexing is no longer sufficient.
 - Add project-index snapshot cache ownership and per-file validation cache according to

@@ -77,6 +77,30 @@ QVector<const MapGeometryFeature *> pointFeatures(const QVector<MapGeometryFeatu
     return points;
 }
 
+int countGeometryItemsForLine(const QGraphicsScene &scene, int lineNumber)
+{
+    int count = 0;
+    for (QGraphicsItem *item : scene.items()) {
+        if (item != nullptr
+            && item->data(kMapItemRole).toInt() == kMapItemGeometryValue
+            && item->data(kMapSceneLineNumberRole).toInt() == lineNumber) {
+            ++count;
+        }
+    }
+    return count;
+}
+
+int countVertexIndexEntriesForLine(const QHash<QString, QGraphicsItem *> &itemsByKey, int lineNumber)
+{
+    int count = 0;
+    for (QGraphicsItem *item : itemsByKey) {
+        if (item != nullptr && item->data(kMapSceneLineNumberRole).toInt() == lineNumber) {
+            ++count;
+        }
+    }
+    return count;
+}
+
 int runPointTypeAndLabelOptionParsingTest()
 {
     const QString text =
@@ -377,6 +401,133 @@ int runLinePointSubtypeBlocksGuideRenderingTest()
 
     if (!expect(foundBlocksSegmentGuide,
                 "Expected decorated wall:blocks line-point subtype segments to render an editable guide spine above decorations.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int runLineGeometryItemGroupRemovalTest()
+{
+    const QString text =
+        QStringLiteral("point 2 2 station -name P1\n"
+                       "line wall\n"
+                       "  0 0\n"
+                       "  10 0\n"
+                       "  subtype blocks\n"
+                       "  20 0\n"
+                       "endline\n"
+                       "line wall\n"
+                       "  0 10\n"
+                       "  10 10\n"
+                       "endline\n");
+
+    const QVector<TherionParsedLine> parsedLines = TherionDocumentParser::parseTokenLines(text);
+    const QVector<MapGeometryFeature> features = collectGeometryFeatures(parsedLines);
+    const MapGeometryFeature *targetLine = nullptr;
+    const MapGeometryFeature *otherLine = nullptr;
+    const MapGeometryFeature *point = nullptr;
+    for (const MapGeometryFeature &feature : features) {
+        if (feature.kind == MapGeometryFeature::Kind::Line) {
+            if (targetLine == nullptr) {
+                targetLine = &feature;
+            } else {
+                otherLine = &feature;
+            }
+        } else if (feature.kind == MapGeometryFeature::Kind::Point) {
+            point = &feature;
+        }
+    }
+
+    if (!expect(targetLine != nullptr && otherLine != nullptr && point != nullptr,
+                "Expected fixture to parse one point and two line features for item group removal.")) {
+        return 1;
+    }
+
+    QGraphicsScene scene;
+    QHash<int, QGraphicsItem *> mapItemsByLine;
+    QHash<QString, QGraphicsItem *> vertexItemsByKey;
+    renderMapWorkspaceScene(&scene,
+                            QStringLiteral("fixture.th2"),
+                            collectMapSceneEntries(parsedLines),
+                            features,
+                            std::nullopt,
+                            false,
+                            &mapItemsByLine,
+                            &vertexItemsByKey,
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {});
+
+    auto *nonGeometryItem = new QGraphicsRectItem(QRectF(0, 0, 1, 1));
+    nonGeometryItem->setData(kMapSceneLineNumberRole, targetLine->lineNumber);
+    scene.addItem(nonGeometryItem);
+
+    const int targetGeometryBefore = countGeometryItemsForLine(scene, targetLine->lineNumber);
+    const int otherLineGeometryBefore = countGeometryItemsForLine(scene, otherLine->lineNumber);
+    const int pointGeometryBefore = countGeometryItemsForLine(scene, point->lineNumber);
+    const int targetVertexEntriesBefore = countVertexIndexEntriesForLine(vertexItemsByKey, targetLine->lineNumber);
+    if (!expect(targetGeometryBefore > 1,
+                "Expected styled target line to render a multi-item geometry group before removal.")) {
+        return 1;
+    }
+    if (!expect(otherLineGeometryBefore > 0 && pointGeometryBefore > 0,
+                "Expected neighboring geometry to be present before target line removal.")) {
+        return 1;
+    }
+    if (!expect(targetVertexEntriesBefore > 0,
+                "Expected target line vertex handles to be indexed before removal.")) {
+        return 1;
+    }
+    if (!expect(mapItemsByLine.contains(targetLine->lineNumber)
+                    && mapItemsByLine.contains(otherLine->lineNumber)
+                    && mapItemsByLine.contains(point->lineNumber),
+                "Expected primary item index to include target and neighboring geometry before removal.")) {
+        return 1;
+    }
+
+    const MapGeometryItemGroupRemovalResult result =
+        removeMapGeometryItemGroupForLine(&scene,
+                                          targetLine->lineNumber,
+                                          &mapItemsByLine,
+                                          &vertexItemsByKey);
+    if (!expect(result.removedItems == targetGeometryBefore,
+                "Expected item group removal to delete every target line geometry item.")) {
+        return 1;
+    }
+    if (!expect(result.removedPrimaryItem,
+                "Expected item group removal to remove the target primary item index entry.")) {
+        return 1;
+    }
+    if (!expect(result.removedVertexIndexEntries == targetVertexEntriesBefore,
+                "Expected item group removal to remove target vertex index entries.")) {
+        return 1;
+    }
+    if (!expect(countGeometryItemsForLine(scene, targetLine->lineNumber) == 0,
+                "Expected no target line geometry items to remain after group removal.")) {
+        return 1;
+    }
+    if (!expect(countGeometryItemsForLine(scene, otherLine->lineNumber) == otherLineGeometryBefore
+                    && countGeometryItemsForLine(scene, point->lineNumber) == pointGeometryBefore,
+                "Expected neighboring geometry groups to remain after target line removal.")) {
+        return 1;
+    }
+    if (!expect(scene.items().contains(nonGeometryItem),
+                "Expected non-geometry items with the same line number to remain after geometry group removal.")) {
+        return 1;
+    }
+    if (!expect(!mapItemsByLine.contains(targetLine->lineNumber)
+                    && mapItemsByLine.contains(otherLine->lineNumber)
+                    && mapItemsByLine.contains(point->lineNumber),
+                "Expected primary item index removal to be limited to the target line.")) {
+        return 1;
+    }
+    if (!expect(countVertexIndexEntriesForLine(vertexItemsByKey, targetLine->lineNumber) == 0
+                    && countVertexIndexEntriesForLine(vertexItemsByKey, otherLine->lineNumber) > 0,
+                "Expected vertex index removal to be limited to the target line.")) {
         return 1;
     }
 
@@ -2003,6 +2154,9 @@ int main(int argc, char **argv)
         return rc;
     }
     if (const int rc = runLinePointSubtypeBlocksGuideRenderingTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runLineGeometryItemGroupRemovalTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runLinePointSubtypeBlocksPreviewRefreshTest(); rc != 0) {
