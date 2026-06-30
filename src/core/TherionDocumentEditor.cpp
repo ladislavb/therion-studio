@@ -480,7 +480,7 @@ QString formatCoordinateLikeExistingToken(const QString &existingToken, qreal va
     if (decimalPlaces == 0) {
         const qreal nearestInteger = std::round(value);
         if (std::fabs(value - nearestInteger) > 1e-6) {
-            decimalPlaces = 1;
+            decimalPlaces = 3;
         }
     }
 

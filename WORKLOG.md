@@ -35,6 +35,19 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Styled/decorated line vertex commits now route through the one-line remove-and-render projection hook with full-refresh
   fallback; verify the next Windows build by checking that decorated line drags avoid `map-scene-refresh` bursts after
   release and that selection remains stable.
+- Use the new `map-line-partial-refresh` diagnostic line in troubleshooting logs to confirm edited styled lines use the
+  partial path, inspect item/vertex counts, and catch any fallback reason before asking for deeper tester experiments.
+- Selection restore after line vertex commits now uses the vertex index and precomputed source vertex id instead of
+  reparsing the document and scanning the scene; use `map-line-selection-restore` diagnostics to decide whether any
+  remaining delay belongs to presentation, command-surface, help, or details-panel refresh.
+- Avoid redundant scheduled line-selection recovery when immediate restore already succeeded; this should remove the
+  second post-commit `clearSelection()` pass seen in diagnostic logs.
+- Keep line-label preview parity covered: line labels now update their path during line vertex preview movement, not only
+  after source commit/partial refresh.
+- Keep smooth Bezier control edits covered through the source rewrite path: newly fractional map coordinates now keep
+  higher precision so repeated control-point drags do not visibly degrade tangent continuity through coarse rounding.
+- If smooth-control screenshots still show large loops after this precision fix, inspect preview/selection owner mapping
+  for the dragged control handle versus the selected logical line vertex before changing the smooth coupling rule.
 - Keep broad Map/TH2 projection rewrites out of release stabilization until Windows feedback confirms the deferred
   vertex-refresh fix is stable.
 - Before tagging or packaging handoff, run local validation focused on recent map-input, source-transaction, installer,

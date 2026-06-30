@@ -1242,10 +1242,10 @@ int runRewritePointCoordinatesTest()
     if (!expect(edits.size() == 2
                     && edits.at(0).startOffset == 14
                     && edits.at(0).length == 2
-                    && edits.at(0).replacementText == QStringLiteral("345.6")
+                    && edits.at(0).replacementText == QStringLiteral("345.600")
                     && edits.at(1).startOffset == 17
                     && edits.at(1).length == 2
-                    && edits.at(1).replacementText == QStringLiteral("789.1"),
+                    && edits.at(1).replacementText == QStringLiteral("789.100"),
                 "pointCoordinateRewriteEdits should expose exact coordinate token source edits.")) {
         return 1;
     }
@@ -1255,7 +1255,7 @@ int runRewritePointCoordinatesTest()
                 errorMessage.toUtf8().constData())) {
         return 1;
     }
-    if (!expect(contents == QStringLiteral("point station 345.6 789.1 station -name a1 # keep\n"),
+    if (!expect(contents == QStringLiteral("point station 345.600 789.100 station -name a1 # keep\n"),
                 "rewritePointCoordinates should rewrite first numeric pair on point line and preserve trailing tokens/comment.")) {
         return 1;
     }
@@ -1266,7 +1266,7 @@ int runRewritePointCoordinatesTest()
                 errorMessage.toUtf8().constData())) {
         return 1;
     }
-    if (!expect(contents == QStringLiteral("station st-a -10 55.5\n"),
+    if (!expect(contents == QStringLiteral("station st-a -10 55.500\n"),
                 "rewritePointCoordinates should rewrite station directive coordinates.")) {
         return 1;
     }
@@ -1277,7 +1277,7 @@ int runRewritePointCoordinatesTest()
                 errorMessage.toUtf8().constData())) {
         return 1;
     }
-    if (!expect(contents == QStringLiteral("point station \"10\" \"20\" 1.5 -2.5 station -name a2\n"),
+    if (!expect(contents == QStringLiteral("point station \"10\" \"20\" 1.500 -2.500 station -name a2\n"),
                 "rewritePointCoordinates should ignore quoted numeric tokens and rewrite the first unquoted coordinate pair.")) {
         return 1;
     }
@@ -1288,7 +1288,7 @@ int runRewritePointCoordinatesTest()
                 errorMessage.toUtf8().constData())) {
         return 1;
     }
-    if (!expect(contents == QStringLiteral("point station 12.3 -45.6 station -name a3\n"),
+    if (!expect(contents == QStringLiteral("point station 12.300 -45.6 station -name a3\n"),
                 "rewritePointCoordinates should treat scientific-notation tokens as writable numeric coordinates.")) {
         return 1;
     }
@@ -1299,7 +1299,7 @@ int runRewritePointCoordinatesTest()
                 errorMessage.toUtf8().constData())) {
         return 1;
     }
-    if (!expect(contents == QStringLiteral("point station -7 8.5 station -name a4 % keep\r\n"),
+    if (!expect(contents == QStringLiteral("point station -7 8.500 station -name a4 % keep\r\n"),
                 "rewritePointCoordinates should preserve CRLF and percent-comments while rewriting coordinates.")) {
         return 1;
     }
@@ -1310,7 +1310,7 @@ int runRewritePointCoordinatesTest()
                 errorMessage.toUtf8().constData())) {
         return 1;
     }
-    if (!expect(contents == QStringLiteral("survey s\r\npoint station 30.3 -40.5 station -name mixed\nendsurvey\r"),
+    if (!expect(contents == QStringLiteral("survey s\r\npoint station 30.250 -40.500 station -name mixed\nendsurvey\r"),
                 "rewritePointCoordinates should preserve mixed physical line endings when replacing coordinate tokens.")) {
         return 1;
     }
@@ -1384,7 +1384,7 @@ int runRewriteLineAreaVertexTest()
     if (!expect(vertexEdits.size() == 1
                     && vertexEdits.at(0).startOffset == vertexStartOffset
                     && vertexEdits.at(0).length == QStringLiteral("  10 20 30 40 # keep").size()
-                    && vertexEdits.at(0).replacementText == QStringLiteral("  10 20 -5.5 77.7 # keep"),
+                    && vertexEdits.at(0).replacementText == QStringLiteral("  10 20 -5.500 77.700 # keep"),
                 "lineAreaVertexRewriteEdits should emit one exact coordinate-row edit.")) {
         return 1;
     }
@@ -1396,7 +1396,7 @@ int runRewriteLineAreaVertexTest()
     }
     if (!expect(vertexPlannerAppliedContents == QStringLiteral("scrap s1\n"
                                                                "line wall\r\n"
-                                                               "  10 20 -5.5 77.7 # keep\r\n"
+                                                               "  10 20 -5.500 77.700 # keep\r\n"
                                                                "endline\r\n"
                                                                "endscrap\n"),
                 "lineAreaVertexRewriteEdits output should apply to the expected source text.")) {
@@ -1422,7 +1422,7 @@ int runRewriteLineAreaVertexTest()
         return 1;
     }
     if (!expect(contents == QStringLiteral("line wall\n"
-                                           "  10 20 -5.5 77.7 # keep\n"
+                                           "  10 20 -5.500 77.700 # keep\n"
                                            "endline\n"),
                 "rewriteLineAreaVertex should rewrite the selected line vertex and preserve trailing comments.")) {
         return 1;
@@ -1570,7 +1570,7 @@ int runRewriteLineAreaVertexTest()
     }
     if (!expect(contents == QStringLiteral("area water\n"
                                            "  1 2 3 4\n"
-                                           "  42 -9.5 # keep area note\n"
+                                           "  42 -9.500 # keep area note\n"
                                            "endarea\n"),
                 "rewriteLineAreaVertex should support multi-line area vertex rewrites.")) {
         return 1;
@@ -1644,7 +1644,7 @@ int runRewriteLineAreaVertexTest()
         return 1;
     }
     if (!expect(contents == QStringLiteral("line wall 10 20 30 40 -id line-1\n"
-                                           "  -11 12.5\n"
+                                           "  -11 12.500\n"
                                            "endline\n"),
                 "rewriteLineAreaVertex should support rewriting vertices that continue on following lines.")) {
         return 1;

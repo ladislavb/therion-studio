@@ -12,6 +12,8 @@
 #include "MapEditorSourceReferenceResolver.h"
 #include "../../../core/TherionDocumentEditor.h"
 
+#include <QDebug>
+#include <QElapsedTimer>
 #include <QGraphicsItem>
 #include <QGraphicsRectItem>
 #include <QGraphicsScene>
@@ -32,6 +34,18 @@ namespace TherionStudio
 {
 namespace
 {
+bool diagnosticMapInputLoggingEnabled()
+{
+    static const bool enabled = [] {
+        const QString value = QString::fromLocal8Bit(qgetenv("THERION_STUDIO_ENABLE_LOG")).trimmed().toLower();
+        return value == QStringLiteral("1")
+            || value == QStringLiteral("true")
+            || value == QStringLiteral("yes")
+            || value == QStringLiteral("on");
+    }();
+    return enabled;
+}
+
 int lineVertexIndexForSourceVertex(const MapGeometryFeature &lineFeature, int sourceVertexIndex)
 {
     if (sourceVertexIndex < 0) {
@@ -65,6 +79,14 @@ qreal pointDistanceSquared(const QPointF &a, const QPointF &b)
 {
     const QPointF delta = a - b;
     return (delta.x() * delta.x()) + (delta.y() * delta.y());
+}
+
+QString mapVertexItemKey(int lineNumber, int vertexIndex, const QString &geometryKind)
+{
+    return QStringLiteral("%1:%2:%3")
+        .arg(lineNumber)
+        .arg(vertexIndex)
+        .arg(geometryKind.trimmed().toLower());
 }
 
 QPointF cubicBezierPoint(const QPointF &p0,
@@ -468,28 +490,60 @@ MapEditableGeometryVertexItem *findGeometryVertexItem(QGraphicsScene *scene,
     return nullptr;
 }
 
-bool restoreLineVertexOwnerSelectionForContext(const MapEditorCanvasEditContext &context,
-                                               int lineNumber,
-                                               int ownerIndex)
+MapEditableGeometryVertexItem *findGeometryVertexItemForContext(const MapEditorCanvasEditContext &context,
+                                                                int lineNumber,
+                                                                int sourceVertexIndex,
+                                                                const QString &geometryKindPrefix)
 {
-    if (context.scene == nullptr || context.textEditor == nullptr || lineNumber <= 0 || ownerIndex < 0) {
+    if (lineNumber <= 0 || sourceVertexIndex < 0) {
+        return nullptr;
+    }
+
+    if (context.vertexItemsByKey != nullptr && !geometryKindPrefix.isEmpty()) {
+        auto itemIt = context.vertexItemsByKey->constFind(mapVertexItemKey(lineNumber,
+                                                                           sourceVertexIndex,
+                                                                           geometryKindPrefix));
+        if (itemIt != context.vertexItemsByKey->constEnd()) {
+            if (auto *vertexItem = dynamic_cast<MapEditableGeometryVertexItem *>(itemIt.value())) {
+                return vertexItem;
+            }
+        }
+    }
+
+    return findGeometryVertexItem(context.scene, lineNumber, sourceVertexIndex, geometryKindPrefix);
+}
+
+bool restoreLineVertexSourceSelectionForContext(const MapEditorCanvasEditContext &context,
+                                                int lineNumber,
+                                                int ownerSourceVertexIndex)
+{
+    if (context.scene == nullptr || lineNumber <= 0 || ownerSourceVertexIndex < 0) {
         return false;
     }
 
-    const std::optional<MapGeometryFeature> lineFeature = lineFeatureForLineNumber(context.textEditor->text(), lineNumber);
-    if (!lineFeature.has_value() || ownerIndex >= lineFeature->lineVertices.size()) {
-        return false;
+    const bool logTiming = diagnosticMapInputLoggingEnabled();
+    QElapsedTimer totalTimer;
+    QElapsedTimer stageTimer;
+    if (logTiming) {
+        totalTimer.start();
+        stageTimer.start();
     }
 
-    const MapGeometryFeature::TH2LineVertex &ownerVertex = lineFeature->lineVertices.at(ownerIndex);
-    const int ownerSourceVertexIndex = ownerVertex.anchorSourceVertexIndex >= 0
-        ? ownerVertex.anchorSourceVertexIndex
-        : ownerIndex;
-    MapEditableGeometryVertexItem *ownerAnchor = findGeometryVertexItem(context.scene,
-                                                                        lineNumber,
-                                                                        ownerSourceVertexIndex,
-                                                                        QStringLiteral("line"));
+    MapEditableGeometryVertexItem *ownerAnchor =
+        findGeometryVertexItemForContext(context,
+                                         lineNumber,
+                                         ownerSourceVertexIndex,
+                                         QStringLiteral("line"));
+    const qint64 findMs = logTiming ? stageTimer.restart() : 0;
     if (ownerAnchor == nullptr) {
+        if (logTiming) {
+            qInfo().noquote()
+                << QStringLiteral("map-line-selection-restore line=%1 vertex=%2 result=missing find_ms=%3 total_ms=%4")
+                       .arg(lineNumber)
+                       .arg(ownerSourceVertexIndex)
+                       .arg(findMs)
+                       .arg(totalTimer.elapsed());
+        }
         return false;
     }
     if (context.updatingSelection == nullptr
@@ -502,25 +556,84 @@ bool restoreLineVertexOwnerSelectionForContext(const MapEditorCanvasEditContext 
         || !context.updateCommandSurfaceState
         || !context.updateHelpPanel
         || !context.refreshObjectDetailsPanel) {
+        if (logTiming) {
+            qInfo().noquote()
+                << QStringLiteral("map-line-selection-restore line=%1 vertex=%2 result=missing-context find_ms=%3 total_ms=%4")
+                       .arg(lineNumber)
+                       .arg(ownerSourceVertexIndex)
+                       .arg(findMs)
+                       .arg(totalTimer.elapsed());
+        }
         return false;
     }
 
-    {
+    const QList<QGraphicsItem *> selectedItems = context.scene->selectedItems();
+    const bool alreadySelected = selectedItems.size() == 1
+        && selectedItems.first() == ownerAnchor
+        && ownerAnchor->isVisible();
+    if (!alreadySelected) {
         const QScopedValueRollback<bool> selectionGuard((*context.updatingSelection), true);
-        context.scene->clearSelection();
+        for (QGraphicsItem *selectedItem : selectedItems) {
+            if (selectedItem != nullptr && selectedItem != ownerAnchor) {
+                selectedItem->setSelected(false);
+            }
+        }
         ownerAnchor->setVisible(true);
         ownerAnchor->setSelected(true);
     }
+    const qint64 selectMs = logTiming ? stageTimer.restart() : 0;
 
     (*context.selectedObjectLineNumber) = lineNumber;
     (*context.selectedObjectVertexIndex) = ownerSourceVertexIndex;
     (*context.selectedObjectKind) = QStringLiteral("line");
     (*context.selectedObjectCoordinate) = context.sourcePointFromScenePosition(ownerAnchor->pos());
+    const qint64 stateMs = logTiming ? stageTimer.restart() : 0;
     context.updateGeometrySelectionPresentation();
+    const qint64 presentationMs = logTiming ? stageTimer.restart() : 0;
     context.updateCommandSurfaceState();
+    const qint64 commandMs = logTiming ? stageTimer.restart() : 0;
     context.updateHelpPanel();
+    const qint64 helpMs = logTiming ? stageTimer.restart() : 0;
     context.refreshObjectDetailsPanel();
+    const qint64 detailsMs = logTiming ? stageTimer.restart() : 0;
+    if (logTiming) {
+        qInfo().noquote()
+            << QStringLiteral(
+                   "map-line-selection-restore line=%1 vertex=%2 result=ok already_selected=%3 find_ms=%4 "
+                   "select_ms=%5 state_ms=%6 presentation_ms=%7 command_ms=%8 help_ms=%9 details_ms=%10 total_ms=%11")
+                   .arg(lineNumber)
+                   .arg(ownerSourceVertexIndex)
+                   .arg(alreadySelected ? 1 : 0)
+                   .arg(findMs)
+                   .arg(selectMs)
+                   .arg(stateMs)
+                   .arg(presentationMs)
+                   .arg(commandMs)
+                   .arg(helpMs)
+                   .arg(detailsMs)
+                   .arg(totalTimer.elapsed());
+    }
     return true;
+}
+
+bool restoreLineVertexOwnerSelectionForContext(const MapEditorCanvasEditContext &context,
+                                               int lineNumber,
+                                               int ownerIndex)
+{
+    if (context.textEditor == nullptr || lineNumber <= 0 || ownerIndex < 0) {
+        return false;
+    }
+
+    const std::optional<MapGeometryFeature> lineFeature = lineFeatureForLineNumber(context.textEditor->text(), lineNumber);
+    if (!lineFeature.has_value() || ownerIndex >= lineFeature->lineVertices.size()) {
+        return false;
+    }
+
+    const MapGeometryFeature::TH2LineVertex &ownerVertex = lineFeature->lineVertices.at(ownerIndex);
+    const int ownerSourceVertexIndex = ownerVertex.anchorSourceVertexIndex >= 0
+        ? ownerVertex.anchorSourceVertexIndex
+        : ownerIndex;
+    return restoreLineVertexSourceSelectionForContext(context, lineNumber, ownerSourceVertexIndex);
 }
 
 quint64 startLineVertexSelectionRestoreGeneration(const MapEditorCanvasEditContext &context)
@@ -588,6 +701,24 @@ void scheduleLineVertexOwnerSelectionRecovery(const MapEditorCanvasEditContext &
     }
 }
 
+void scheduleLineVertexSourceSelectionRecovery(const MapEditorCanvasEditContext &context,
+                                               int lineNumber,
+                                               int ownerSourceVertexIndex)
+{
+    const quint64 restoreGeneration = startLineVertexSelectionRestoreGeneration(context);
+    auto attemptRestore = [context, lineNumber, ownerSourceVertexIndex, restoreGeneration]() {
+        if (!isCurrentLineVertexSelectionRestoreGeneration(context, restoreGeneration)) {
+            return;
+        }
+        restoreLineVertexSourceSelectionForContext(context, lineNumber, ownerSourceVertexIndex);
+    };
+    if (context.callbackContext != nullptr) {
+        QTimer::singleShot(0, context.callbackContext, attemptRestore);
+    } else {
+        attemptRestore();
+    }
+}
+
 std::function<void()> deferredMapSceneRefreshHook(const MapEditorCanvasEditContext &context,
                                                   std::function<void()> afterRefreshHook = {})
 {
@@ -636,7 +767,50 @@ std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEdi
 {
     return [context, lineNumber, selectionRestoreHook = std::move(selectionRestoreHook)]() mutable {
         auto refreshLine = [context, lineNumber, selectionRestoreHook = std::move(selectionRestoreHook)]() mutable {
-            auto fallbackFullRefresh = [&context, &selectionRestoreHook]() {
+            const bool logTiming = diagnosticMapInputLoggingEnabled();
+            QElapsedTimer totalTimer;
+            QElapsedTimer stageTimer;
+            if (logTiming) {
+                totalTimer.start();
+                stageTimer.start();
+            }
+            int removedItems = 0;
+            int removedVertexEntries = 0;
+            int addedItems = 0;
+            int addedVertexEntries = 0;
+            bool removedPrimaryItem = false;
+            bool addedPrimaryItem = false;
+            qint64 resolveMs = 0;
+            qint64 removeMs = 0;
+            qint64 renderMs = 0;
+            qint64 selectionMs = 0;
+
+            auto logPartialRefresh = [&](bool fallbackFullRefresh, const QString &reason) {
+                if (!logTiming) {
+                    return;
+                }
+                qInfo().noquote()
+                    << QStringLiteral(
+                           "map-line-partial-refresh line=%1 fallback_full_refresh=%2 reason=%3 removed_items=%4 "
+                           "added_items=%5 removed_vertex_entries=%6 added_vertex_entries=%7 removed_primary=%8 "
+                           "added_primary=%9 resolve_ms=%10 remove_ms=%11 render_ms=%12 selection_ms=%13 total_ms=%14")
+                           .arg(lineNumber)
+                           .arg(fallbackFullRefresh ? 1 : 0)
+                           .arg(reason)
+                           .arg(removedItems)
+                           .arg(addedItems)
+                           .arg(removedVertexEntries)
+                           .arg(addedVertexEntries)
+                           .arg(removedPrimaryItem ? 1 : 0)
+                           .arg(addedPrimaryItem ? 1 : 0)
+                           .arg(resolveMs)
+                           .arg(removeMs)
+                           .arg(renderMs)
+                           .arg(selectionMs)
+                           .arg(totalTimer.elapsed());
+            };
+            auto fallbackFullRefresh = [&context, &selectionRestoreHook, &logPartialRefresh](const QString &reason) {
+                logPartialRefresh(true, reason);
                 if (context.flushPendingSceneRefreshAfterCommand) {
                     context.flushPendingSceneRefreshAfterCommand();
                 }
@@ -648,14 +822,15 @@ std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEdi
             };
 
             if (context.scene == nullptr || context.textEditor == nullptr || context.itemsByLine == nullptr) {
-                fallbackFullRefresh();
+                fallbackFullRefresh(QStringLiteral("missing-context"));
                 return;
             }
 
             const std::optional<MapGeometryFeature> refreshedFeature =
                 lineFeatureForLineNumber(context.textEditor->text(), lineNumber);
+            resolveMs = logTiming ? stageTimer.restart() : 0;
             if (!refreshedFeature.has_value()) {
-                fallbackFullRefresh();
+                fallbackFullRefresh(QStringLiteral("missing-feature"));
                 return;
             }
 
@@ -664,6 +839,10 @@ std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEdi
                                                   lineNumber,
                                                   context.itemsByLine,
                                                   context.vertexItemsByKey);
+            removedItems = removalResult.removedItems;
+            removedVertexEntries = removalResult.removedVertexIndexEntries;
+            removedPrimaryItem = removalResult.removedPrimaryItem;
+            removeMs = logTiming ? stageTimer.restart() : 0;
             const MapGeometryItemGroupRenderResult renderResult =
                 renderMapGeometryItemGroupForFeature(
                     context.scene,
@@ -695,10 +874,14 @@ std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEdi
                                                              orientationDegrees,
                                                              leftSize);
                     });
+            addedItems = renderResult.addedItems;
+            addedVertexEntries = renderResult.addedVertexIndexEntries;
+            addedPrimaryItem = renderResult.addedPrimaryItem;
+            renderMs = logTiming ? stageTimer.restart() : 0;
             if (removalResult.removedItems <= 0
                 || renderResult.addedItems <= 0
                 || !renderResult.addedPrimaryItem) {
-                fallbackFullRefresh();
+                fallbackFullRefresh(QStringLiteral("empty-item-group"));
                 return;
             }
 
@@ -710,6 +893,8 @@ std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEdi
             } else if (context.updateGeometrySelectionPresentation) {
                 context.updateGeometrySelectionPresentation();
             }
+            selectionMs = logTiming ? stageTimer.restart() : 0;
+            logPartialRefresh(false, QStringLiteral("ok"));
         };
         if (context.callbackContext != nullptr) {
             QTimer::singleShot(0, context.callbackContext, std::move(refreshLine));
@@ -935,11 +1120,19 @@ void MapEditorCanvasEditController::recordLineAreaVertexMove(int lineNumber,
 
     QVector<MapLineAreaVertexSecondaryMove> secondaryMoves;
     int lineOwnerIndexToRestore = -1;
+    int lineOwnerSourceVertexIndexToRestore = -1;
     bool canSkipFullSceneRefresh = false;
     if (rewriteKind == QStringLiteral("line")) {
         const std::optional<MapGeometryFeature> lineFeature = lineFeatureForLineNumber(context_.textEditor->text(), lineNumber);
         if (lineFeature.has_value()) {
             lineOwnerIndexToRestore = lineVertexOwnerIndexForSourceVertex(lineFeature.value(), vertexIndex);
+            if (lineOwnerIndexToRestore >= 0 && lineOwnerIndexToRestore < lineFeature->lineVertices.size()) {
+                const MapGeometryFeature::TH2LineVertex &ownerVertex =
+                    lineFeature->lineVertices.at(lineOwnerIndexToRestore);
+                lineOwnerSourceVertexIndexToRestore = ownerVertex.anchorSourceVertexIndex >= 0
+                    ? ownerVertex.anchorSourceVertexIndex
+                    : lineOwnerIndexToRestore;
+            }
             canSkipFullSceneRefresh = lineVertexMoveCanSkipFullSceneRefresh(lineFeature.value());
             secondaryMoves = coupledLineVertexMoveSet(lineFeature.value(), vertexIndex, oldPoint, newPoint).secondaryMoves;
             for (auto it = secondaryMoves.begin(); it != secondaryMoves.end();) {
@@ -996,12 +1189,13 @@ void MapEditorCanvasEditController::recordLineAreaVertexMove(int lineNumber,
         return;
     }
 
-    auto selectionRestoreHook = [context = context_, lineNumber, lineOwnerIndexToRestore]() {
-        if (lineOwnerIndexToRestore < 0) {
+    auto selectionRestoreHook = [context = context_, lineNumber, lineOwnerSourceVertexIndexToRestore]() {
+        if (lineOwnerSourceVertexIndexToRestore < 0) {
             return;
         }
-        restoreLineVertexOwnerSelectionForContext(context, lineNumber, lineOwnerIndexToRestore);
-        scheduleLineVertexOwnerSelectionRecovery(context, lineNumber, lineOwnerIndexToRestore);
+        if (!restoreLineVertexSourceSelectionForContext(context, lineNumber, lineOwnerSourceVertexIndexToRestore)) {
+            scheduleLineVertexSourceSelectionRecovery(context, lineNumber, lineOwnerSourceVertexIndexToRestore);
+        }
     };
     TextEditorSourceTransactionRequest request =
         sourceTransactionRequest(context_,
@@ -1012,7 +1206,7 @@ void MapEditorCanvasEditController::recordLineAreaVertexMove(int lineNumber,
     request.projectionInvalidationPolicy = TextEditorSourceProjectionInvalidationPolicy::CustomHook;
     if (canSkipFullSceneRefresh) {
         request.projectionInvalidationHook = deferredMapSelectionRestoreHook(context_, std::move(selectionRestoreHook));
-    } else if (rewriteKind == QStringLiteral("line") && lineOwnerIndexToRestore >= 0) {
+    } else if (rewriteKind == QStringLiteral("line") && lineOwnerSourceVertexIndexToRestore >= 0) {
         request.projectionInvalidationHook = deferredMapLinePartialRefreshHook(context_, lineNumber, std::move(selectionRestoreHook));
     } else {
         request.projectionInvalidationHook = deferredMapSceneRefreshHook(context_, std::move(selectionRestoreHook));

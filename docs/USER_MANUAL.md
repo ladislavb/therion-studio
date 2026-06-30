@@ -304,6 +304,8 @@ For lines and area borders:
 - use `<<` and `>>` to enable or remove incoming/outgoing Bezier handles
 - drag Bezier handles directly on the canvas to reshape the curve
 
+When a map drag moves a point, vertex, or Bezier handle from integer coordinates to a fractional position, Therion Studio writes the new fractional coordinates with additional decimal precision so repeated edits and smooth Bezier tangents do not visibly degrade.
+
 If a line is used as an area border, some destructive line actions are blocked; select or edit the owning area instead. Deleting an area removes only the `area ... endarea` block and keeps referenced border lines in the source.
 
 ### 6.8 Edit Object Properties

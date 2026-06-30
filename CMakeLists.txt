@@ -1056,6 +1056,11 @@ qt_add_executable(MapGeometryFeatureParsingTest
 
 target_link_libraries(MapGeometryFeatureParsingTest PRIVATE therion_core Qt6::Widgets)
 
+qt_add_resources(MapGeometryFeatureParsingTest MapGeometryFeatureParsingResources
+    PREFIX "/"
+    FILES
+        ${THERION_MAP_OBJECT_STYLE_FILES})
+
 qt_add_executable(MapEditorSourceReferenceResolverTest
     tests/MapEditorSourceReferenceResolverTest.cpp
     src/app/text_editor/map_editor/MapEditorSourceReferenceResolver.cpp

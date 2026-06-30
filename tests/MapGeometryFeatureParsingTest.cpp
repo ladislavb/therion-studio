@@ -1,5 +1,6 @@
 #include "../src/app/text_editor/map_editor/MapEditorSceneSupport.h"
 #include "../src/app/text_editor/map_editor/MapEditorSmartAreaPlanner.h"
+#include "../src/core/TherionDocumentEditor.h"
 #include "../src/core/TherionDocumentParser.h"
 
 #include <QApplication>
@@ -41,6 +42,15 @@ bool expectMoveSetsEqual(const QVector<MapLineSecondaryMove> &expected,
         return false;
     }
     return true;
+}
+
+bool pointsAreCollinear(const QPointF &first, const QPointF &middle, const QPointF &last)
+{
+    const QPointF a = first - middle;
+    const QPointF b = last - middle;
+    const qreal cross = (a.x() * b.y()) - (a.y() * b.x());
+    const qreal lengthProduct = std::hypot(a.x(), a.y()) * std::hypot(b.x(), b.y());
+    return std::abs(cross) <= qMax<qreal>(1e-6, lengthProduct * 1e-4);
 }
 
 const MapGeometryFeature *firstLineFeature(const QVector<MapGeometryFeature> &features)
@@ -653,6 +663,76 @@ int runLinePointSubtypeBlocksPreviewRefreshTest()
     if (!expect(std::abs(guideBoundsAfter.top() - guideBoundsBefore.top()) > 1e-6
                     || std::abs(guideBoundsAfter.bottom() - guideBoundsBefore.bottom()) > 1e-6,
                 "Expected blocks segment guide path to update during line vertex preview movement.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int runLineLabelPreviewRefreshTest()
+{
+    const QString text =
+        QStringLiteral("line label -text \"Dome\"\n"
+                       "  0 0\n"
+                       "  10 0\n"
+                       "  20 0\n"
+                       "endline\n");
+
+    const QVector<TherionParsedLine> parsedLines = TherionDocumentParser::parseTokenLines(text);
+    const QVector<MapGeometryFeature> features = collectGeometryFeatures(parsedLines);
+    const MapGeometryFeature *line = firstLineFeature(features);
+    if (!expect(line != nullptr, "Expected one parsed line feature for line-label preview refresh test.")) {
+        return 1;
+    }
+
+    QGraphicsScene scene;
+    QHash<int, QGraphicsItem *> mapItemsByLine;
+    renderMapWorkspaceScene(&scene,
+                            QStringLiteral("fixture.th2"),
+                            collectMapSceneEntries(parsedLines),
+                            features,
+                            std::nullopt,
+                            false,
+                            &mapItemsByLine,
+                            nullptr,
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {});
+
+    QGraphicsItem *anchorItem = nullptr;
+    QGraphicsItem *lineLabelItem = nullptr;
+    for (QGraphicsItem *item : scene.items()) {
+        if (item == nullptr || item->data(kMapSceneLineNumberRole).toInt() != line->lineNumber) {
+            continue;
+        }
+        if (item->data(kMapSceneSelectionSubtypeRole).toInt() == kMapSceneSelectionSubtypeLineAnchor
+            && item->data(kMapSceneOwnerVertexRole).toInt() == 1) {
+            anchorItem = item;
+            continue;
+        }
+        if (std::abs(item->zValue() - 3.1) < 0.001) {
+            lineLabelItem = item;
+            continue;
+        }
+    }
+
+    if (!expect(anchorItem != nullptr, "Expected editable line anchor for the line-label preview test.")) {
+        return 1;
+    }
+    if (!expect(lineLabelItem != nullptr, "Expected line label item before preview movement.")) {
+        return 1;
+    }
+
+    const QRectF labelBoundsBefore = lineLabelItem->boundingRect();
+    anchorItem->setPos(anchorItem->pos() + QPointF(0.0, 80.0));
+    const QRectF labelBoundsAfter = lineLabelItem->boundingRect();
+
+    if (!expect(std::abs(labelBoundsAfter.top() - labelBoundsBefore.top()) > 1e-6
+                    || std::abs(labelBoundsAfter.bottom() - labelBoundsBefore.bottom()) > 1e-6,
+                "Expected line label path to update during line vertex preview movement.")) {
         return 1;
     }
 
@@ -1647,6 +1727,110 @@ int runLinePreviewCommitParityTest()
     return 0;
 }
 
+int runSmoothControlCommitKeepsTangentContinuityTest()
+{
+    const QString beforeText =
+        QStringLiteral("line wall\n"
+                       "  0 0\n"
+                       "  40 0 60 0 100 0\n"
+                       "  140 0 160 0 200 0\n"
+                       "endline\n");
+
+    const QVector<TherionParsedLine> beforeParsedLines = TherionDocumentParser::parseTokenLines(beforeText);
+    const QVector<MapGeometryFeature> beforeFeatures = collectGeometryFeatures(beforeParsedLines);
+    const MapGeometryFeature *beforeLine = firstLineFeature(beforeFeatures);
+    if (!expect(beforeLine != nullptr, "Expected smooth-control commit fixture to parse a line.")) {
+        return 1;
+    }
+    if (!expect(beforeLine->lineVertices.size() == 3,
+                "Expected smooth-control commit fixture to parse three line anchors.")) {
+        return 1;
+    }
+
+    const MapGeometryFeature::TH2LineVertex &middleVertex = beforeLine->lineVertices.at(1);
+    if (!expect(middleVertex.incomingControl.has_value()
+                    && middleVertex.outgoingControl.has_value()
+                    && middleVertex.isSmooth,
+                "Expected middle vertex to start as a smooth Bezier vertex with both controls.")) {
+        return 1;
+    }
+
+    const int movedSourceVertexIndex = middleVertex.incomingSourceVertexIndex;
+    const QPointF oldIncoming = middleVertex.incomingControl.value();
+    const QPointF newIncoming(70.0, 35.0);
+    const QVector<MapLineSecondaryMove> secondaryMoves = collectLineSecondaryMovesForVertexDrag(*beforeLine,
+                                                                                                  movedSourceVertexIndex,
+                                                                                                  oldIncoming,
+                                                                                                  newIncoming);
+    if (!expect(secondaryMoves.size() == 1,
+                "Expected smooth control source commit to rewrite the opposite control.")) {
+        return 1;
+    }
+
+    QString afterText = beforeText;
+    QVector<TherionSourceTextEdit> sourceEdits;
+    QString errorMessage;
+    if (!expect(TherionDocumentEditor::lineAreaVertexRewriteEdits(afterText,
+                                                                  beforeLine->lineNumber,
+                                                                  QStringLiteral("line"),
+                                                                  movedSourceVertexIndex,
+                                                                  newIncoming,
+                                                                  &sourceEdits,
+                                                                  &errorMessage)
+                    && TherionDocumentEditor::applySourceTextEdits(&afterText, sourceEdits, &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+
+    for (const MapLineSecondaryMove &move : secondaryMoves) {
+        sourceEdits.clear();
+        if (!expect(TherionDocumentEditor::lineAreaVertexRewriteEdits(afterText,
+                                                                      beforeLine->lineNumber,
+                                                                      QStringLiteral("line"),
+                                                                      move.sourceVertexIndex,
+                                                                      move.newPoint,
+                                                                      &sourceEdits,
+                                                                      &errorMessage)
+                        && TherionDocumentEditor::applySourceTextEdits(&afterText, sourceEdits, &errorMessage),
+                    errorMessage.toUtf8().constData())) {
+            return 1;
+        }
+    }
+
+    const QVector<TherionParsedLine> afterParsedLines = TherionDocumentParser::parseTokenLines(afterText);
+    const QVector<MapGeometryFeature> afterFeatures = collectGeometryFeatures(afterParsedLines);
+    const MapGeometryFeature *afterLine = firstLineFeature(afterFeatures);
+    if (!expect(afterLine != nullptr && afterLine->lineVertices.size() == 3,
+                "Expected smooth-control commit output to parse the rewritten line.")) {
+        return 1;
+    }
+
+    const MapGeometryFeature::TH2LineVertex &rewrittenMiddle = afterLine->lineVertices.at(1);
+    if (!expect(rewrittenMiddle.incomingControl.has_value() && rewrittenMiddle.outgoingControl.has_value(),
+                "Expected rewritten smooth vertex to retain both controls.")) {
+        return 1;
+    }
+    const bool tangentContinuous = pointsAreCollinear(rewrittenMiddle.incomingControl.value(),
+                                                      rewrittenMiddle.anchor,
+                                                      rewrittenMiddle.outgoingControl.value());
+    if (!tangentContinuous) {
+        std::cerr << "Rewritten source:\n" << afterText.toStdString();
+        std::cerr << "Incoming: "
+                  << rewrittenMiddle.incomingControl->x() << ','
+                  << rewrittenMiddle.incomingControl->y()
+                  << " anchor: " << rewrittenMiddle.anchor.x() << ','
+                  << rewrittenMiddle.anchor.y()
+                  << " outgoing: " << rewrittenMiddle.outgoingControl->x() << ','
+                  << rewrittenMiddle.outgoingControl->y() << '\n';
+    }
+    if (!expect(tangentContinuous,
+                "Expected rewritten smooth controls to remain tangent-continuous around the anchor.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 int runScrapScaleSourceUnitsPerMeterTest()
 {
     const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(
@@ -2209,6 +2393,9 @@ int main(int argc, char **argv)
     if (const int rc = runLinePointSubtypeBlocksPreviewRefreshTest(); rc != 0) {
         return rc;
     }
+    if (const int rc = runLineLabelPreviewRefreshTest(); rc != 0) {
+        return rc;
+    }
     if (const int rc = runInlineSubtypeParsingTest(); rc != 0) {
         return rc;
     }
@@ -2267,6 +2454,9 @@ int main(int argc, char **argv)
         return rc;
     }
     if (const int rc = runLinePreviewCommitParityTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runSmoothControlCommitKeepsTangentContinuityTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runScrapScaleSourceUnitsPerMeterTest(); rc != 0) {

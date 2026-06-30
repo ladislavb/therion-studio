@@ -264,6 +264,16 @@ public:
         return path_.boundingRect().adjusted(-margin, -margin, margin, margin);
     }
 
+    void setPath(const QPainterPath &path)
+    {
+        if (path_ == path) {
+            return;
+        }
+        prepareGeometryChange();
+        path_ = path;
+        update();
+    }
+
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override
     {
         Q_UNUSED(option);
@@ -2420,14 +2430,15 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                     mapItemsByLine->insert(feature.lineNumber, lineItem);
                 }
 
+                MapPathLabelItem *lineLabelItem = nullptr;
                 if (lineStyle.labelField.has_value()) {
                     const QString labelText = optionValueForFieldName(feature.optionValues, lineStyle.labelField.value());
                     if (!labelText.isEmpty()) {
                         QFont labelFont(QStringLiteral("Menlo"), 10);
-                        auto *lineLabelItem = new MapPathLabelItem(lineLabelPathText(labelText),
-                                                                   path,
-                                                                   labelFont,
-                                                                   canvasTheme.labelText);
+                        lineLabelItem = new MapPathLabelItem(lineLabelPathText(labelText),
+                                                             path,
+                                                             labelFont,
+                                                             canvasTheme.labelText);
                         scene->addItem(lineLabelItem);
                         lineLabelItem->setZValue(3.1);
                         markGeometryItem(lineLabelItem);
@@ -2733,6 +2744,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                                                            styledLineItems,
                                                            styledDecorationItems,
                                                            styledGuideItems,
+                                                           lineLabelItem,
                                                            directionTickItem,
                                                            lineDirectionTickLength,
                                                            feature,
@@ -2787,6 +2799,9 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                     }
                     if (lineGuideSpineItem != nullptr) {
                         lineGuideSpineItem->setPath(interactivePath);
+                    }
+                    if (lineLabelItem != nullptr) {
+                        lineLabelItem->setPath(interactivePath);
                     }
                     const QVector<StyledLinePath> interactiveStyledPaths =
                         styledLinePathsForFeature(interactiveFeature, sourceBounds, previewBounds);
