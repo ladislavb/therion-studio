@@ -489,6 +489,33 @@ void MainWindow::requestProjectValidation()
                              true);
 }
 
+void MainWindow::clearProjectValidationResults()
+{
+    validationDiagnostics_.clear();
+    validationDiagnosticFilePaths_.clear();
+    validationDocumentPath_.clear();
+    validationRevealByGeneration_.clear();
+    pendingProjectValidationRevealPanel_ = false;
+    pendingValidationFixNavigation_ = false;
+    validationProjectMode_ = false;
+    validationProblemCount_ = 0;
+    clearValidationRailIndicator();
+
+    if (validationResultsModel_ != nullptr) {
+        validationResultsModel_->clear();
+        validationResultsModel_->setHorizontalHeaderLabels({tr("Problems")});
+    }
+    if (validationScanProjectButton_ != nullptr) {
+        validationScanProjectButton_->setEnabled(true);
+    }
+    if (validationStatusLabel_ != nullptr) {
+        validationStatusLabel_->setText(tr("Open a project before validating."));
+    }
+
+    updateOpenEditorProjectValidationDiagnostics();
+    handleValidationSelectionChanged({}, {});
+}
+
 void MainWindow::updateProjectValidationStatusMessage()
 {
     if (validationStatusLabel_ == nullptr || sessionStore_ == nullptr) {

@@ -25,6 +25,7 @@ std::vector<MainWindowProjectOrchestrationService::CloseProjectStep> MainWindowP
     return {
         CloseProjectStep::ClearDocumentTabs,
         CloseProjectStep::ResetProjectBrowser,
+        CloseProjectStep::ClearProjectValidationResults,
         CloseProjectStep::PersistSessionLastProjectPath,
         CloseProjectStep::PersistOpenDocuments,
         CloseProjectStep::ResetProjectTherionRunContext,

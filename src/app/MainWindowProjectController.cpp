@@ -80,6 +80,11 @@ void executeCloseProjectSteps(const std::vector<MainWindowProjectOrchestrationSe
                 actions.resetProjectBrowser();
             }
             break;
+        case MainWindowProjectOrchestrationService::CloseProjectStep::ClearProjectValidationResults:
+            if (actions.clearProjectValidationResults) {
+                actions.clearProjectValidationResults();
+            }
+            break;
         case MainWindowProjectOrchestrationService::CloseProjectStep::PersistSessionLastProjectPath:
             sessionStore.setLastProjectPath(workspaceState.sessionLastProjectPath);
             break;

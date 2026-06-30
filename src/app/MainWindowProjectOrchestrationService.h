@@ -23,6 +23,7 @@ public:
     {
         ClearDocumentTabs,
         ResetProjectBrowser,
+        ClearProjectValidationResults,
         PersistSessionLastProjectPath,
         PersistOpenDocuments,
         ResetProjectTherionRunContext,

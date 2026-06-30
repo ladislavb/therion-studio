@@ -1038,6 +1038,7 @@ void MainWindow::closeProject()
     };
     actions.clearDocumentTabs = [this]() { clearDocumentTabs(); };
     actions.resetProjectBrowser = [this]() { resetProjectBrowser(); };
+    actions.clearProjectValidationResults = [this]() { clearProjectValidationResults(); };
     actions.persistOpenDocuments = [this]() { persistOpenDocuments(); };
     actions.resetProjectTherionRunContext = [this]() { resetProjectTherionRunContext(); };
     actions.rebuildStructureSidebar = [this]() { rebuildStructureSidebar(); };

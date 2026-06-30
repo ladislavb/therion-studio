@@ -26,6 +26,7 @@ public:
         std::function<void()> ensureWelcomeTab;
         std::function<void()> clearDocumentTabs;
         std::function<void()> resetProjectBrowser;
+        std::function<void()> clearProjectValidationResults;
         std::function<void()> persistOpenDocuments;
         std::function<void()> resetProjectTherionRunContext;
     };

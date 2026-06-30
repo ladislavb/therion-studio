@@ -167,6 +167,7 @@ private:
     void requestProjectSearch();
     void handleProjectSearchFinished(const TherionStudio::ProjectSearchScanner::Result &result);
     void requestProjectValidation();
+    void clearProjectValidationResults();
     void requestProjectValidation(TherionStudio::ProjectValidationController::Trigger trigger, bool revealPanel);
     void requestRestoredProjectValidation();
     void updateProjectValidationStatusMessage();

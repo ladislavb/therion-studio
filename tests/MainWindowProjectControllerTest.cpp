@@ -188,6 +188,7 @@ int runCloseProjectSuccessExecutionOrderTest()
     };
     actions.clearDocumentTabs = [&calls]() { calls.append(QStringLiteral("clear_tabs")); };
     actions.resetProjectBrowser = [&calls]() { calls.append(QStringLiteral("reset_browser")); };
+    actions.clearProjectValidationResults = [&calls]() { calls.append(QStringLiteral("clear_validation")); };
     actions.persistOpenDocuments = [&calls]() { calls.append(QStringLiteral("persist_docs")); };
     actions.resetProjectTherionRunContext = [&calls]() { calls.append(QStringLiteral("reset_compiler_project_context")); };
     actions.rebuildStructureSidebar = [&calls]() { calls.append(QStringLiteral("rebuild_structure")); };
@@ -212,6 +213,7 @@ int runCloseProjectSuccessExecutionOrderTest()
         QStringLiteral("set_root:"),
         QStringLiteral("clear_tabs"),
         QStringLiteral("reset_browser"),
+        QStringLiteral("clear_validation"),
         QStringLiteral("persist_docs"),
         QStringLiteral("reset_compiler_project_context"),
         QStringLiteral("rebuild_structure"),
