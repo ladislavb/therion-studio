@@ -107,14 +107,12 @@ TherionStudio::RawEditorCompletionTokenContext cursorTokenContextForEditor(
         return context;
     }
 
-    const int lineNumber = block.blockNumber() + 1;
-    const int columnNumber = cursor.positionInBlock() + 1;
+    const int cursorOffset = cursor.position();
     return withLogicalDocumentForEditor(editor,
                                         sourceSnapshotCache,
-                                        [lineNumber, columnNumber](const TherionStudio::TherionSourceLogicalDocument &logicalDocument) {
-                                            return TherionStudio::rawEditorCompletionTokenContextAtPosition(logicalDocument,
-                                                                                                           lineNumber,
-                                                                                                           columnNumber);
+                                        [cursorOffset](const TherionStudio::TherionSourceLogicalDocument &logicalDocument) {
+                                            return TherionStudio::rawEditorCompletionTokenContextAtOffset(logicalDocument,
+                                                                                                         cursorOffset);
                                         });
 }
 

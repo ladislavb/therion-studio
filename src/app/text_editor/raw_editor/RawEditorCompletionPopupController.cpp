@@ -111,7 +111,7 @@ void RawEditorCompletionPopupController::triggerCompletionPopup()
             const QTextBlock block = cursor.block();
             if (block.isValid()) {
                 const int lineNumber = block.blockNumber() + 1;
-                const int columnNumber = cursor.positionInBlock() + 1;
+                const int cursorOffset = cursor.position();
                 TherionSourceDocumentMetadata metadata;
                 metadata.revisionId = context_.editor->document() != nullptr
                     ? context_.editor->document()->revision()
@@ -128,7 +128,7 @@ void RawEditorCompletionPopupController::triggerCompletionPopup()
                     return;
                 }
                 const RawEditorCompletionTokenContext tokenContext =
-                    rawEditorCompletionTokenContextAtPosition(*logicalDocument, lineNumber, columnNumber);
+                    rawEditorCompletionTokenContextAtOffset(*logicalDocument, cursorOffset);
                 const int positionalCountBeforeCursor = positionalTokenCountBeforeCursor(logicalCommand->parsed,
                                                                                          tokenContext.tokenIndexAtCursor);
                 if (positionalCountBeforeCursor < requiredPositionalCount) {

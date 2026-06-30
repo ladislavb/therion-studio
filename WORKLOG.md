@@ -58,10 +58,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ### Unified Source DOM / Transactions
 
 - Use `plans/UNIFIED_SOURCE_DOM_PLAN.md` as the detailed slice queue.
-- Next implementation slice: migrate one Raw cursor-token consumer to `TherionSourceLogicalDocument::tokenAtOffset()`
-  while preserving quoted-token, option-token, comment, continuation-row, and end-of-line behavior.
-- After the Raw cursor slice, prefer one read-only Blocks details consumer before touching Map scene refresh or geometry
-  projection.
+- Next implementation slice: migrate one read-only Blocks details consumer to the shared logical source document before
+  touching Map scene refresh or geometry projection.
 - Keep Therion namespace/reference changes behind `docs/THERION_COMPATIBILITY.md` coverage, especially
   `object@child.parent` qualified-reference order.
 - Keep source transaction ownership work incremental: one caller or workflow per commit, with explicit result handling,
