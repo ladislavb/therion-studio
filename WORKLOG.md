@@ -6,7 +6,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 1. Windows map-input validation for the deferred vertex-refresh fix.
 2. Unified Source DOM consumer migration in small, tested slices.
-3. Release readiness for `v2026.6.9` without broad map/editor rewrites.
+3. Release readiness for `v2026.6.9`, including final release-note review and full-test validation.
 4. Plan-driven follow-ups for GUI cleanup, SVG backgrounds, and 3D viewer refinement.
 
 ## Active Work
