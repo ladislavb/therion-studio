@@ -9,6 +9,7 @@
 #include "TherionRunnerLifecyclePresenter.h"
 #include "TherionRunnerService.h"
 #include "TherionRunnerStartResultPresenter.h"
+#include "TherionRunnerStartSuccessPresenter.h"
 
 #include <QComboBox>
 #include <QFileDialog>
@@ -502,6 +503,11 @@ void MainWindow::runTherion()
     }
 
     activeTherionRunConfigPath_ = state.resolvedConfigPath;
+    const TherionStudio::TherionRunnerStartSuccessPresenter::Presentation successPresentation =
+        TherionStudio::TherionRunnerStartSuccessPresenter::present(startResult,
+                                                                   state.runArguments.join(QLatin1Char(' ')),
+                                                                   state.resolvedWorkingDirectory);
+    therionConsoleController_.appendConsoleLine(successPresentation.consoleMessage);
     setCompilerStatusRunning(activeTherionRunConfigPath_);
 
     updateTherionRunnerState();

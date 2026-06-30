@@ -58,6 +58,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   starting a new Therion run clears the previous compiler output before process launch.
 - Therion runner stdin is closed after process start so compiler prompts such as `Press ENTER to Exit!` receive EOF and
   do not require pressing Stop after an unexpected project failure.
+- Compiler output now begins each successful run with the resolved command and working directory so repeated runs are
+  visible immediately after the output is cleared.
 - Use the expanded `line-area-anchor-release` and `line-double-click-complete` diagnostics in the next Windows tester log
   to distinguish intermittent Bezier draft segmentation between missing captured controls, source insertion, and
   post-insert parse/render projection.

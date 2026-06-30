@@ -370,7 +370,7 @@ Set the Therion executable path in `File -> Settings...`. If no explicit path is
 
 Before starting a compile, Therion Studio saves all modified open document tabs. If any open document cannot be saved, the compile is canceled and the runner is not started.
 
-The selected target config is shown as a prominent file name with its full path below it. Starting a new compile clears the previous compiler output before Therion is launched.
+The selected target config is shown as a prominent file name with its full path below it. Starting a new compile clears the previous compiler output before Therion is launched, then prints the command and working directory at the top of the new output.
 
 Therion runs non-interactively from Studio. If Therion prints a prompt such as `Press ENTER to Exit!` after an error, Studio closes the process input stream so the run can finish without pressing `Stop`.
 
