@@ -14,6 +14,7 @@ using namespace TherionStudio;
 namespace
 {
 constexpr const char *kChildModeArgument = "--therion-runner-service-child";
+constexpr const char *kWaitForStdinChildModeArgument = "--therion-runner-service-wait-for-stdin-child";
 
 bool expect(bool condition, const char *message)
 {
@@ -30,6 +31,16 @@ int runChildProcess()
     std::cerr << "runner-child-stderr\n";
     std::cerr.flush();
     QThread::msleep(250);
+    return 0;
+}
+
+int runWaitForStdinChildProcess()
+{
+    std::cout << "Press ENTER to Exit!\n";
+    std::cout.flush();
+    char ignored = 0;
+    while (std::cin.get(ignored)) {
+    }
     return 0;
 }
 
@@ -171,6 +182,45 @@ int runSuccessfulProcessTest()
 
     return 0;
 }
+
+int runInteractivePromptDoesNotHangTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Temporary working directory creation failed.")) {
+        return 1;
+    }
+
+    TherionRunnerService service;
+    QString standardOutput;
+    QObject::connect(&service, &TherionRunnerService::standardOutputReady, [&](const QString &output) {
+        standardOutput += output;
+    });
+
+    const QString executablePath = QCoreApplication::applicationFilePath();
+    const TherionRunnerService::StartResult startResult =
+        service.start(executablePath, tempDir.path(), {QString::fromLatin1(kWaitForStdinChildModeArgument)});
+    if (!expect(startResult.code == TherionRunnerService::StartCode::Started,
+                "Prompting child process should start.")) {
+        return 1;
+    }
+
+    const FinishedResult finished = waitForRunFinished(service);
+    if (!expect(finished.finished,
+                "Runner should close child stdin so interactive Press ENTER prompts do not hang.")) {
+        service.stop();
+        return 1;
+    }
+    if (!expect(finished.exitCode == 0 && finished.exitStatus == QProcess::NormalExit,
+                "Prompting child process should finish normally after stdin closes.")) {
+        return 1;
+    }
+    if (!expect(standardOutput.contains(QStringLiteral("Press ENTER to Exit!")),
+                "Prompting child stdout should be forwarded before process exit.")) {
+        return 1;
+    }
+
+    return 0;
+}
 }
 
 int main(int argc, char **argv)
@@ -179,11 +229,17 @@ int main(int argc, char **argv)
     if (app.arguments().contains(QString::fromLatin1(kChildModeArgument))) {
         return runChildProcess();
     }
+    if (app.arguments().contains(QString::fromLatin1(kWaitForStdinChildModeArgument))) {
+        return runWaitForStdinChildProcess();
+    }
 
     if (runValidationResultTest() != 0) {
         return 1;
     }
     if (runSuccessfulProcessTest() != 0) {
+        return 1;
+    }
+    if (runInteractivePromptDoesNotHangTest() != 0) {
         return 1;
     }
 

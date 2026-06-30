@@ -56,6 +56,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   keep this in the project-close orchestration coverage so stale findings do not survive into the no-project state.
 - Compiler panel target config display now emphasizes the selected config file name and keeps the full path secondary;
   starting a new Therion run clears the previous compiler output before process launch.
+- Therion runner stdin is closed after process start so compiler prompts such as `Press ENTER to Exit!` receive EOF and
+  do not require pressing Stop after an unexpected project failure.
 - Use the expanded `line-area-anchor-release` and `line-double-click-complete` diagnostics in the next Windows tester log
   to distinguish intermittent Bezier draft segmentation between missing captured controls, source insertion, and
   post-insert parse/render projection.

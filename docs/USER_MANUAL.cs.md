@@ -348,6 +348,8 @@ Před spuštěním kompilace Therion Studio uloží všechny změněné otevřen
 
 Vybraná cílová konfigurace se zobrazuje jako výrazný název souboru a pod ním plná cesta. Spuštění nové kompilace vyčistí předchozí výstup compileru před spuštěním Therionu.
 
+Therion se ze Studia spouští neinteraktivně. Pokud Therion po chybě vypíše výzvu jako `Press ENTER to Exit!`, Studio zavře vstupní stream procesu, aby běh mohl skončit bez stisknutí `Zastavit`.
+
 Zavření projektu vyčistí `Cílovou konfiguraci` a `Náhradní pracovní složku`, protože jsou projektové. Cesta ke spustitelnému souboru Therion je globální preference. Dodatečné argumenty jsou jen pro aktuální relaci.
 
 ### 7.2 Akce

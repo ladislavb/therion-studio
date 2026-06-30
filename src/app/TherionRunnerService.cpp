@@ -125,6 +125,7 @@ TherionRunnerService::StartResult TherionRunnerService::start(const QString &exe
     process_.setWorkingDirectory(workingDirectory);
     process_.setProcessEnvironment(processEnvironmentForTherion(resolvedExecutable.path));
     process_.start(resolvedExecutable.path, arguments);
+    process_.closeWriteChannel();
     result.code = StartCode::Started;
     result.resolvedExecutablePath = resolvedExecutable.path;
     result.usedPlatformFallback = resolvedExecutable.usedPlatformFallback;

@@ -372,6 +372,8 @@ Before starting a compile, Therion Studio saves all modified open document tabs.
 
 The selected target config is shown as a prominent file name with its full path below it. Starting a new compile clears the previous compiler output before Therion is launched.
 
+Therion runs non-interactively from Studio. If Therion prints a prompt such as `Press ENTER to Exit!` after an error, Studio closes the process input stream so the run can finish without pressing `Stop`.
+
 Closing a project clears `Target Config` and `Working Directory Override` because those paths are project-specific. The Therion executable path is a global preference. Additional arguments are session-only.
 
 ### 7.2 Actions
