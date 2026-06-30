@@ -389,6 +389,18 @@ int runCatalogTest()
         return 1;
     }
 
+    const MapEditorResolvedLineStyle overhangStyle = resolveMapEditorLineStyle(catalog, QStringLiteral("overhang"));
+    if (!expect(overhangStyle.decorations.size() == 1
+                    && overhangStyle.decorations.first().kind == MapEditorLineDecorationKind::Teeth,
+                "Expected overhang line style to render repeated teeth.")) {
+        return 1;
+    }
+    if (!expect(std::abs(overhangStyle.decorations.first().size - 3.25) < 1e-6
+                    && std::abs(overhangStyle.decorations.first().spacing - 4.5) < 1e-6,
+                "Expected overhang teeth to use the reduced half-size motif.")) {
+        return 1;
+    }
+
     const MapEditorResolvedLineStyle ropeLadderStyle =
         resolveMapEditorLineStyle(catalog, QStringLiteral("rope-ladder"));
     if (!expect(!ropeLadderStyle.strokeVisible && ropeLadderStyle.decorations.size() == 2,

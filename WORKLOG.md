@@ -50,6 +50,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Bezier draft serialization now compacts duplicate consecutive anchors and mirrors a missing opposite smooth handle when
   one side of a smooth draft vertex was captured; keep this covered while investigating intermittent segmented line
   reports from Windows/tablet input.
+- Overhang line jaws now use a smaller half-size teeth motif in the style catalog; keep this covered by the map object
+  style catalog regression test when tuning SKBB-style line decorations.
 - Use the expanded `line-area-anchor-release` and `line-double-click-complete` diagnostics in the next Windows tester log
   to distinguish intermittent Bezier draft segmentation between missing captured controls, source insertion, and
   post-insert parse/render projection.
