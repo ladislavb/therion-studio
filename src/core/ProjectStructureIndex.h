@@ -76,6 +76,20 @@ struct ProjectIndexSnapshot
     QVector<ProjectIndexDiagnostic> diagnostics;
 };
 
+struct ProjectStructureIndexSource
+{
+    QString normalizedPath;
+    QString text;
+    bool textLoaded = true;
+};
+
+struct ProjectStructureIndexSourceSet
+{
+    QString projectRootPath;
+    QString preferredConfigPath;
+    QVector<ProjectStructureIndexSource> sources;
+};
+
 class ProjectStructureIndex final
 {
 public:
@@ -87,6 +101,8 @@ public:
     static ProjectIndexSnapshot scanProjectIndex(const QString &projectRootPath,
                                                  const QHash<QString, QString> &inMemoryFileContentsByPath,
                                                  const QString &preferredConfigPath,
+                                                 QString *errorMessage = nullptr);
+    static ProjectIndexSnapshot scanProjectIndex(const ProjectStructureIndexSourceSet &sourceSet,
                                                  QString *errorMessage = nullptr);
     static QVector<ProjectStructureEntry> scanProject(const QString &projectRootPath, QString *errorMessage = nullptr);
     static QVector<ProjectStructureEntry> scanProject(const QString &projectRootPath,

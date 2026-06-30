@@ -63,6 +63,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   reuse one normalized source snapshot instead of deriving independent scan identities.
 - Use the project source snapshot collector as the next integration point for scanner migration; keep the first runtime
   hookup behavior-preserving by comparing Structure and Validation outputs before removing their local traversal code.
+- Validate the new `ProjectStructureIndexSourceSet` path against Structure/Validation regression tests before sharing
+  project-index snapshots across both scanners.
 - Prefer Settings -> troubleshooting logs for tester builds: the preference is time-limited, restart-applied, and uses
   rotated application log files instead of requiring users to set environment variables.
 - Optimize future live validation with incremental file/revision caching, generation-keyed cancellation, and cheaper
@@ -121,8 +123,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Implement safe one-line map partial refresh according to `plans/MAP_PARTIAL_REFRESH_PLAN.md` after release stabilization.
 - Optional Structure graph view for relationships such as `preview`, `revise`, `join`, `equate`, relationship status, and station-network edges.
 - Compiler-confirmed project-index comparison once lightweight indexing is no longer sufficient.
-- After the project source snapshot collector is wired into one scanner, share Structure/Validation project-index snapshots
-  and add per-file validation cache according to `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md`.
+- After `ProjectStructureIndexSourceSet` is stable in Structure, share Structure/Validation project-index snapshots and add
+  per-file validation cache according to `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md`.
 - Restore automatic full-project validation as the recommended/default mode only after live diagnostics are incremental,
   cancellable, and UI-cheap for nested projects.
 - Broader Therion corpus regression tests for parsing, serialization, source rewrites, indexing, and map/text synchronization.

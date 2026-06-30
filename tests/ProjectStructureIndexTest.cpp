@@ -1403,6 +1403,61 @@ int runTh2ObjectIndexGroupingTest()
 
     return 0;
 }
+
+int runProjectIndexSourceSetUsesProvidedTextTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "The temporary source-set project directory could not be created.")) {
+        return 1;
+    }
+
+    QDir projectDir(tempDir.path());
+    const QString rootFile = projectDir.filePath(QStringLiteral("root.th"));
+    if (!expect(writeTextFile(rootFile,
+                              QStringLiteral(
+                                  "survey stale\n"
+                                  "endsurvey stale\n")),
+                "The source-set disk Therion file could not be written.")) {
+        return 1;
+    }
+
+    ProjectStructureIndexSourceSet sourceSet;
+    sourceSet.projectRootPath = projectDir.path();
+    sourceSet.sources.append({normalizedPathForComparison(rootFile),
+                              QStringLiteral(
+                                  "survey snapshot\n"
+                                  "endsurvey snapshot\n"),
+                              true});
+
+    QString errorMessage;
+    const ProjectIndexSnapshot snapshot = ProjectStructureIndex::scanProjectIndex(sourceSet, &errorMessage);
+    if (!expect(errorMessage.isEmpty(), errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+
+    bool foundSnapshotSurvey = false;
+    bool foundStaleSurvey = false;
+    for (const ProjectStructureEntry &entry : snapshot.entries) {
+        if (entry.category != QStringLiteral("Surveys")) {
+            continue;
+        }
+        if (entry.name == QStringLiteral("snapshot")) {
+            foundSnapshotSurvey = true;
+        }
+        if (entry.name == QStringLiteral("stale")) {
+            foundStaleSurvey = true;
+        }
+    }
+
+    if (!expect(foundSnapshotSurvey, "Source-set project index should use provided snapshot text.")) {
+        return 1;
+    }
+    if (!expect(!foundStaleSurvey, "Source-set project index should not reread stale disk text.")) {
+        return 1;
+    }
+
+    return 0;
+}
 }
 
 int main()
@@ -1441,6 +1496,9 @@ int main()
         return 1;
     }
     if (runTh2ObjectIndexGroupingTest() != 0) {
+        return 1;
+    }
+    if (runProjectIndexSourceSetUsesProvidedTextTest() != 0) {
         return 1;
     }
 

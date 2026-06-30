@@ -6,6 +6,8 @@
 #include <QVector>
 #include <QtGlobal>
 
+#include "../core/ProjectStructureIndex.h"
+
 namespace TherionStudio
 {
 constexpr qsizetype kDefaultMaximumProjectSourceTextBytes = 4 * 1024 * 1024;
@@ -70,4 +72,7 @@ struct ProjectSourceSnapshot
     const QString &preferredConfigPath,
     const QHash<QString, QString> &inMemoryContentsByPath,
     qsizetype maximumTextBytes = kDefaultMaximumProjectSourceTextBytes);
+
+[[nodiscard]] ProjectStructureIndexSourceSet projectStructureIndexSourceSet(
+    const ProjectSourceSnapshot &snapshot);
 }

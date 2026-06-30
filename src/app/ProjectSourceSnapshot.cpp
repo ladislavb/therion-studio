@@ -252,4 +252,18 @@ ProjectSourceSnapshot collectProjectSourceSnapshot(const QString &projectRootPat
 
     return snapshot;
 }
+
+ProjectStructureIndexSourceSet projectStructureIndexSourceSet(const ProjectSourceSnapshot &snapshot)
+{
+    ProjectStructureIndexSourceSet sourceSet;
+    sourceSet.projectRootPath = snapshot.requestKey.normalizedProjectRootPath;
+    sourceSet.preferredConfigPath = snapshot.requestKey.normalizedPreferredConfigPath;
+    sourceSet.sources.reserve(snapshot.documents.size());
+    for (const ProjectSourceDocument &document : snapshot.documents) {
+        sourceSet.sources.append({document.normalizedPath,
+                                  document.text,
+                                  document.textLoaded});
+    }
+    return sourceSet;
+}
 }

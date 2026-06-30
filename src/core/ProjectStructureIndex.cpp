@@ -101,6 +101,18 @@ QString sectionNameFromLine(const TherionParsedLine &parsedLine);
 ProjectStructureEntryKind objectKindFromLine(const TherionParsedLine &parsedLine);
 QString objectNameFromLine(const TherionParsedLine &parsedLine);
 QString normalizedStructureDirective(const QString &directive);
+MapReferenceScanResult scanMapReferences(const QVector<ProjectStructureEntry> &entries,
+                                         ParsedFileCache *cache,
+                                         const QHash<QString, QString> &inMemoryFileContentsByPath);
+QVector<ProjectIndexDiagnostic> scanJoinReferences(const QVector<ProjectStructureEntry> &entries,
+                                                   ParsedFileCache *cache,
+                                                   const QHash<QString, QString> &inMemoryFileContentsByPath);
+QVector<ProjectIndexDiagnostic> scanStationReferences(const QVector<ProjectStructureEntry> &entries,
+                                                      ParsedFileCache *cache,
+                                                      const QHash<QString, QString> &inMemoryFileContentsByPath);
+QVector<ProjectIndexDiagnostic> scanDuplicateObjectIds(const QVector<ProjectStructureEntry> &entries,
+                                                       ParsedFileCache *cache,
+                                                       const QHash<QString, QString> &inMemoryFileContentsByPath);
 void appendProjectIndexDiagnostic(QVector<ProjectIndexDiagnostic> *diagnostics,
                                   ProjectIndexDiagnosticKind kind,
                                   const QString &sourceObjectId,
@@ -1398,6 +1410,86 @@ RootConfigResolution rootConfigFiles(const QVector<QString> &filePaths,
     };
 }
 
+ProjectIndexSnapshot scanProjectIndexFromFilePaths(const QString &projectRootPath,
+                                                   const QVector<QString> &filePaths,
+                                                   const QHash<QString, QString> &inMemoryFileContentsByPath,
+                                                   const QString &preferredConfigPath,
+                                                   QString *errorMessage)
+{
+    if (errorMessage != nullptr) {
+        errorMessage->clear();
+    }
+
+    ProjectIndexSnapshot snapshot;
+    if (projectRootPath.isEmpty()) {
+        return snapshot;
+    }
+    snapshot.projectRootPath = normalizedFilePathKey(projectRootPath);
+
+    QDir projectRoot(projectRootPath);
+    if (!projectRoot.exists()) {
+        if (errorMessage != nullptr) {
+            *errorMessage = QCoreApplication::translate("TherionStudio::ProjectStructureIndex",
+                                                        "The selected project folder does not exist.");
+        }
+        return snapshot;
+    }
+
+    QVector<QString> sortedFilePaths = filePaths;
+    std::sort(sortedFilePaths.begin(), sortedFilePaths.end(), [](const QString &left, const QString &right) {
+        return left.toLower() < right.toLower();
+    });
+
+    ParsedFileCache cache;
+    const RootConfigResolution configResolution = rootConfigFiles(sortedFilePaths, projectRootPath, preferredConfigPath);
+    snapshot.rootConfigPath = configResolution.configPath;
+    if (!configResolution.errorMessage.isEmpty()) {
+        if (errorMessage != nullptr) {
+            *errorMessage = configResolution.errorMessage;
+        }
+        return snapshot;
+    }
+
+    QVector<QString> rootFiles = configResolution.rootFiles;
+    if (rootFiles.isEmpty()) {
+        rootFiles = rootProjectFiles(sortedFilePaths, &cache, inMemoryFileContentsByPath);
+    }
+    for (const QString &rootFile : std::as_const(rootFiles)) {
+        snapshot.rootFilePaths.append(normalizedFilePathKey(rootFile));
+    }
+
+    QVector<ProjectBlock> blockStack;
+    QSet<QString> activeFiles;
+    ProjectObjectIdentityGenerator identityGenerator;
+    for (const QString &filePath : rootFiles) {
+        appendProjectStructureFromFile(filePath,
+                                       &cache,
+                                       &blockStack,
+                                       &activeFiles,
+                                       &snapshot.entries,
+                                       &identityGenerator,
+                                       inMemoryFileContentsByPath);
+    }
+
+    const MapReferenceScanResult mapReferenceScan = scanMapReferences(snapshot.entries,
+                                                                      &cache,
+                                                                      inMemoryFileContentsByPath);
+    snapshot.mapScrapReferencesByMapKey = mapReferenceScan.scrapReferencesByMapKey;
+    snapshot.mapChildReferencesByMapKey = mapReferenceScan.childMapReferencesByMapKey;
+    snapshot.mapPreviewReferencesByMapKey = mapReferenceScan.previewReferencesByMapKey;
+    snapshot.diagnostics = mapReferenceScan.diagnostics;
+    snapshot.diagnostics += scanJoinReferences(snapshot.entries,
+                                               &cache,
+                                               inMemoryFileContentsByPath);
+    snapshot.diagnostics += scanStationReferences(snapshot.entries,
+                                                  &cache,
+                                                  inMemoryFileContentsByPath);
+    snapshot.diagnostics += scanDuplicateObjectIds(snapshot.entries,
+                                                   &cache,
+                                                   inMemoryFileContentsByPath);
+    return snapshot;
+}
+
 MapReferenceScanResult scanMapReferences(const QVector<ProjectStructureEntry> &entries,
                                          ParsedFileCache *cache,
                                          const QHash<QString, QString> &inMemoryFileContentsByPath)
@@ -2008,25 +2100,6 @@ ProjectIndexSnapshot ProjectStructureIndex::scanProjectIndex(const QString &proj
                                                              const QString &preferredConfigPath,
                                                              QString *errorMessage)
 {
-    if (errorMessage != nullptr) {
-        errorMessage->clear();
-    }
-
-    ProjectIndexSnapshot snapshot;
-    if (projectRootPath.isEmpty()) {
-        return snapshot;
-    }
-    snapshot.projectRootPath = normalizedFilePathKey(projectRootPath);
-
-    QDir projectRoot(projectRootPath);
-    if (!projectRoot.exists()) {
-        if (errorMessage != nullptr) {
-            *errorMessage = QCoreApplication::translate("TherionStudio::ProjectStructureIndex",
-                                                        "The selected project folder does not exist.");
-        }
-        return snapshot;
-    }
-
     QVector<QString> filePaths;
     QDirIterator iterator(projectRootPath,
                           {QStringLiteral("*.th"),
@@ -2045,58 +2118,34 @@ ProjectIndexSnapshot ProjectStructureIndex::scanProjectIndex(const QString &proj
         }
     }
 
-    std::sort(filePaths.begin(), filePaths.end(), [](const QString &left, const QString &right) {
-        return left.toLower() < right.toLower();
-    });
+    return scanProjectIndexFromFilePaths(projectRootPath,
+                                         filePaths,
+                                         inMemoryFileContentsByPath,
+                                         preferredConfigPath,
+                                         errorMessage);
+}
 
-    ParsedFileCache cache;
-    const RootConfigResolution configResolution = rootConfigFiles(filePaths, projectRootPath, preferredConfigPath);
-    snapshot.rootConfigPath = configResolution.configPath;
-    if (!configResolution.errorMessage.isEmpty()) {
-        if (errorMessage != nullptr) {
-            *errorMessage = configResolution.errorMessage;
+ProjectIndexSnapshot ProjectStructureIndex::scanProjectIndex(const ProjectStructureIndexSourceSet &sourceSet,
+                                                             QString *errorMessage)
+{
+    QVector<QString> filePaths;
+    filePaths.reserve(sourceSet.sources.size());
+    QHash<QString, QString> sourceTextByPath;
+    for (const ProjectStructureIndexSource &source : sourceSet.sources) {
+        const QString normalizedPath = normalizedFilePathKey(source.normalizedPath);
+        if (normalizedPath.isEmpty()) {
+            continue;
         }
-        return snapshot;
+        filePaths.append(normalizedPath);
+        if (source.textLoaded) {
+            sourceTextByPath.insert(normalizedPath, source.text);
+        }
     }
-
-    QVector<QString> rootFiles = configResolution.rootFiles;
-    if (rootFiles.isEmpty()) {
-        rootFiles = rootProjectFiles(filePaths, &cache, inMemoryFileContentsByPath);
-    }
-    for (const QString &rootFile : std::as_const(rootFiles)) {
-        snapshot.rootFilePaths.append(normalizedFilePathKey(rootFile));
-    }
-
-    QVector<ProjectBlock> blockStack;
-    QSet<QString> activeFiles;
-    ProjectObjectIdentityGenerator identityGenerator;
-    for (const QString &filePath : rootFiles) {
-        appendProjectStructureFromFile(filePath,
-                                       &cache,
-                                       &blockStack,
-                                       &activeFiles,
-                                       &snapshot.entries,
-                                       &identityGenerator,
-                                       inMemoryFileContentsByPath);
-    }
-
-    const MapReferenceScanResult mapReferenceScan = scanMapReferences(snapshot.entries,
-                                                                      &cache,
-                                                                      inMemoryFileContentsByPath);
-    snapshot.mapScrapReferencesByMapKey = mapReferenceScan.scrapReferencesByMapKey;
-    snapshot.mapChildReferencesByMapKey = mapReferenceScan.childMapReferencesByMapKey;
-    snapshot.mapPreviewReferencesByMapKey = mapReferenceScan.previewReferencesByMapKey;
-    snapshot.diagnostics = mapReferenceScan.diagnostics;
-    snapshot.diagnostics += scanJoinReferences(snapshot.entries,
-                                               &cache,
-                                               inMemoryFileContentsByPath);
-    snapshot.diagnostics += scanStationReferences(snapshot.entries,
-                                                  &cache,
-                                                  inMemoryFileContentsByPath);
-    snapshot.diagnostics += scanDuplicateObjectIds(snapshot.entries,
-                                                   &cache,
-                                                   inMemoryFileContentsByPath);
-    return snapshot;
+    return scanProjectIndexFromFilePaths(sourceSet.projectRootPath,
+                                         filePaths,
+                                         sourceTextByPath,
+                                         sourceSet.preferredConfigPath,
+                                         errorMessage);
 }
 
 QVector<ProjectStructureEntry> ProjectStructureIndex::scanProject(const QString &projectRootPath, QString *errorMessage)

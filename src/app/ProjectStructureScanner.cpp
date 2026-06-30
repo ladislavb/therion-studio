@@ -1,6 +1,7 @@
 #include "ProjectStructureScanner.h"
 
-#include <QDir>
+#include "ProjectSourceSnapshot.h"
+
 #include <QFutureWatcher>
 #include <QTimer>
 #include <QtConcurrent>
@@ -59,10 +60,14 @@ void ProjectStructureScanner::startScan()
         Result result;
         result.generation = generation;
         result.projectRootPath = request.projectRootPath;
-        result.projectIndex = ProjectStructureIndex::scanProjectIndex(request.projectRootPath,
-                                                                      request.inMemoryProjectContentsByPath,
-                                                                      request.preferredConfigPath,
-                                                                      &result.errorMessage);
+        const ProjectSourceSnapshot sourceSnapshot =
+            collectProjectSourceSnapshot(request.projectRootPath,
+                                         request.preferredConfigPath,
+                                         request.inMemoryProjectContentsByPath,
+                                         -1);
+        result.projectIndex = ProjectStructureIndex::scanProjectIndex(
+            projectStructureIndexSourceSet(sourceSnapshot),
+            &result.errorMessage);
         result.entries = result.projectIndex.entries;
         return result;
     });

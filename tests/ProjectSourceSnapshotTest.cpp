@@ -34,6 +34,7 @@ private slots:
     void collectorUsesInMemoryOverrideText();
     void collectorIncludesInMemoryOnlySources();
     void collectorRetainsOversizedKnownFileWithoutText();
+    void structureIndexSourceSetPreservesSnapshotInputs();
 };
 
 void ProjectSourceSnapshotTest::equivalentPathFormsShareRequestKey()
@@ -259,6 +260,50 @@ void ProjectSourceSnapshotTest::collectorRetainsOversizedKnownFileWithoutText()
     QVERIFY(!snapshot.documents.constFirst().textLoaded);
     QVERIFY(snapshot.documents.constFirst().text.isEmpty());
     QVERIFY(snapshot.knownFilePaths().contains(normalizeProjectSourcePath(sourcePath)));
+}
+
+void ProjectSourceSnapshotTest::structureIndexSourceSetPreservesSnapshotInputs()
+{
+    QTemporaryDir tempDir;
+    QVERIFY2(tempDir.isValid(), "Temporary project directory creation failed.");
+
+    QDir projectDir(tempDir.path());
+    const QString sourcePath = projectDir.filePath(QStringLiteral("survey.th"));
+    const QString configPath = projectDir.filePath(QStringLiteral("thconfig"));
+    QVERIFY2(writeTextFile(sourcePath, QStringLiteral("survey stale\nendsurvey stale\n")),
+             "survey.th could not be written.");
+    QVERIFY2(writeTextFile(configPath, QStringLiteral("source survey.th\n")),
+             "thconfig could not be written.");
+
+    QHash<QString, QString> inMemoryContents;
+    inMemoryContents.insert(sourcePath, QStringLiteral("survey live\nendsurvey live\n"));
+
+    const ProjectSourceSnapshot snapshot = collectProjectSourceSnapshot(tempDir.path(),
+                                                                       configPath,
+                                                                       inMemoryContents,
+                                                                       -1);
+    const ProjectStructureIndexSourceSet sourceSet = projectStructureIndexSourceSet(snapshot);
+
+    QCOMPARE(sourceSet.projectRootPath, normalizeProjectSourcePath(tempDir.path()));
+    QCOMPARE(sourceSet.preferredConfigPath, normalizeProjectSourcePath(configPath));
+    QCOMPARE(sourceSet.sources.size(), 2);
+
+    bool foundSource = false;
+    bool foundConfig = false;
+    for (const ProjectStructureIndexSource &source : sourceSet.sources) {
+        if (source.normalizedPath == normalizeProjectSourcePath(sourcePath)) {
+            foundSource = true;
+            QCOMPARE(source.text, QStringLiteral("survey live\nendsurvey live\n"));
+            QVERIFY(source.textLoaded);
+        }
+        if (source.normalizedPath == normalizeProjectSourcePath(configPath)) {
+            foundConfig = true;
+            QVERIFY(source.textLoaded);
+        }
+    }
+
+    QVERIFY(foundSource);
+    QVERIFY(foundConfig);
 }
 
 QTEST_GUILESS_MAIN(ProjectSourceSnapshotTest)
