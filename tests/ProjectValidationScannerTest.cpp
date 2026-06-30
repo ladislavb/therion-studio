@@ -757,6 +757,63 @@ int runDuplicateObjectIdDiagnosticIsNotDuplicatedTest()
     return 0;
 }
 
+int runProjectIndexUsesInMemorySnapshotTextTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Temporary project directory creation failed.")) {
+        return 1;
+    }
+
+    QDir projectDir(tempDir.path());
+    const QString rootFile = projectDir.filePath(QStringLiteral("root.th"));
+    const QString mapFile = projectDir.filePath(QStringLiteral("map.th2"));
+
+    if (!expect(writeTextFile(rootFile,
+                              QStringLiteral("survey cave\n"
+                                             "  input map.th2\n"
+                                             "endsurvey\n")),
+                "In-memory project-index root fixture could not be written.")) {
+        return 1;
+    }
+    if (!expect(writeTextFile(mapFile,
+                              QStringLiteral("scrap test\n"
+                                             "line wall -id line-1\n"
+                                             "endline\n"
+                                             "line border -id line-2\n"
+                                             "endline\n"
+                                             "endscrap\n")),
+                "In-memory project-index map fixture could not be written.")) {
+        return 1;
+    }
+
+    QHash<QString, QString> inMemoryContents;
+    inMemoryContents.insert(canonicalOrAbsolutePath(mapFile),
+                            QStringLiteral("scrap test\n"
+                                           "line wall -id line-1\n"
+                                           "endline\n"
+                                           "line border -id line-1\n"
+                                           "endline\n"
+                                           "endscrap\n"));
+
+    ProjectValidationScanner scanner;
+    scanner.setDebounceIntervalMs(0);
+    scanner.requestScan(tempDir.path(), contextualDocumentTypeCatalog(), inMemoryContents);
+
+    const ValidationWaitResult waitResult = waitForValidation(scanner);
+    if (!expect(waitResult.received, "In-memory project-index validation did not emit validationFinished before timeout.")) {
+        return 1;
+    }
+    if (!expect(waitResult.result.errorMessage.isEmpty(), "In-memory project-index validation should not report a scanner error.")) {
+        return 1;
+    }
+    if (!expect(containsFinding(waitResult.result, mapFile, QStringLiteral("duplicate-object-id")),
+                "Project-index diagnostics should use unsaved in-memory source text.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 int runRootConfigSourceGraphValidationTest()
 {
     QTemporaryDir tempDir;
@@ -1275,6 +1332,9 @@ int main(int argc, char **argv)
         return 1;
     }
     if (runDuplicateObjectIdDiagnosticIsNotDuplicatedTest() != 0) {
+        return 1;
+    }
+    if (runProjectIndexUsesInMemorySnapshotTextTest() != 0) {
         return 1;
     }
     if (runRootConfigSourceGraphValidationTest() != 0) {

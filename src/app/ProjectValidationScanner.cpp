@@ -252,7 +252,8 @@ void appendUnindexedTh2StationNameFindings(ProjectValidationScanner::Result *res
 
 void appendProjectIndexFindings(ProjectValidationScanner::Result *result,
                                 const QString &projectRootPath,
-                                const QHash<QString, QString> &inMemoryProjectContentsByPath,
+                                const ProjectIndexSnapshot &snapshot,
+                                const QString &indexErrorMessage,
                                 const QHash<QString, QString> &searchedTextByPath,
                                 TherionSourceSnapshotCache &sourceSnapshotCache,
                                 int &sourceRevisionCounter)
@@ -261,10 +262,6 @@ void appendProjectIndexFindings(ProjectValidationScanner::Result *result,
         return;
     }
 
-    QString indexErrorMessage;
-    const ProjectIndexSnapshot snapshot = ProjectStructureIndex::scanProjectIndex(projectRootPath,
-                                                                                  inMemoryProjectContentsByPath,
-                                                                                  &indexErrorMessage);
     if (!indexErrorMessage.isEmpty()) {
         TherionSourceDiagnostic diagnostic;
         diagnostic.code = QStringLiteral("project-index-unavailable");
@@ -443,7 +440,6 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
     }
 
     QHash<QString, QString> searchedTextByPath;
-    QHash<QString, QString> normalizedInMemoryProjectContentsByPath;
     TherionSourceSnapshotCache sourceSnapshotCache;
     int sourceRevisionCounter = 0;
     {
@@ -455,10 +451,6 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
     QSet<QString> knownProjectFilePaths;
     for (const ProjectSourceDocument &document : std::as_const(projectSourceSnapshot.documents)) {
         knownProjectFilePaths.insert(document.normalizedPath);
-        if (document.origin == ProjectSourceDocumentOrigin::InMemoryOverride
-            || document.origin == ProjectSourceDocumentOrigin::InMemoryOnly) {
-            normalizedInMemoryProjectContentsByPath.insert(document.normalizedPath, document.text);
-        }
     }
 
     {
@@ -485,9 +477,14 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
     {
         QElapsedTimer projectIndexTimer;
         projectIndexTimer.start();
+        QString indexErrorMessage;
+        const ProjectIndexSnapshot projectIndexSnapshot = ProjectStructureIndex::scanProjectIndex(
+            projectStructureIndexSourceSet(projectSourceSnapshot),
+            &indexErrorMessage);
         appendProjectIndexFindings(&result,
                                    result.projectRootPath,
-                                   normalizedInMemoryProjectContentsByPath,
+                                   projectIndexSnapshot,
+                                   indexErrorMessage,
                                    searchedTextByPath,
                                    sourceSnapshotCache,
                                    sourceRevisionCounter);
