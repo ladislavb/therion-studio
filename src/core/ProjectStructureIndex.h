@@ -64,6 +64,12 @@ struct ProjectIndexDiagnostic
     int candidateCount = 0;
 };
 
+struct ProjectStructureIndexScanStats
+{
+    int logicalDocumentBuilds = 0;
+    int logicalDocumentHits = 0;
+};
+
 struct ProjectIndexSnapshot
 {
     QString projectRootPath;
@@ -74,6 +80,7 @@ struct ProjectIndexSnapshot
     QHash<QString, QSet<QString>> mapChildReferencesByMapKey;
     QHash<QString, QSet<QString>> mapPreviewReferencesByMapKey;
     QVector<ProjectIndexDiagnostic> diagnostics;
+    ProjectStructureIndexScanStats scanStats;
 };
 
 struct ProjectStructureIndexSource

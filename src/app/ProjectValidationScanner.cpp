@@ -476,6 +476,7 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
         const ProjectIndexSnapshot projectIndexSnapshot = ProjectStructureIndex::scanProjectIndex(
             projectStructureIndexSourceSet(projectSourceSnapshot),
             &indexErrorMessage);
+        result.projectIndexScanStats = projectIndexSnapshot.scanStats;
         appendProjectIndexFindings(&result,
                                    result.projectRootPath,
                                    projectIndexSnapshot,

@@ -54,9 +54,11 @@ Active planning only. Completed history belongs in archive files. Stable archite
   scanner-local logical source projection.
 - `ProjectValidationScanner::Result` now exposes projection cache stats for tests and diagnostics, including coverage that
   the unindexed TH2 diagnostic helper reuses source projections after local validation.
-- Next validation/project-scan slice: decide from projection cache stats whether to widen cache reuse inside project-index
-  diagnostic helpers or start shared Structure/Validation cache ownership; do not reintroduce scanner-local file traversal
-  or static/global cache state.
+- Project-index scans now expose internal logical-document cache stats through validation results, with coverage that
+  diagnostic helpers reuse the same per-file logical projections after structure collection.
+- Next validation/project-scan slice: use both projection and project-index cache stats to choose between a core-level
+  prebuilt logical-document input path or shared Structure/Validation cache ownership; do not reintroduce scanner-local
+  file traversal or static/global cache state.
 - Prefer Settings -> troubleshooting logs for tester builds: the preference is time-limited, restart-applied, and uses
   rotated application log files instead of requiring users to set environment variables.
 - Optimize future live validation with incremental file/revision caching, generation-keyed cancellation, and cheaper

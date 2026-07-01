@@ -36,6 +36,7 @@ struct ParsedFileCache
     QHash<QString, TherionSourceLogicalDocument> logicalDocuments;
     TherionSourceSnapshotCache sourceSnapshotCache;
     int sourceRevisionCounter = 0;
+    ProjectStructureIndexScanStats stats;
 };
 
 struct ProjectObjectIdentityGenerator
@@ -924,6 +925,7 @@ const TherionSourceLogicalDocument &logicalDocumentForFile(const QString &filePa
     const QString normalizedPath = normalizedFilePathKey(filePath);
     auto iterator = cache->logicalDocuments.find(normalizedPath);
     if (iterator != cache->logicalDocuments.end()) {
+        ++cache->stats.logicalDocumentHits;
         return iterator.value();
     }
 
@@ -936,6 +938,7 @@ const TherionSourceLogicalDocument &logicalDocumentForFile(const QString &filePa
         metadata.revisionId = ++cache->sourceRevisionCounter;
         cache->logicalDocuments.insert(normalizedPath,
                                        logicalDocumentForText(QString(), cache->sourceSnapshotCache, metadata));
+        ++cache->stats.logicalDocumentBuilds;
         return cache->logicalDocuments[normalizedPath];
     }
 
@@ -944,6 +947,7 @@ const TherionSourceLogicalDocument &logicalDocumentForFile(const QString &filePa
     metadata.revisionId = ++cache->sourceRevisionCounter;
     cache->logicalDocuments.insert(normalizedPath,
                                    logicalDocumentForText(fileContents, cache->sourceSnapshotCache, metadata));
+    ++cache->stats.logicalDocumentBuilds;
     return cache->logicalDocuments[normalizedPath];
 }
 
@@ -1487,6 +1491,7 @@ ProjectIndexSnapshot scanProjectIndexFromFilePaths(const QString &projectRootPat
     snapshot.diagnostics += scanDuplicateObjectIds(snapshot.entries,
                                                    &cache,
                                                    inMemoryFileContentsByPath);
+    snapshot.scanStats = cache.stats;
     return snapshot;
 }
 

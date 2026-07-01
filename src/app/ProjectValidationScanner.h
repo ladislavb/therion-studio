@@ -2,6 +2,7 @@
 
 #include "ProjectSourceProjectionCache.h"
 
+#include "../core/ProjectStructureIndex.h"
 #include "../core/TherionSourceValidator.h"
 
 #include <QObject>
@@ -36,6 +37,7 @@ public:
         int searchedFileCount = 0;
         bool limitReached = false;
         ProjectSourceProjectionCacheStats projectionCacheStats;
+        ProjectStructureIndexScanStats projectIndexScanStats;
     };
 
     explicit ProjectValidationScanner(QObject *parent = nullptr);

@@ -628,6 +628,15 @@ int runProjectIndexDiagnosticProjectionTest()
                 "Project validation should expose mixed map/scrap composition as a warning.")) {
         return 1;
     }
+    if (!expect(waitResult.result.projectIndexScanStats.logicalDocumentBuilds == 3,
+                "Project-index scanning should build one logical document for each project source file.")) {
+        return 1;
+    }
+    if (!expect(waitResult.result.projectIndexScanStats.logicalDocumentHits
+                    > waitResult.result.projectIndexScanStats.logicalDocumentBuilds,
+                "Project-index diagnostic helpers should reuse cached logical documents after structure collection.")) {
+        return 1;
+    }
 
     return 0;
 }
