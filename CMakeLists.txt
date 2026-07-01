@@ -1394,6 +1394,7 @@ therion_add_text_editor_ui_test(TextEditorSystemNormalizationTransactionTest
 
 qt_add_executable(TextEditorRawEditorQTests
     tests/TextEditorRawEditorQTestMain.cpp
+    tests/RawEditorCompletionContextAnalyzerTest.cpp
     tests/RawEditorCompletionInsertionControllerTest.cpp
     tests/RawEditorCompletionTokenContextTest.cpp
     tests/RawEditorFindShortcutTest.cpp)

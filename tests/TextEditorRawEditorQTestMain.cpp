@@ -2,6 +2,7 @@
 #include <QtTest/QtTest>
 
 int runRawEditorCompletionInsertionControllerTest(int argc, char **argv);
+int runRawEditorCompletionContextAnalyzerTest(int argc, char **argv);
 int runRawEditorCompletionTokenContextTest(int argc, char **argv);
 int runRawEditorFindShortcutTest(int argc, char **argv);
 
@@ -11,6 +12,7 @@ int main(int argc, char **argv)
 
     int status = 0;
     status |= runRawEditorCompletionInsertionControllerTest(argc, argv);
+    status |= runRawEditorCompletionContextAnalyzerTest(argc, argv);
     status |= runRawEditorCompletionTokenContextTest(argc, argv);
     status |= runRawEditorFindShortcutTest(argc, argv);
     return status;

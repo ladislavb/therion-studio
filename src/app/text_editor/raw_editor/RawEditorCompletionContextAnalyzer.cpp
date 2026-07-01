@@ -34,6 +34,46 @@ void appendUniqueList(QStringList &target, const QStringList &values)
     }
 }
 
+bool isCompletionCharacter(QChar ch)
+{
+    return ch.isLetterOrNumber() || ch == QLatin1Char('-') || ch == QLatin1Char('_');
+}
+
+QString completionPrefixAroundCursor(const QString &blockText, int cursorColumn)
+{
+    int start = qBound(0, cursorColumn, blockText.size());
+    int end = start;
+
+    while (start > 0 && isCompletionCharacter(blockText.at(start - 1))) {
+        --start;
+    }
+    while (end < blockText.length() && isCompletionCharacter(blockText.at(end))) {
+        ++end;
+    }
+
+    return blockText.mid(start, end - start).trimmed();
+}
+
+QString completionPrefixWithinTokenRange(const QString &blockText,
+                                         int cursorColumn,
+                                         const TherionStudio::TherionSourceLogicalTokenRange &tokenRange)
+{
+    const TherionStudio::TherionSourcePhysicalRange &range = tokenRange.physicalRange;
+    int tokenStart = qBound(0, range.columnNumber - 1, blockText.size());
+    int tokenEnd = qBound(tokenStart, tokenStart + range.columnLength, blockText.size());
+    int start = qBound(tokenStart, cursorColumn, tokenEnd);
+    int end = start;
+
+    while (start > tokenStart && isCompletionCharacter(blockText.at(start - 1))) {
+        --start;
+    }
+    while (end < tokenEnd && isCompletionCharacter(blockText.at(end))) {
+        ++end;
+    }
+
+    return blockText.mid(start, end - start).trimmed();
+}
+
 QString normalizedCompletionContextToken(const QString &token)
 {
     QString normalized = token.trimmed().toLower();
@@ -156,21 +196,39 @@ QString RawEditorCompletionContextAnalyzer::currentCompletionPrefix() const
     }
 
     const QString blockText = block.text();
-    int start = cursor.positionInBlock();
-    int end = cursor.positionInBlock();
+    const int cursorColumn = cursor.positionInBlock();
+    const int cursorOffset = cursor.position();
+    const int lineNumber = block.blockNumber() + 1;
 
-    auto isCompletionCharacter = [](QChar ch) {
-        return ch.isLetterOrNumber() || ch == QLatin1Char('-') || ch == QLatin1Char('_');
-    };
+    return withLogicalDocumentForEditor(context_.editor,
+                                        context_.sourceSnapshotCache,
+                                        [blockText, cursorColumn, cursorOffset, lineNumber](const TherionSourceLogicalDocument &logicalDocument) {
+                                            const TherionSourceLogicalTokenRange *tokenRange =
+                                                logicalDocument.tokenAtOffset(cursorOffset);
+                                            if (tokenRange == nullptr && cursorOffset > 0) {
+                                                const TherionSourceLogicalTokenRange *previousTokenRange =
+                                                    logicalDocument.tokenAtOffset(cursorOffset - 1);
+                                                if (previousTokenRange != nullptr) {
+                                                    const TherionSourcePhysicalRange &previousRange =
+                                                        previousTokenRange->physicalRange;
+                                                    const int previousEndOffset =
+                                                        previousRange.startOffset + previousRange.length;
+                                                    if (previousEndOffset == cursorOffset) {
+                                                        tokenRange = previousTokenRange;
+                                                    }
+                                                }
+                                            }
 
-    while (start > 0 && isCompletionCharacter(blockText.at(start - 1))) {
-        --start;
-    }
-    while (end < blockText.length() && isCompletionCharacter(blockText.at(end))) {
-        ++end;
-    }
+                                            if (tokenRange != nullptr
+                                                && tokenRange->type != TherionTokenType::Comment
+                                                && tokenRange->physicalRange.lineNumber == lineNumber) {
+                                                return completionPrefixWithinTokenRange(blockText,
+                                                                                       cursorColumn,
+                                                                                       *tokenRange);
+                                            }
 
-    return blockText.mid(start, end - start).trimmed();
+                                            return completionPrefixAroundCursor(blockText, cursorColumn);
+                                        });
 }
 
 QStringList RawEditorCompletionContextAnalyzer::activeCompletionScopeStack() const
