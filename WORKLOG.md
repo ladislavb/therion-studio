@@ -47,8 +47,11 @@ Active planning only. Completed history belongs in archive files. Stable archite
   requests still need explicit cache ownership.
 - `ProjectSourceProjectionCache` now provides the first focused per-run source/logical projection cache for project source
   snapshots with observable reuse stats.
-- Next validation/project-scan slice: route one `ProjectValidationScanner` local-validation pass through
-  `ProjectSourceProjectionCache`; do not reintroduce scanner-local file traversal or static/global cache state.
+- `ProjectValidationScanner` local per-file validation now uses `ProjectSourceProjectionCache` for source and
+  catalog-aware logical projections.
+- Next validation/project-scan slice: reuse the project source projection cache in one project-index diagnostic helper or
+  add scan diagnostics for projection cache hit/build counts; do not reintroduce scanner-local file traversal or
+  static/global cache state.
 - Prefer Settings -> troubleshooting logs for tester builds: the preference is time-limited, restart-applied, and uses
   rotated application log files instead of requiring users to set environment variables.
 - Optimize future live validation with incremental file/revision caching, generation-keyed cancellation, and cheaper

@@ -1,5 +1,6 @@
 #include "ProjectValidationScanner.h"
 
+#include "ProjectSourceProjectionCache.h"
 #include "ProjectSourceSnapshot.h"
 
 #include "../core/ProjectStructureIndex.h"
@@ -318,38 +319,30 @@ void appendProjectIndexFindings(ProjectValidationScanner::Result *result,
     }
 }
 
-void appendFindingsForText(ProjectValidationScanner::Result *result,
-                           const QString &filePath,
-                           const QString &text,
-                           const TherionSourceValidationCatalog &validationCatalog,
-                           const QSet<QString> &knownProjectFilePaths,
-                           TherionSourceSnapshotCache &sourceSnapshotCache,
-                           int sourceRevisionId)
+void appendFindingsForDocument(ProjectValidationScanner::Result *result,
+                               const ProjectSourceDocument &document,
+                               const TherionSourceValidationCatalog &validationCatalog,
+                               const QSet<QString> &knownProjectFilePaths,
+                               ProjectSourceProjectionCache &projectionCache,
+                               TherionSourceSnapshotCatalogKey catalogKey)
 {
     if (result == nullptr) {
         return;
     }
 
-    TherionSourceDocumentMetadata metadata;
-    metadata.sourceType = therionSourceDocumentTypeForFilePath(filePath);
-    metadata.revisionId = sourceRevisionId;
-
     const TherionSourceDocument &sourceDocument =
-        sourceSnapshotCache.sourceDocument(text, metadata);
+        projectionCache.sourceDocument(document);
     const TherionSourceLogicalDocument &logicalDocument =
-        sourceSnapshotCache.logicalDocument(text,
-                                            validationCatalog,
-                                            metadata,
-                                            TherionSourceSnapshotCatalogKey::fromRevision(sourceRevisionId));
+        projectionCache.logicalDocument(document, validationCatalog, catalogKey);
 
     const TherionSourceValidationResult validation =
         TherionSourceValidator::validate(sourceDocument, logicalDocument, validationCatalog);
-    const bool suppressUnknownCommandWarnings = isTherionConfigFilePath(filePath);
+    const bool suppressUnknownCommandWarnings = isTherionConfigFilePath(document.normalizedPath);
     for (const TherionSourceDiagnostic &diagnostic : validation.diagnostics) {
         if (suppressUnknownCommandWarnings && diagnostic.code == QStringLiteral("unknown-command")) {
             continue;
         }
-        result->findings.append({filePath, diagnostic});
+        result->findings.append({document.normalizedPath, diagnostic});
         if (result->findings.size() >= kMaximumProjectValidationFindings) {
             result->limitReached = true;
             return;
@@ -370,7 +363,7 @@ void appendFindingsForText(ProjectValidationScanner::Result *result,
 
         const QString referencedPath = command.parsed.tokens.value(1).trimmed();
         if (referencedPath.isEmpty()
-            || !resolveTherionSourceReferencePath(filePath, referencedPath, knownProjectFilePaths).isEmpty()) {
+            || !resolveTherionSourceReferencePath(document.normalizedPath, referencedPath, knownProjectFilePaths).isEmpty()) {
             continue;
         }
 
@@ -391,7 +384,7 @@ void appendFindingsForText(ProjectValidationScanner::Result *result,
             diagnostic.columnLength = tokenRange.columnLength;
         }
 
-        result->findings.append({filePath, diagnostic});
+        result->findings.append({document.normalizedPath, diagnostic});
         if (result->findings.size() >= kMaximumProjectValidationFindings) {
             result->limitReached = true;
             return;
@@ -441,6 +434,7 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
 
     QHash<QString, QString> searchedTextByPath;
     TherionSourceSnapshotCache sourceSnapshotCache;
+    ProjectSourceProjectionCache projectionCache;
     int sourceRevisionCounter = 0;
     {
         QElapsedTimer collectTimer;
@@ -459,13 +453,12 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
         for (const ProjectSourceDocument &document : std::as_const(projectSourceSnapshot.documents)) {
             ++result.searchedFileCount;
             searchedTextByPath.insert(document.normalizedPath, document.text);
-            appendFindingsForText(&result,
-                                  document.normalizedPath,
-                                  document.text,
-                                  validationCatalog,
-                                  knownProjectFilePaths,
-                                  sourceSnapshotCache,
-                                  ++sourceRevisionCounter);
+            appendFindingsForDocument(&result,
+                                      document,
+                                      validationCatalog,
+                                      knownProjectFilePaths,
+                                      projectionCache,
+                                      TherionSourceSnapshotCatalogKey::fromRevision(1));
             if (result.limitReached) {
                 validateMs = validateTimer.elapsed();
                 return logAndReturn(result);
