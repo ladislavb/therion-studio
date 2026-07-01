@@ -1,5 +1,6 @@
 #include "ProjectStructureScanner.h"
 
+#include "ProjectScanCacheService.h"
 #include "ProjectSourceSnapshot.h"
 
 #include <QFutureWatcher>
@@ -9,9 +10,18 @@
 namespace TherionStudio
 {
 ProjectStructureScanner::ProjectStructureScanner(QObject *parent)
+    : ProjectStructureScanner(std::make_shared<ProjectScanCacheService>(), parent)
+{
+}
+
+ProjectStructureScanner::ProjectStructureScanner(std::shared_ptr<ProjectScanCacheService> scanCacheService,
+                                                 QObject *parent)
     : QObject(parent)
     , debounceTimer_(new QTimer(this))
     , scanWatcher_(new QFutureWatcher<Result>(this))
+    , scanCacheService_(scanCacheService != nullptr
+                            ? std::move(scanCacheService)
+                            : std::make_shared<ProjectScanCacheService>())
 {
     debounceTimer_->setSingleShot(true);
     debounceTimer_->setInterval(180);
@@ -56,7 +66,8 @@ void ProjectStructureScanner::startScan()
     hasPendingRequest_ = false;
     const quint64 generation = ++generation_;
 
-    auto future = QtConcurrent::run([request, generation]() {
+    const std::shared_ptr<ProjectScanCacheService> scanCacheService = scanCacheService_;
+    auto future = QtConcurrent::run([request, generation, scanCacheService]() {
         Result result;
         result.generation = generation;
         result.projectRootPath = request.projectRootPath;
@@ -65,9 +76,27 @@ void ProjectStructureScanner::startScan()
                                          request.preferredConfigPath,
                                          request.inMemoryProjectContentsByPath,
                                          -1);
-        result.projectIndex = ProjectStructureIndex::scanProjectIndex(
-            projectStructureIndexSourceSet(sourceSnapshot),
-            &result.errorMessage);
+        const QString sourceRequestKey = sourceSnapshot.requestKey.stableKey();
+        const std::optional<ProjectIndexSnapshotCacheEntry> cachedProjectIndex =
+            scanCacheService != nullptr
+                ? scanCacheService->projectIndexSnapshot(sourceRequestKey)
+                : std::nullopt;
+        if (cachedProjectIndex.has_value()) {
+            result.projectIndexSnapshotCacheHit = true;
+            result.errorMessage = cachedProjectIndex->errorMessage;
+            result.projectIndex = cachedProjectIndex->snapshot;
+        } else {
+            result.projectIndex = ProjectStructureIndex::scanProjectIndex(
+                projectStructureIndexSourceSet(sourceSnapshot),
+                &result.errorMessage);
+            if (scanCacheService != nullptr) {
+                scanCacheService->storeProjectIndexSnapshot(ProjectIndexSnapshotCacheEntry{
+                    sourceRequestKey,
+                    result.errorMessage,
+                    result.projectIndex,
+                });
+            }
+        }
         result.entries = result.projectIndex.entries;
         return result;
     });

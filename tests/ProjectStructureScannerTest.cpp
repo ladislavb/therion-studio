@@ -1,4 +1,5 @@
 #include "../src/app/ProjectStructureScanner.h"
+#include "../src/app/ProjectScanCacheService.h"
 
 #include <QCoreApplication>
 #include <QDir>
@@ -173,6 +174,58 @@ int runInMemoryScanTest()
 
     return 0;
 }
+
+int runSharedProjectIndexCacheTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Temporary project directory creation failed.")) {
+        return 1;
+    }
+
+    const QString rootFile = QDir(tempDir.path()).filePath(QStringLiteral("root.th"));
+    if (!expect(writeTextFile(rootFile,
+                              QStringLiteral(
+                                  "survey cached\n"
+                                  "  centreline\n"
+                                  "  endcentreline\n"
+                                  "endsurvey cached\n")),
+                "Temporary cached Therion source file could not be written.")) {
+        return 1;
+    }
+
+    const auto cacheService = std::make_shared<ProjectScanCacheService>();
+    ProjectStructureScanner firstScanner(cacheService);
+    firstScanner.setDebounceIntervalMs(0);
+    firstScanner.requestScan(tempDir.path(), {});
+
+    const ScanWaitResult firstResult = waitForScan(firstScanner);
+    if (!expect(firstResult.received, "First shared-cache structure scan did not finish.")) {
+        return 1;
+    }
+    if (!expect(!firstResult.result.projectIndexSnapshotCacheHit,
+                "First structure scan should build the project index snapshot.")) {
+        return 1;
+    }
+
+    ProjectStructureScanner secondScanner(cacheService);
+    secondScanner.setDebounceIntervalMs(0);
+    secondScanner.requestScan(tempDir.path(), {});
+
+    const ScanWaitResult secondResult = waitForScan(secondScanner);
+    if (!expect(secondResult.received, "Second shared-cache structure scan did not finish.")) {
+        return 1;
+    }
+    if (!expect(secondResult.result.projectIndexSnapshotCacheHit,
+                "Second structure scan should reuse the shared project index snapshot cache.")) {
+        return 1;
+    }
+    if (!expect(secondResult.result.entries.size() == firstResult.result.entries.size(),
+                "Cached structure scan should preserve structure entries.")) {
+        return 1;
+    }
+
+    return 0;
+}
 }
 
 int main(int argc, char **argv)
@@ -183,6 +236,9 @@ int main(int argc, char **argv)
         return 1;
     }
     if (runInMemoryScanTest() != 0) {
+        return 1;
+    }
+    if (runSharedProjectIndexCacheTest() != 0) {
         return 1;
     }
 

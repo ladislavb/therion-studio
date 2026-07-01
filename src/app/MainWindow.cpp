@@ -390,9 +390,10 @@ MainWindow::MainWindow(TherionStudio::ISessionStore &sessionStore,
     , projectFileWatcher_(new QFileSystemWatcher(this))
     , sessionStore_(&sessionStore)
     , commandCatalogStore_(std::move(commandCatalogStore))
+    , projectScanCacheService_(std::make_shared<TherionStudio::ProjectScanCacheService>())
     , projectSearchScanner_(new TherionStudio::ProjectSearchScanner(this))
-    , projectValidationController_(new TherionStudio::ProjectValidationController(this))
-    , structureSidebarScanner_(new TherionStudio::ProjectStructureScanner(this))
+    , projectValidationController_(new TherionStudio::ProjectValidationController(projectScanCacheService_, this))
+    , structureSidebarScanner_(new TherionStudio::ProjectStructureScanner(projectScanCacheService_, this))
 {
     setWindowTitle(tr("Therion Studio"));
     setDockOptions(QMainWindow::AllowNestedDocks | QMainWindow::AnimatedDocks);

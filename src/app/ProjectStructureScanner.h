@@ -7,6 +7,8 @@
 
 #include "../core/ProjectStructureIndex.h"
 
+#include <memory>
+
 class QTimer;
 
 template <typename T>
@@ -14,6 +16,8 @@ class QFutureWatcher;
 
 namespace TherionStudio
 {
+class ProjectScanCacheService;
+
 class ProjectStructureScanner final : public QObject
 {
     Q_OBJECT
@@ -26,9 +30,12 @@ public:
         QString errorMessage;
         ProjectIndexSnapshot projectIndex;
         QVector<ProjectStructureEntry> entries;
+        bool projectIndexSnapshotCacheHit = false;
     };
 
     explicit ProjectStructureScanner(QObject *parent = nullptr);
+    explicit ProjectStructureScanner(std::shared_ptr<ProjectScanCacheService> scanCacheService,
+                                     QObject *parent = nullptr);
     void requestScan(const QString &projectRootPath,
                      const QHash<QString, QString> &inMemoryProjectContentsByPath);
     void requestScan(const QString &projectRootPath,
@@ -57,5 +64,6 @@ private:
     quint64 generation_ = 0;
     QTimer *debounceTimer_ = nullptr;
     QFutureWatcher<Result> *scanWatcher_ = nullptr;
+    std::shared_ptr<ProjectScanCacheService> scanCacheService_;
 };
 }

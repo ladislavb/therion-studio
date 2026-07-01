@@ -165,6 +165,13 @@ void ProjectSourceSnapshotTest::policyKeyAffectsRequestKey()
 
     QVERIFY2(firstKey.stableKey() != secondKey.stableKey(),
              "Changing the file policy key should change the request key.");
+
+    const ProjectSourceSnapshot unlimitedSnapshot =
+        collectProjectSourceSnapshot(tempDir.path(), {}, {}, -1);
+    const ProjectSourceSnapshot limitedSnapshot =
+        collectProjectSourceSnapshot(tempDir.path(), {}, {}, 8);
+    QVERIFY2(unlimitedSnapshot.requestKey.stableKey() != limitedSnapshot.requestKey.stableKey(),
+             "Changing the project source text size policy should change the collected snapshot request key.");
 }
 
 void ProjectSourceSnapshotTest::collectorReadsSortedProjectSourceFiles()

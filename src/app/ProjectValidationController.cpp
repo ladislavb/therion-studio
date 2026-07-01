@@ -3,8 +3,17 @@
 namespace TherionStudio
 {
 ProjectValidationController::ProjectValidationController(QObject *parent)
+    : ProjectValidationController(std::make_shared<ProjectScanCacheService>(), parent)
+{
+}
+
+ProjectValidationController::ProjectValidationController(std::shared_ptr<ProjectScanCacheService> scanCacheService,
+                                                         QObject *parent)
     : QObject(parent)
-    , scanner_(new ProjectValidationScanner(this))
+    , scanner_(new ProjectValidationScanner(scanCacheService != nullptr
+                                                ? std::move(scanCacheService)
+                                                : std::make_shared<ProjectScanCacheService>(),
+                                            this))
 {
     connect(scanner_,
             &ProjectValidationScanner::validationStarted,

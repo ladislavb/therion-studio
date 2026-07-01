@@ -122,6 +122,8 @@ Validation should be conservative and catalog-backed.
 
 The project navigation sidebar displays file navigation and project structure projections. Its default `Survey` tree follows survey namespace and definition ownership; map composition references are graph relationships and must not reparent map or scrap definition nodes in that projection. A separate `Map` projection may display map composition using those graph relationships. Structure should not list general validation diagnostics. Validation-owned diagnostics should be surfaced in the Validation panel and may reference project-index objects when that improves navigation.
 
+Project source and project-index cache ownership belongs at an explicit application workflow boundary. Structure and Validation scanners may share a `ProjectScanCacheService` composed by `MainWindow` or a future composition root, but they shall not use static/global project-index caches or hidden service locators.
+
 The Therion compiler remains authoritative for final export behavior. The project index is a lightweight navigation and early-feedback projection, not a compiler replacement.
 
 Project-index namespace, reference, and duplicate-identifier behavior shall follow `docs/THERION_COMPATIBILITY.md`. In particular, survey/map/scrap names share their parent survey namespace, drawing object IDs share their containing scrap namespace, and identical object names in different survey namespaces are valid.

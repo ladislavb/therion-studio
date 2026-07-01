@@ -6,6 +6,8 @@
 #include <QHash>
 #include <QString>
 
+#include <memory>
+
 namespace TherionStudio
 {
 class ProjectValidationController final : public QObject
@@ -32,6 +34,8 @@ public:
     };
 
     explicit ProjectValidationController(QObject *parent = nullptr);
+    explicit ProjectValidationController(std::shared_ptr<ProjectScanCacheService> scanCacheService,
+                                         QObject *parent = nullptr);
 
     void requestValidation(const Request &request);
     void setDebounceIntervalMs(int intervalMs);

@@ -96,6 +96,11 @@ QString encodeKeyPart(const QString &value)
     encoded.replace(QLatin1Char('='), QStringLiteral("\\="));
     return encoded;
 }
+
+QString projectSourceFilePolicyKey(qsizetype maximumTextBytes)
+{
+    return QStringLiteral("therion-project-sources-v1:max-text-bytes=%1").arg(maximumTextBytes);
+}
 }
 
 QVector<QString> ProjectSourceSnapshot::knownFilePaths() const
@@ -183,7 +188,7 @@ ProjectSourceSnapshot collectProjectSourceSnapshot(const QString &projectRootPat
     snapshot.requestKey = projectSourceRequestKey(projectRootPath,
                                                   preferredConfigPath,
                                                   inMemoryContentsByPath,
-                                                  QStringLiteral("therion-project-sources-v1"));
+                                                  projectSourceFilePolicyKey(maximumTextBytes));
 
     const QString normalizedProjectRootPath = normalizeProjectSourcePath(projectRootPath);
     if (normalizedProjectRootPath.isEmpty() || !QFileInfo(normalizedProjectRootPath).isDir()) {

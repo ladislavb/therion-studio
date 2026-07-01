@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ProjectSourceProjectionCache.h"
+#include "ProjectScanCacheService.h"
 
 #include "../core/ProjectStructureIndex.h"
 #include "../core/TherionSourceValidator.h"
@@ -11,7 +12,6 @@
 #include <QVector>
 
 #include <memory>
-#include <optional>
 
 class QTimer;
 
@@ -20,13 +20,6 @@ class QFutureWatcher;
 
 namespace TherionStudio
 {
-struct ProjectValidationIndexSnapshotCacheEntry
-{
-    QString sourceRequestKey;
-    QString errorMessage;
-    ProjectIndexSnapshot snapshot;
-};
-
 class ProjectValidationScanner final : public QObject
 {
     Q_OBJECT
@@ -59,6 +52,8 @@ public:
     };
 
     explicit ProjectValidationScanner(QObject *parent = nullptr);
+    explicit ProjectValidationScanner(std::shared_ptr<ProjectScanCacheService> scanCacheService,
+                                      QObject *parent = nullptr);
 
     void requestScan(const QString &projectRootPath,
                      const TherionSourceValidationCatalog &validationCatalog,
@@ -87,8 +82,8 @@ private:
     quint64 generation_ = 0;
     QTimer *debounceTimer_ = nullptr;
     QFutureWatcher<Result> *scanWatcher_ = nullptr;
+    std::shared_ptr<ProjectScanCacheService> scanCacheService_;
     std::shared_ptr<ProjectSourceProjectionCache> projectionCache_;
-    std::shared_ptr<std::optional<ProjectValidationIndexSnapshotCacheEntry>> projectIndexSnapshotCache_;
     std::shared_ptr<QHash<QString, DocumentValidationCacheEntry>> documentValidationCache_;
     QString projectionCacheProjectRootPath_;
     QString projectionCacheCatalogSignature_;

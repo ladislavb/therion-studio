@@ -237,6 +237,8 @@ set(THERION_APP_SOURCES
     src/app/ProjectSourceSnapshot.h
     src/app/ProjectSourceProjectionCache.cpp
     src/app/ProjectSourceProjectionCache.h
+    src/app/ProjectScanCacheService.cpp
+    src/app/ProjectScanCacheService.h
     src/app/ProjectSearchScanner.cpp
     src/app/ProjectSearchScanner.h
     src/app/ProjectValidationController.cpp

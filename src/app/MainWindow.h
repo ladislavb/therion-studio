@@ -55,6 +55,7 @@ class TextEditorTab;
 class MapEditorTab;
 class ThreeDViewerTab;
 class TherionRunnerService;
+class ProjectScanCacheService;
 }
 
 class MainWindow final : public QMainWindow
@@ -520,6 +521,7 @@ private:
     std::unique_ptr<TherionStudio::ISessionStore> ownedSessionStore_;
     TherionStudio::ISessionStore *sessionStore_ = nullptr;
     TherionStudio::CommandCatalogStore commandCatalogStore_;
+    std::shared_ptr<TherionStudio::ProjectScanCacheService> projectScanCacheService_;
     TherionStudio::ProjectSearchScanner *projectSearchScanner_ = nullptr;
     TherionStudio::ProjectValidationController *projectValidationController_ = nullptr;
     TherionStudio::ProjectStructureScanner *structureSidebarScanner_ = nullptr;

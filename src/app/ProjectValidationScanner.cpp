@@ -540,8 +540,8 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
                                                           const TherionSourceValidationCatalog &validationCatalog,
                                                           const QHash<QString, QString> &inMemoryProjectContentsByPath,
                                                           quint64 generation,
+                                                          ProjectScanCacheService &scanCacheService,
                                                           ProjectSourceProjectionCache &projectionCache,
-                                                          std::optional<ProjectValidationIndexSnapshotCacheEntry> &projectIndexSnapshotCache,
                                                           QHash<QString, ProjectValidationScanner::DocumentValidationCacheEntry> &documentValidationCache,
                                                           const QString &catalogSignature)
 {
@@ -637,11 +637,12 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
         QString indexErrorMessage;
         ProjectIndexSnapshot projectIndexSnapshot;
         const QString sourceRequestKey = projectSourceSnapshot.requestKey.stableKey();
-        if (projectIndexSnapshotCache.has_value()
-            && projectIndexSnapshotCache->sourceRequestKey == sourceRequestKey) {
+        const std::optional<ProjectIndexSnapshotCacheEntry> cachedProjectIndex =
+            scanCacheService.projectIndexSnapshot(sourceRequestKey);
+        if (cachedProjectIndex.has_value()) {
             result.projectIndexSnapshotCacheHit = true;
-            indexErrorMessage = projectIndexSnapshotCache->errorMessage;
-            projectIndexSnapshot = projectIndexSnapshotCache->snapshot;
+            indexErrorMessage = cachedProjectIndex->errorMessage;
+            projectIndexSnapshot = cachedProjectIndex->snapshot;
         } else {
             projectIndexSnapshot = ProjectStructureIndex::scanProjectIndex(
                 projectStructureIndexSourceSetWithLogicalDocuments(projectSourceSnapshot,
@@ -649,11 +650,11 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
                                                                    projectionCache),
                 &indexErrorMessage);
             result.projectIndexScanStats = projectIndexSnapshot.scanStats;
-            projectIndexSnapshotCache = ProjectValidationIndexSnapshotCacheEntry{
+            scanCacheService.storeProjectIndexSnapshot(ProjectIndexSnapshotCacheEntry{
                 sourceRequestKey,
                 indexErrorMessage,
                 projectIndexSnapshot,
-            };
+            });
         }
         appendProjectIndexFindings(&result,
                                    result.projectRootPath,
@@ -670,11 +671,19 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
 }
 
 ProjectValidationScanner::ProjectValidationScanner(QObject *parent)
+    : ProjectValidationScanner(std::make_shared<ProjectScanCacheService>(), parent)
+{
+}
+
+ProjectValidationScanner::ProjectValidationScanner(std::shared_ptr<ProjectScanCacheService> scanCacheService,
+                                                   QObject *parent)
     : QObject(parent)
     , debounceTimer_(new QTimer(this))
     , scanWatcher_(new QFutureWatcher<Result>(this))
+    , scanCacheService_(scanCacheService != nullptr
+                            ? std::move(scanCacheService)
+                            : std::make_shared<ProjectScanCacheService>())
     , projectionCache_(std::make_shared<ProjectSourceProjectionCache>())
-    , projectIndexSnapshotCache_(std::make_shared<std::optional<ProjectValidationIndexSnapshotCacheEntry>>())
     , documentValidationCache_(std::make_shared<QHash<QString, DocumentValidationCacheEntry>>())
 {
     debounceTimer_->setSingleShot(true);
@@ -729,22 +738,21 @@ void ProjectValidationScanner::startScan()
     emit validationStarted(generation, request.projectRootPath);
 
     const std::shared_ptr<ProjectSourceProjectionCache> projectionCache = projectionCache_;
-    const std::shared_ptr<std::optional<ProjectValidationIndexSnapshotCacheEntry>> projectIndexSnapshotCache =
-        projectIndexSnapshotCache_;
+    const std::shared_ptr<ProjectScanCacheService> scanCacheService = scanCacheService_;
     const std::shared_ptr<QHash<QString, DocumentValidationCacheEntry>> documentValidationCache =
         documentValidationCache_;
     auto future = QtConcurrent::run([request,
                                      generation,
+                                     scanCacheService,
                                      projectionCache,
-                                     projectIndexSnapshotCache,
                                      documentValidationCache,
                                      catalogSignature]() {
         return performProjectValidation(request.projectRootPath,
                                         request.validationCatalog,
                                         request.inMemoryProjectContentsByPath,
                                         generation,
+                                        *scanCacheService,
                                         *projectionCache,
-                                        *projectIndexSnapshotCache,
                                         *documentValidationCache,
                                         catalogSignature);
     });
