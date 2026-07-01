@@ -407,11 +407,13 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
     ProjectValidationScanner::Result result;
     result.generation = generation;
     result.projectRootPath = projectRootPath;
+    ProjectSourceProjectionCache projectionCache;
 
     auto logAndReturn = [&](ProjectValidationScanner::Result value) {
         if (diagnosticProjectValidationLoggingEnabled()) {
+            const ProjectSourceProjectionCacheStats projectionStats = projectionCache.stats();
             qInfo().noquote()
-                << QStringLiteral("project-validation-scan generation=%1 files=%2 searched=%3 findings=%4 limit_reached=%5 collect_ms=%6 validate_ms=%7 project_index_ms=%8 total_ms=%9 root=\"%10\" error=\"%11\"")
+                << QStringLiteral("project-validation-scan generation=%1 files=%2 searched=%3 findings=%4 limit_reached=%5 collect_ms=%6 validate_ms=%7 project_index_ms=%8 total_ms=%9 projection_source_builds=%10 projection_source_hits=%11 projection_logical_builds=%12 projection_logical_hits=%13 projection_catalog_builds=%14 projection_catalog_hits=%15 root=\"%16\" error=\"%17\"")
                        .arg(value.generation)
                        .arg(projectSourceSnapshot.documents.size())
                        .arg(value.searchedFileCount)
@@ -421,6 +423,12 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
                        .arg(validateMs)
                        .arg(projectIndexMs)
                        .arg(totalTimer.elapsed())
+                       .arg(projectionStats.sourceDocumentBuilds)
+                       .arg(projectionStats.sourceDocumentHits)
+                       .arg(projectionStats.logicalDocumentBuilds)
+                       .arg(projectionStats.logicalDocumentHits)
+                       .arg(projectionStats.catalogLogicalDocumentBuilds)
+                       .arg(projectionStats.catalogLogicalDocumentHits)
                        .arg(value.projectRootPath)
                        .arg(value.errorMessage);
         }
@@ -434,7 +442,6 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
 
     QHash<QString, QString> searchedTextByPath;
     TherionSourceSnapshotCache sourceSnapshotCache;
-    ProjectSourceProjectionCache projectionCache;
     int sourceRevisionCounter = 0;
     {
         QElapsedTimer collectTimer;
