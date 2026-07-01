@@ -4,79 +4,27 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Current Focus
 
-1. Windows map-input validation for the deferred vertex-refresh fix.
+1. `2026.7.1` development planning and first implementation slices after `v2026.6.9`.
 2. Unified Source DOM consumer migration in small, tested slices.
-3. Release readiness for `v2026.6.9`, including final release-note review and full-test validation.
-4. Plan-driven follow-ups for GUI cleanup, SVG backgrounds, and 3D viewer refinement.
+3. Project source snapshot and validation/cache reuse work for repeated project scans.
+4. Plan-driven follow-ups for map partial refresh, GUI cleanup, SVG backgrounds, and 3D viewer refinement.
 
 ## Active Work
 
-### Release Readiness / Windows Map Input
+### 2026.7.1 Planning
 
-- Send the next Windows build with the panning update, diagnostic startup header, per-pan stage timings, and
-  `map-scene-refresh` diagnostics to the tester, and request the same mouse/stylus workflow with
-  `THERION_STUDIO_ENABLE_LOG=1`.
-- Confirm the next follow-up log keeps `Move line Vertex` source transactions near the current sub-150 ms range with
-  `policies_ms=0`, and compare panning `elapsed_ms` before/after the reduced per-move command-surface refresh.
-- Confirm the indexed map vertex selection restore lowers post-edit `map-scene-refresh selection_ms`; only then decide
-  whether remaining Windows lag needs `clear_ms` or `final_ui_ms` optimization.
-- Use `MapEditorLargeScenePerformanceSmokeTest` as the local generated large-map harness when comparing map refresh
-  changes; it targets roughly 2k parsed lines and 6k scene items without relying on external cave data.
-- Validate the next Windows build by feel rather than asking for another diagnostic log: simple unstyled open-line vertex
-  moves avoid forcing a full scene rebuild immediately after the source transaction, while styled/decorated line edits
-  still keep the full refresh needed for generated block/slope/decorator geometry.
-- Keep the decorated-line preview path covered before widening the no-full-refresh optimization: `wall:blocks` line-point
-  segment guide paths now update during vertex preview movement, but full scene refresh remains the correctness fallback
-  for styled/decorated commits.
-- Use `plans/MAP_PARTIAL_REFRESH_PLAN.md` for the detailed slice queue before widening styled/decorated line commits from
-  full scene refresh to safe one-line item-group refresh; the shared geometry item-group removal helper now covers
-  deleting one line's rendered scene items and vertex-index entries without touching neighboring geometry, and the
-  single-feature render helper can repopulate that item group without clearing the scene indexes.
-- Styled/decorated line vertex commits now route through the one-line remove-and-render projection hook with full-refresh
-  fallback; verify the next Windows build by checking that decorated line drags avoid `map-scene-refresh` bursts after
-  release and that selection remains stable.
-- Use the new `map-line-partial-refresh` diagnostic line in troubleshooting logs to confirm edited styled lines use the
-  partial path, inspect item/vertex counts, and catch any fallback reason before asking for deeper tester experiments.
-- Selection restore after line vertex commits now uses the vertex index and precomputed source vertex id instead of
-  reparsing the document and scanning the scene; use `map-line-selection-restore` diagnostics to decide whether any
-  remaining delay belongs to presentation, command-surface, help, or details-panel refresh.
-- Avoid redundant scheduled line-selection recovery when immediate restore already succeeded; this should remove the
-  second post-commit `clearSelection()` pass seen in diagnostic logs.
-- Keep line-label preview parity covered: line labels now update their path during line vertex preview movement, not only
-  after source commit/partial refresh.
-- Keep smooth Bezier control edits covered through the source rewrite path: newly fractional map coordinates now keep
-  higher precision so repeated control-point drags do not visibly degrade tangent continuity through coarse rounding, and
-  preview coupling now uses current scene-item anchor/control positions after skipped full-refresh line commits.
-- Bezier draft serialization now compacts duplicate consecutive anchors and mirrors a missing opposite smooth handle when
-  one side of a smooth draft vertex was captured; keep this covered while investigating intermittent segmented line
-  reports from Windows/tablet input.
-- Overhang line jaws now use a smaller half-size teeth motif in the style catalog; keep this covered by the map object
-  style catalog regression test when tuning SKBB-style line decorations.
-- Closing a project now clears project-validation results, diagnostics, detail state, and the validation rail indicator;
-  keep this in the project-close orchestration coverage so stale findings do not survive into the no-project state.
-- Compiler panel target config display now emphasizes the selected config file name and keeps the full path secondary;
-  starting a new Therion run clears the previous compiler output before process launch.
-- Therion runner stdin is closed after process start so compiler prompts such as `Press ENTER to Exit!` receive EOF and
-  do not require pressing Stop after an unexpected project failure.
-- Compiler output now begins each successful run with the resolved command and working directory so repeated runs are
-  visible immediately after the output is cleared.
-- Use the expanded `line-area-anchor-release` and `line-double-click-complete` diagnostics in the next Windows tester log
-  to distinguish intermittent Bezier draft segmentation between missing captured controls, source insertion, and
-  post-insert parse/render projection.
-- Manually recheck the reported line-884 rock-border workflow before release handoff: move a smooth anchor, then drag one
-  control handle and confirm the opposite handle remains tangent around the moved anchor.
-- Keep broad Map/TH2 projection rewrites out of release stabilization until Windows feedback confirms the deferred
-  vertex-refresh fix is stable.
-- Before tagging or packaging handoff, run local validation focused on recent map-input, source-transaction, installer,
-  QML/Qt Quick deployment, and release-note changes.
-- Keep release notes, README, package metadata, CI artifact workflow, and prerelease package labels aligned with
-  `v2026.6.9`.
+- Start the post-`v2026.6.9` cycle with architecture-aligned slices that reduce duplicate parsing, repeated project
+  scanning, and source-transaction drift without broad parser or map-rendering rewrites.
+- Prefer one focused implementation slice per commit, with matching tests and `python3 scripts/check_structure_constraints.py`
+  before proposing a commit.
+- Keep user-visible feature work aligned with `SPECIFICATION.md`; update the specification and `docs/USER_MANUAL.md` in the
+  same change when behavior or workflows change.
 
 ### Unified Source DOM / Transactions
 
 - Use `plans/UNIFIED_SOURCE_DOM_PLAN.md` as the detailed slice queue.
-- Next implementation slice: migrate one read-only Blocks details consumer to the shared logical source document before
-  touching Map scene refresh or geometry projection.
+- Next implementation slice: migrate one small Raw cursor-token consumer or one read-only Blocks details consumer to the
+  shared logical source document before touching Map scene refresh or geometry projection.
 - Keep Therion namespace/reference changes behind `docs/THERION_COMPATIBILITY.md` coverage, especially
   `object@child.parent` qualified-reference order.
 - Keep source transaction ownership work incremental: one caller or workflow per commit, with explicit result handling,
@@ -87,8 +35,6 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 - Treat full-project validation as an explicit/manual workflow by default; use the Settings toggle only when projects are
   small enough or the user wants live full-project diagnostics.
-- Ask large-project Windows testers to collect `THERION_STUDIO_ENABLE_LOG=1` output and compare
-  `project-validation-scan` versus `project-validation-ui` timings before changing more validation architecture.
 - Use `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md` for the DOM-first project source snapshot slice queue; current
   findings show Structure and Validation now share snapshot-compatible collection/index input paths, while repeated
   requests still need explicit cache ownership.
@@ -102,6 +48,20 @@ Active planning only. Completed history belongs in archive files. Stable archite
   logical-command metadata.
 - Keep problem reporting centralized in the Validation panel while Structure remains an orientation/navigation view.
 - Prioritize regression coverage for any namespace, duplicate-identifier, reference-resolution, or validation-fix change.
+
+### Map Input And Partial Refresh
+
+- Keep `plans/MAP_PARTIAL_REFRESH_PLAN.md` as the detailed slice queue for widening one-line map partial refresh.
+- Use `MapEditorLargeScenePerformanceSmokeTest` as the local generated large-map harness when comparing map refresh
+  changes; it targets roughly 2k parsed lines and 6k scene items without relying on external cave data.
+- Verify the next Windows build by feel for mouse/stylus workflows; only ask for another diagnostic log if the tester still
+  sees lag, segmentation, or selection instability.
+- If diagnostics are needed, use `map-line-partial-refresh`, `map-line-selection-restore`, `line-area-anchor-release`, and
+  `line-double-click-complete` lines to separate partial-refresh fallback, selection restore, and Bezier draft issues.
+- Keep broad Map/TH2 projection rewrites out of map-input follow-up work until Windows feedback confirms the deferred
+  vertex-refresh and one-line partial-refresh paths are stable.
+- Keep decorated-line preview, line-label preview, Bezier control precision, and SKBB-style decoration regressions covered
+  when tuning map rendering or widening partial refresh.
 
 ### Test And Structure Hygiene
 
