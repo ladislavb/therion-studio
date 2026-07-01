@@ -7,7 +7,6 @@
 #include "../core/TherionFileTypes.h"
 #include "../core/TherionSourceLogicalDocument.h"
 #include "../core/TherionSourceReferenceResolver.h"
-#include "../core/TherionSourceSnapshotCache.h"
 
 #include <QDir>
 #include <QElapsedTimer>
@@ -204,22 +203,17 @@ QSet<QString> indexedProjectSourceFiles(const ProjectIndexSnapshot &snapshot)
 }
 
 void appendUnindexedTh2StationNameFindings(ProjectValidationScanner::Result *result,
-                                           const QString &filePath,
-                                           const QString &text,
-                                           TherionSourceSnapshotCache &sourceSnapshotCache,
-                                           int sourceRevisionId)
+                                           const ProjectSourceDocument &document,
+                                           ProjectSourceProjectionCache &projectionCache)
 {
     if (result == nullptr
         || result->limitReached
-        || therionSourceDocumentTypeForFilePath(filePath) != TherionSourceDocumentType::TherionMap) {
+        || therionSourceDocumentTypeForFilePath(document.normalizedPath) != TherionSourceDocumentType::TherionMap) {
         return;
     }
 
-    TherionSourceDocumentMetadata metadata;
-    metadata.sourceType = TherionSourceDocumentType::TherionMap;
-    metadata.revisionId = sourceRevisionId;
     const TherionSourceLogicalDocument &logicalDocument =
-        sourceSnapshotCache.logicalDocument(text, metadata);
+        projectionCache.logicalDocument(document);
     for (const TherionSourceLogicalCommand &command : logicalDocument.commands()) {
         const TherionSourceLogicalArgumentRange *nameRange = pointStationNameRange(command);
         if (nameRange == nullptr) {
@@ -241,8 +235,8 @@ void appendUnindexedTh2StationNameFindings(ProjectValidationScanner::Result *res
                                  .arg(referenceName);
         diagnostic.currentText = nameRange->physicalRange.lineText;
 
-        if (!containsEquivalentFinding(result->findings, filePath, diagnostic)) {
-            result->findings.append({filePath, diagnostic});
+        if (!containsEquivalentFinding(result->findings, document.normalizedPath, diagnostic)) {
+            result->findings.append({document.normalizedPath, diagnostic});
         }
         if (result->findings.size() >= kMaximumProjectValidationFindings) {
             result->limitReached = true;
@@ -256,8 +250,8 @@ void appendProjectIndexFindings(ProjectValidationScanner::Result *result,
                                 const ProjectIndexSnapshot &snapshot,
                                 const QString &indexErrorMessage,
                                 const QHash<QString, QString> &searchedTextByPath,
-                                TherionSourceSnapshotCache &sourceSnapshotCache,
-                                int &sourceRevisionCounter)
+                                const QHash<QString, ProjectSourceDocument> &searchedDocumentByPath,
+                                ProjectSourceProjectionCache &projectionCache)
 {
     if (result == nullptr || result->limitReached) {
         return;
@@ -307,12 +301,13 @@ void appendProjectIndexFindings(ProjectValidationScanner::Result *result,
         if (indexedSourceFiles.contains(it.key())) {
             continue;
         }
-        const int sourceRevisionId = ++sourceRevisionCounter;
+        const auto documentIt = searchedDocumentByPath.constFind(it.key());
+        if (documentIt == searchedDocumentByPath.constEnd()) {
+            continue;
+        }
         appendUnindexedTh2StationNameFindings(result,
-                                              it.key(),
-                                              it.value(),
-                                              sourceSnapshotCache,
-                                              sourceRevisionId);
+                                              documentIt.value(),
+                                              projectionCache);
         if (result->limitReached) {
             return;
         }
@@ -441,8 +436,6 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
     }
 
     QHash<QString, QString> searchedTextByPath;
-    TherionSourceSnapshotCache sourceSnapshotCache;
-    int sourceRevisionCounter = 0;
     {
         QElapsedTimer collectTimer;
         collectTimer.start();
@@ -450,8 +443,10 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
         collectMs = collectTimer.elapsed();
     }
     QSet<QString> knownProjectFilePaths;
+    QHash<QString, ProjectSourceDocument> projectSourceDocumentByPath;
     for (const ProjectSourceDocument &document : std::as_const(projectSourceSnapshot.documents)) {
         knownProjectFilePaths.insert(document.normalizedPath);
+        projectSourceDocumentByPath.insert(document.normalizedPath, document);
     }
 
     {
@@ -486,8 +481,8 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
                                    projectIndexSnapshot,
                                    indexErrorMessage,
                                    searchedTextByPath,
-                                   sourceSnapshotCache,
-                                   sourceRevisionCounter);
+                                   projectSourceDocumentByPath,
+                                   projectionCache);
         projectIndexMs = projectIndexTimer.elapsed();
     }
 
