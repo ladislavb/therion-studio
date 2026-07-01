@@ -108,6 +108,8 @@ int main(int argc, char *argv[])
         "  1 2 12.3 45.0 3.0\n"
         "  extend left\n"
         "  2 3 4.0 120.0 0.5\n"
+        "  team \\\n"
+        "    Alice\n"
         "endcentreline\n"
         "endsurvey\n"));
 
@@ -146,6 +148,7 @@ int main(int argc, char *argv[])
     bool ok = true;
     bool foundEmptyComment = false;
     bool foundData = false;
+    bool foundTeam = false;
     for (QGraphicsItem *graphicsItem : scene.items()) {
         auto *blockItem = dynamic_cast<BlockCanvasItem *>(graphicsItem);
         if (blockItem == nullptr) {
@@ -158,12 +161,18 @@ int main(int argc, char *argv[])
         if (kind == QStringLiteral("data")) {
             foundData = true;
         }
+        if (kind == QStringLiteral("team")) {
+            foundTeam = true;
+        }
         ok &= expect(kind != QStringLiteral("extend"),
                      "Canvas rebuild should not create standalone extend cards inside data bodies.");
+        ok &= expect(kind != QStringLiteral("alice"),
+                     "Canvas rebuild should not create standalone cards from continuation rows.");
     }
     ok &= expect(foundEmptyComment,
                  "Canvas rebuild should create a card for an empty full-line comment.");
     ok &= expect(foundData, "Canvas rebuild should still create the data card.");
+    ok &= expect(foundTeam, "Canvas rebuild should create a card for the continued team command after data rows.");
 
     return ok ? 0 : 1;
 }

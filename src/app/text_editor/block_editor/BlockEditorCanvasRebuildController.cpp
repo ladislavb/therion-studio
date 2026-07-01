@@ -156,8 +156,14 @@ void BlockEditorCanvasRebuildController::rebuildBlocksCanvasFromText()
 
         int bodyLastLine = dataScopeEndLine - 1;
         for (int scanLine = dataLineNumber + 1; scanLine <= dataScopeEndLine - 1; ++scanLine) {
-            const TherionParsedLine scanParsedLine =
-                TherionDocumentParser::parseLine(lines.at(scanLine - 1), scanLine);
+            const TherionSourceLogicalCommand *scanLogicalCommand =
+                logicalDocument.commandAtPhysicalLine(scanLine);
+            if (scanLogicalCommand != nullptr && scanLogicalCommand->startLineNumber != scanLine) {
+                continue;
+            }
+            const TherionParsedLine scanParsedLine = scanLogicalCommand != nullptr
+                ? scanLogicalCommand->parsed
+                : TherionDocumentParser::parseLine(lines.at(scanLine - 1), scanLine);
             const QString scanDirective = normalizeDirective(scanParsedLine.directive);
             if (scanDirective.isEmpty() || scanDirective == QStringLiteral("extend")) {
                 continue;

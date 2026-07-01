@@ -26,8 +26,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Raw completion prefix detection now uses shared logical token ranges for parsed cursor tokens while preserving the
   existing completion-character filtering for path and partial-token behavior; keep this covered in
   `TextEditorRawEditorQTests`.
-- Next implementation slice: migrate one read-only Blocks details consumer to the shared logical source document before
-  touching Map scene refresh or geometry projection.
+- Blocks canvas data-body scanning now uses shared logical commands when deciding where data rows end, so continuation
+  rows after a data body do not get reparsed as standalone raw lines.
+- Next implementation slice: migrate one read-only Blocks details consumer or project-index cache lookup to the shared
+  logical source document before touching Map scene refresh or geometry projection.
 - Keep Therion namespace/reference changes behind `docs/THERION_COMPATIBILITY.md` coverage, especially
   `object@child.parent` qualified-reference order.
 - Keep source transaction ownership work incremental: one caller or workflow per commit, with explicit result handling,
