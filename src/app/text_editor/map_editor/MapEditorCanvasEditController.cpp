@@ -361,6 +361,26 @@ std::optional<QPointF> normalizedLineControlPoint(const QPointF &anchor, const Q
     return control;
 }
 
+QString mapPartialRefreshBoundsLogValue(const QRectF &bounds)
+{
+    if (!bounds.isValid()) {
+        return QStringLiteral("invalid");
+    }
+    return QStringLiteral("%1,%2,%3,%4")
+        .arg(bounds.x(), 0, 'f', 3)
+        .arg(bounds.y(), 0, 'f', 3)
+        .arg(bounds.width(), 0, 'f', 3)
+        .arg(bounds.height(), 0, 'f', 3);
+}
+
+QString mapPartialRefreshBoundsLogValue(const std::optional<QRectF> &bounds)
+{
+    if (!bounds.has_value()) {
+        return QStringLiteral("none");
+    }
+    return mapPartialRefreshBoundsLogValue(bounds.value());
+}
+
 std::optional<QPointF> defaultIncomingControlForLineVertex(const QVector<MapGeometryFeature::TH2LineVertex> &vertices,
                                                            int ownerIndex,
                                                            bool closed)
@@ -788,6 +808,9 @@ std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEdi
             qint64 removeMs = 0;
             qint64 renderMs = 0;
             qint64 selectionMs = 0;
+            QString previousBoundsLog = mapPartialRefreshBoundsLogValue(previousSourceBounds);
+            QString currentBoundsLog = QStringLiteral("unset");
+            QString renderBoundsLog = QStringLiteral("unset");
 
             auto logPartialRefresh = [&](bool fallbackFullRefresh, const QString &reason) {
                 if (!logTiming) {
@@ -797,7 +820,8 @@ std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEdi
                     << QStringLiteral(
                            "map-line-partial-refresh line=%1 fallback_full_refresh=%2 reason=%3 removed_items=%4 "
                            "added_items=%5 removed_vertex_entries=%6 added_vertex_entries=%7 removed_primary=%8 "
-                           "added_primary=%9 resolve_ms=%10 remove_ms=%11 render_ms=%12 selection_ms=%13 total_ms=%14")
+                           "added_primary=%9 previous_bounds=\"%10\" current_bounds=\"%11\" render_bounds=\"%12\" "
+                           "resolve_ms=%13 remove_ms=%14 render_ms=%15 selection_ms=%16 total_ms=%17")
                            .arg(lineNumber)
                            .arg(fallbackFullRefresh ? 1 : 0)
                            .arg(reason)
@@ -807,6 +831,9 @@ std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEdi
                            .arg(addedVertexEntries)
                            .arg(removedPrimaryItem ? 1 : 0)
                            .arg(addedPrimaryItem ? 1 : 0)
+                           .arg(previousBoundsLog)
+                           .arg(currentBoundsLog)
+                           .arg(renderBoundsLog)
                            .arg(resolveMs)
                            .arg(removeMs)
                            .arg(renderMs)
@@ -839,6 +866,7 @@ std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEdi
             }
             const QRectF currentSourceBounds =
                 context.mapSourceBoundsForCurrentDocument ? context.mapSourceBoundsForCurrentDocument() : QRectF();
+            currentBoundsLog = mapPartialRefreshBoundsLogValue(currentSourceBounds);
             if (previousSourceBounds.has_value()
                 && previousSourceBounds->isValid()
                 && currentSourceBounds.isValid()
@@ -849,6 +877,7 @@ std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEdi
             const QRectF renderSourceBounds = previousSourceBounds.has_value() && previousSourceBounds->isValid()
                 ? previousSourceBounds.value()
                 : currentSourceBounds;
+            renderBoundsLog = mapPartialRefreshBoundsLogValue(renderSourceBounds);
 
             const MapGeometryItemGroupRemovalResult removalResult =
                 removeMapGeometryItemGroupForLine(context.scene,
