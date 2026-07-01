@@ -6,6 +6,8 @@
 #include "block_editor/BlockEditorSourceController.h"
 #include "block_editor/BlockEditorToolboxDetailsController.h"
 
+#include <QPlainTextEdit>
+
 #include <memory>
 
 namespace TherionStudio
@@ -53,6 +55,18 @@ BlockEditorSelectionDetailsContext TextEditorTab::blockEditorSelectionDetailsCon
             return false;
         }
         *lines = source.normalizedLines();
+        return true;
+    };
+    context.loadSourceSnapshot = [this](QString *sourceText, int *revisionId) {
+        const BlockEditorSourceContext sourceContext = blockEditorSourceContext();
+        const BlockEditorSourceController source(sourceContext);
+        if (!source.hasEditor() || sourceText == nullptr || revisionId == nullptr) {
+            return false;
+        }
+        *sourceText = source.text();
+        *revisionId = sourceContext.editor != nullptr && sourceContext.editor->document() != nullptr
+            ? sourceContext.editor->document()->revision()
+            : 0;
         return true;
     };
     context.clearDetailsPane = [this]() {

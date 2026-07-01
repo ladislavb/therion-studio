@@ -6,6 +6,8 @@
 #include "../ContextHelpController.h"
 #include "../TextEditorCommandMetadata.h"
 #include "../../../core/TherionCommandLineModel.h"
+#include "../../../core/TherionSourceLogicalDocument.h"
+#include "../../../core/TherionSourceSnapshotCache.h"
 
 #include <QCoreApplication>
 #include <QLabel>
@@ -81,7 +83,26 @@ bool BlockEditorSelectionDetailsController::loadSelectionDetails(const QString &
     }
 
     const QString normalizedKind = context_.normalizedDirectiveToken ? context_.normalizedDirectiveToken(kind) : kind.trimmed().toLower();
-    const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(logicalLine.text, logicalLine.startLine);
+    TherionParsedLine parsedLine;
+    if (context_.loadSourceSnapshot) {
+        QString sourceText;
+        int revisionId = 0;
+        if (context_.loadSourceSnapshot(&sourceText, &revisionId)) {
+            TherionSourceDocumentMetadata sourceMetadata;
+            sourceMetadata.revisionId = revisionId;
+            TherionSourceSnapshotCache sourceSnapshotCache;
+            const TherionSourceLogicalDocument &logicalDocument =
+                sourceSnapshotCache.logicalDocument(sourceText, sourceMetadata);
+            if (const TherionSourceLogicalCommand *logicalCommand =
+                    logicalDocument.commandAtPhysicalLine(logicalLine.startLine);
+                logicalCommand != nullptr && logicalCommand->startLineNumber == logicalLine.startLine) {
+                parsedLine = logicalCommand->parsed;
+            }
+        }
+    }
+    if (parsedLine.lineNumber <= 0) {
+        parsedLine = TherionDocumentParser::parseLine(logicalLine.text, logicalLine.startLine);
+    }
     const bool commentOnlyLine = normalizedKind == QStringLiteral("comment") && isFullLineComment(parsedLine);
     const bool unrecognizedLineKind = isUnrecognizedKind(normalizedKind);
     if (parsedLine.tokens.isEmpty() && !commentOnlyLine) {

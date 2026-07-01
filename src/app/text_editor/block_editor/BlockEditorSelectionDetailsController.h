@@ -57,6 +57,7 @@ struct BlockEditorSelectionDetailsContext
     QTextBrowser *helpBrowser = nullptr;
     const TextEditorCommandMetadata *commandMetadata = nullptr;
     std::function<bool(QStringList *)> loadNormalizedLines;
+    std::function<bool(QString *, int *)> loadSourceSnapshot;
     std::function<void()> clearDetailsPane;
     std::function<QString(const QString &)> normalizedDirectiveToken;
     std::function<bool(const QString &)> supportsDetailsPaneForKind;

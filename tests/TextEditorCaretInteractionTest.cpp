@@ -940,6 +940,27 @@ int main(int argc, char *argv[])
             delete continuationTab;
             return 1;
         }
+        if (!expect(continuationPrimaryEdit->text() == QStringLiteral("wrapped"),
+                    "Blocks details should read the selected wrapped survey id from the logical command.")) {
+            delete continuationTab;
+            return 1;
+        }
+        bool foundTitleOption = false;
+        bool foundPersonOption = false;
+        for (int row = 0; row < continuationOptionsTable->rowCount(); ++row) {
+            const QTableWidgetItem *keyItem = continuationOptionsTable->item(row, 0);
+            if (keyItem == nullptr) {
+                continue;
+            }
+            const QString key = keyItem->text().trimmed();
+            foundTitleOption = foundTitleOption || key == QStringLiteral("-title");
+            foundPersonOption = foundPersonOption || key == QStringLiteral("-person");
+        }
+        if (!expect(foundTitleOption && foundPersonOption,
+                    "Blocks details should read options from wrapped logical command lines.")) {
+            delete continuationTab;
+            return 1;
+        }
         continuationPrimaryEdit->setText(QStringLiteral("wrapped-renamed"));
         commitBlockDetailsEdit(continuationPrimaryEdit, continuationView);
 
