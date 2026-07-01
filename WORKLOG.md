@@ -70,9 +70,11 @@ Active planning only. Completed history belongs in archive files. Stable archite
   shared by Structure and Validation scanners at the `MainWindow` composition boundary.
 - `ProjectScanCacheService` now also reuses the last collected project source snapshot for unchanged project source
   request keys, so repeated Structure/Validation scans can skip redundant source discovery and text collection.
-- Next validation/project-scan slice: use the shared snapshot/cache stats to reduce Validation tree/model refresh cost or
-  add cancellation/generation handling for superseded live-validation requests; do not reintroduce scanner-local file
-  traversal, broad context bags, or static/global cache state.
+- Validation UI now skips rebuilding the problem tree and reapplying open-editor diagnostics when a project-validation
+  result signature is unchanged, while still honoring reveal and post-fix navigation requests.
+- Next validation/project-scan slice: add cancellation/generation handling for superseded live-validation requests or
+  gather a fresh diagnostic log to identify the next non-cache bottleneck; do not reintroduce scanner-local file traversal,
+  broad context bags, or static/global cache state.
 - Prefer Settings -> troubleshooting logs for tester builds: the preference is time-limited, restart-applied, and uses
   rotated application log files instead of requiring users to set environment variables.
 - Optimize future live validation with incremental file/revision caching, generation-keyed cancellation, and cheaper

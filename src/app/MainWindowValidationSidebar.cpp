@@ -11,6 +11,7 @@
 #include <QBrush>
 #include <QColor>
 #include <QCoreApplication>
+#include <QCryptographicHash>
 #include <QDebug>
 #include <QDir>
 #include <QElapsedTimer>
@@ -133,6 +134,58 @@ void updateValidationFileSeverityStyle(QStandardItem *fileItem, TherionStudio::T
     if (severityRank(severity) > currentRank) {
         applyValidationSeverityStyle(fileItem, severity);
     }
+}
+
+QString normalizedValidationPath(const QString &path);
+
+void addSignatureString(QCryptographicHash *hash, const QString &value)
+{
+    if (hash == nullptr) {
+        return;
+    }
+    const QByteArray encoded = value.toUtf8();
+    hash->addData(QByteArray::number(encoded.size()));
+    hash->addData(QByteArrayView("\0", 1));
+    hash->addData(encoded);
+    hash->addData(QByteArrayView("\0", 1));
+}
+
+void addSignatureNumber(QCryptographicHash *hash, qint64 value)
+{
+    addSignatureString(hash, QString::number(value));
+}
+
+QString projectValidationResultSignature(const QString &projectRootPath,
+                                         const TherionStudio::ProjectValidationScanner::Result &result)
+{
+    QCryptographicHash hash(QCryptographicHash::Sha256);
+    addSignatureString(&hash, normalizedValidationPath(projectRootPath));
+    addSignatureString(&hash, normalizedValidationPath(result.projectRootPath));
+    addSignatureString(&hash, result.errorMessage);
+    addSignatureNumber(&hash, result.searchedFileCount);
+    addSignatureNumber(&hash, result.limitReached ? 1 : 0);
+    addSignatureNumber(&hash, result.findings.size());
+
+    for (const TherionStudio::ProjectValidationScanner::Finding &finding : result.findings) {
+        const TherionStudio::TherionSourceDiagnostic &diagnostic = finding.diagnostic;
+        addSignatureString(&hash, normalizedValidationPath(finding.filePath));
+        addSignatureString(&hash, diagnostic.code);
+        addSignatureNumber(&hash, static_cast<int>(diagnostic.severity));
+        addSignatureNumber(&hash, diagnostic.lineNumber);
+        addSignatureNumber(&hash, diagnostic.columnNumber);
+        addSignatureNumber(&hash, diagnostic.columnLength);
+        addSignatureString(&hash, diagnostic.title);
+        addSignatureString(&hash, diagnostic.message);
+        addSignatureString(&hash, diagnostic.currentText);
+        addSignatureString(&hash, diagnostic.suggestedText);
+        addSignatureNumber(&hash, diagnostic.hasFix ? 1 : 0);
+        addSignatureNumber(&hash, diagnostic.fix.startOffset);
+        addSignatureNumber(&hash, diagnostic.fix.length);
+        addSignatureString(&hash, diagnostic.fix.replacementText);
+        addSignatureString(&hash, diagnostic.fix.description);
+    }
+
+    return QString::fromLatin1(hash.result().toHex());
 }
 
 TherionStudio::TherionSourceDiagnosticSeverity highestDiagnosticSeverity(
@@ -404,6 +457,7 @@ void MainWindow::triggerValidateDocumentForActiveDocument()
     }
     validationDocumentPath_ = filePath;
     validationProjectMode_ = false;
+    lastAppliedProjectValidationSignature_.clear();
 
     const QString documentLabel = validationDocumentLabel(displayName, filePath);
     if (validation.diagnostics.isEmpty()) {
@@ -640,6 +694,7 @@ void MainWindow::handleProjectValidationStarted(TherionStudio::ProjectValidation
         validationDiagnostics_.clear();
         validationDiagnosticFilePaths_.clear();
         validationDocumentPath_.clear();
+        lastAppliedProjectValidationSignature_.clear();
         clearValidationRailIndicator();
         validationProjectMode_ = true;
         if (validationResultsModel_ != nullptr) {
@@ -709,6 +764,7 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
     qint64 modelRebuildMs = 0;
     qint64 diagnosticsApplyMs = 0;
     qint64 treeUpdateMs = 0;
+    bool modelRefreshSkipped = false;
     const bool revealPanel = validationRevealByGeneration_.take(result.generation);
     const bool navigateAfterFix = trigger == TherionStudio::ProjectValidationController::Trigger::FixApplied;
     if (validationScanProjectButton_ != nullptr) {
@@ -725,13 +781,14 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
             return;
         }
         qInfo().noquote()
-            << QStringLiteral("project-validation-ui trigger=%1 generation=%2 files=%3 findings=%4 limit_reached=%5 reveal=%6 model_ms=%7 diagnostics_ms=%8 tree_ms=%9 total_ms=%10")
+            << QStringLiteral("project-validation-ui trigger=%1 generation=%2 files=%3 findings=%4 limit_reached=%5 reveal=%6 model_skipped=%7 model_ms=%8 diagnostics_ms=%9 tree_ms=%10 total_ms=%11")
                    .arg(validationTriggerLogName(trigger))
                    .arg(result.generation)
                    .arg(result.searchedFileCount)
                    .arg(result.findings.size())
                    .arg(result.limitReached ? QStringLiteral("true") : QStringLiteral("false"))
                    .arg(revealPanel ? QStringLiteral("true") : QStringLiteral("false"))
+                   .arg(modelRefreshSkipped ? QStringLiteral("true") : QStringLiteral("false"))
                    .arg(modelRebuildMs)
                    .arg(diagnosticsApplyMs)
                    .arg(treeUpdateMs)
@@ -755,12 +812,44 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
         }
     }
 
+    const QString resultSignature = projectValidationResultSignature(projectRootPath_, result);
+    if (validationProjectMode_
+        && !lastAppliedProjectValidationSignature_.isEmpty()
+        && resultSignature == lastAppliedProjectValidationSignature_) {
+        modelRefreshSkipped = true;
+        if (validationResultsTree_ != nullptr) {
+            QElapsedTimer treeTimer;
+            treeTimer.start();
+            QModelIndex nextFinding = validationFindingIndex(validationResultsModel_,
+                                                             validationResultsTree_->currentIndex());
+            if (!nextFinding.isValid() && revealPanel) {
+                nextFinding = validationResultsModel_->index(0, 0, validationResultsModel_->index(0, 0));
+            }
+            if (nextFinding.isValid()) {
+                validationResultsTree_->setCurrentIndex(nextFinding);
+                handleValidationSelectionChanged(nextFinding, {});
+                if (navigateAfterFix) {
+                    openValidationResult(nextFinding);
+                }
+            } else {
+                handleValidationSelectionChanged({}, {});
+            }
+            treeUpdateMs = treeTimer.elapsed();
+        }
+        if (revealPanel) {
+            showSidebarPane(SidebarPane::Validation);
+        }
+        logFinish();
+        return;
+    }
+
     validationResultsModel_->clear();
     validationResultsModel_->setHorizontalHeaderLabels({tr("Problems")});
     validationDiagnostics_.clear();
     validationDiagnosticFilePaths_.clear();
     validationDocumentPath_.clear();
     validationProjectMode_ = true;
+    lastAppliedProjectValidationSignature_ = resultSignature;
 
     if (!result.errorMessage.isEmpty()) {
         clearValidationRailIndicator();

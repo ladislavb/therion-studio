@@ -484,6 +484,7 @@ private:
     QVector<TherionStudio::TherionSourceDiagnostic> validationDiagnostics_;
     QVector<QString> validationDiagnosticFilePaths_;
     QString validationDocumentPath_;
+    QString lastAppliedProjectValidationSignature_;
     QHash<quint64, bool> validationRevealByGeneration_;
     bool pendingProjectValidationRevealPanel_ = false;
     bool pendingValidationFixNavigation_ = false;
