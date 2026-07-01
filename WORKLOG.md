@@ -75,6 +75,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   changes; it targets roughly 2k parsed lines and 6k scene items without relying on external cave data.
 - Verify the next Windows build by feel for mouse/stylus workflows; only ask for another diagnostic log if the tester still
   sees lag, segmentation, or selection instability.
+- Windows map-input follow-up log showed single-touch events being accepted by the map input controller while no draw,
+  pan, or tablet interaction was active; the current stabilization slice lets those single-touch begin/update events pass
+  through instead of suppressing platform handling.
 - If diagnostics are needed, use `map-line-partial-refresh`, `map-line-selection-restore`, `line-area-anchor-release`, and
   `line-double-click-complete` lines to separate partial-refresh fallback, selection restore, and Bezier draft issues.
 - Keep broad Map/TH2 projection rewrites out of map-input follow-up work until Windows feedback confirms the deferred
@@ -121,7 +124,6 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Blocked / Needs Input
 
-- Windows map-input follow-up log from the tester.
 - Old Therion/Metapost crash fixture: parked until a reproducible project or minimal fixture is available.
 - Stylus/Sidecar behavior: needs hardware-specific manual validation.
 

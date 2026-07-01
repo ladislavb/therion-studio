@@ -2470,14 +2470,24 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
                                          .arg(viewportScrollBarInputDetail(context_)));
                 inputTrace.forceLog();
             } else {
-                traceAction("touch-begin-ignore");
+                traceAction("touch-begin-pass-through");
                 inputTrace.setDetail(QStringLiteral("points=%1").arg(touchEvent->points().size()));
                 inputTrace.forceLog();
+                event->ignore();
+                return false;
             }
             break;
         }
         case QEvent::TouchUpdate: {
             if (!(*context_.touchPanCandidate) || (*context_.primaryPointerInteractionActive)) {
+                if (!(*context_.touchPanCandidate)) {
+                    traceAction("touch-update-pass-through");
+                    inputTrace.setDetail(QStringLiteral("candidate=0 primary_active=%1")
+                                             .arg((*context_.primaryPointerInteractionActive) ? 1 : 0));
+                    inputTrace.forceLog();
+                    event->ignore();
+                    return false;
+                }
                 traceAction("touch-update-suppress-pan");
                 inputTrace.setDetail(QStringLiteral("candidate=%1 primary_active=%2")
                                          .arg((*context_.touchPanCandidate) ? 1 : 0)

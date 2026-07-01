@@ -15,6 +15,7 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QScrollBar>
+#include <QTouchEvent>
 
 #include <cmath>
 #include <iostream>
@@ -299,6 +300,75 @@ int runMousePanDragMovesScrollBarsTest()
     }
     if (!expect(!mapPanActive && mapPanMoved && !autoFitEnabled && commandSurfaceUpdates > 0 && zoomSyncs > 0,
                 "Space + left-button drag should finish pan state and update viewport state.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int runSingleTouchPassesThroughWhenPanIsNotCandidateTest()
+{
+    QGraphicsScene scene;
+    QGraphicsView view(&scene);
+
+    bool touchFriendlyControlsEnabled = false;
+    bool selectModeActive = true;
+    bool primaryPointerInteractionActive = false;
+    bool touchPanCandidate = false;
+    bool touchPanActive = false;
+    QPointF touchPanStartPosition;
+    QPointF touchPanLastPosition;
+
+    MapEditorViewportInputContext context;
+    context.scene = &scene;
+    context.view = &view;
+    context.touchFriendlyControlsEnabled = &touchFriendlyControlsEnabled;
+    context.selectModeActive = &selectModeActive;
+    context.primaryPointerInteractionActive = &primaryPointerInteractionActive;
+    context.touchPanCandidate = &touchPanCandidate;
+    context.touchPanActive = &touchPanActive;
+    context.touchPanStartPosition = &touchPanStartPosition;
+    context.touchPanLastPosition = &touchPanLastPosition;
+    context.drawMode = []() { return MapEditorInteractiveDrawMode::None; };
+
+    MapEditorViewportInputController controller(context);
+
+    QList<QEventPoint> points;
+    points.append(QEventPoint(0,
+                              QEventPoint::State::Pressed,
+                              QPointF(40.0, 40.0),
+                              QPointF(40.0, 40.0)));
+    QTouchEvent touchBegin(QEvent::TouchBegin,
+                           QPointingDevice::primaryPointingDevice(),
+                           Qt::NoModifier,
+                           points);
+    touchBegin.accept();
+    const std::optional<bool> beginResult = controller.handleEvent(view.viewport(), &touchBegin);
+    if (!expect(beginResult.has_value() && !beginResult.value(),
+                "Single-touch begin should pass through instead of being consumed by map input.")) {
+        return 1;
+    }
+    if (!expect(!touchBegin.isAccepted() && !touchPanCandidate && !touchPanActive,
+                "Single-touch begin should stay outside touch-pan state and leave the event ignored.")) {
+        return 1;
+    }
+
+    points[0] = QEventPoint(0,
+                            QEventPoint::State::Updated,
+                            QPointF(46.0, 45.0),
+                            QPointF(46.0, 45.0));
+    QTouchEvent touchUpdate(QEvent::TouchUpdate,
+                            QPointingDevice::primaryPointingDevice(),
+                            Qt::NoModifier,
+                            points);
+    touchUpdate.accept();
+    const std::optional<bool> updateResult = controller.handleEvent(view.viewport(), &touchUpdate);
+    if (!expect(updateResult.has_value() && !updateResult.value(),
+                "Single-touch update without a pan candidate should pass through.")) {
+        return 1;
+    }
+    if (!expect(!touchUpdate.isAccepted() && !touchPanCandidate && !touchPanActive,
+                "Single-touch update should not suppress pan when no pan candidate exists.")) {
         return 1;
     }
 
@@ -1856,6 +1926,9 @@ int main(int argc, char **argv)
         return rc;
     }
     if (const int rc = runMousePanDragMovesScrollBarsTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runSingleTouchPassesThroughWhenPanIsNotCandidateTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runNearestPathWinsPrimaryClickTest(); rc != 0) {
