@@ -71,11 +71,14 @@ void ProjectStructureScanner::startScan()
         Result result;
         result.generation = generation;
         result.projectRootPath = request.projectRootPath;
+        bool sourceSnapshotCacheHit = false;
         const ProjectSourceSnapshot sourceSnapshot =
-            collectProjectSourceSnapshot(request.projectRootPath,
-                                         request.preferredConfigPath,
-                                         request.inMemoryProjectContentsByPath,
-                                         -1);
+            scanCacheService->projectSourceSnapshot(request.projectRootPath,
+                                                    request.preferredConfigPath,
+                                                    request.inMemoryProjectContentsByPath,
+                                                    -1,
+                                                    &sourceSnapshotCacheHit);
+        result.projectSourceSnapshotCacheHit = sourceSnapshotCacheHit;
         const QString sourceRequestKey = sourceSnapshot.requestKey.stableKey();
         const std::optional<ProjectIndexSnapshotCacheEntry> cachedProjectIndex =
             scanCacheService != nullptr

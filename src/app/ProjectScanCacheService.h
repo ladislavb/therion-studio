@@ -1,7 +1,10 @@
 #pragma once
 
+#include "ProjectSourceSnapshot.h"
+
 #include "../core/ProjectStructureIndex.h"
 
+#include <QHash>
 #include <QMutex>
 #include <QString>
 
@@ -16,9 +19,26 @@ struct ProjectIndexSnapshotCacheEntry
     ProjectIndexSnapshot snapshot;
 };
 
+struct ProjectSourceSnapshotCacheEntry
+{
+    QString sourceRequestKey;
+    ProjectSourceSnapshot snapshot;
+};
+
 class ProjectScanCacheService final
 {
 public:
+    [[nodiscard]] ProjectSourceSnapshot projectSourceSnapshot(
+        const QString &projectRootPath,
+        const QString &preferredConfigPath,
+        const QHash<QString, QString> &inMemoryContentsByPath,
+        qsizetype maximumTextBytes,
+        bool *cacheHit = nullptr);
+    [[nodiscard]] std::optional<ProjectSourceSnapshotCacheEntry> cachedProjectSourceSnapshot(
+        const QString &sourceRequestKey) const;
+    void storeProjectSourceSnapshot(const ProjectSourceSnapshotCacheEntry &entry);
+    void clearProjectSourceSnapshot();
+
     [[nodiscard]] std::optional<ProjectIndexSnapshotCacheEntry> projectIndexSnapshot(
         const QString &sourceRequestKey) const;
     void storeProjectIndexSnapshot(const ProjectIndexSnapshotCacheEntry &entry);
@@ -26,6 +46,7 @@ public:
 
 private:
     mutable QMutex mutex_;
+    std::optional<ProjectSourceSnapshotCacheEntry> projectSourceSnapshot_;
     std::optional<ProjectIndexSnapshotCacheEntry> projectIndexSnapshot_;
 };
 }

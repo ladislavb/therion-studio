@@ -782,9 +782,10 @@ int runRepeatedValidationReusesProjectionCacheTest()
         return 1;
     }
     if (!expect(!firstResult.result.projectIndexSnapshotCacheHit
+                    && !firstResult.result.projectSourceSnapshotCacheHit
                     && firstResult.result.projectIndexScanStats.logicalDocumentBuilds == 0
                     && firstResult.result.projectIndexScanStats.prebuiltLogicalDocumentHits > 0,
-                "First repeated validation should build the project index from validation-provided logical projections.")) {
+                "First repeated validation should collect sources and build the project index from validation-provided logical projections.")) {
         return 1;
     }
 
@@ -801,9 +802,10 @@ int runRepeatedValidationReusesProjectionCacheTest()
         return 1;
     }
     if (!expect(secondResult.result.projectIndexSnapshotCacheHit
+                    && secondResult.result.projectSourceSnapshotCacheHit
                     && secondResult.result.projectIndexScanStats.logicalDocumentBuilds == 0
                     && secondResult.result.projectIndexScanStats.prebuiltLogicalDocumentHits == 0,
-                "Second repeated validation should reuse the retained project-index snapshot.")) {
+                "Second repeated validation should reuse retained source and project-index snapshots.")) {
         return 1;
     }
 

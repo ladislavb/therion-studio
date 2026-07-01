@@ -67,6 +67,8 @@ struct ProjectSourceSnapshot
     const QHash<QString, QString> &inMemoryContentsByPath,
     const QString &filePolicyKey = QString());
 
+[[nodiscard]] QString projectSourceFilePolicyKey(qsizetype maximumTextBytes);
+
 [[nodiscard]] ProjectSourceSnapshot collectProjectSourceSnapshot(
     const QString &projectRootPath,
     const QString &preferredConfigPath,

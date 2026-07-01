@@ -30,6 +30,7 @@ public:
         QString errorMessage;
         ProjectIndexSnapshot projectIndex;
         QVector<ProjectStructureEntry> entries;
+        bool projectSourceSnapshotCacheHit = false;
         bool projectIndexSnapshotCacheHit = false;
     };
 

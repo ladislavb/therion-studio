@@ -560,7 +560,7 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
         value.projectionCacheStats = projectionCache.stats();
         if (diagnosticProjectValidationLoggingEnabled()) {
             qInfo().noquote()
-                << QStringLiteral("project-validation-scan generation=%1 files=%2 searched=%3 findings=%4 limit_reached=%5 collect_ms=%6 validate_ms=%7 project_index_ms=%8 total_ms=%9 projection_source_builds=%10 projection_source_hits=%11 projection_logical_builds=%12 projection_logical_hits=%13 projection_catalog_builds=%14 projection_catalog_hits=%15 document_validation_cache_hits=%16 document_validation_cache_misses=%17 project_index_logical_builds=%18 project_index_logical_hits=%19 project_index_prebuilt_logical_hits=%20 project_index_snapshot_cache_hit=%21 root=\"%22\" error=\"%23\"")
+                << QStringLiteral("project-validation-scan generation=%1 files=%2 searched=%3 findings=%4 limit_reached=%5 collect_ms=%6 validate_ms=%7 project_index_ms=%8 total_ms=%9 projection_source_builds=%10 projection_source_hits=%11 projection_logical_builds=%12 projection_logical_hits=%13 projection_catalog_builds=%14 projection_catalog_hits=%15 document_validation_cache_hits=%16 document_validation_cache_misses=%17 project_index_logical_builds=%18 project_index_logical_hits=%19 project_index_prebuilt_logical_hits=%20 project_source_snapshot_cache_hit=%21 project_index_snapshot_cache_hit=%22 root=\"%23\" error=\"%24\"")
                        .arg(value.generation)
                        .arg(projectSourceSnapshot.documents.size())
                        .arg(value.searchedFileCount)
@@ -581,6 +581,7 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
                        .arg(value.projectIndexScanStats.logicalDocumentBuilds)
                        .arg(value.projectIndexScanStats.logicalDocumentHits)
                        .arg(value.projectIndexScanStats.prebuiltLogicalDocumentHits)
+                       .arg(value.projectSourceSnapshotCacheHit ? 1 : 0)
                        .arg(value.projectIndexSnapshotCacheHit ? 1 : 0)
                        .arg(value.projectRootPath)
                        .arg(value.errorMessage);
@@ -597,7 +598,13 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
     {
         QElapsedTimer collectTimer;
         collectTimer.start();
-        projectSourceSnapshot = collectProjectSourceSnapshot(result.projectRootPath, {}, inMemoryProjectContentsByPath);
+        bool sourceSnapshotCacheHit = false;
+        projectSourceSnapshot = scanCacheService.projectSourceSnapshot(result.projectRootPath,
+                                                                       {},
+                                                                       inMemoryProjectContentsByPath,
+                                                                       kDefaultMaximumProjectSourceTextBytes,
+                                                                       &sourceSnapshotCacheHit);
+        result.projectSourceSnapshotCacheHit = sourceSnapshotCacheHit;
         collectMs = collectTimer.elapsed();
     }
     QSet<QString> knownProjectFilePaths;

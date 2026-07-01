@@ -41,6 +41,7 @@ public:
         bool limitReached = false;
         ProjectSourceProjectionCacheStats projectionCacheStats;
         ProjectStructureIndexScanStats projectIndexScanStats;
+        bool projectSourceSnapshotCacheHit = false;
         bool projectIndexSnapshotCacheHit = false;
         int documentValidationCacheHits = 0;
         int documentValidationCacheMisses = 0;

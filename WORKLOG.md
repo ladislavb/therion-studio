@@ -68,8 +68,11 @@ Active planning only. Completed history belongs in archive files. Stable archite
   after the first scan, reducing local validation work from tens of milliseconds to near-zero for unchanged projects.
 - `ProjectScanCacheService` now owns the retained project-index snapshot cache behind an explicit app-service dependency
   shared by Structure and Validation scanners at the `MainWindow` composition boundary.
-- Next validation/project-scan slice: consider moving project source snapshot collection reuse into the same explicit app
-  service; do not reintroduce scanner-local file traversal, broad context bags, or static/global cache state.
+- `ProjectScanCacheService` now also reuses the last collected project source snapshot for unchanged project source
+  request keys, so repeated Structure/Validation scans can skip redundant source discovery and text collection.
+- Next validation/project-scan slice: use the shared snapshot/cache stats to reduce Validation tree/model refresh cost or
+  add cancellation/generation handling for superseded live-validation requests; do not reintroduce scanner-local file
+  traversal, broad context bags, or static/global cache state.
 - Prefer Settings -> troubleshooting logs for tester builds: the preference is time-limited, restart-applied, and uses
   rotated application log files instead of requiring users to set environment variables.
 - Optimize future live validation with incremental file/revision caching, generation-keyed cancellation, and cheaper

@@ -206,6 +206,10 @@ int runSharedProjectIndexCacheTest()
                 "First structure scan should build the project index snapshot.")) {
         return 1;
     }
+    if (!expect(!firstResult.result.projectSourceSnapshotCacheHit,
+                "First structure scan should collect the project source snapshot.")) {
+        return 1;
+    }
 
     ProjectStructureScanner secondScanner(cacheService);
     secondScanner.setDebounceIntervalMs(0);
@@ -217,6 +221,10 @@ int runSharedProjectIndexCacheTest()
     }
     if (!expect(secondResult.result.projectIndexSnapshotCacheHit,
                 "Second structure scan should reuse the shared project index snapshot cache.")) {
+        return 1;
+    }
+    if (!expect(secondResult.result.projectSourceSnapshotCacheHit,
+                "Second structure scan should reuse the shared project source snapshot cache.")) {
         return 1;
     }
     if (!expect(secondResult.result.entries.size() == firstResult.result.entries.size(),
