@@ -775,7 +775,9 @@ int runRepeatedValidationReusesProjectionCacheTest()
         return 1;
     }
     if (!expect(firstResult.result.projectionCacheStats.sourceDocumentBuilds == 3
-                    && firstResult.result.projectionCacheStats.catalogLogicalDocumentBuilds == 3,
+                    && firstResult.result.projectionCacheStats.catalogLogicalDocumentBuilds == 3
+                    && firstResult.result.documentValidationCacheMisses == 3
+                    && firstResult.result.documentValidationCacheHits == 0,
                 "First repeated validation should build source and catalog logical projections for each project file.")) {
         return 1;
     }
@@ -792,13 +794,10 @@ int runRepeatedValidationReusesProjectionCacheTest()
         return 1;
     }
     if (!expect(secondResult.result.projectionCacheStats.sourceDocumentBuilds == 0
-                    && secondResult.result.projectionCacheStats.catalogLogicalDocumentBuilds == 0,
-                "Second repeated validation should reuse retained source and catalog logical projections.")) {
-        return 1;
-    }
-    if (!expect(secondResult.result.projectionCacheStats.sourceDocumentHits >= 3
-                    && secondResult.result.projectionCacheStats.catalogLogicalDocumentHits >= 3,
-                "Second repeated validation should report projection cache hits for each project file.")) {
+                    && secondResult.result.projectionCacheStats.catalogLogicalDocumentBuilds == 0
+                    && secondResult.result.documentValidationCacheHits == 3
+                    && secondResult.result.documentValidationCacheMisses == 0,
+                "Second repeated validation should reuse retained per-file validation results.")) {
         return 1;
     }
     if (!expect(secondResult.result.projectIndexSnapshotCacheHit

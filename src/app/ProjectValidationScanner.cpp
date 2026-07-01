@@ -117,6 +117,31 @@ QString validationCatalogSignature(const TherionSourceValidationCatalog &catalog
     return QString::fromLatin1(hash.result().toHex());
 }
 
+QString knownProjectFilePathsSignature(QSet<QString> knownProjectFilePaths)
+{
+    QCryptographicHash hash(QCryptographicHash::Sha256);
+    QStringList paths(knownProjectFilePaths.begin(), knownProjectFilePaths.end());
+    paths.sort(Qt::CaseSensitive);
+    addStringListHash(&hash, paths);
+    return QString::fromLatin1(hash.result().toHex());
+}
+
+QString documentValidationCacheKey(const ProjectSourceDocument &document,
+                                   const QString &catalogSignature,
+                                   const QString &knownProjectFilesSignature)
+{
+    QStringList parts;
+    parts.reserve(7);
+    parts.append(QStringLiteral("path=%1").arg(document.normalizedPath));
+    parts.append(QStringLiteral("type=%1").arg(static_cast<int>(therionSourceDocumentTypeForFilePath(document.normalizedPath))));
+    parts.append(QStringLiteral("loaded=%1").arg(document.textLoaded ? 1 : 0));
+    parts.append(QStringLiteral("origin=%1").arg(static_cast<int>(document.origin)));
+    parts.append(QStringLiteral("hash=%1").arg(QString::fromLatin1(projectSourceContentHash(document.text).toHex())));
+    parts.append(QStringLiteral("catalog=%1").arg(catalogSignature));
+    parts.append(QStringLiteral("known=%1").arg(knownProjectFilesSignature));
+    return parts.join(QLatin1Char('\n'));
+}
+
 QString sourceLineTextAt(const QString &text, int oneBasedLineNumber)
 {
     if (oneBasedLineNumber <= 0) {
@@ -421,17 +446,38 @@ void appendFindingsForDocument(ProjectValidationScanner::Result *result,
                                const TherionSourceValidationCatalog &validationCatalog,
                                const QSet<QString> &knownProjectFilePaths,
                                ProjectSourceProjectionCache &projectionCache,
-                               TherionSourceSnapshotCatalogKey catalogKey)
+                               TherionSourceSnapshotCatalogKey catalogKey,
+                               const QString &catalogSignature,
+                               const QString &knownProjectFilesSignature,
+                               QHash<QString, ProjectValidationScanner::DocumentValidationCacheEntry> &documentValidationCache)
 {
     if (result == nullptr) {
         return;
     }
+
+    const QString cacheKey = documentValidationCacheKey(document,
+                                                        catalogSignature,
+                                                        knownProjectFilesSignature);
+    auto cacheIt = documentValidationCache.constFind(cacheKey);
+    if (cacheIt != documentValidationCache.constEnd()) {
+        ++result->documentValidationCacheHits;
+        for (const ProjectValidationScanner::Finding &finding : cacheIt->findings) {
+            result->findings.append(finding);
+            if (result->findings.size() >= kMaximumProjectValidationFindings) {
+                result->limitReached = true;
+                return;
+            }
+        }
+        return;
+    }
+    ++result->documentValidationCacheMisses;
 
     const TherionSourceDocument &sourceDocument =
         projectionCache.sourceDocument(document);
     const TherionSourceLogicalDocument &logicalDocument =
         projectionCache.logicalDocument(document, validationCatalog, catalogKey);
 
+    ProjectValidationScanner::DocumentValidationCacheEntry builtEntry;
     const TherionSourceValidationResult validation =
         TherionSourceValidator::validate(sourceDocument, logicalDocument, validationCatalog);
     const bool suppressUnknownCommandWarnings = isTherionConfigFilePath(document.normalizedPath);
@@ -439,11 +485,7 @@ void appendFindingsForDocument(ProjectValidationScanner::Result *result,
         if (suppressUnknownCommandWarnings && diagnostic.code == QStringLiteral("unknown-command")) {
             continue;
         }
-        result->findings.append({document.normalizedPath, diagnostic});
-        if (result->findings.size() >= kMaximumProjectValidationFindings) {
-            result->limitReached = true;
-            return;
-        }
+        builtEntry.findings.append({document.normalizedPath, diagnostic});
     }
 
     for (const TherionSourceLogicalCommand &command : logicalDocument.commands()) {
@@ -481,7 +523,12 @@ void appendFindingsForDocument(ProjectValidationScanner::Result *result,
             diagnostic.columnLength = tokenRange.columnLength;
         }
 
-        result->findings.append({document.normalizedPath, diagnostic});
+        builtEntry.findings.append({document.normalizedPath, diagnostic});
+    }
+
+    documentValidationCache.insert(cacheKey, builtEntry);
+    for (const ProjectValidationScanner::Finding &finding : std::as_const(builtEntry.findings)) {
+        result->findings.append(finding);
         if (result->findings.size() >= kMaximumProjectValidationFindings) {
             result->limitReached = true;
             return;
@@ -494,7 +541,9 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
                                                           const QHash<QString, QString> &inMemoryProjectContentsByPath,
                                                           quint64 generation,
                                                           ProjectSourceProjectionCache &projectionCache,
-                                                          std::optional<ProjectValidationIndexSnapshotCacheEntry> &projectIndexSnapshotCache)
+                                                          std::optional<ProjectValidationIndexSnapshotCacheEntry> &projectIndexSnapshotCache,
+                                                          QHash<QString, ProjectValidationScanner::DocumentValidationCacheEntry> &documentValidationCache,
+                                                          const QString &catalogSignature)
 {
     QElapsedTimer totalTimer;
     totalTimer.start();
@@ -511,7 +560,7 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
         value.projectionCacheStats = projectionCache.stats();
         if (diagnosticProjectValidationLoggingEnabled()) {
             qInfo().noquote()
-                << QStringLiteral("project-validation-scan generation=%1 files=%2 searched=%3 findings=%4 limit_reached=%5 collect_ms=%6 validate_ms=%7 project_index_ms=%8 total_ms=%9 projection_source_builds=%10 projection_source_hits=%11 projection_logical_builds=%12 projection_logical_hits=%13 projection_catalog_builds=%14 projection_catalog_hits=%15 project_index_logical_builds=%16 project_index_logical_hits=%17 project_index_prebuilt_logical_hits=%18 project_index_snapshot_cache_hit=%19 root=\"%20\" error=\"%21\"")
+                << QStringLiteral("project-validation-scan generation=%1 files=%2 searched=%3 findings=%4 limit_reached=%5 collect_ms=%6 validate_ms=%7 project_index_ms=%8 total_ms=%9 projection_source_builds=%10 projection_source_hits=%11 projection_logical_builds=%12 projection_logical_hits=%13 projection_catalog_builds=%14 projection_catalog_hits=%15 document_validation_cache_hits=%16 document_validation_cache_misses=%17 project_index_logical_builds=%18 project_index_logical_hits=%19 project_index_prebuilt_logical_hits=%20 project_index_snapshot_cache_hit=%21 root=\"%22\" error=\"%23\"")
                        .arg(value.generation)
                        .arg(projectSourceSnapshot.documents.size())
                        .arg(value.searchedFileCount)
@@ -527,6 +576,8 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
                        .arg(value.projectionCacheStats.logicalDocumentHits)
                        .arg(value.projectionCacheStats.catalogLogicalDocumentBuilds)
                        .arg(value.projectionCacheStats.catalogLogicalDocumentHits)
+                       .arg(value.documentValidationCacheHits)
+                       .arg(value.documentValidationCacheMisses)
                        .arg(value.projectIndexScanStats.logicalDocumentBuilds)
                        .arg(value.projectIndexScanStats.logicalDocumentHits)
                        .arg(value.projectIndexScanStats.prebuiltLogicalDocumentHits)
@@ -555,6 +606,7 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
         knownProjectFilePaths.insert(document.normalizedPath);
         projectSourceDocumentByPath.insert(document.normalizedPath, document);
     }
+    const QString knownProjectFilesSignature = knownProjectFilePathsSignature(knownProjectFilePaths);
 
     {
         QElapsedTimer validateTimer;
@@ -567,7 +619,10 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
                                       validationCatalog,
                                       knownProjectFilePaths,
                                       projectionCache,
-                                      TherionSourceSnapshotCatalogKey::fromRevision(1));
+                                      TherionSourceSnapshotCatalogKey::fromRevision(1),
+                                      catalogSignature,
+                                      knownProjectFilesSignature,
+                                      documentValidationCache);
             if (result.limitReached) {
                 validateMs = validateTimer.elapsed();
                 return logAndReturn(result);
@@ -620,6 +675,7 @@ ProjectValidationScanner::ProjectValidationScanner(QObject *parent)
     , scanWatcher_(new QFutureWatcher<Result>(this))
     , projectionCache_(std::make_shared<ProjectSourceProjectionCache>())
     , projectIndexSnapshotCache_(std::make_shared<std::optional<ProjectValidationIndexSnapshotCacheEntry>>())
+    , documentValidationCache_(std::make_shared<QHash<QString, DocumentValidationCacheEntry>>())
 {
     debounceTimer_->setSingleShot(true);
     debounceTimer_->setInterval(120);
@@ -664,6 +720,7 @@ void ProjectValidationScanner::startScan()
     if (projectionCacheProjectRootPath_ != normalizedProjectRootPath
         || projectionCacheCatalogSignature_ != catalogSignature) {
         projectionCache_->clear();
+        documentValidationCache_->clear();
         projectionCacheProjectRootPath_ = normalizedProjectRootPath;
         projectionCacheCatalogSignature_ = catalogSignature;
     } else {
@@ -674,13 +731,22 @@ void ProjectValidationScanner::startScan()
     const std::shared_ptr<ProjectSourceProjectionCache> projectionCache = projectionCache_;
     const std::shared_ptr<std::optional<ProjectValidationIndexSnapshotCacheEntry>> projectIndexSnapshotCache =
         projectIndexSnapshotCache_;
-    auto future = QtConcurrent::run([request, generation, projectionCache, projectIndexSnapshotCache]() {
+    const std::shared_ptr<QHash<QString, DocumentValidationCacheEntry>> documentValidationCache =
+        documentValidationCache_;
+    auto future = QtConcurrent::run([request,
+                                     generation,
+                                     projectionCache,
+                                     projectIndexSnapshotCache,
+                                     documentValidationCache,
+                                     catalogSignature]() {
         return performProjectValidation(request.projectRootPath,
                                         request.validationCatalog,
                                         request.inMemoryProjectContentsByPath,
                                         generation,
                                         *projectionCache,
-                                        *projectIndexSnapshotCache);
+                                        *projectIndexSnapshotCache,
+                                        *documentValidationCache,
+                                        catalogSignature);
     });
     scanWatcher_->setFuture(future);
 }

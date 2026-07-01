@@ -49,6 +49,13 @@ public:
         ProjectSourceProjectionCacheStats projectionCacheStats;
         ProjectStructureIndexScanStats projectIndexScanStats;
         bool projectIndexSnapshotCacheHit = false;
+        int documentValidationCacheHits = 0;
+        int documentValidationCacheMisses = 0;
+    };
+
+    struct DocumentValidationCacheEntry
+    {
+        QVector<Finding> findings;
     };
 
     explicit ProjectValidationScanner(QObject *parent = nullptr);
@@ -82,6 +89,7 @@ private:
     QFutureWatcher<Result> *scanWatcher_ = nullptr;
     std::shared_ptr<ProjectSourceProjectionCache> projectionCache_;
     std::shared_ptr<std::optional<ProjectValidationIndexSnapshotCacheEntry>> projectIndexSnapshotCache_;
+    std::shared_ptr<QHash<QString, DocumentValidationCacheEntry>> documentValidationCache_;
     QString projectionCacheProjectRootPath_;
     QString projectionCacheCatalogSignature_;
 };
