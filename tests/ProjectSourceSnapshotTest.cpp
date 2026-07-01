@@ -1,4 +1,5 @@
 #include "../src/app/ProjectSourceSnapshot.h"
+#include "../src/app/ProjectSourceProjectionCache.h"
 
 #include <QDir>
 #include <QFile>
@@ -35,6 +36,9 @@ private slots:
     void collectorIncludesInMemoryOnlySources();
     void collectorRetainsOversizedKnownFileWithoutText();
     void structureIndexSourceSetPreservesSnapshotInputs();
+    void projectionCacheReusesUnchangedSourceDocuments();
+    void projectionCacheInvalidatesWhenTextChanges();
+    void projectionCacheSeparatesCatalogLogicalDocumentsByCatalogKey();
 };
 
 void ProjectSourceSnapshotTest::equivalentPathFormsShareRequestKey()
@@ -304,6 +308,86 @@ void ProjectSourceSnapshotTest::structureIndexSourceSetPreservesSnapshotInputs()
 
     QVERIFY(foundSource);
     QVERIFY(foundConfig);
+}
+
+void ProjectSourceSnapshotTest::projectionCacheReusesUnchangedSourceDocuments()
+{
+    const ProjectSourceDocument document{
+        normalizeProjectSourcePath(QStringLiteral("survey.th")),
+        QStringLiteral("survey cave\nendsurvey\n"),
+        ProjectSourceDocumentOrigin::InMemoryOnly,
+        -1,
+        true,
+    };
+
+    ProjectSourceProjectionCache cache;
+    const TherionSourceDocument &firstSourceDocument = cache.sourceDocument(document);
+    const TherionSourceDocument &secondSourceDocument = cache.sourceDocument(document);
+    QCOMPARE(&firstSourceDocument, &secondSourceDocument);
+
+    const TherionSourceLogicalDocument &firstLogicalDocument = cache.logicalDocument(document);
+    const TherionSourceLogicalDocument &secondLogicalDocument = cache.logicalDocument(document);
+    QCOMPARE(&firstLogicalDocument, &secondLogicalDocument);
+
+    const ProjectSourceProjectionCacheStats stats = cache.stats();
+    QCOMPARE(stats.sourceDocumentBuilds, 1);
+    QCOMPARE(stats.sourceDocumentHits, 2);
+    QCOMPARE(stats.logicalDocumentBuilds, 1);
+    QCOMPARE(stats.logicalDocumentHits, 1);
+}
+
+void ProjectSourceSnapshotTest::projectionCacheInvalidatesWhenTextChanges()
+{
+    ProjectSourceDocument document{
+        normalizeProjectSourcePath(QStringLiteral("survey.th")),
+        QStringLiteral("survey first\nendsurvey\n"),
+        ProjectSourceDocumentOrigin::InMemoryOnly,
+        -1,
+        true,
+    };
+
+    ProjectSourceProjectionCache cache;
+    const TherionSourceLogicalDocument &firstLogicalDocument = cache.logicalDocument(document);
+
+    document.text = QStringLiteral("survey second\nendsurvey\n");
+    const TherionSourceLogicalDocument &secondLogicalDocument = cache.logicalDocument(document);
+    QVERIFY(&firstLogicalDocument != &secondLogicalDocument);
+
+    const ProjectSourceProjectionCacheStats stats = cache.stats();
+    QCOMPARE(stats.sourceDocumentBuilds, 2);
+    QCOMPARE(stats.logicalDocumentBuilds, 2);
+    QCOMPARE(stats.logicalDocumentHits, 0);
+}
+
+void ProjectSourceSnapshotTest::projectionCacheSeparatesCatalogLogicalDocumentsByCatalogKey()
+{
+    const ProjectSourceDocument document{
+        normalizeProjectSourcePath(QStringLiteral("survey.th")),
+        QStringLiteral("survey cave -title \"Cave\"\nendsurvey\n"),
+        ProjectSourceDocumentOrigin::InMemoryOnly,
+        -1,
+        true,
+    };
+
+    TherionSourceValidationCatalog catalog;
+    ProjectSourceProjectionCache cache;
+    const TherionSourceLogicalDocument &firstCatalogDocument =
+        cache.logicalDocument(document, catalog, TherionSourceSnapshotCatalogKey::fromRevision(1));
+    const TherionSourceLogicalDocument &secondCatalogDocument =
+        cache.logicalDocument(document, catalog, TherionSourceSnapshotCatalogKey::fromRevision(1));
+    const TherionSourceLogicalDocument &thirdCatalogDocument =
+        cache.logicalDocument(document, catalog, TherionSourceSnapshotCatalogKey::fromRevision(2));
+    const TherionSourceLogicalDocument &plainLogicalDocument = cache.logicalDocument(document);
+
+    QCOMPARE(&firstCatalogDocument, &secondCatalogDocument);
+    QVERIFY(&firstCatalogDocument != &thirdCatalogDocument);
+    QVERIFY(&firstCatalogDocument != &plainLogicalDocument);
+
+    const ProjectSourceProjectionCacheStats stats = cache.stats();
+    QCOMPARE(stats.sourceDocumentBuilds, 1);
+    QCOMPARE(stats.catalogLogicalDocumentBuilds, 2);
+    QCOMPARE(stats.catalogLogicalDocumentHits, 1);
+    QCOMPARE(stats.logicalDocumentBuilds, 1);
 }
 
 QTEST_GUILESS_MAIN(ProjectSourceSnapshotTest)

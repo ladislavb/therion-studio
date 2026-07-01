@@ -235,6 +235,8 @@ set(THERION_APP_SOURCES
     src/app/MainWindowValidationFixApplyService.h
     src/app/ProjectSourceSnapshot.cpp
     src/app/ProjectSourceSnapshot.h
+    src/app/ProjectSourceProjectionCache.cpp
+    src/app/ProjectSourceProjectionCache.h
     src/app/ProjectSearchScanner.cpp
     src/app/ProjectSearchScanner.h
     src/app/ProjectValidationController.cpp

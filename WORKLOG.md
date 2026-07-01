@@ -45,8 +45,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Use `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md` for the DOM-first project source snapshot slice queue; current
   findings show Structure and Validation now share snapshot-compatible collection/index input paths, while repeated
   requests still need explicit cache ownership.
-- Build the next validation/project-scan slice as a focused cache owner for source snapshots and project-index snapshots;
-  do not reintroduce scanner-local file traversal or static/global cache state.
+- `ProjectSourceProjectionCache` now provides the first focused per-run source/logical projection cache for project source
+  snapshots with observable reuse stats.
+- Next validation/project-scan slice: route one `ProjectValidationScanner` local-validation pass through
+  `ProjectSourceProjectionCache`; do not reintroduce scanner-local file traversal or static/global cache state.
 - Prefer Settings -> troubleshooting logs for tester builds: the preference is time-limited, restart-applied, and uses
   rotated application log files instead of requiring users to set environment variables.
 - Optimize future live validation with incremental file/revision caching, generation-keyed cancellation, and cheaper
