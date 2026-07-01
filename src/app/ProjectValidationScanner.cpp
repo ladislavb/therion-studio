@@ -9,12 +9,16 @@
 #include "../core/TherionSourceReferenceResolver.h"
 
 #include <QDir>
+#include <QCryptographicHash>
 #include <QElapsedTimer>
 #include <QFutureWatcher>
 #include <QDebug>
 #include <QSet>
+#include <QStringList>
 #include <QTimer>
 #include <QtConcurrent>
+
+#include <utility>
 
 namespace TherionStudio
 {
@@ -32,6 +36,85 @@ bool diagnosticProjectValidationLoggingEnabled()
             || value == QStringLiteral("on");
     }();
     return enabled;
+}
+
+void addHashPart(QCryptographicHash *hash, const QString &value)
+{
+    if (hash == nullptr) {
+        return;
+    }
+    hash->addData(value.toUtf8());
+    static const QByteArray separator(1, '\0');
+    hash->addData(separator);
+}
+
+void addHashPart(QCryptographicHash *hash, int value)
+{
+    addHashPart(hash, QString::number(value));
+}
+
+QStringList sortedStringSet(const QSet<QString> &values)
+{
+    QStringList sorted(values.begin(), values.end());
+    sorted.sort(Qt::CaseSensitive);
+    return sorted;
+}
+
+QStringList sortedStringList(QStringList values)
+{
+    values.sort(Qt::CaseSensitive);
+    return values;
+}
+
+void addStringListHash(QCryptographicHash *hash, QStringList values)
+{
+    addHashPart(hash, values.size());
+    for (const QString &value : sortedStringList(std::move(values))) {
+        addHashPart(hash, value);
+    }
+}
+
+void addStringSetHash(QCryptographicHash *hash, const QSet<QString> &values)
+{
+    addStringListHash(hash, sortedStringSet(values));
+}
+
+template <typename ValuesByKey, typename ValueHandler>
+void addSortedHashKeys(QCryptographicHash *hash, const ValuesByKey &valuesByKey, ValueHandler valueHandler)
+{
+    QStringList keys = valuesByKey.keys();
+    keys.sort(Qt::CaseSensitive);
+    addHashPart(hash, keys.size());
+    for (const QString &key : std::as_const(keys)) {
+        addHashPart(hash, key);
+        valueHandler(hash, valuesByKey.value(key));
+    }
+}
+
+QString validationCatalogSignature(const TherionSourceValidationCatalog &catalog)
+{
+    QCryptographicHash hash(QCryptographicHash::Sha256);
+    addStringSetHash(&hash, catalog.commandNames);
+    addSortedHashKeys(&hash, catalog.commandContexts, addStringListHash);
+    addSortedHashKeys(&hash, catalog.commandDocumentTypes, addStringSetHash);
+    addSortedHashKeys(&hash, catalog.commandOptionNames, addStringSetHash);
+    addSortedHashKeys(&hash, catalog.commandRequiredPositionalCount, [](QCryptographicHash *target, int value) {
+        addHashPart(target, value);
+    });
+    addSortedHashKeys(&hash, catalog.commandMaxPositionalCount, [](QCryptographicHash *target, int value) {
+        addHashPart(target, value);
+    });
+    addSortedHashKeys(&hash, catalog.commandArgumentAllowedValuesByKey, addStringListHash);
+    addSortedHashKeys(&hash, catalog.commandTypeValues, addStringListHash);
+    addSortedHashKeys(&hash, catalog.commandOptionAllowedValuesByKey, addStringListHash);
+    addSortedHashKeys(&hash, catalog.commandSubtypeValuesByTypeKey, addStringListHash);
+    addSortedHashKeys(&hash, catalog.commandOptionValueArityTokens, [](QCryptographicHash *target, const QString &value) {
+        addHashPart(target, value);
+    });
+    addSortedHashKeys(&hash, catalog.commandOptionFixedArityByKey, [](QCryptographicHash *target, int value) {
+        addHashPart(target, value);
+    });
+    return QString::fromLatin1(hash.result().toHex());
 }
 
 QString sourceLineTextAt(const QString &text, int oneBasedLineNumber)
@@ -200,6 +283,25 @@ QSet<QString> indexedProjectSourceFiles(const ProjectIndexSnapshot &snapshot)
         }
     }
     return sourceFiles;
+}
+
+ProjectStructureIndexSourceSet projectStructureIndexSourceSetWithLogicalDocuments(
+    const ProjectSourceSnapshot &snapshot,
+    const QHash<QString, ProjectSourceDocument> &documentByPath,
+    ProjectSourceProjectionCache &projectionCache)
+{
+    ProjectStructureIndexSourceSet sourceSet = projectStructureIndexSourceSet(snapshot);
+    for (ProjectStructureIndexSource &source : sourceSet.sources) {
+        if (!source.textLoaded) {
+            continue;
+        }
+        const auto documentIt = documentByPath.constFind(source.normalizedPath);
+        if (documentIt == documentByPath.constEnd()) {
+            continue;
+        }
+        source.logicalDocument = projectionCache.logicalDocumentHandle(documentIt.value());
+    }
+    return sourceSet;
 }
 
 void appendUnindexedTh2StationNameFindings(ProjectValidationScanner::Result *result,
@@ -390,7 +492,8 @@ void appendFindingsForDocument(ProjectValidationScanner::Result *result,
 ProjectValidationScanner::Result performProjectValidation(const QString &projectRootPath,
                                                           const TherionSourceValidationCatalog &validationCatalog,
                                                           const QHash<QString, QString> &inMemoryProjectContentsByPath,
-                                                          quint64 generation)
+                                                          quint64 generation,
+                                                          ProjectSourceProjectionCache &projectionCache)
 {
     QElapsedTimer totalTimer;
     totalTimer.start();
@@ -402,13 +505,12 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
     ProjectValidationScanner::Result result;
     result.generation = generation;
     result.projectRootPath = projectRootPath;
-    ProjectSourceProjectionCache projectionCache;
 
     auto logAndReturn = [&](ProjectValidationScanner::Result value) {
         value.projectionCacheStats = projectionCache.stats();
         if (diagnosticProjectValidationLoggingEnabled()) {
             qInfo().noquote()
-                << QStringLiteral("project-validation-scan generation=%1 files=%2 searched=%3 findings=%4 limit_reached=%5 collect_ms=%6 validate_ms=%7 project_index_ms=%8 total_ms=%9 projection_source_builds=%10 projection_source_hits=%11 projection_logical_builds=%12 projection_logical_hits=%13 projection_catalog_builds=%14 projection_catalog_hits=%15 root=\"%16\" error=\"%17\"")
+                << QStringLiteral("project-validation-scan generation=%1 files=%2 searched=%3 findings=%4 limit_reached=%5 collect_ms=%6 validate_ms=%7 project_index_ms=%8 total_ms=%9 projection_source_builds=%10 projection_source_hits=%11 projection_logical_builds=%12 projection_logical_hits=%13 projection_catalog_builds=%14 projection_catalog_hits=%15 project_index_logical_builds=%16 project_index_logical_hits=%17 project_index_prebuilt_logical_hits=%18 root=\"%19\" error=\"%20\"")
                        .arg(value.generation)
                        .arg(projectSourceSnapshot.documents.size())
                        .arg(value.searchedFileCount)
@@ -424,6 +526,9 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
                        .arg(value.projectionCacheStats.logicalDocumentHits)
                        .arg(value.projectionCacheStats.catalogLogicalDocumentBuilds)
                        .arg(value.projectionCacheStats.catalogLogicalDocumentHits)
+                       .arg(value.projectIndexScanStats.logicalDocumentBuilds)
+                       .arg(value.projectIndexScanStats.logicalDocumentHits)
+                       .arg(value.projectIndexScanStats.prebuiltLogicalDocumentHits)
                        .arg(value.projectRootPath)
                        .arg(value.errorMessage);
         }
@@ -474,7 +579,9 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
         projectIndexTimer.start();
         QString indexErrorMessage;
         const ProjectIndexSnapshot projectIndexSnapshot = ProjectStructureIndex::scanProjectIndex(
-            projectStructureIndexSourceSet(projectSourceSnapshot),
+            projectStructureIndexSourceSetWithLogicalDocuments(projectSourceSnapshot,
+                                                               projectSourceDocumentByPath,
+                                                               projectionCache),
             &indexErrorMessage);
         result.projectIndexScanStats = projectIndexSnapshot.scanStats;
         appendProjectIndexFindings(&result,
@@ -495,6 +602,7 @@ ProjectValidationScanner::ProjectValidationScanner(QObject *parent)
     : QObject(parent)
     , debounceTimer_(new QTimer(this))
     , scanWatcher_(new QFutureWatcher<Result>(this))
+    , projectionCache_(std::make_shared<ProjectSourceProjectionCache>())
 {
     debounceTimer_->setSingleShot(true);
     debounceTimer_->setInterval(120);
@@ -534,13 +642,25 @@ void ProjectValidationScanner::startScan()
     const Request request = pendingRequest_;
     hasPendingRequest_ = false;
     const quint64 generation = ++generation_;
+    const QString normalizedProjectRootPath = canonicalOrAbsoluteFilePath(request.projectRootPath);
+    const QString catalogSignature = validationCatalogSignature(request.validationCatalog);
+    if (projectionCacheProjectRootPath_ != normalizedProjectRootPath
+        || projectionCacheCatalogSignature_ != catalogSignature) {
+        projectionCache_->clear();
+        projectionCacheProjectRootPath_ = normalizedProjectRootPath;
+        projectionCacheCatalogSignature_ = catalogSignature;
+    } else {
+        projectionCache_->resetStats();
+    }
     emit validationStarted(generation, request.projectRootPath);
 
-    auto future = QtConcurrent::run([request, generation]() {
+    const std::shared_ptr<ProjectSourceProjectionCache> projectionCache = projectionCache_;
+    auto future = QtConcurrent::run([request, generation, projectionCache]() {
         return performProjectValidation(request.projectRootPath,
                                         request.validationCatalog,
                                         request.inMemoryProjectContentsByPath,
-                                        generation);
+                                        generation,
+                                        *projectionCache);
     });
     scanWatcher_->setFuture(future);
 }

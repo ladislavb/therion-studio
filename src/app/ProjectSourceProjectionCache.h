@@ -29,12 +29,15 @@ class ProjectSourceProjectionCache final
 public:
     [[nodiscard]] const TherionSourceDocument &sourceDocument(const ProjectSourceDocument &document);
     [[nodiscard]] const TherionSourceLogicalDocument &logicalDocument(const ProjectSourceDocument &document);
+    [[nodiscard]] std::shared_ptr<const TherionSourceLogicalDocument> logicalDocumentHandle(
+        const ProjectSourceDocument &document);
     [[nodiscard]] const TherionSourceLogicalDocument &logicalDocument(
         const ProjectSourceDocument &document,
         const TherionSourceValidationCatalog &catalog,
         TherionSourceSnapshotCatalogKey catalogKey);
 
     [[nodiscard]] ProjectSourceProjectionCacheStats stats() const;
+    void resetStats();
     void clear();
 
 private:

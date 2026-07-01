@@ -33,6 +33,7 @@ struct ProjectBlock
 
 struct ParsedFileCache
 {
+    QHash<QString, std::shared_ptr<const TherionSourceLogicalDocument>> prebuiltLogicalDocuments;
     QHash<QString, TherionSourceLogicalDocument> logicalDocuments;
     TherionSourceSnapshotCache sourceSnapshotCache;
     int sourceRevisionCounter = 0;
@@ -928,6 +929,11 @@ const TherionSourceLogicalDocument &logicalDocumentForFile(const QString &filePa
         ++cache->stats.logicalDocumentHits;
         return iterator.value();
     }
+    const auto prebuiltIt = cache->prebuiltLogicalDocuments.constFind(normalizedPath);
+    if (prebuiltIt != cache->prebuiltLogicalDocuments.constEnd() && prebuiltIt.value()) {
+        ++cache->stats.prebuiltLogicalDocumentHits;
+        return *prebuiltIt.value();
+    }
 
     QString fileContents;
     if (inMemoryFileContentsByPath.contains(normalizedPath)) {
@@ -1417,6 +1423,7 @@ RootConfigResolution rootConfigFiles(const QVector<QString> &filePaths,
 ProjectIndexSnapshot scanProjectIndexFromFilePaths(const QString &projectRootPath,
                                                    const QVector<QString> &filePaths,
                                                    const QHash<QString, QString> &inMemoryFileContentsByPath,
+                                                   const QHash<QString, std::shared_ptr<const TherionSourceLogicalDocument>> &prebuiltLogicalDocumentsByPath,
                                                    const QString &preferredConfigPath,
                                                    QString *errorMessage)
 {
@@ -1445,6 +1452,7 @@ ProjectIndexSnapshot scanProjectIndexFromFilePaths(const QString &projectRootPat
     });
 
     ParsedFileCache cache;
+    cache.prebuiltLogicalDocuments = prebuiltLogicalDocumentsByPath;
     const RootConfigResolution configResolution = rootConfigFiles(sortedFilePaths, projectRootPath, preferredConfigPath);
     snapshot.rootConfigPath = configResolution.configPath;
     if (!configResolution.errorMessage.isEmpty()) {
@@ -2126,6 +2134,7 @@ ProjectIndexSnapshot ProjectStructureIndex::scanProjectIndex(const QString &proj
     return scanProjectIndexFromFilePaths(projectRootPath,
                                          filePaths,
                                          inMemoryFileContentsByPath,
+                                         {},
                                          preferredConfigPath,
                                          errorMessage);
 }
@@ -2136,6 +2145,7 @@ ProjectIndexSnapshot ProjectStructureIndex::scanProjectIndex(const ProjectStruct
     QVector<QString> filePaths;
     filePaths.reserve(sourceSet.sources.size());
     QHash<QString, QString> sourceTextByPath;
+    QHash<QString, std::shared_ptr<const TherionSourceLogicalDocument>> prebuiltLogicalDocumentsByPath;
     for (const ProjectStructureIndexSource &source : sourceSet.sources) {
         const QString normalizedPath = normalizedFilePathKey(source.normalizedPath);
         if (normalizedPath.isEmpty()) {
@@ -2145,10 +2155,14 @@ ProjectIndexSnapshot ProjectStructureIndex::scanProjectIndex(const ProjectStruct
         if (source.textLoaded) {
             sourceTextByPath.insert(normalizedPath, source.text);
         }
+        if (source.logicalDocument) {
+            prebuiltLogicalDocumentsByPath.insert(normalizedPath, source.logicalDocument);
+        }
     }
     return scanProjectIndexFromFilePaths(sourceSet.projectRootPath,
                                          filePaths,
                                          sourceTextByPath,
+                                         prebuiltLogicalDocumentsByPath,
                                          sourceSet.preferredConfigPath,
                                          errorMessage);
 }

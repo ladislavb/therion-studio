@@ -56,9 +56,13 @@ Active planning only. Completed history belongs in archive files. Stable archite
   the unindexed TH2 diagnostic helper reuses source projections after local validation.
 - Project-index scans now expose internal logical-document cache stats through validation results, with coverage that
   diagnostic helpers reuse the same per-file logical projections after structure collection.
-- Next validation/project-scan slice: use both projection and project-index cache stats to choose between a core-level
-  prebuilt logical-document input path or shared Structure/Validation cache ownership; do not reintroduce scanner-local
-  file traversal or static/global cache state.
+- Project validation now retains source and catalog-aware logical projections across repeated scans of the same project
+  and validation catalog, keyed by project root, catalog signature, file path, source type, loaded state, and content hash.
+- Project-index validation scans now consume validation-provided plain logical projections for loaded project sources
+  instead of rebuilding them inside `ProjectStructureIndex`.
+- Next validation/project-scan slice: use retained projection stats and project-index prebuilt-hit stats to decide whether
+  shared Structure/Validation cache ownership should move to a common app service; do not reintroduce scanner-local file
+  traversal or static/global cache state.
 - Prefer Settings -> troubleshooting logs for tester builds: the preference is time-limited, restart-applied, and uses
   rotated application log files instead of requiring users to set environment variables.
 - Optimize future live validation with incremental file/revision caching, generation-keyed cancellation, and cheaper

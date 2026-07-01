@@ -40,18 +40,24 @@ const TherionSourceDocument &ProjectSourceProjectionCache::sourceDocument(const 
 
 const TherionSourceLogicalDocument &ProjectSourceProjectionCache::logicalDocument(const ProjectSourceDocument &document)
 {
+    return *logicalDocumentHandle(document);
+}
+
+std::shared_ptr<const TherionSourceLogicalDocument> ProjectSourceProjectionCache::logicalDocumentHandle(
+    const ProjectSourceDocument &document)
+{
     const QString key = logicalKeyForDocument(document);
     auto it = logicalDocuments_.constFind(key);
     if (it != logicalDocuments_.constEnd()) {
         ++stats_.logicalDocumentHits;
-        return *it.value();
+        return it.value();
     }
 
     auto builtDocument = std::make_shared<TherionSourceLogicalDocument>(
         TherionSourceLogicalDocument::fromSourceDocument(sourceDocument(document)));
     logicalDocuments_.insert(key, builtDocument);
     ++stats_.logicalDocumentBuilds;
-    return *builtDocument;
+    return builtDocument;
 }
 
 const TherionSourceLogicalDocument &ProjectSourceProjectionCache::logicalDocument(
@@ -83,6 +89,11 @@ const TherionSourceLogicalDocument &ProjectSourceProjectionCache::logicalDocumen
 ProjectSourceProjectionCacheStats ProjectSourceProjectionCache::stats() const
 {
     return stats_;
+}
+
+void ProjectSourceProjectionCache::resetStats()
+{
+    stats_ = {};
 }
 
 void ProjectSourceProjectionCache::clear()

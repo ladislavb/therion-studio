@@ -10,6 +10,8 @@
 #include <QString>
 #include <QVector>
 
+#include <memory>
+
 class QTimer;
 
 template <typename T>
@@ -69,5 +71,8 @@ private:
     quint64 generation_ = 0;
     QTimer *debounceTimer_ = nullptr;
     QFutureWatcher<Result> *scanWatcher_ = nullptr;
+    std::shared_ptr<ProjectSourceProjectionCache> projectionCache_;
+    QString projectionCacheProjectRootPath_;
+    QString projectionCacheCatalogSignature_;
 };
 }

@@ -628,13 +628,12 @@ int runProjectIndexDiagnosticProjectionTest()
                 "Project validation should expose mixed map/scrap composition as a warning.")) {
         return 1;
     }
-    if (!expect(waitResult.result.projectIndexScanStats.logicalDocumentBuilds == 3,
-                "Project-index scanning should build one logical document for each project source file.")) {
+    if (!expect(waitResult.result.projectIndexScanStats.logicalDocumentBuilds == 0,
+                "Project-index scanning should reuse validation-provided logical documents instead of rebuilding them.")) {
         return 1;
     }
-    if (!expect(waitResult.result.projectIndexScanStats.logicalDocumentHits
-                    > waitResult.result.projectIndexScanStats.logicalDocumentBuilds,
-                "Project-index diagnostic helpers should reuse cached logical documents after structure collection.")) {
+    if (!expect(waitResult.result.projectIndexScanStats.prebuiltLogicalDocumentHits > 3,
+                "Project-index diagnostic helpers should consume prebuilt logical documents after structure collection.")) {
         return 1;
     }
 
@@ -714,13 +713,92 @@ int runUnindexedMapStationNameValidationTest()
                 "Unindexed-map validation should not report namespaced station references without project context.")) {
         return 1;
     }
-    if (!expect(waitResult.result.projectionCacheStats.logicalDocumentBuilds == 1,
-                "Unindexed-map validation should build one plain logical projection for the unindexed TH2 diagnostic helper.")) {
+    if (!expect(waitResult.result.projectionCacheStats.logicalDocumentBuilds == waitResult.result.searchedFileCount,
+                "Unindexed-map validation should build one plain logical projection for each project-index source.")) {
+        return 1;
+    }
+    if (!expect(waitResult.result.projectionCacheStats.logicalDocumentHits > 0,
+                "Unindexed-map validation should reuse a plain logical projection for the unindexed TH2 diagnostic helper.")) {
         return 1;
     }
     if (!expect(waitResult.result.projectionCacheStats.sourceDocumentHits
                     > waitResult.result.projectionCacheStats.sourceDocumentBuilds,
                 "Unindexed-map validation should reuse source projections after local validation.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int runRepeatedValidationReusesProjectionCacheTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Temporary repeated-validation project directory creation failed.")) {
+        return 1;
+    }
+
+    QDir projectDir(tempDir.path());
+    if (!expect(projectDir.mkpath(QStringLiteral("maps")),
+                "Temporary repeated-validation map directory could not be created.")) {
+        return 1;
+    }
+
+    const QString configFile = projectDir.filePath(QStringLiteral("thconfig"));
+    const QString rootFile = projectDir.filePath(QStringLiteral("root.th"));
+    const QString mapFile = projectDir.filePath(QStringLiteral("maps/map.th2"));
+    if (!expect(writeTextFile(configFile,
+                              QStringLiteral("source root.th\n")),
+                "Repeated-validation config fixture could not be written.")) {
+        return 1;
+    }
+    if (!expect(writeTextFile(rootFile,
+                              QStringLiteral("survey cave\n"
+                                             "  input maps/map.th2\n"
+                                             "endsurvey cave\n")),
+                "Repeated-validation root fixture could not be written.")) {
+        return 1;
+    }
+    if (!expect(writeTextFile(mapFile,
+                              QStringLiteral("scrap test\n"
+                                             "line wall -clip off \"-clip off\"\n"
+                                             "endline\n"
+                                             "endscrap\n")),
+                "Repeated-validation map fixture could not be written.")) {
+        return 1;
+    }
+
+    ProjectValidationScanner scanner;
+    scanner.setDebounceIntervalMs(0);
+    scanner.requestScan(tempDir.path(), contextualDocumentTypeCatalog(), {});
+    const ValidationWaitResult firstResult = waitForValidation(scanner);
+    if (!expect(firstResult.received, "First repeated validation did not emit validationFinished before timeout.")) {
+        return 1;
+    }
+    if (!expect(firstResult.result.projectionCacheStats.sourceDocumentBuilds == 3
+                    && firstResult.result.projectionCacheStats.catalogLogicalDocumentBuilds == 3,
+                "First repeated validation should build source and catalog logical projections for each project file.")) {
+        return 1;
+    }
+
+    scanner.requestScan(tempDir.path(), contextualDocumentTypeCatalog(), {});
+    const ValidationWaitResult secondResult = waitForValidation(scanner);
+    if (!expect(secondResult.received, "Second repeated validation did not emit validationFinished before timeout.")) {
+        return 1;
+    }
+    if (!expect(secondResult.result.projectionCacheStats.sourceDocumentBuilds == 0
+                    && secondResult.result.projectionCacheStats.catalogLogicalDocumentBuilds == 0,
+                "Second repeated validation should reuse retained source and catalog logical projections.")) {
+        return 1;
+    }
+    if (!expect(secondResult.result.projectionCacheStats.sourceDocumentHits >= 3
+                    && secondResult.result.projectionCacheStats.catalogLogicalDocumentHits >= 3,
+                "Second repeated validation should report projection cache hits for each project file.")) {
+        return 1;
+    }
+    if (!expect(secondResult.result.projectionCacheStats.logicalDocumentHits >= 3
+                    && secondResult.result.projectIndexScanStats.logicalDocumentBuilds == 0
+                    && secondResult.result.projectIndexScanStats.prebuiltLogicalDocumentHits > 0,
+                "Second repeated validation should feed retained logical projections into project-index scanning.")) {
         return 1;
     }
 
@@ -1347,6 +1425,9 @@ int main(int argc, char **argv)
         return 1;
     }
     if (runUnindexedMapStationNameValidationTest() != 0) {
+        return 1;
+    }
+    if (runRepeatedValidationReusesProjectionCacheTest() != 0) {
         return 1;
     }
     if (runDuplicateObjectIdDiagnosticIsNotDuplicatedTest() != 0) {

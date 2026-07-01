@@ -5,9 +5,12 @@
 #include <QString>
 #include <QVector>
 
+#include <memory>
+
 namespace TherionStudio
 {
 struct TherionParsedLine;
+class TherionSourceLogicalDocument;
 
 enum class ProjectStructureEntryKind
 {
@@ -68,6 +71,7 @@ struct ProjectStructureIndexScanStats
 {
     int logicalDocumentBuilds = 0;
     int logicalDocumentHits = 0;
+    int prebuiltLogicalDocumentHits = 0;
 };
 
 struct ProjectIndexSnapshot
@@ -88,6 +92,7 @@ struct ProjectStructureIndexSource
     QString normalizedPath;
     QString text;
     bool textLoaded = true;
+    std::shared_ptr<const TherionSourceLogicalDocument> logicalDocument;
 };
 
 struct ProjectStructureIndexSourceSet
