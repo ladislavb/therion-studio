@@ -382,6 +382,7 @@ int runSegmentStyledLineVertexMoveUsesPartialRefreshTest()
                                             "  0.0 0.0\n"
                                             "  subtype blocks\n"
                                             "  1.0 1.0\n"
+                                            "  4.0 4.0\n"
                                             "endline\n");
     if (!expect(!filePath.isEmpty(), "Failed to create segment-styled line vertex move test file.")) {
         return 1;
@@ -446,6 +447,7 @@ int runSegmentStyledLineVertexMoveUsesPartialRefreshTest()
                                              "  0.0 0.0\n"
                                              "  subtype blocks\n"
                                              "  2.0 3.0\n"
+                                             "  4.0 4.0\n"
                                              "endline\n");
     controller.recordLineAreaVertexMove(1,
                                         QStringLiteral("line"),
@@ -472,6 +474,110 @@ int runSegmentStyledLineVertexMoveUsesPartialRefreshTest()
     }
     if (!expect(itemsByLine.contains(1) && vertexItemsByKey.size() > 0,
                 "Segment-styled line vertex move partial refresh should restore primary and vertex indexes.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int runSegmentStyledLineVertexMoveFallsBackWhenBoundsChangeTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Failed to create temporary directory.")) {
+        return 1;
+    }
+
+    const QString filePath = createTestFile(tempDir,
+                                            "line wall\n"
+                                            "  0.0 0.0\n"
+                                            "  subtype blocks\n"
+                                            "  1.0 1.0\n"
+                                            "endline\n");
+    if (!expect(!filePath.isEmpty(), "Failed to create bounds-changing line vertex move test file.")) {
+        return 1;
+    }
+
+    QtFileSystem fileSystem;
+    TextEditorTab tab{fileSystem, CommandCatalogStore()};
+    if (!expect(loadTestTab(&tab, filePath), "Failed to load bounds-changing line vertex move test tab.")) {
+        return 1;
+    }
+
+    QUndoStack undoStack;
+    QString toolbarStatus;
+    bool commandApplyInProgress = false;
+    int refreshCount = 0;
+    int flushCount = 0;
+    int discardCount = 0;
+    QGraphicsScene scene;
+    QHash<int, QGraphicsItem *> itemsByLine;
+    QHash<QString, QGraphicsItem *> vertexItemsByKey;
+    const QVector<TherionParsedLine> parsedLines = TherionDocumentParser::parseTokenLines(tab.text());
+    const QVector<MapGeometryFeature> features = collectGeometryFeatures(parsedLines);
+    renderMapWorkspaceScene(&scene,
+                            filePath,
+                            collectMapSceneEntries(parsedLines),
+                            features,
+                            geometryBoundsForFeatures(features),
+                            false,
+                            &itemsByLine,
+                            &vertexItemsByKey,
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {});
+    const int geometryItemCountBefore = geometryItemCountForLine(scene, 1);
+    if (!expect(geometryItemCountBefore > 1,
+                "Bounds-changing line vertex move test should start with a multi-item rendered geometry group.")) {
+        return 1;
+    }
+
+    MapEditorCanvasEditController controller =
+        makeController(&tab,
+                       &undoStack,
+                       &toolbarStatus,
+                       &commandApplyInProgress,
+                       &refreshCount,
+                       &flushCount,
+                       &discardCount,
+                       &scene,
+                       nullptr,
+                       &itemsByLine,
+                       &vertexItemsByKey,
+                       [&tab]() {
+                           const QVector<TherionParsedLine> currentParsedLines =
+                               TherionDocumentParser::parseTokenLines(tab.text());
+                           return geometryBoundsForFeatures(collectGeometryFeatures(currentParsedLines));
+                       });
+
+    const QString afterText = QStringLiteral("line wall\n"
+                                             "  0.0 0.0\n"
+                                             "  subtype blocks\n"
+                                             "  20.0 20.0\n"
+                                             "endline\n");
+    controller.recordLineAreaVertexMove(1,
+                                        QStringLiteral("line"),
+                                        1,
+                                        QPointF(1.0, 1.0),
+                                        QPointF(20.0, 20.0));
+
+    if (!expect(tab.text() == afterText, "Bounds-changing line vertex move should apply source-edit planned coordinates.")) {
+        return 1;
+    }
+    if (!expect(flushCount == 0, "Bounds-changing line vertex move should defer scene refresh out of the source transaction.")) {
+        return 1;
+    }
+    pumpEvents();
+    if (!expect(flushCount == 1, "Bounds-changing line vertex move should fall back to a full scene refresh.")) {
+        return 1;
+    }
+    if (!expect(discardCount == 0, "Bounds-changing line vertex move should not discard the pending full scene refresh.")) {
+        return 1;
+    }
+    if (!expect(geometryItemCountForLine(scene, 1) == geometryItemCountBefore,
+                "Bounds-changing fallback should leave the existing geometry item group for the full refresh path.")) {
         return 1;
     }
 
@@ -648,6 +754,9 @@ int main(int argc, char **argv)
         return 1;
     }
     if (runSegmentStyledLineVertexMoveUsesPartialRefreshTest() != 0) {
+        return 1;
+    }
+    if (runSegmentStyledLineVertexMoveFallsBackWhenBoundsChangeTest() != 0) {
         return 1;
     }
     if (runStaleSourceChangeIsSkippedTest() != 0) {

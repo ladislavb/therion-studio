@@ -763,10 +763,14 @@ std::function<void()> deferredMapSelectionRestoreHook(const MapEditorCanvasEditC
 
 std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEditContext &context,
                                                        int lineNumber,
+                                                       const std::optional<QRectF> &previousSourceBounds,
                                                        std::function<void()> selectionRestoreHook = {})
 {
-    return [context, lineNumber, selectionRestoreHook = std::move(selectionRestoreHook)]() mutable {
-        auto refreshLine = [context, lineNumber, selectionRestoreHook = std::move(selectionRestoreHook)]() mutable {
+    return [context, lineNumber, previousSourceBounds, selectionRestoreHook = std::move(selectionRestoreHook)]() mutable {
+        auto refreshLine = [context,
+                            lineNumber,
+                            previousSourceBounds,
+                            selectionRestoreHook = std::move(selectionRestoreHook)]() mutable {
             const bool logTiming = diagnosticMapInputLoggingEnabled();
             QElapsedTimer totalTimer;
             QElapsedTimer stageTimer;
@@ -833,6 +837,18 @@ std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEdi
                 fallbackFullRefresh(QStringLiteral("missing-feature"));
                 return;
             }
+            const QRectF currentSourceBounds =
+                context.mapSourceBoundsForCurrentDocument ? context.mapSourceBoundsForCurrentDocument() : QRectF();
+            if (previousSourceBounds.has_value()
+                && previousSourceBounds->isValid()
+                && currentSourceBounds.isValid()
+                && !previousSourceBounds->contains(currentSourceBounds)) {
+                fallbackFullRefresh(QStringLiteral("bounds-changed"));
+                return;
+            }
+            const QRectF renderSourceBounds = previousSourceBounds.has_value() && previousSourceBounds->isValid()
+                ? previousSourceBounds.value()
+                : currentSourceBounds;
 
             const MapGeometryItemGroupRemovalResult removalResult =
                 removeMapGeometryItemGroupForLine(context.scene,
@@ -847,7 +863,7 @@ std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEdi
                 renderMapGeometryItemGroupForFeature(
                     context.scene,
                     refreshedFeature.value(),
-                    context.mapSourceBoundsForCurrentDocument ? context.mapSourceBoundsForCurrentDocument() : QRectF(),
+                    renderSourceBounds,
                     context.itemsByLine,
                     context.vertexItemsByKey,
                     {},
@@ -1122,6 +1138,10 @@ void MapEditorCanvasEditController::recordLineAreaVertexMove(int lineNumber,
     int lineOwnerIndexToRestore = -1;
     int lineOwnerSourceVertexIndexToRestore = -1;
     bool canSkipFullSceneRefresh = false;
+    const std::optional<QRectF> previousSourceBounds =
+        context_.mapSourceBoundsForCurrentDocument
+            ? std::optional<QRectF>(context_.mapSourceBoundsForCurrentDocument())
+            : std::nullopt;
     if (rewriteKind == QStringLiteral("line")) {
         const std::optional<MapGeometryFeature> lineFeature = lineFeatureForLineNumber(context_.textEditor->text(), lineNumber);
         if (lineFeature.has_value()) {
@@ -1207,7 +1227,8 @@ void MapEditorCanvasEditController::recordLineAreaVertexMove(int lineNumber,
     if (canSkipFullSceneRefresh) {
         request.projectionInvalidationHook = deferredMapSelectionRestoreHook(context_, std::move(selectionRestoreHook));
     } else if (rewriteKind == QStringLiteral("line") && lineOwnerSourceVertexIndexToRestore >= 0) {
-        request.projectionInvalidationHook = deferredMapLinePartialRefreshHook(context_, lineNumber, std::move(selectionRestoreHook));
+        request.projectionInvalidationHook =
+            deferredMapLinePartialRefreshHook(context_, lineNumber, previousSourceBounds, std::move(selectionRestoreHook));
     } else {
         request.projectionInvalidationHook = deferredMapSceneRefreshHook(context_, std::move(selectionRestoreHook));
     }

@@ -96,6 +96,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Windows map-input follow-up log showed single-touch events being accepted by the map input controller while no draw,
   pan, or tablet interaction was active; the current stabilization slice lets those single-touch begin/update events pass
   through instead of suppressing platform handling.
+- Line partial refresh now keeps one-line item replacement on the existing source-bounds projection and falls back to a
+  full scene refresh when a vertex edit expands map source bounds, preventing mixed projection coordinates.
 - If diagnostics are needed, use `map-line-partial-refresh`, `map-line-selection-restore`, `line-area-anchor-release`, and
   `line-double-click-complete` lines to separate partial-refresh fallback, selection restore, and Bezier draft issues.
 - Keep broad Map/TH2 projection rewrites out of map-input follow-up work until Windows feedback confirms the deferred
