@@ -405,8 +405,8 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
     ProjectSourceProjectionCache projectionCache;
 
     auto logAndReturn = [&](ProjectValidationScanner::Result value) {
+        value.projectionCacheStats = projectionCache.stats();
         if (diagnosticProjectValidationLoggingEnabled()) {
-            const ProjectSourceProjectionCacheStats projectionStats = projectionCache.stats();
             qInfo().noquote()
                 << QStringLiteral("project-validation-scan generation=%1 files=%2 searched=%3 findings=%4 limit_reached=%5 collect_ms=%6 validate_ms=%7 project_index_ms=%8 total_ms=%9 projection_source_builds=%10 projection_source_hits=%11 projection_logical_builds=%12 projection_logical_hits=%13 projection_catalog_builds=%14 projection_catalog_hits=%15 root=\"%16\" error=\"%17\"")
                        .arg(value.generation)
@@ -418,12 +418,12 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
                        .arg(validateMs)
                        .arg(projectIndexMs)
                        .arg(totalTimer.elapsed())
-                       .arg(projectionStats.sourceDocumentBuilds)
-                       .arg(projectionStats.sourceDocumentHits)
-                       .arg(projectionStats.logicalDocumentBuilds)
-                       .arg(projectionStats.logicalDocumentHits)
-                       .arg(projectionStats.catalogLogicalDocumentBuilds)
-                       .arg(projectionStats.catalogLogicalDocumentHits)
+                       .arg(value.projectionCacheStats.sourceDocumentBuilds)
+                       .arg(value.projectionCacheStats.sourceDocumentHits)
+                       .arg(value.projectionCacheStats.logicalDocumentBuilds)
+                       .arg(value.projectionCacheStats.logicalDocumentHits)
+                       .arg(value.projectionCacheStats.catalogLogicalDocumentBuilds)
+                       .arg(value.projectionCacheStats.catalogLogicalDocumentHits)
                        .arg(value.projectRootPath)
                        .arg(value.errorMessage);
         }

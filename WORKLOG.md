@@ -52,6 +52,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Project validation troubleshooting logs now include project source projection cache build/hit counts.
 - Unindexed TH2 station-reference diagnostics now reuse the project source projection cache instead of building a second
   scanner-local logical source projection.
+- `ProjectValidationScanner::Result` now exposes projection cache stats for tests and diagnostics, including coverage that
+  the unindexed TH2 diagnostic helper reuses source projections after local validation.
 - Next validation/project-scan slice: decide from projection cache stats whether to widen cache reuse inside project-index
   diagnostic helpers or start shared Structure/Validation cache ownership; do not reintroduce scanner-local file traversal
   or static/global cache state.

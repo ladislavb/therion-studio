@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ProjectSourceProjectionCache.h"
+
 #include "../core/TherionSourceValidator.h"
 
 #include <QObject>
@@ -33,6 +35,7 @@ public:
         QVector<Finding> findings;
         int searchedFileCount = 0;
         bool limitReached = false;
+        ProjectSourceProjectionCacheStats projectionCacheStats;
     };
 
     explicit ProjectValidationScanner(QObject *parent = nullptr);

@@ -705,6 +705,15 @@ int runUnindexedMapStationNameValidationTest()
                 "Unindexed-map validation should not report namespaced station references without project context.")) {
         return 1;
     }
+    if (!expect(waitResult.result.projectionCacheStats.logicalDocumentBuilds == 1,
+                "Unindexed-map validation should build one plain logical projection for the unindexed TH2 diagnostic helper.")) {
+        return 1;
+    }
+    if (!expect(waitResult.result.projectionCacheStats.sourceDocumentHits
+                    > waitResult.result.projectionCacheStats.sourceDocumentBuilds,
+                "Unindexed-map validation should reuse source projections after local validation.")) {
+        return 1;
+    }
 
     return 0;
 }
