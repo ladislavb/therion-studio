@@ -72,6 +72,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   request keys, so repeated Structure/Validation scans can skip redundant source discovery and text collection.
 - Validation UI now skips rebuilding the problem tree and reapplying open-editor diagnostics when a project-validation
   result signature is unchanged, while still honoring reveal and post-fix navigation requests.
+- Manual project-validation refreshes now keep existing project results visible while a refresh is running when a prior
+  project-validation signature exists, allowing unchanged follow-up results to use the model-skip path.
 - Next validation/project-scan slice: add cancellation/generation handling for superseded live-validation requests or
   gather a fresh diagnostic log to identify the next non-cache bottleneck; do not reintroduce scanner-local file traversal,
   broad context bags, or static/global cache state.

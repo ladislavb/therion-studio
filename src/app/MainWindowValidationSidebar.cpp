@@ -688,8 +688,11 @@ void MainWindow::handleProjectValidationStarted(TherionStudio::ProjectValidation
 
     const bool revealPanel = pendingProjectValidationRevealPanel_;
     validationRevealByGeneration_.insert(generation, revealPanel);
-    const bool replaceVisibleResults = revealPanel
-        || trigger == TherionStudio::ProjectValidationController::Trigger::ManualRefresh;
+    const bool canKeepExistingProjectResults = validationProjectMode_
+        && !lastAppliedProjectValidationSignature_.isEmpty();
+    const bool replaceVisibleResults = (revealPanel
+                                        || trigger == TherionStudio::ProjectValidationController::Trigger::ManualRefresh)
+        && !canKeepExistingProjectResults;
     if (replaceVisibleResults) {
         validationDiagnostics_.clear();
         validationDiagnosticFilePaths_.clear();
