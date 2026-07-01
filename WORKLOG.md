@@ -60,9 +60,11 @@ Active planning only. Completed history belongs in archive files. Stable archite
   and validation catalog, keyed by project root, catalog signature, file path, source type, loaded state, and content hash.
 - Project-index validation scans now consume validation-provided plain logical projections for loaded project sources
   instead of rebuilding them inside `ProjectStructureIndex`.
-- Next validation/project-scan slice: use retained projection stats and project-index prebuilt-hit stats to decide whether
-  shared Structure/Validation cache ownership should move to a common app service; do not reintroduce scanner-local file
-  traversal or static/global cache state.
+- Repeated validation scans now reuse a retained `ProjectIndexSnapshot` when the collected project source request key is
+  unchanged, avoiding repeated map/join/station/duplicate project-index passes for manual refreshes with identical input.
+- Next validation/project-scan slice: use retained projection and project-index snapshot stats to decide whether shared
+  Structure/Validation cache ownership should move to a common app service; do not reintroduce scanner-local file
+  traversal, broad context bags, or static/global cache state.
 - Prefer Settings -> troubleshooting logs for tester builds: the preference is time-limited, restart-applied, and uses
   rotated application log files instead of requiring users to set environment variables.
 - Optimize future live validation with incremental file/revision caching, generation-keyed cancellation, and cheaper

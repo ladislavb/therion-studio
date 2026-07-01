@@ -493,7 +493,8 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
                                                           const TherionSourceValidationCatalog &validationCatalog,
                                                           const QHash<QString, QString> &inMemoryProjectContentsByPath,
                                                           quint64 generation,
-                                                          ProjectSourceProjectionCache &projectionCache)
+                                                          ProjectSourceProjectionCache &projectionCache,
+                                                          std::optional<ProjectValidationIndexSnapshotCacheEntry> &projectIndexSnapshotCache)
 {
     QElapsedTimer totalTimer;
     totalTimer.start();
@@ -510,7 +511,7 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
         value.projectionCacheStats = projectionCache.stats();
         if (diagnosticProjectValidationLoggingEnabled()) {
             qInfo().noquote()
-                << QStringLiteral("project-validation-scan generation=%1 files=%2 searched=%3 findings=%4 limit_reached=%5 collect_ms=%6 validate_ms=%7 project_index_ms=%8 total_ms=%9 projection_source_builds=%10 projection_source_hits=%11 projection_logical_builds=%12 projection_logical_hits=%13 projection_catalog_builds=%14 projection_catalog_hits=%15 project_index_logical_builds=%16 project_index_logical_hits=%17 project_index_prebuilt_logical_hits=%18 root=\"%19\" error=\"%20\"")
+                << QStringLiteral("project-validation-scan generation=%1 files=%2 searched=%3 findings=%4 limit_reached=%5 collect_ms=%6 validate_ms=%7 project_index_ms=%8 total_ms=%9 projection_source_builds=%10 projection_source_hits=%11 projection_logical_builds=%12 projection_logical_hits=%13 projection_catalog_builds=%14 projection_catalog_hits=%15 project_index_logical_builds=%16 project_index_logical_hits=%17 project_index_prebuilt_logical_hits=%18 project_index_snapshot_cache_hit=%19 root=\"%20\" error=\"%21\"")
                        .arg(value.generation)
                        .arg(projectSourceSnapshot.documents.size())
                        .arg(value.searchedFileCount)
@@ -529,6 +530,7 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
                        .arg(value.projectIndexScanStats.logicalDocumentBuilds)
                        .arg(value.projectIndexScanStats.logicalDocumentHits)
                        .arg(value.projectIndexScanStats.prebuiltLogicalDocumentHits)
+                       .arg(value.projectIndexSnapshotCacheHit ? 1 : 0)
                        .arg(value.projectRootPath)
                        .arg(value.errorMessage);
         }
@@ -578,12 +580,26 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
         QElapsedTimer projectIndexTimer;
         projectIndexTimer.start();
         QString indexErrorMessage;
-        const ProjectIndexSnapshot projectIndexSnapshot = ProjectStructureIndex::scanProjectIndex(
-            projectStructureIndexSourceSetWithLogicalDocuments(projectSourceSnapshot,
-                                                               projectSourceDocumentByPath,
-                                                               projectionCache),
-            &indexErrorMessage);
-        result.projectIndexScanStats = projectIndexSnapshot.scanStats;
+        ProjectIndexSnapshot projectIndexSnapshot;
+        const QString sourceRequestKey = projectSourceSnapshot.requestKey.stableKey();
+        if (projectIndexSnapshotCache.has_value()
+            && projectIndexSnapshotCache->sourceRequestKey == sourceRequestKey) {
+            result.projectIndexSnapshotCacheHit = true;
+            indexErrorMessage = projectIndexSnapshotCache->errorMessage;
+            projectIndexSnapshot = projectIndexSnapshotCache->snapshot;
+        } else {
+            projectIndexSnapshot = ProjectStructureIndex::scanProjectIndex(
+                projectStructureIndexSourceSetWithLogicalDocuments(projectSourceSnapshot,
+                                                                   projectSourceDocumentByPath,
+                                                                   projectionCache),
+                &indexErrorMessage);
+            result.projectIndexScanStats = projectIndexSnapshot.scanStats;
+            projectIndexSnapshotCache = ProjectValidationIndexSnapshotCacheEntry{
+                sourceRequestKey,
+                indexErrorMessage,
+                projectIndexSnapshot,
+            };
+        }
         appendProjectIndexFindings(&result,
                                    result.projectRootPath,
                                    projectIndexSnapshot,
@@ -603,6 +619,7 @@ ProjectValidationScanner::ProjectValidationScanner(QObject *parent)
     , debounceTimer_(new QTimer(this))
     , scanWatcher_(new QFutureWatcher<Result>(this))
     , projectionCache_(std::make_shared<ProjectSourceProjectionCache>())
+    , projectIndexSnapshotCache_(std::make_shared<std::optional<ProjectValidationIndexSnapshotCacheEntry>>())
 {
     debounceTimer_->setSingleShot(true);
     debounceTimer_->setInterval(120);
@@ -655,12 +672,15 @@ void ProjectValidationScanner::startScan()
     emit validationStarted(generation, request.projectRootPath);
 
     const std::shared_ptr<ProjectSourceProjectionCache> projectionCache = projectionCache_;
-    auto future = QtConcurrent::run([request, generation, projectionCache]() {
+    const std::shared_ptr<std::optional<ProjectValidationIndexSnapshotCacheEntry>> projectIndexSnapshotCache =
+        projectIndexSnapshotCache_;
+    auto future = QtConcurrent::run([request, generation, projectionCache, projectIndexSnapshotCache]() {
         return performProjectValidation(request.projectRootPath,
                                         request.validationCatalog,
                                         request.inMemoryProjectContentsByPath,
                                         generation,
-                                        *projectionCache);
+                                        *projectionCache,
+                                        *projectIndexSnapshotCache);
     });
     scanWatcher_->setFuture(future);
 }

@@ -11,6 +11,7 @@
 #include <QVector>
 
 #include <memory>
+#include <optional>
 
 class QTimer;
 
@@ -19,6 +20,13 @@ class QFutureWatcher;
 
 namespace TherionStudio
 {
+struct ProjectValidationIndexSnapshotCacheEntry
+{
+    QString sourceRequestKey;
+    QString errorMessage;
+    ProjectIndexSnapshot snapshot;
+};
+
 class ProjectValidationScanner final : public QObject
 {
     Q_OBJECT
@@ -40,6 +48,7 @@ public:
         bool limitReached = false;
         ProjectSourceProjectionCacheStats projectionCacheStats;
         ProjectStructureIndexScanStats projectIndexScanStats;
+        bool projectIndexSnapshotCacheHit = false;
     };
 
     explicit ProjectValidationScanner(QObject *parent = nullptr);
@@ -72,6 +81,7 @@ private:
     QTimer *debounceTimer_ = nullptr;
     QFutureWatcher<Result> *scanWatcher_ = nullptr;
     std::shared_ptr<ProjectSourceProjectionCache> projectionCache_;
+    std::shared_ptr<std::optional<ProjectValidationIndexSnapshotCacheEntry>> projectIndexSnapshotCache_;
     QString projectionCacheProjectRootPath_;
     QString projectionCacheCatalogSignature_;
 };

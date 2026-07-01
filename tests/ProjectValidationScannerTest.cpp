@@ -779,6 +779,12 @@ int runRepeatedValidationReusesProjectionCacheTest()
                 "First repeated validation should build source and catalog logical projections for each project file.")) {
         return 1;
     }
+    if (!expect(!firstResult.result.projectIndexSnapshotCacheHit
+                    && firstResult.result.projectIndexScanStats.logicalDocumentBuilds == 0
+                    && firstResult.result.projectIndexScanStats.prebuiltLogicalDocumentHits > 0,
+                "First repeated validation should build the project index from validation-provided logical projections.")) {
+        return 1;
+    }
 
     scanner.requestScan(tempDir.path(), contextualDocumentTypeCatalog(), {});
     const ValidationWaitResult secondResult = waitForValidation(scanner);
@@ -795,10 +801,10 @@ int runRepeatedValidationReusesProjectionCacheTest()
                 "Second repeated validation should report projection cache hits for each project file.")) {
         return 1;
     }
-    if (!expect(secondResult.result.projectionCacheStats.logicalDocumentHits >= 3
+    if (!expect(secondResult.result.projectIndexSnapshotCacheHit
                     && secondResult.result.projectIndexScanStats.logicalDocumentBuilds == 0
-                    && secondResult.result.projectIndexScanStats.prebuiltLogicalDocumentHits > 0,
-                "Second repeated validation should feed retained logical projections into project-index scanning.")) {
+                    && secondResult.result.projectIndexScanStats.prebuiltLogicalDocumentHits == 0,
+                "Second repeated validation should reuse the retained project-index snapshot.")) {
         return 1;
     }
 
