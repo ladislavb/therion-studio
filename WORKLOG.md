@@ -112,9 +112,13 @@ Active planning only. Completed history belongs in archive files. Stable archite
   can still thrash the single-entry source/index snapshot cache.
 - Project scan caching now retains a small window of recent source and project-index snapshots so alternating automatic
   validation requests can reuse recently displaced scan results instead of rebuilding the full project index.
-- Next validation/project-scan slice: gather a fresh diagnostic log to verify alternating automatic save/change/file-watch
-  triggers now report source/index snapshot cache hits; do not reintroduce scanner-local file traversal, broad context bags,
-  or static/global cache state.
+- Follow-up validation logs confirmed alternating automatic save/change/file-watch triggers now usually hit source/index
+  snapshot caches and avoid repeated full project-index rebuilds.
+- Validation UI diagnostics now split problem-tree timing into expand, resize, selection/detail, and open-navigation
+  buckets so expensive `fix-applied` reveal paths can distinguish tree work from editor navigation.
+- Next validation/UI slice: gather a fresh diagnostic log for `fix-applied` reveal paths and only optimize the Validation
+  tree if `tree_expand_ms` or `tree_resize_ms` is the measured bottleneck; do not reintroduce scanner-local file traversal,
+  broad context bags, or static/global cache state.
 - Prefer Settings -> troubleshooting logs for tester builds: the preference is time-limited, restart-applied, and uses
   rotated application log files instead of requiring users to set environment variables.
 - Optimize future live validation with incremental file/revision caching, generation-keyed cancellation, and cheaper

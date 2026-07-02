@@ -767,6 +767,10 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
     qint64 modelRebuildMs = 0;
     qint64 diagnosticsApplyMs = 0;
     qint64 treeUpdateMs = 0;
+    qint64 treeExpandMs = 0;
+    qint64 treeResizeMs = 0;
+    qint64 treeSelectMs = 0;
+    qint64 treeOpenMs = 0;
     bool modelRefreshSkipped = false;
     const bool revealPanel = validationRevealByGeneration_.take(result.generation);
     const bool navigateAfterFix = trigger == TherionStudio::ProjectValidationController::Trigger::FixApplied;
@@ -784,7 +788,7 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
             return;
         }
         qInfo().noquote()
-            << QStringLiteral("project-validation-ui trigger=%1 generation=%2 files=%3 findings=%4 limit_reached=%5 reveal=%6 model_skipped=%7 model_ms=%8 diagnostics_ms=%9 tree_ms=%10 total_ms=%11")
+            << QStringLiteral("project-validation-ui trigger=%1 generation=%2 files=%3 findings=%4 limit_reached=%5 reveal=%6 model_skipped=%7 model_ms=%8 diagnostics_ms=%9 tree_ms=%10 tree_expand_ms=%11 tree_resize_ms=%12 tree_select_ms=%13 tree_open_ms=%14 total_ms=%15")
                    .arg(validationTriggerLogName(trigger))
                    .arg(result.generation)
                    .arg(result.searchedFileCount)
@@ -795,6 +799,10 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
                    .arg(modelRebuildMs)
                    .arg(diagnosticsApplyMs)
                    .arg(treeUpdateMs)
+                   .arg(treeExpandMs)
+                   .arg(treeResizeMs)
+                   .arg(treeSelectMs)
+                   .arg(treeOpenMs)
                    .arg(finishTimer.elapsed());
     };
 
@@ -829,13 +837,21 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
                 nextFinding = validationResultsModel_->index(0, 0, validationResultsModel_->index(0, 0));
             }
             if (nextFinding.isValid()) {
+                QElapsedTimer treeStepTimer;
+                treeStepTimer.start();
                 validationResultsTree_->setCurrentIndex(nextFinding);
                 handleValidationSelectionChanged(nextFinding, {});
+                treeSelectMs += treeStepTimer.elapsed();
                 if (navigateAfterFix) {
+                    treeStepTimer.restart();
                     openValidationResult(nextFinding);
+                    treeOpenMs += treeStepTimer.elapsed();
                 }
             } else {
+                QElapsedTimer treeStepTimer;
+                treeStepTimer.start();
                 handleValidationSelectionChanged({}, {});
+                treeSelectMs += treeStepTimer.elapsed();
             }
             treeUpdateMs = treeTimer.elapsed();
         }
@@ -974,23 +990,36 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
     if (validationResultsTree_ != nullptr) {
         QElapsedTimer treeTimer;
         treeTimer.start();
+        QElapsedTimer treeStepTimer;
+        treeStepTimer.start();
         validationResultsTree_->expandAll();
+        treeExpandMs += treeStepTimer.elapsed();
+        treeStepTimer.restart();
         validationResultsTree_->resizeColumnToContents(0);
+        treeResizeMs += treeStepTimer.elapsed();
         const QModelIndex firstFinding =
             validationResultsModel_->index(0, 0, validationResultsModel_->index(0, 0));
         const QModelIndex nextFinding = restoredFinding.isValid()
             ? restoredFinding
             : (revealPanel ? firstFinding : QModelIndex());
         if (nextFinding.isValid()) {
+            treeStepTimer.restart();
             validationResultsTree_->setCurrentIndex(nextFinding);
             handleValidationSelectionChanged(nextFinding, {});
+            treeSelectMs += treeStepTimer.elapsed();
             if (navigateAfterFix) {
+                treeStepTimer.restart();
                 openValidationResult(nextFinding);
+                treeOpenMs += treeStepTimer.elapsed();
             }
         } else {
+            treeStepTimer.restart();
             handleValidationSelectionChanged({}, {});
+            treeSelectMs += treeStepTimer.elapsed();
         }
+        treeStepTimer.restart();
         restoreValidationScrollValue(validationResultsTree_, previousScrollValue);
+        treeSelectMs += treeStepTimer.elapsed();
         treeUpdateMs = treeTimer.elapsed();
     }
     if (revealPanel) {
