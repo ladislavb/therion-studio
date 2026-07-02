@@ -16,6 +16,7 @@
 #include <QSet>
 
 #include <algorithm>
+#include <functional>
 #include <optional>
 
 namespace TherionStudio
@@ -103,18 +104,23 @@ QString sectionNameFromLine(const TherionParsedLine &parsedLine);
 ProjectStructureEntryKind objectKindFromLine(const TherionParsedLine &parsedLine);
 QString objectNameFromLine(const TherionParsedLine &parsedLine);
 QString normalizedStructureDirective(const QString &directive);
+bool projectIndexScanShouldCancel(const std::function<bool()> &shouldCancel);
 MapReferenceScanResult scanMapReferences(const QVector<ProjectStructureEntry> &entries,
                                          ParsedFileCache *cache,
-                                         const QHash<QString, QString> &inMemoryFileContentsByPath);
+                                         const QHash<QString, QString> &inMemoryFileContentsByPath,
+                                         const std::function<bool()> &shouldCancel);
 QVector<ProjectIndexDiagnostic> scanJoinReferences(const QVector<ProjectStructureEntry> &entries,
                                                    ParsedFileCache *cache,
-                                                   const QHash<QString, QString> &inMemoryFileContentsByPath);
+                                                   const QHash<QString, QString> &inMemoryFileContentsByPath,
+                                                   const std::function<bool()> &shouldCancel);
 QVector<ProjectIndexDiagnostic> scanStationReferences(const QVector<ProjectStructureEntry> &entries,
                                                       ParsedFileCache *cache,
-                                                      const QHash<QString, QString> &inMemoryFileContentsByPath);
+                                                      const QHash<QString, QString> &inMemoryFileContentsByPath,
+                                                      const std::function<bool()> &shouldCancel);
 QVector<ProjectIndexDiagnostic> scanDuplicateObjectIds(const QVector<ProjectStructureEntry> &entries,
                                                        ParsedFileCache *cache,
-                                                       const QHash<QString, QString> &inMemoryFileContentsByPath);
+                                                       const QHash<QString, QString> &inMemoryFileContentsByPath,
+                                                       const std::function<bool()> &shouldCancel);
 void appendProjectIndexDiagnostic(QVector<ProjectIndexDiagnostic> *diagnostics,
                                   ProjectIndexDiagnosticKind kind,
                                   const QString &sourceObjectId,
@@ -130,6 +136,11 @@ QString normalizedIdentityToken(const QString &value)
     QString normalized = value.trimmed().toLower();
     normalized.replace(QRegularExpression(QStringLiteral(R"(\s+)")), QStringLiteral(" "));
     return normalized;
+}
+
+bool projectIndexScanShouldCancel(const std::function<bool()> &shouldCancel)
+{
+    return shouldCancel && shouldCancel();
 }
 
 QString categoryIdentityToken(const QString &category)
@@ -1425,7 +1436,8 @@ ProjectIndexSnapshot scanProjectIndexFromFilePaths(const QString &projectRootPat
                                                    const QHash<QString, QString> &inMemoryFileContentsByPath,
                                                    const QHash<QString, std::shared_ptr<const TherionSourceLogicalDocument>> &prebuiltLogicalDocumentsByPath,
                                                    const QString &preferredConfigPath,
-                                                   QString *errorMessage)
+                                                   QString *errorMessage,
+                                                   const std::function<bool()> &shouldCancel = {})
 {
     if (errorMessage != nullptr) {
         errorMessage->clear();
@@ -1452,6 +1464,14 @@ ProjectIndexSnapshot scanProjectIndexFromFilePaths(const QString &projectRootPat
     });
 
     ParsedFileCache cache;
+    auto cancelSnapshot = [&]() {
+        snapshot.canceled = true;
+        snapshot.scanStats = cache.stats;
+        return snapshot;
+    };
+    if (projectIndexScanShouldCancel(shouldCancel)) {
+        return cancelSnapshot();
+    }
     cache.prebuiltLogicalDocuments = prebuiltLogicalDocumentsByPath;
     const RootConfigResolution configResolution = rootConfigFiles(sortedFilePaths, projectRootPath, preferredConfigPath);
     snapshot.rootConfigPath = configResolution.configPath;
@@ -1474,6 +1494,9 @@ ProjectIndexSnapshot scanProjectIndexFromFilePaths(const QString &projectRootPat
     QSet<QString> activeFiles;
     ProjectObjectIdentityGenerator identityGenerator;
     for (const QString &filePath : rootFiles) {
+        if (projectIndexScanShouldCancel(shouldCancel)) {
+            return cancelSnapshot();
+        }
         appendProjectStructureFromFile(filePath,
                                        &cache,
                                        &blockStack,
@@ -1482,30 +1505,50 @@ ProjectIndexSnapshot scanProjectIndexFromFilePaths(const QString &projectRootPat
                                        &identityGenerator,
                                        inMemoryFileContentsByPath);
     }
+    if (projectIndexScanShouldCancel(shouldCancel)) {
+        return cancelSnapshot();
+    }
 
     const MapReferenceScanResult mapReferenceScan = scanMapReferences(snapshot.entries,
                                                                       &cache,
-                                                                      inMemoryFileContentsByPath);
+                                                                      inMemoryFileContentsByPath,
+                                                                      shouldCancel);
+    if (projectIndexScanShouldCancel(shouldCancel)) {
+        return cancelSnapshot();
+    }
     snapshot.mapScrapReferencesByMapKey = mapReferenceScan.scrapReferencesByMapKey;
     snapshot.mapChildReferencesByMapKey = mapReferenceScan.childMapReferencesByMapKey;
     snapshot.mapPreviewReferencesByMapKey = mapReferenceScan.previewReferencesByMapKey;
     snapshot.diagnostics = mapReferenceScan.diagnostics;
     snapshot.diagnostics += scanJoinReferences(snapshot.entries,
                                                &cache,
-                                               inMemoryFileContentsByPath);
+                                               inMemoryFileContentsByPath,
+                                               shouldCancel);
+    if (projectIndexScanShouldCancel(shouldCancel)) {
+        return cancelSnapshot();
+    }
     snapshot.diagnostics += scanStationReferences(snapshot.entries,
                                                   &cache,
-                                                  inMemoryFileContentsByPath);
+                                                  inMemoryFileContentsByPath,
+                                                  shouldCancel);
+    if (projectIndexScanShouldCancel(shouldCancel)) {
+        return cancelSnapshot();
+    }
     snapshot.diagnostics += scanDuplicateObjectIds(snapshot.entries,
                                                    &cache,
-                                                   inMemoryFileContentsByPath);
+                                                   inMemoryFileContentsByPath,
+                                                   shouldCancel);
+    if (projectIndexScanShouldCancel(shouldCancel)) {
+        return cancelSnapshot();
+    }
     snapshot.scanStats = cache.stats;
     return snapshot;
 }
 
 MapReferenceScanResult scanMapReferences(const QVector<ProjectStructureEntry> &entries,
                                          ParsedFileCache *cache,
-                                         const QHash<QString, QString> &inMemoryFileContentsByPath)
+                                         const QHash<QString, QString> &inMemoryFileContentsByPath,
+                                         const std::function<bool()> &shouldCancel)
 {
     MapReferenceScanResult result;
 
@@ -1523,6 +1566,9 @@ MapReferenceScanResult scanMapReferences(const QVector<ProjectStructureEntry> &e
     }
 
     for (auto fileIt = mapsBySourceFile.constBegin(); fileIt != mapsBySourceFile.constEnd(); ++fileIt) {
+        if (projectIndexScanShouldCancel(shouldCancel)) {
+            return result;
+        }
         const TherionSourceLogicalDocument &logicalDocument =
             logicalDocumentForFile(fileIt.key(), cache, inMemoryFileContentsByPath);
         const QVector<TherionSourceLogicalCommand> &commands = logicalDocument.commands();
@@ -1531,6 +1577,9 @@ MapReferenceScanResult scanMapReferences(const QVector<ProjectStructureEntry> &e
         }
 
         for (const ProjectStructureEntry &mapEntry : fileIt.value()) {
+            if (projectIndexScanShouldCancel(shouldCancel)) {
+                return result;
+            }
             int mapLineIndex = -1;
             for (int index = 0; index < commands.size(); ++index) {
                 if (commands.at(index).startLineNumber == mapEntry.lineNumber
@@ -1582,6 +1631,9 @@ MapReferenceScanResult scanMapReferences(const QVector<ProjectStructureEntry> &e
 
             int mapDepth = 0;
             for (int index = mapLineIndex; index < commands.size(); ++index) {
+                if (projectIndexScanShouldCancel(shouldCancel)) {
+                    return result;
+                }
                 const TherionSourceLogicalCommand &command = commands.at(index);
                 const TherionParsedLine &parsedLine = command.parsed;
                 const QString directive = command.metadata.commandName;
@@ -1699,7 +1751,8 @@ MapReferenceScanResult scanMapReferences(const QVector<ProjectStructureEntry> &e
 
 QVector<ProjectIndexDiagnostic> scanJoinReferences(const QVector<ProjectStructureEntry> &entries,
                                                    ParsedFileCache *cache,
-                                                   const QHash<QString, QString> &inMemoryFileContentsByPath)
+                                                   const QHash<QString, QString> &inMemoryFileContentsByPath,
+                                                   const std::function<bool()> &shouldCancel)
 {
     QVector<ProjectIndexDiagnostic> diagnostics;
     const ReferenceKeyIndex joinObjectKeysByName = mergedReferenceKeysByReferenceName(
@@ -1719,9 +1772,15 @@ QVector<ProjectIndexDiagnostic> scanJoinReferences(const QVector<ProjectStructur
     }
 
     for (const QString &sourceFile : std::as_const(sourceFiles)) {
+        if (projectIndexScanShouldCancel(shouldCancel)) {
+            return diagnostics;
+        }
         const TherionSourceLogicalDocument &logicalDocument =
             logicalDocumentForFile(sourceFile, cache, inMemoryFileContentsByPath);
         for (const TherionSourceLogicalCommand &command : logicalDocument.commands()) {
+            if (projectIndexScanShouldCancel(shouldCancel)) {
+                return diagnostics;
+            }
             if (command.metadata.commandName != QStringLiteral("join")) {
                 continue;
             }
@@ -1802,17 +1861,24 @@ bool commandIsInCenterline(const TherionSourceLogicalCommand &command)
 StationReferenceIndex stationReferencesFromProject(const QVector<ProjectStructureEntry> &entries,
                                                    const QSet<QString> &sourceFiles,
                                                    ParsedFileCache *cache,
-                                                   const QHash<QString, QString> &inMemoryFileContentsByPath)
+                                                   const QHash<QString, QString> &inMemoryFileContentsByPath,
+                                                   const std::function<bool()> &shouldCancel)
 {
     StationReferenceIndex index;
     const NamespaceEntriesByFile namespaceEntries = namespaceEntriesByFile(entries);
     for (const QString &sourceFile : sourceFiles) {
+        if (projectIndexScanShouldCancel(shouldCancel)) {
+            return index;
+        }
         const TherionSourceLogicalDocument &logicalDocument =
             logicalDocumentForFile(sourceFile, cache, inMemoryFileContentsByPath);
         int fromColumn = -1;
         int toColumn = -1;
         QString dataNamespacePath;
         for (const TherionSourceLogicalCommand &command : logicalDocument.commands()) {
+            if (projectIndexScanShouldCancel(shouldCancel)) {
+                return index;
+            }
             if (!commandIsInCenterline(command)) {
                 fromColumn = -1;
                 toColumn = -1;
@@ -1886,7 +1952,8 @@ StationReferenceIndex stationReferencesFromProject(const QVector<ProjectStructur
 
 QVector<ProjectIndexDiagnostic> scanStationReferences(const QVector<ProjectStructureEntry> &entries,
                                                       ParsedFileCache *cache,
-                                                      const QHash<QString, QString> &inMemoryFileContentsByPath)
+                                                      const QHash<QString, QString> &inMemoryFileContentsByPath,
+                                                      const std::function<bool()> &shouldCancel)
 {
     QVector<ProjectIndexDiagnostic> diagnostics;
     QSet<QString> sourceFiles;
@@ -1897,13 +1964,22 @@ QVector<ProjectIndexDiagnostic> scanStationReferences(const QVector<ProjectStruc
     }
 
     const StationReferenceIndex stationIndex =
-        stationReferencesFromProject(entries, sourceFiles, cache, inMemoryFileContentsByPath);
+        stationReferencesFromProject(entries, sourceFiles, cache, inMemoryFileContentsByPath, shouldCancel);
+    if (projectIndexScanShouldCancel(shouldCancel)) {
+        return diagnostics;
+    }
     const NamespaceEntriesByFile namespaceEntries = namespaceEntriesByFile(entries);
 
     for (const QString &sourceFile : std::as_const(sourceFiles)) {
+        if (projectIndexScanShouldCancel(shouldCancel)) {
+            return diagnostics;
+        }
         const TherionSourceLogicalDocument &logicalDocument =
             logicalDocumentForFile(sourceFile, cache, inMemoryFileContentsByPath);
         for (const TherionSourceLogicalCommand &command : logicalDocument.commands()) {
+            if (projectIndexScanShouldCancel(shouldCancel)) {
+                return diagnostics;
+            }
             if (const std::optional<TherionSourceLogicalArgumentRange> stationPointReference =
                     pointStationNameReferenceRange(command)) {
                 const ProjectStructureEntry ownerEntry =
@@ -1946,7 +2022,8 @@ QVector<ProjectIndexDiagnostic> scanStationReferences(const QVector<ProjectStruc
 
 QVector<ProjectIndexDiagnostic> scanDuplicateObjectIds(const QVector<ProjectStructureEntry> &entries,
                                                        ParsedFileCache *cache,
-                                                       const QHash<QString, QString> &inMemoryFileContentsByPath)
+                                                       const QHash<QString, QString> &inMemoryFileContentsByPath,
+                                                       const std::function<bool()> &shouldCancel)
 {
     QVector<ProjectIndexDiagnostic> diagnostics;
     QHash<QString, QVector<ProjectStructureEntry>> entriesByFile;
@@ -1962,6 +2039,9 @@ QVector<ProjectIndexDiagnostic> scanDuplicateObjectIds(const QVector<ProjectStru
 
     QHash<QString, ProjectStructureEntry> firstEntryByIdKey;
     for (auto fileIt = entriesByFile.constBegin(); fileIt != entriesByFile.constEnd(); ++fileIt) {
+        if (projectIndexScanShouldCancel(shouldCancel)) {
+            return diagnostics;
+        }
         const TherionSourceLogicalDocument &logicalDocument =
             logicalDocumentForFile(fileIt.key(), cache, inMemoryFileContentsByPath);
         QHash<int, TherionSourceLogicalCommand> commandsByStartLine;
@@ -1970,6 +2050,9 @@ QVector<ProjectIndexDiagnostic> scanDuplicateObjectIds(const QVector<ProjectStru
         }
 
         for (const ProjectStructureEntry &entry : fileIt.value()) {
+            if (projectIndexScanShouldCancel(shouldCancel)) {
+                return diagnostics;
+            }
             const auto commandIt = commandsByStartLine.constFind(entry.lineNumber);
             if (commandIt == commandsByStartLine.constEnd()) {
                 continue;
@@ -2164,7 +2247,8 @@ ProjectIndexSnapshot ProjectStructureIndex::scanProjectIndex(const ProjectStruct
                                          sourceTextByPath,
                                          prebuiltLogicalDocumentsByPath,
                                          sourceSet.preferredConfigPath,
-                                         errorMessage);
+                                         errorMessage,
+                                         sourceSet.shouldCancel);
 }
 
 QVector<ProjectStructureEntry> ProjectStructureIndex::scanProject(const QString &projectRootPath, QString *errorMessage)

@@ -5,6 +5,7 @@
 #include <QString>
 #include <QVector>
 
+#include <functional>
 #include <memory>
 
 namespace TherionStudio
@@ -85,6 +86,7 @@ struct ProjectIndexSnapshot
     QHash<QString, QSet<QString>> mapPreviewReferencesByMapKey;
     QVector<ProjectIndexDiagnostic> diagnostics;
     ProjectStructureIndexScanStats scanStats;
+    bool canceled = false;
 };
 
 struct ProjectStructureIndexSource
@@ -100,6 +102,7 @@ struct ProjectStructureIndexSourceSet
     QString projectRootPath;
     QString preferredConfigPath;
     QVector<ProjectStructureIndexSource> sources;
+    std::function<bool()> shouldCancel;
 };
 
 class ProjectStructureIndex final

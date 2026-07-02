@@ -106,9 +106,11 @@ Active planning only. Completed history belongs in archive files. Stable archite
   so queued automatic refreshes cannot briefly republish stale diagnostics while a newer validation request is pending.
 - Project validation scanner now checks superseding request serials during collection/local-validation boundaries and
   suppresses superseded worker results instead of finishing and emitting stale scans.
-- Next validation/project-scan slice: gather a fresh diagnostic log to identify the next non-cache bottleneck before
-  adding deeper cancellation points; do not reintroduce scanner-local file traversal, broad context bags, or static/global
-  cache state.
+- Project validation now passes scanner cancellation into project-index scans, allowing superseded workers to abort before
+  completing map/join/station/duplicate diagnostic passes and preventing canceled index snapshots from entering the cache.
+- Next validation/project-scan slice: gather a fresh diagnostic log to identify whether any non-cache bottleneck remains
+  after cancellable project-index scans; do not reintroduce scanner-local file traversal, broad context bags, or
+  static/global cache state.
 - Prefer Settings -> troubleshooting logs for tester builds: the preference is time-limited, restart-applied, and uses
   rotated application log files instead of requiring users to set environment variables.
 - Optimize future live validation with incremental file/revision caching, generation-keyed cancellation, and cheaper

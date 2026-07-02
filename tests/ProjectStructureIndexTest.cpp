@@ -1458,6 +1458,49 @@ int runProjectIndexSourceSetUsesProvidedTextTest()
 
     return 0;
 }
+
+int runProjectIndexSourceSetCanCancelScanTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "The temporary cancellable source-set project directory could not be created.")) {
+        return 1;
+    }
+
+    QDir projectDir(tempDir.path());
+    const QString rootFile = projectDir.filePath(QStringLiteral("root.th"));
+    if (!expect(writeTextFile(rootFile,
+                              QStringLiteral(
+                                  "survey cave\n"
+                                  "endsurvey cave\n")),
+                "The cancellable source-set Therion file could not be written.")) {
+        return 1;
+    }
+
+    ProjectStructureIndexSourceSet sourceSet;
+    sourceSet.projectRootPath = projectDir.path();
+    sourceSet.sources.append({normalizedPathForComparison(rootFile),
+                              QStringLiteral(
+                                  "survey cave\n"
+                                  "endsurvey cave\n"),
+                              true});
+    sourceSet.shouldCancel = []() {
+        return true;
+    };
+
+    QString errorMessage;
+    const ProjectIndexSnapshot snapshot = ProjectStructureIndex::scanProjectIndex(sourceSet, &errorMessage);
+    if (!expect(errorMessage.isEmpty(), errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    if (!expect(snapshot.canceled, "Source-set project index should report canceled scans.")) {
+        return 1;
+    }
+    if (!expect(snapshot.entries.isEmpty(), "Canceled source-set project index should not expose partial entries.")) {
+        return 1;
+    }
+
+    return 0;
+}
 }
 
 int main()
@@ -1499,6 +1542,9 @@ int main()
         return 1;
     }
     if (runProjectIndexSourceSetUsesProvidedTextTest() != 0) {
+        return 1;
+    }
+    if (runProjectIndexSourceSetCanCancelScanTest() != 0) {
         return 1;
     }
 

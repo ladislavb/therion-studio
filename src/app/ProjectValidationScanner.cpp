@@ -676,17 +676,26 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
             indexErrorMessage = cachedProjectIndex->errorMessage;
             projectIndexSnapshot = cachedProjectIndex->snapshot;
         } else {
-            projectIndexSnapshot = ProjectStructureIndex::scanProjectIndex(
+            ProjectStructureIndexSourceSet sourceSet =
                 projectStructureIndexSourceSetWithLogicalDocuments(projectSourceSnapshot,
                                                                    projectSourceDocumentByPath,
-                                                                   projectionCache),
-                &indexErrorMessage);
+                                                                   projectionCache);
+            sourceSet.shouldCancel = isSuperseded;
+            projectIndexSnapshot = ProjectStructureIndex::scanProjectIndex(sourceSet, &indexErrorMessage);
             result.projectIndexScanStats = projectIndexSnapshot.scanStats;
+            if (projectIndexSnapshot.canceled || isSuperseded()) {
+                projectIndexMs = projectIndexTimer.elapsed();
+                return supersededResult();
+            }
             scanCacheService.storeProjectIndexSnapshot(ProjectIndexSnapshotCacheEntry{
                 sourceRequestKey,
                 indexErrorMessage,
                 projectIndexSnapshot,
             });
+        }
+        if (isSuperseded()) {
+            projectIndexMs = projectIndexTimer.elapsed();
+            return supersededResult();
         }
         appendProjectIndexFindings(&result,
                                    result.projectRootPath,
