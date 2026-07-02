@@ -130,6 +130,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
   removing scene items, falling back to the pending full refresh when scene metadata is incomplete.
 - Point geometry moves now use the same one-feature partial-refresh item replacement path as line moves when source bounds
   stay projection-compatible, avoiding a full map scene refresh after simple point drags.
+- Point partial-refresh selection restore now captures the explicit canvas context so deferred callbacks do not depend on
+  the lifetime of the temporary edit controller used by production map input.
+- Touch updates during an active primary map interaction are now accepted as suppressed primary updates instead of being
+  passed through as pan/scroll candidates while the item drag path owns the gesture.
 - `map-line-partial-refresh` diagnostics now include previous, current, and render source bounds so fallback logs show
   whether bounds changed, were missing, or stayed projection-compatible.
 - Point and single-vertex line/area geometry moves now pass their planned `TherionSourceTextEdit` ranges into the shared

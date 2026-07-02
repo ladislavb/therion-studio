@@ -2479,22 +2479,20 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
             break;
         }
         case QEvent::TouchUpdate: {
-            if (!(*context_.touchPanCandidate) || (*context_.primaryPointerInteractionActive)) {
-                if (!(*context_.touchPanCandidate)) {
-                    traceAction("touch-update-pass-through");
-                    inputTrace.setDetail(QStringLiteral("candidate=0 primary_active=%1")
-                                             .arg((*context_.primaryPointerInteractionActive) ? 1 : 0));
-                    inputTrace.forceLog();
-                    event->ignore();
-                    return false;
-                }
-                traceAction("touch-update-suppress-pan");
-                inputTrace.setDetail(QStringLiteral("candidate=%1 primary_active=%2")
-                                         .arg((*context_.touchPanCandidate) ? 1 : 0)
-                                         .arg((*context_.primaryPointerInteractionActive) ? 1 : 0));
+            if ((*context_.primaryPointerInteractionActive)) {
+                traceAction("touch-update-suppress-primary");
+                inputTrace.setDetail(QStringLiteral("candidate=%1 primary_active=1")
+                                         .arg((*context_.touchPanCandidate) ? 1 : 0));
                 inputTrace.forceLog();
                 event->accept();
                 return true;
+            }
+            if (!(*context_.touchPanCandidate)) {
+                traceAction("touch-update-pass-through");
+                inputTrace.setDetail(QStringLiteral("candidate=0 primary_active=0"));
+                inputTrace.forceLog();
+                event->ignore();
+                return false;
             }
 
             auto *touchEvent = static_cast<QTouchEvent *>(event);

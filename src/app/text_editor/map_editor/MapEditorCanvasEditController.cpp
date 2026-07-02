@@ -1234,9 +1234,9 @@ void MapEditorCanvasEditController::recordPointGeometryMove(int lineNumber, cons
         return;
     }
 
-    auto selectionRestoreHook = [this, lineNumber]() {
-        restorePointSelection(lineNumber);
-        schedulePointSelectionRecovery(context_, lineNumber);
+    auto selectionRestoreHook = [context = context_, lineNumber]() {
+        MapEditorCanvasEditController(context).restorePointSelection(lineNumber);
+        schedulePointSelectionRecovery(context, lineNumber);
     };
     TextEditorSourceTransactionRequest request =
         sourceTransactionRequest(context_,

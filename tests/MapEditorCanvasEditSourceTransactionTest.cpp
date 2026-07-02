@@ -375,27 +375,25 @@ int runPointGeometryMoveUsesPartialRefreshTest()
         return 1;
     }
 
-    MapEditorCanvasEditController controller =
-        makeController(&tab,
-                       &undoStack,
-                       &toolbarStatus,
-                       &commandApplyInProgress,
-                       &refreshCount,
-                       &flushCount,
-                       &discardCount,
-                       &scene,
-                       nullptr,
-                       &itemsByLine,
-                       &vertexItemsByKey,
-                       [&tab]() {
-                           const QVector<TherionParsedLine> currentParsedLines =
-                               TherionDocumentParser::parseTokenLines(tab.text());
-                           return geometryBoundsForFeatures(collectGeometryFeatures(currentParsedLines));
-                       });
-
     const QString afterText = QStringLiteral("point 3.0 4.0 station\n"
                                              "point 10.0 10.0 station\n");
-    controller.recordPointGeometryMove(1, QPointF(1.0, 2.0), QPointF(3.0, 4.0));
+    makeController(&tab,
+                   &undoStack,
+                   &toolbarStatus,
+                   &commandApplyInProgress,
+                   &refreshCount,
+                   &flushCount,
+                   &discardCount,
+                   &scene,
+                   nullptr,
+                   &itemsByLine,
+                   &vertexItemsByKey,
+                   [&tab]() {
+                       const QVector<TherionParsedLine> currentParsedLines =
+                           TherionDocumentParser::parseTokenLines(tab.text());
+                       return geometryBoundsForFeatures(collectGeometryFeatures(currentParsedLines));
+                   })
+        .recordPointGeometryMove(1, QPointF(1.0, 2.0), QPointF(3.0, 4.0));
 
     if (!expect(tab.text() == afterText, "Point partial refresh should apply source-edit planned coordinates.")) {
         return 1;
