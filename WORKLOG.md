@@ -39,8 +39,11 @@ Active planning only. Completed history belongs in archive files. Stable archite
   `MapEditorTab` instead of reparsing editor text for border-line highlighting and delete-blocked state.
 - The object-details delete guard now uses the same logical-command area-reference resolver before mutating source text,
   avoiding the last map area-reference lookup that reparsed editor text directly.
-- Next implementation slice: decide whether to extract a reusable map logical-source context or move the next Map read-only
-  projection consumer before touching scene refresh or geometry projection.
+- The object-details panel now reuses the map tab's revision-cached logical commands for read-only selected-command,
+  line-feature, area-reference, quick-field, and scrap-scale lookups instead of creating local source snapshot caches per
+  field refresh.
+- Next implementation slice: move another focused Map read-only projection consumer to `logicalCommandsForCurrentDocument`
+  or extract a reusable map logical-source context if a third controller needs the same callback shape.
 - Keep Therion namespace/reference changes behind `docs/THERION_COMPATIBILITY.md` coverage, especially
   `object@child.parent` qualified-reference order.
 - Keep source transaction ownership work incremental: one caller or workflow per commit, with explicit result handling,

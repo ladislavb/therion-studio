@@ -1,6 +1,5 @@
 #include "MapEditorObjectDetailsPanelController.h"
 
-#include "../TextEditorTab.h"
 #include "MapEditorInspectorData.h"
 #include "MapEditorAreaReferenceResolver.h"
 #include "MapEditorObjectDetailsLogic.h"
@@ -10,7 +9,6 @@
 #include "../../../core/TherionCommandLineModel.h"
 #include "../../../core/TherionDocumentParser.h"
 #include "../../../core/TherionSourceLogicalDocument.h"
-#include "../../../core/TherionSourceSnapshotCache.h"
 #include "../../../core/TherionSourceText.h"
 
 #include <QBoxLayout>
@@ -59,60 +57,46 @@ QStringList linePointStandaloneOptionRowsForSelection(const MapGeometryFeature &
     return lineFeature.lineVertices.at(lineVertexIndex).standaloneOptionRows;
 }
 
-std::optional<TherionSourceLogicalCommand> logicalCommandForEditorLine(TextEditorTab *textEditor,
-                                                                       int lineNumber)
+std::optional<TherionSourceLogicalCommand> logicalCommandForLine(const QVector<TherionSourceLogicalCommand> &commands,
+                                                                 int lineNumber)
 {
-    if (textEditor == nullptr || lineNumber <= 0) {
+    if (lineNumber <= 0) {
         return std::nullopt;
     }
 
-    TherionSourceSnapshotCache sourceSnapshotCache;
-    TherionSourceDocumentMetadata metadata;
-    metadata.sourceType = TherionSourceDocumentType::TherionMap;
-    metadata.revisionId = textEditor->documentRevision();
-    const TherionSourceLogicalDocument &logicalDocument =
-        sourceSnapshotCache.logicalDocument(textEditor->text(), metadata);
-    const TherionSourceLogicalCommand *command = logicalDocument.commandAtPhysicalLine(lineNumber);
-    if (command == nullptr) {
-        return std::nullopt;
+    for (const TherionSourceLogicalCommand &command : commands) {
+        if (command.startLineNumber <= lineNumber && lineNumber <= command.endLineNumber) {
+            return command;
+        }
     }
-    return *command;
+    return std::nullopt;
 }
 
-std::optional<MapGeometryFeature> lineFeatureForEditorLine(TextEditorTab *textEditor, int lineNumber)
+std::optional<MapGeometryFeature> lineFeatureForLine(const QVector<TherionSourceLogicalCommand> &commands,
+                                                     int lineNumber)
 {
-    if (textEditor == nullptr || lineNumber <= 0) {
+    if (lineNumber <= 0) {
         return std::nullopt;
     }
 
-    TherionSourceSnapshotCache sourceSnapshotCache;
-    TherionSourceDocumentMetadata metadata;
-    metadata.sourceType = TherionSourceDocumentType::TherionMap;
-    metadata.revisionId = textEditor->documentRevision();
-    const TherionSourceLogicalDocument &logicalDocument =
-        sourceSnapshotCache.logicalDocument(textEditor->text(), metadata);
-    return lineFeatureForLineNumber(logicalDocument.commands(), lineNumber);
+    return lineFeatureForLineNumber(commands, lineNumber);
 }
 
-QVector<MapEditorAreaReference> areaReferencesForEditorBorderLine(TextEditorTab *textEditor, int lineNumber)
+QVector<MapEditorAreaReference> areaReferencesForBorderLine(const QVector<TherionSourceLogicalCommand> &commands,
+                                                            int lineNumber)
 {
-    if (textEditor == nullptr || lineNumber <= 0) {
+    if (lineNumber <= 0) {
         return {};
     }
 
-    TherionSourceSnapshotCache sourceSnapshotCache;
-    TherionSourceDocumentMetadata metadata;
-    metadata.sourceType = TherionSourceDocumentType::TherionMap;
-    metadata.revisionId = textEditor->documentRevision();
-    const TherionSourceLogicalDocument &logicalDocument =
-        sourceSnapshotCache.logicalDocument(textEditor->text(), metadata);
-    return mapEditorAreaReferencesForBorderLine(logicalDocument.commands(), lineNumber);
+    return mapEditorAreaReferencesForBorderLine(commands, lineNumber);
 }
 
-std::optional<InspectorObjectQuickFields> inspectorObjectQuickFieldsForEditorLine(TextEditorTab *textEditor,
-                                                                                  int lineNumber)
+std::optional<InspectorObjectQuickFields> inspectorObjectQuickFieldsForLine(
+    const QVector<TherionSourceLogicalCommand> &commands,
+    int lineNumber)
 {
-    const std::optional<TherionSourceLogicalCommand> command = logicalCommandForEditorLine(textEditor, lineNumber);
+    const std::optional<TherionSourceLogicalCommand> command = logicalCommandForLine(commands, lineNumber);
     if (!command.has_value()) {
         return std::nullopt;
     }
@@ -798,12 +782,15 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
     const QVector<TherionParsedLine> parsedLines = context_.parsedLinesForCurrentDocument
         ? context_.parsedLinesForCurrentDocument()
         : QVector<TherionParsedLine>();
+    const QVector<TherionSourceLogicalCommand> logicalCommands = context_.logicalCommandsForCurrentDocument
+        ? context_.logicalCommandsForCurrentDocument()
+        : QVector<TherionSourceLogicalCommand>();
     context_.metadataLabel->setText(metadataForSourceLine(parsedLines, effectiveLineNumber));
     QVector<MapEditorAreaReference> areaReferences;
     if (context_.textEditor != nullptr
         && effectiveLineNumber > 0
         && effectiveKind == QStringLiteral("line")) {
-        areaReferences = areaReferencesForEditorBorderLine(context_.textEditor, effectiveLineNumber);
+        areaReferences = areaReferencesForBorderLine(logicalCommands, effectiveLineNumber);
     }
     const bool deleteBlockedByAreaReference = !areaReferences.isEmpty();
     context_.deleteButton->setEnabled(effectiveLineNumber > 0 && !deleteBlockedByAreaReference);
@@ -832,7 +819,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
     context_.metadataLabel->setVisible(true);
     if (context_.textEditor != nullptr && effectiveLineNumber > 0) {
         if (const std::optional<InspectorObjectQuickFields> fields =
-                inspectorObjectQuickFieldsForEditorLine(context_.textEditor, effectiveLineNumber)) {
+                inspectorObjectQuickFieldsForLine(logicalCommands, effectiveLineNumber)) {
             const bool typeFieldsVisible = fields->commandKind != QStringLiteral("scrap");
             const bool projectionFieldVisible = fields->commandKind == QStringLiteral("scrap");
             const bool textFieldVisible = fields->textVisible;
@@ -908,7 +895,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
         bool firstVertex = false;
         bool lastVertex = false;
         if (const std::optional<MapGeometryFeature> lineFeature =
-                lineFeatureForEditorLine(context_.textEditor, *context_.selectedObjectLineNumber);
+                lineFeatureForLine(logicalCommands, *context_.selectedObjectLineNumber);
             lineFeature.has_value() && lineFeature->kind == MapGeometryFeature::Kind::Line) {
             const int lineVertexIndex = lineVertexIndexForSourceVertex(lineFeature.value(), *context_.selectedObjectVertexIndex);
             firstVertex = lineVertexIndex == 0;
@@ -954,7 +941,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
     context_.lineOptionsEditor->setVisible(lineOptionsVisible);
     if (objectOptionSourceVisible) {
         const std::optional<TherionSourceLogicalCommand> command =
-            logicalCommandForEditorLine(context_.textEditor, *context_.selectedObjectLineNumber);
+            logicalCommandForLine(logicalCommands, *context_.selectedObjectLineNumber);
         if (command.has_value()
             && (command->parsed.directive == QStringLiteral("line")
                 || command->parsed.directive == QStringLiteral("area")
@@ -969,7 +956,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
     }
     if (lineOptionsVisible) {
         if (const std::optional<MapGeometryFeature> lineFeature =
-                lineFeatureForEditorLine(context_.textEditor, *context_.selectedObjectLineNumber);
+                lineFeatureForLine(logicalCommands, *context_.selectedObjectLineNumber);
             *context_.selectedObjectKind == QStringLiteral("line")
             && lineFeature.has_value()
             && lineFeature->kind == MapGeometryFeature::Kind::Line) {
@@ -1024,7 +1011,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
 
         InspectorScrapScale scale = defaultInspectorScrapScale(context_.mapSourceBoundsForCurrentDocument());
         const std::optional<TherionSourceLogicalCommand> command =
-            logicalCommandForEditorLine(context_.textEditor, effectiveLineNumber);
+            logicalCommandForLine(logicalCommands, effectiveLineNumber);
         if (command.has_value()) {
             if (const std::optional<InspectorScrapScale> parsedScale =
                     inspectorScrapScaleFromTokens(command->parsed.tokens)) {
@@ -1062,7 +1049,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
     if (context_.textEditor != nullptr && *context_.selectedObjectLineNumber > 0) {
         if (*context_.selectedObjectKind == QStringLiteral("point")) {
             const std::optional<TherionSourceLogicalCommand> command =
-                logicalCommandForEditorLine(context_.textEditor, *context_.selectedObjectLineNumber);
+                logicalCommandForLine(logicalCommands, *context_.selectedObjectLineNumber);
             if (command.has_value()) {
                 if (command->parsed.directive == QStringLiteral("point")
                     && isOrientationSupportedForParsedLine(command->parsed, orientationApplicabilityByCommand())) {
@@ -1076,7 +1063,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
             }
         } else if (*context_.selectedObjectKind == QStringLiteral("line") && *context_.selectedObjectVertexIndex >= 0) {
             if (const std::optional<MapGeometryFeature> lineFeature =
-                    lineFeatureForEditorLine(context_.textEditor, *context_.selectedObjectLineNumber);
+                    lineFeatureForLine(logicalCommands, *context_.selectedObjectLineNumber);
                 lineFeature.has_value() && lineFeature->kind == MapGeometryFeature::Kind::Line) {
                 const int lineVertexIndex =
                     lineVertexIndexForSourceVertex(lineFeature.value(), *context_.selectedObjectVertexIndex);
@@ -1087,7 +1074,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
                     linePointNextControl = lineVertex.outgoingControl.has_value();
                     linePointSmooth = lineVertex.isSmooth && linePointPreviousControl && linePointNextControl;
                     const std::optional<TherionSourceLogicalCommand> command =
-                        logicalCommandForEditorLine(context_.textEditor, *context_.selectedObjectLineNumber);
+                        logicalCommandForLine(logicalCommands, *context_.selectedObjectLineNumber);
                     if (!command.has_value()) {
                         orientationApplicable = false;
                     } else {
