@@ -726,6 +726,9 @@ MapEditorObjectDetailsContext MapEditorTab::objectDetailsContext()
         .parsedLinesForCurrentDocument = [this]() {
             return parsedLinesForCurrentDocument();
         },
+        .logicalCommandsForCurrentDocument = [this]() {
+            return logicalCommandsForCurrentDocument();
+        },
         .pendingInsertTargetScrapContext = [this]() -> std::optional<InspectorScrapContext> {
             return pendingInsertTargetScrapContext();
         },

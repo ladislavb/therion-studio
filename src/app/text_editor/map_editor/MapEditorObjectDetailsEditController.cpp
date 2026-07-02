@@ -10,6 +10,7 @@
 #include "MapEditorSourceReferenceResolver.h"
 #include "../../../core/TherionDocumentEditor.h"
 #include "../../../core/TherionDocumentParser.h"
+#include "../../../core/TherionSourceLogicalDocument.h"
 #include "../../../core/TherionSourceText.h"
 #include "../../../core/TherionTokenRules.h"
 
@@ -960,8 +961,14 @@ void MapEditorObjectDetailsEditController::deleteSelectedObjectFromSelection()
         return;
     }
 
+    if (!context_.logicalCommandsForCurrentDocument) {
+        *context_.toolbarStatusNote = tr("Object deletion failed.");
+        context_.refreshToolbarSummary();
+        return;
+    }
+
     const QVector<MapEditorAreaReference> areaReferences =
-        mapEditorAreaReferencesForBorderLine(context_.textEditor->text(), targetLineNumber);
+        mapEditorAreaReferencesForBorderLine(context_.logicalCommandsForCurrentDocument(), targetLineNumber);
     if (!areaReferences.isEmpty()) {
         *context_.toolbarStatusNote = tr("This line is used as an area border. Delete the area instead.");
         context_.refreshToolbarSummary();

@@ -26,6 +26,7 @@ namespace TherionStudio
 {
 class MapEditorStylePreviewWidget;
 class TextEditorTab;
+struct TherionSourceLogicalCommand;
 
 struct MapEditorObjectDetailsContext
 {
@@ -124,6 +125,7 @@ struct MapEditorObjectDetailsContext
     std::function<QString(const char *)> translate;
     std::function<QRectF()> mapSourceBoundsForCurrentDocument;
     std::function<QVector<TherionParsedLine>()> parsedLinesForCurrentDocument;
+    std::function<QVector<TherionSourceLogicalCommand>()> logicalCommandsForCurrentDocument;
     std::function<std::optional<InspectorScrapContext>()> pendingInsertTargetScrapContext;
     std::function<void()> refreshToolbarSummary;
     std::function<void()> refreshObjectDetailsPanel;

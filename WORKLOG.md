@@ -37,9 +37,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
   "Used by area" state from the shared logical source projection instead of reparsing editor text directly.
 - Map selection and inspector-object area-reference consumers now receive revision-cached logical commands from
   `MapEditorTab` instead of reparsing editor text for border-line highlighting and delete-blocked state.
-- Next implementation slice: migrate the remaining mutating object-details delete guard to the logical area-reference
-  resolver, then decide whether to extract a reusable map logical-source context before touching scene refresh or geometry
-  projection.
+- The object-details delete guard now uses the same logical-command area-reference resolver before mutating source text,
+  avoiding the last map area-reference lookup that reparsed editor text directly.
+- Next implementation slice: decide whether to extract a reusable map logical-source context or move the next Map read-only
+  projection consumer before touching scene refresh or geometry projection.
 - Keep Therion namespace/reference changes behind `docs/THERION_COMPATIBILITY.md` coverage, especially
   `object@child.parent` qualified-reference order.
 - Keep source transaction ownership work incremental: one caller or workflow per commit, with explicit result handling,
