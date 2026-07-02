@@ -216,6 +216,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md`.
 - Restore automatic full-project validation as the recommended/default mode only after live diagnostics are incremental,
   cancellable, and UI-cheap for nested projects.
+- Add a manual `Help -> Check for Updates...` workflow only after deciding how to handle networking without destabilizing
+  AppImage/Linux packaging; do not add Qt Network or automatic startup checks until the dependency/deployment impact is
+  explicitly planned.
 - Broader Therion corpus regression tests for parsing, serialization, source rewrites, indexing, and map/text synchronization.
 - Add old-project integration fixtures for Therion/Metapost runner failures once a fixture exists.
 - Bounded `.xvi` cache policy for very large projects.
