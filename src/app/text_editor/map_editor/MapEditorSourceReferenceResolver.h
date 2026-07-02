@@ -13,6 +13,7 @@
 namespace TherionStudio
 {
 struct TherionParsedLine;
+struct TherionSourceLogicalCommand;
 
 struct SourceVertexTextReference
 {
@@ -33,6 +34,8 @@ struct CursorGeometrySelection
 
 std::optional<MapGeometryFeature> lineFeatureForLineNumber(const QString &documentText, int lineNumber);
 std::optional<MapGeometryFeature> lineFeatureForLineNumber(const QVector<TherionParsedLine> &parsedLines, int lineNumber);
+std::optional<MapGeometryFeature> lineFeatureForLineNumber(const QVector<TherionSourceLogicalCommand> &commands,
+                                                           int lineNumber);
 QString formatSourceCoordinate(qreal value);
 QStringList coordinateRowsForLineVertices(const QVector<MapGeometryFeature::TH2LineVertex> &lineVertices,
                                           bool closed = false);

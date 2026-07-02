@@ -30,8 +30,11 @@ Active planning only. Completed history belongs in archive files. Stable archite
   rows after a data body do not get reparsed as standalone raw lines.
 - Blocks details selection loading now reads selected logical commands from a source snapshot when populating read-only
   fields and option rows for continued commands.
-- Next implementation slice: migrate one project-index cache lookup or Map inspector read-only option consumer to the
-  shared logical source document before touching Map scene refresh or geometry projection.
+- Map details panel line-action, line-option, and line-point read-only feature lookups now consume
+  `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
+  text for each lookup.
+- Next implementation slice: migrate one project-index cache lookup or another Map inspector read-only option consumer to
+  the shared logical source document before touching Map scene refresh or geometry projection.
 - Keep Therion namespace/reference changes behind `docs/THERION_COMPATIBILITY.md` coverage, especially
   `object@child.parent` qualified-reference order.
 - Keep source transaction ownership work incremental: one caller or workflow per commit, with explicit result handling,

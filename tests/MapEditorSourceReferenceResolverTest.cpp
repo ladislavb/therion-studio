@@ -1,4 +1,5 @@
 #include "../src/app/text_editor/map_editor/MapEditorSourceReferenceResolver.h"
+#include "../src/core/TherionSourceLogicalDocument.h"
 
 #include <QString>
 
@@ -42,11 +43,56 @@ int runLineFeatureLookupPreservesPhysicalLineNumbersTest()
         ? 0
         : 1;
 }
+
+int runLineFeatureLookupUsesLogicalCommandsTest()
+{
+    const QString text = QStringLiteral(
+        "# header\n"
+        "scrap s1 -projection plan\n"
+        "line wall -id wall-1\n"
+        "  0 0\n"
+        "  subtype blocks\n"
+        "  10 0 -smooth off\n"
+        "endline\n"
+        "endscrap\n");
+
+    TherionSourceDocumentMetadata metadata;
+    metadata.sourceType = TherionSourceDocumentType::TherionMap;
+    const TherionSourceLogicalDocument logicalDocument =
+        TherionSourceLogicalDocument::fromText(text, metadata);
+
+    const std::optional<MapGeometryFeature> textFeature = lineFeatureForLineNumber(text, 3);
+    const std::optional<MapGeometryFeature> logicalFeature =
+        lineFeatureForLineNumber(logicalDocument.commands(), 3);
+    if (!expect(textFeature.has_value() && logicalFeature.has_value(),
+                "Expected logical-command line feature lookup to find the same wall line as text lookup.")) {
+        return 1;
+    }
+    if (!expect(logicalFeature->lineNumber == textFeature->lineNumber
+                    && logicalFeature->lineVertices.size() == textFeature->lineVertices.size(),
+                "Expected logical-command line feature lookup to preserve line number and vertex count.")) {
+        return 1;
+    }
+    if (!expect(logicalFeature->optionValues.value(QStringLiteral("id"))
+                    == textFeature->optionValues.value(QStringLiteral("id")),
+                "Expected logical-command line feature lookup to preserve line options.")) {
+        return 1;
+    }
+    if (!expect(logicalFeature->lineVertices.at(1).standaloneOptionRows
+                    == textFeature->lineVertices.at(1).standaloneOptionRows,
+                "Expected logical-command line feature lookup to preserve line-point standalone option rows.")) {
+        return 1;
+    }
+    return 0;
+}
 }
 
 int main()
 {
     if (const int rc = runLineFeatureLookupPreservesPhysicalLineNumbersTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runLineFeatureLookupUsesLogicalCommandsTest(); rc != 0) {
         return rc;
     }
     return 0;

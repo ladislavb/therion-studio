@@ -79,6 +79,21 @@ std::optional<TherionSourceLogicalCommand> logicalCommandForEditorLine(TextEdito
     return *command;
 }
 
+std::optional<MapGeometryFeature> lineFeatureForEditorLine(TextEditorTab *textEditor, int lineNumber)
+{
+    if (textEditor == nullptr || lineNumber <= 0) {
+        return std::nullopt;
+    }
+
+    TherionSourceSnapshotCache sourceSnapshotCache;
+    TherionSourceDocumentMetadata metadata;
+    metadata.sourceType = TherionSourceDocumentType::TherionMap;
+    metadata.revisionId = textEditor->documentRevision();
+    const TherionSourceLogicalDocument &logicalDocument =
+        sourceSnapshotCache.logicalDocument(textEditor->text(), metadata);
+    return lineFeatureForLineNumber(logicalDocument.commands(), lineNumber);
+}
+
 std::optional<InspectorObjectQuickFields> inspectorObjectQuickFieldsForEditorLine(TextEditorTab *textEditor,
                                                                                   int lineNumber)
 {
@@ -878,7 +893,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
         bool firstVertex = false;
         bool lastVertex = false;
         if (const std::optional<MapGeometryFeature> lineFeature =
-                lineFeatureForLineNumber(context_.textEditor->text(), *context_.selectedObjectLineNumber);
+                lineFeatureForEditorLine(context_.textEditor, *context_.selectedObjectLineNumber);
             lineFeature.has_value() && lineFeature->kind == MapGeometryFeature::Kind::Line) {
             const int lineVertexIndex = lineVertexIndexForSourceVertex(lineFeature.value(), *context_.selectedObjectVertexIndex);
             firstVertex = lineVertexIndex == 0;
@@ -938,7 +953,8 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
         }
     }
     if (lineOptionsVisible) {
-        if (const std::optional<MapGeometryFeature> lineFeature = lineFeatureForLineNumber(context_.textEditor->text(), *context_.selectedObjectLineNumber);
+        if (const std::optional<MapGeometryFeature> lineFeature =
+                lineFeatureForEditorLine(context_.textEditor, *context_.selectedObjectLineNumber);
             *context_.selectedObjectKind == QStringLiteral("line")
             && lineFeature.has_value()
             && lineFeature->kind == MapGeometryFeature::Kind::Line) {
@@ -1044,9 +1060,11 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
                 }
             }
         } else if (*context_.selectedObjectKind == QStringLiteral("line") && *context_.selectedObjectVertexIndex >= 0) {
-            if (const std::optional<MapGeometryFeature> lineFeature = lineFeatureForLineNumber(context_.textEditor->text(), *context_.selectedObjectLineNumber);
+            if (const std::optional<MapGeometryFeature> lineFeature =
+                    lineFeatureForEditorLine(context_.textEditor, *context_.selectedObjectLineNumber);
                 lineFeature.has_value() && lineFeature->kind == MapGeometryFeature::Kind::Line) {
-                const int lineVertexIndex = lineVertexIndexForSourceVertex(lineFeature.value(), *context_.selectedObjectVertexIndex);
+                const int lineVertexIndex =
+                    lineVertexIndexForSourceVertex(lineFeature.value(), *context_.selectedObjectVertexIndex);
                 if (lineVertexIndex >= 0) {
                     linePointSmoothApplicable = true;
                     const MapGeometryFeature::TH2LineVertex &lineVertex = lineFeature->lineVertices.at(lineVertexIndex);
@@ -1075,7 +1093,8 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
                         const QStringList subtypeValues =
                             inspectorSubtypeValuesForCommandType(inspectorSymbolCatalog(), QStringLiteral("line"), linePointType);
                         linePointSegmentSubtypeApplicable = !subtypeValues.isEmpty();
-                        linePointAltitudeAutoApplicable = linePointType.compare(QStringLiteral("wall"), Qt::CaseInsensitive) == 0;
+                        linePointAltitudeAutoApplicable =
+                            linePointType.compare(QStringLiteral("wall"), Qt::CaseInsensitive) == 0;
                         linePointSegmentSubtype = linePointSegmentSubtypeFromStandaloneRows(linePointFlagsRows);
                     }
                 }
