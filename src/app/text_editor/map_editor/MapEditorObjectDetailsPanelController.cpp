@@ -94,6 +94,21 @@ std::optional<MapGeometryFeature> lineFeatureForEditorLine(TextEditorTab *textEd
     return lineFeatureForLineNumber(logicalDocument.commands(), lineNumber);
 }
 
+QVector<MapEditorAreaReference> areaReferencesForEditorBorderLine(TextEditorTab *textEditor, int lineNumber)
+{
+    if (textEditor == nullptr || lineNumber <= 0) {
+        return {};
+    }
+
+    TherionSourceSnapshotCache sourceSnapshotCache;
+    TherionSourceDocumentMetadata metadata;
+    metadata.sourceType = TherionSourceDocumentType::TherionMap;
+    metadata.revisionId = textEditor->documentRevision();
+    const TherionSourceLogicalDocument &logicalDocument =
+        sourceSnapshotCache.logicalDocument(textEditor->text(), metadata);
+    return mapEditorAreaReferencesForBorderLine(logicalDocument.commands(), lineNumber);
+}
+
 std::optional<InspectorObjectQuickFields> inspectorObjectQuickFieldsForEditorLine(TextEditorTab *textEditor,
                                                                                   int lineNumber)
 {
@@ -788,7 +803,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
     if (context_.textEditor != nullptr
         && effectiveLineNumber > 0
         && effectiveKind == QStringLiteral("line")) {
-        areaReferences = mapEditorAreaReferencesForBorderLine(context_.textEditor->text(), effectiveLineNumber);
+        areaReferences = areaReferencesForEditorBorderLine(context_.textEditor, effectiveLineNumber);
     }
     const bool deleteBlockedByAreaReference = !areaReferences.isEmpty();
     context_.deleteButton->setEnabled(effectiveLineNumber > 0 && !deleteBlockedByAreaReference);

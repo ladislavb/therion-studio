@@ -33,8 +33,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.
-- Next implementation slice: migrate one project-index cache lookup or another Map inspector read-only option consumer to
-  the shared logical source document before touching Map scene refresh or geometry projection.
+- Map area-reference lookups now have logical-command resolver overloads, and the object-details delete guard reads the
+  "Used by area" state from the shared logical source projection instead of reparsing editor text directly.
+- Next implementation slice: migrate the Map selection/inspector area-reference consumers to a shared cached logical
+  document context before touching Map scene refresh or geometry projection.
 - Keep Therion namespace/reference changes behind `docs/THERION_COMPATIBILITY.md` coverage, especially
   `object@child.parent` qualified-reference order.
 - Keep source transaction ownership work incremental: one caller or workflow per commit, with explicit result handling,
