@@ -1129,7 +1129,7 @@ int runDocumentTypeContextProjectionTest()
     return 0;
 }
 
-int runSupersededScanStillDeliversLatestResultTest()
+int runSupersededScanSuppressesOlderResultAndDeliversLatestTest()
 {
     QTemporaryDir tempDir;
     if (!expect(tempDir.isValid(), "Temporary project directory creation failed.")) {
@@ -1189,7 +1189,7 @@ int runSupersededScanStillDeliversLatestResultTest()
     timeout.start();
     loop.exec();
 
-    if (!expect(receivedFirstResult, "Superseded validation should still emit the completed older result.")) {
+    if (!expect(!receivedFirstResult, "Superseded validation should suppress the completed older result.")) {
         return 1;
     }
     if (!expect(requestedSupersedingScan, "Superseded validation test did not queue a newer scan.")) {
@@ -1452,7 +1452,7 @@ int main(int argc, char **argv)
     if (runDocumentTypeContextProjectionTest() != 0) {
         return 1;
     }
-    if (runSupersededScanStillDeliversLatestResultTest() != 0) {
+    if (runSupersededScanSuppressesOlderResultAndDeliversLatestTest() != 0) {
         return 1;
     }
     if (runRepeatedRequestsDoNotStarveDebounceTest() != 0) {

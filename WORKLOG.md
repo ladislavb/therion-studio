@@ -104,9 +104,11 @@ Active planning only. Completed history belongs in archive files. Stable archite
   project-validation signature exists, allowing unchanged follow-up results to use the model-skip path.
 - Project validation controller now suppresses scanner results from superseded request serials before they reach the UI,
   so queued automatic refreshes cannot briefly republish stale diagnostics while a newer validation request is pending.
-- Next validation/project-scan slice: add cooperative cancellation checks inside long validation scans or gather a fresh
-  diagnostic log to identify the next non-cache bottleneck; do not reintroduce scanner-local file traversal, broad context
-  bags, or static/global cache state.
+- Project validation scanner now checks superseding request serials during collection/local-validation boundaries and
+  suppresses superseded worker results instead of finishing and emitting stale scans.
+- Next validation/project-scan slice: gather a fresh diagnostic log to identify the next non-cache bottleneck before
+  adding deeper cancellation points; do not reintroduce scanner-local file traversal, broad context bags, or static/global
+  cache state.
 - Prefer Settings -> troubleshooting logs for tester builds: the preference is time-limited, restart-applied, and uses
   rotated application log files instead of requiring users to set environment variables.
 - Optimize future live validation with incremental file/revision caching, generation-keyed cancellation, and cheaper

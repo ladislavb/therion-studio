@@ -11,6 +11,7 @@
 #include <QString>
 #include <QVector>
 
+#include <atomic>
 #include <memory>
 
 class QTimer;
@@ -45,6 +46,7 @@ public:
         bool projectIndexSnapshotCacheHit = false;
         int documentValidationCacheHits = 0;
         int documentValidationCacheMisses = 0;
+        bool superseded = false;
     };
 
     struct DocumentValidationCacheEntry
@@ -75,17 +77,20 @@ private:
         QString projectRootPath;
         TherionSourceValidationCatalog validationCatalog;
         QHash<QString, QString> inMemoryProjectContentsByPath;
+        quint64 requestSerial = 0;
     };
 
     Request pendingRequest_;
     bool hasPendingRequest_ = false;
     bool queuedScan_ = false;
     quint64 generation_ = 0;
+    quint64 requestSerial_ = 0;
     QTimer *debounceTimer_ = nullptr;
     QFutureWatcher<Result> *scanWatcher_ = nullptr;
     std::shared_ptr<ProjectScanCacheService> scanCacheService_;
     std::shared_ptr<ProjectSourceProjectionCache> projectionCache_;
     std::shared_ptr<QHash<QString, DocumentValidationCacheEntry>> documentValidationCache_;
+    std::shared_ptr<std::atomic<quint64>> latestRequestedSerial_;
     QString projectionCacheProjectRootPath_;
     QString projectionCacheCatalogSignature_;
 };

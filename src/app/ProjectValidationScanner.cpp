@@ -540,6 +540,8 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
                                                           const TherionSourceValidationCatalog &validationCatalog,
                                                           const QHash<QString, QString> &inMemoryProjectContentsByPath,
                                                           quint64 generation,
+                                                          quint64 requestSerial,
+                                                          const std::shared_ptr<std::atomic<quint64>> &latestRequestedSerial,
                                                           ProjectScanCacheService &scanCacheService,
                                                           ProjectSourceProjectionCache &projectionCache,
                                                           QHash<QString, ProjectValidationScanner::DocumentValidationCacheEntry> &documentValidationCache,
@@ -556,16 +558,21 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
     result.generation = generation;
     result.projectRootPath = projectRootPath;
 
+    auto isSuperseded = [&]() {
+        return latestRequestedSerial != nullptr
+            && latestRequestedSerial->load(std::memory_order_acquire) != requestSerial;
+    };
     auto logAndReturn = [&](ProjectValidationScanner::Result value) {
         value.projectionCacheStats = projectionCache.stats();
         if (diagnosticProjectValidationLoggingEnabled()) {
             qInfo().noquote()
-                << QStringLiteral("project-validation-scan generation=%1 files=%2 searched=%3 findings=%4 limit_reached=%5 collect_ms=%6 validate_ms=%7 project_index_ms=%8 total_ms=%9 projection_source_builds=%10 projection_source_hits=%11 projection_logical_builds=%12 projection_logical_hits=%13 projection_catalog_builds=%14 projection_catalog_hits=%15 document_validation_cache_hits=%16 document_validation_cache_misses=%17 project_index_logical_builds=%18 project_index_logical_hits=%19 project_index_prebuilt_logical_hits=%20 project_source_snapshot_cache_hit=%21 project_index_snapshot_cache_hit=%22 root=\"%23\" error=\"%24\"")
+                << QStringLiteral("project-validation-scan generation=%1 files=%2 searched=%3 findings=%4 limit_reached=%5 superseded=%6 collect_ms=%7 validate_ms=%8 project_index_ms=%9 total_ms=%10 projection_source_builds=%11 projection_source_hits=%12 projection_logical_builds=%13 projection_logical_hits=%14 projection_catalog_builds=%15 projection_catalog_hits=%16 document_validation_cache_hits=%17 document_validation_cache_misses=%18 project_index_logical_builds=%19 project_index_logical_hits=%20 project_index_prebuilt_logical_hits=%21 project_source_snapshot_cache_hit=%22 project_index_snapshot_cache_hit=%23 root=\"%24\" error=\"%25\"")
                        .arg(value.generation)
                        .arg(projectSourceSnapshot.documents.size())
                        .arg(value.searchedFileCount)
                        .arg(value.findings.size())
                        .arg(value.limitReached ? QStringLiteral("true") : QStringLiteral("false"))
+                       .arg(value.superseded ? QStringLiteral("true") : QStringLiteral("false"))
                        .arg(collectMs)
                        .arg(validateMs)
                        .arg(projectIndexMs)
@@ -588,10 +595,18 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
         }
         return value;
     };
+    auto supersededResult = [&]() {
+        result.superseded = true;
+        return logAndReturn(result);
+    };
 
     if (result.projectRootPath.trimmed().isEmpty() || !QDir(result.projectRootPath).exists()) {
         result.errorMessage = QObject::tr("Open a project before validating.");
         return logAndReturn(result);
+    }
+
+    if (isSuperseded()) {
+        return supersededResult();
     }
 
     QHash<QString, QString> searchedTextByPath;
@@ -607,6 +622,9 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
         result.projectSourceSnapshotCacheHit = sourceSnapshotCacheHit;
         collectMs = collectTimer.elapsed();
     }
+    if (isSuperseded()) {
+        return supersededResult();
+    }
     QSet<QString> knownProjectFilePaths;
     QHash<QString, ProjectSourceDocument> projectSourceDocumentByPath;
     for (const ProjectSourceDocument &document : std::as_const(projectSourceSnapshot.documents)) {
@@ -619,6 +637,10 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
         QElapsedTimer validateTimer;
         validateTimer.start();
         for (const ProjectSourceDocument &document : std::as_const(projectSourceSnapshot.documents)) {
+            if (isSuperseded()) {
+                validateMs = validateTimer.elapsed();
+                return supersededResult();
+            }
             ++result.searchedFileCount;
             searchedTextByPath.insert(document.normalizedPath, document.text);
             appendFindingsForDocument(&result,
@@ -636,6 +658,9 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
             }
         }
         validateMs = validateTimer.elapsed();
+    }
+    if (isSuperseded()) {
+        return supersededResult();
     }
 
     {
@@ -672,6 +697,9 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
                                    projectionCache);
         projectIndexMs = projectIndexTimer.elapsed();
     }
+    if (isSuperseded()) {
+        return supersededResult();
+    }
 
     return logAndReturn(result);
 }
@@ -692,6 +720,7 @@ ProjectValidationScanner::ProjectValidationScanner(std::shared_ptr<ProjectScanCa
                             : std::make_shared<ProjectScanCacheService>())
     , projectionCache_(std::make_shared<ProjectSourceProjectionCache>())
     , documentValidationCache_(std::make_shared<QHash<QString, DocumentValidationCacheEntry>>())
+    , latestRequestedSerial_(std::make_shared<std::atomic<quint64>>(0))
 {
     debounceTimer_->setSingleShot(true);
     debounceTimer_->setInterval(120);
@@ -706,6 +735,8 @@ void ProjectValidationScanner::requestScan(const QString &projectRootPath,
     pendingRequest_.projectRootPath = projectRootPath;
     pendingRequest_.validationCatalog = validationCatalog;
     pendingRequest_.inMemoryProjectContentsByPath = inMemoryProjectContentsByPath;
+    pendingRequest_.requestSerial = ++requestSerial_;
+    latestRequestedSerial_->store(pendingRequest_.requestSerial, std::memory_order_release);
     hasPendingRequest_ = true;
     if (!debounceTimer_->isActive()) {
         debounceTimer_->start();
@@ -748,16 +779,20 @@ void ProjectValidationScanner::startScan()
     const std::shared_ptr<ProjectScanCacheService> scanCacheService = scanCacheService_;
     const std::shared_ptr<QHash<QString, DocumentValidationCacheEntry>> documentValidationCache =
         documentValidationCache_;
+    const std::shared_ptr<std::atomic<quint64>> latestRequestedSerial = latestRequestedSerial_;
     auto future = QtConcurrent::run([request,
                                      generation,
                                      scanCacheService,
                                      projectionCache,
                                      documentValidationCache,
+                                     latestRequestedSerial,
                                      catalogSignature]() {
         return performProjectValidation(request.projectRootPath,
                                         request.validationCatalog,
                                         request.inMemoryProjectContentsByPath,
                                         generation,
+                                        request.requestSerial,
+                                        latestRequestedSerial,
                                         *scanCacheService,
                                         *projectionCache,
                                         *documentValidationCache,
@@ -770,7 +805,9 @@ void ProjectValidationScanner::handleScanFinished()
 {
     const Result result = scanWatcher_->result();
     const bool hasSupersedingRequest = queuedScan_ || hasPendingRequest_;
-    emit validationFinished(result);
+    if (!result.superseded) {
+        emit validationFinished(result);
+    }
 
     if (hasSupersedingRequest) {
         queuedScan_ = false;
