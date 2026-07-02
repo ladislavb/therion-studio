@@ -879,13 +879,13 @@ std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEdi
                 }
             };
 
-            if (context.scene == nullptr || context.textEditor == nullptr || context.itemsByLine == nullptr) {
+            if (context.scene == nullptr || !context.logicalCommandsForCurrentDocument || context.itemsByLine == nullptr) {
                 fallbackFullRefresh(QStringLiteral("missing-context"));
                 return;
             }
 
             const std::optional<MapGeometryFeature> refreshedFeature =
-                lineFeatureForLineNumber(context.textEditor->text(), lineNumber);
+                lineFeatureForLineNumber(context.logicalCommandsForCurrentDocument(), lineNumber);
             resolveMs = logTiming ? stageTimer.restart() : 0;
             if (!refreshedFeature.has_value()) {
                 fallbackFullRefresh(QStringLiteral("missing-feature"));
