@@ -69,6 +69,9 @@ MapEditorCanvasEditContext MapEditorTab::canvasEditContext()
         .mapSourceBoundsForCurrentDocument = [this]() {
             return mapSourceBoundsForCurrentDocument();
         },
+        .logicalCommandsForCurrentDocument = [this]() {
+            return logicalCommandsForCurrentDocument();
+        },
         .restorePointSelectionLater = [this](int lineNumber) {
             restorePointSelection(lineNumber);
         },

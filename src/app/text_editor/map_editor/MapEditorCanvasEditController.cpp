@@ -666,11 +666,12 @@ bool restoreLineVertexOwnerSelectionForContext(const MapEditorCanvasEditContext 
                                                int lineNumber,
                                                int ownerIndex)
 {
-    if (context.textEditor == nullptr || lineNumber <= 0 || ownerIndex < 0) {
+    if (lineNumber <= 0 || ownerIndex < 0 || !context.logicalCommandsForCurrentDocument) {
         return false;
     }
 
-    const std::optional<MapGeometryFeature> lineFeature = lineFeatureForLineNumber(context.textEditor->text(), lineNumber);
+    const std::optional<MapGeometryFeature> lineFeature = lineFeatureForLineNumber(context.logicalCommandsForCurrentDocument(),
+                                                                                   lineNumber);
     if (!lineFeature.has_value() || ownerIndex >= lineFeature->lineVertices.size()) {
         return false;
     }

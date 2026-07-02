@@ -44,8 +44,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
   field refresh.
 - Line-extension start now resolves the selected endpoint feature from the map tab's revision-cached logical commands,
   while the commit path still uses explicit before/after source text for the rewrite transaction.
-- Next implementation slice: move another focused Map read-only projection consumer to `logicalCommandsForCurrentDocument`
-  or extract a reusable map logical-source context if the same callback shape spreads further.
+- Canvas line-vertex owner selection restore now resolves line features from the map tab's revision-cached logical commands
+  instead of reparsing editor text during restore.
+- Next implementation slice: extract a small reusable map logical-source context or continue one more focused
+  non-mutating `MapEditorCanvasEditController` lookup migration if it can stay separate from rewrite planning.
 - Keep Therion namespace/reference changes behind `docs/THERION_COMPATIBILITY.md` coverage, especially
   `object@child.parent` qualified-reference order.
 - Keep source transaction ownership work incremental: one caller or workflow per commit, with explicit result handling,
