@@ -50,6 +50,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   planning paths still use explicit before/after source text snapshots.
 - Map controller contexts now share a small `MapEditorLogicalSourceContext` for revision-cached logical command access
   instead of each owning an identical callback field.
+- Map canvas source-transaction test contexts now provide the same logical-source callback shape as production contexts,
+  keeping partial-refresh regression coverage aligned with the shared logical-source path.
 - Next implementation slice: pause DOM migration and switch to the next `2026.7.1` performance/UX item, or start a
   dedicated TH2 geometry projection design slice before touching rewrite planners.
 - Keep Therion namespace/reference changes behind `docs/THERION_COMPATIBILITY.md` coverage, especially

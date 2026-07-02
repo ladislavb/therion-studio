@@ -4,6 +4,7 @@
 #include "../src/core/CommandCatalogStore.h"
 #include "../src/core/QtFileSystem.h"
 #include "../src/core/TherionDocumentParser.h"
+#include "../src/core/TherionSourceLogicalDocument.h"
 
 #include <QApplication>
 #include <QCoreApplication>
@@ -96,6 +97,12 @@ MapEditorCanvasEditController makeController(TextEditorTab *tab,
             ++(*discardCount);
         };
     }
+    context.logicalSource.logicalCommandsForCurrentDocument = [tab]() {
+        TherionSourceDocumentMetadata metadata;
+        metadata.sourceType = TherionSourceDocumentType::TherionMap;
+        metadata.revisionId = tab != nullptr ? tab->documentRevision() : 0;
+        return TherionSourceLogicalDocument::fromText(tab != nullptr ? tab->text() : QString(), metadata).commands();
+    };
     context.mapSourceBoundsForCurrentDocument = std::move(mapSourceBoundsForCurrentDocument);
     return MapEditorCanvasEditController(context);
 }
