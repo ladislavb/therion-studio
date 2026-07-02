@@ -65,6 +65,15 @@ QVector<TherionParsedLine> MapEditorTab::parsedLinesForCurrentDocument() const
     return cachedParsedLines_;
 }
 
+MapEditorLogicalSourceContext MapEditorTab::logicalSourceContext() const
+{
+    return MapEditorLogicalSourceContext{
+        .logicalCommandsForCurrentDocument = [this]() {
+            return logicalCommandsForCurrentDocument();
+        },
+    };
+}
+
 QVector<TherionSourceLogicalCommand> MapEditorTab::logicalCommandsForCurrentDocument() const
 {
     if (textEditor_ == nullptr) {

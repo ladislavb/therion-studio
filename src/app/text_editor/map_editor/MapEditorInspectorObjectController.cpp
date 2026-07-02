@@ -150,8 +150,8 @@ void MapEditorInspectorObjectController::rebuildInspectorObjectsTree()
     }
 
     const QVector<TherionParsedLine> parsedLines = context_.parsedLinesForCurrentDocument();
-    const QVector<TherionSourceLogicalCommand> logicalCommands = context_.logicalCommandsForCurrentDocument
-        ? context_.logicalCommandsForCurrentDocument()
+    const QVector<TherionSourceLogicalCommand> logicalCommands = context_.logicalSource.logicalCommandsForCurrentDocument
+        ? context_.logicalSource.logicalCommandsForCurrentDocument()
         : QVector<TherionSourceLogicalCommand>();
     const QVector<ProjectStructureEntry> entries = ProjectStructureIndex::scanTh2Objects(th2Path, parsedLines);
     if (entries.isEmpty()) {

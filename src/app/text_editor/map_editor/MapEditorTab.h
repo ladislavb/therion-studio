@@ -21,6 +21,7 @@
 
 #include "MapEditorInspectorData.h"
 #include "MapEditorInteractiveDrawLogic.h"
+#include "MapEditorLogicalSourceContext.h"
 #include "MapEditorObjectDetailsLogic.h"
 #include "MapEditorSmartAreaPlanner.h"
 #include "MapEditorUndoArbitrationService.h"
@@ -496,6 +497,7 @@ private:
     bool hasUndoableInteractiveDrawStep() const;
     bool undoInteractiveDrawStep();
     QVector<TherionParsedLine> parsedLinesForCurrentDocument() const;
+    MapEditorLogicalSourceContext logicalSourceContext() const;
     QVector<TherionSourceLogicalCommand> logicalCommandsForCurrentDocument() const;
     QRectF mapSourceBoundsForCurrentDocument() const;
     std::optional<QRectF> initialAreaAdjustRectForDraftInsertion() const;

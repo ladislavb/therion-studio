@@ -10,6 +10,7 @@
 #include <functional>
 #include <optional>
 
+#include "MapEditorLogicalSourceContext.h"
 #include "../TextEditorSourceTransactionController.h"
 
 class QGraphicsScene;
@@ -20,7 +21,6 @@ namespace TherionStudio
 {
 class TextEditorTab;
 struct TherionParsedLine;
-struct TherionSourceLogicalCommand;
 
 struct MapEditorInspectorObjectContext
 {
@@ -44,7 +44,7 @@ struct MapEditorInspectorObjectContext
     std::function<QString(const char *)> translate;
     std::function<QString()> filePath;
     std::function<QVector<TherionParsedLine>()> parsedLinesForCurrentDocument;
-    std::function<QVector<TherionSourceLogicalCommand>()> logicalCommandsForCurrentDocument;
+    MapEditorLogicalSourceContext logicalSource;
     std::function<int()> currentLineNumber;
     std::function<void()> refreshToolbarSummary;
     std::function<void()> refreshObjectDetailsPanel;

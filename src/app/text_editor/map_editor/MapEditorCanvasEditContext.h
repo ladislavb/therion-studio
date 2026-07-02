@@ -10,6 +10,8 @@
 #include <functional>
 #include <optional>
 
+#include "MapEditorLogicalSourceContext.h"
+
 class QObject;
 class QGraphicsItem;
 class QGraphicsRectItem;
@@ -19,7 +21,6 @@ class QUndoStack;
 namespace TherionStudio
 {
 class TextEditorTab;
-struct TherionSourceLogicalCommand;
 
 struct MapEditorCanvasEditContext
 {
@@ -56,7 +57,7 @@ struct MapEditorCanvasEditContext
     std::function<void()> refreshObjectDetailsPanel;
     std::function<QRectF()> mapPreviewBounds;
     std::function<QRectF()> mapSourceBoundsForCurrentDocument;
-    std::function<QVector<TherionSourceLogicalCommand>()> logicalCommandsForCurrentDocument;
+    MapEditorLogicalSourceContext logicalSource;
     std::function<void(int)> restorePointSelectionLater;
     std::function<void(int, int)> restoreLineAnchorSelectionLater;
     std::function<bool(int, int, bool)> beginLineExtensionFromSelection;

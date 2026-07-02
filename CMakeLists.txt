@@ -520,6 +520,7 @@ set(THERION_MAP_EDITOR_SOURCES
     src/app/text_editor/map_editor/MapEditorCanvasEditContext.h
     src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp
     src/app/text_editor/map_editor/MapEditorCanvasEditController.h
+    src/app/text_editor/map_editor/MapEditorLogicalSourceContext.h
     src/app/text_editor/map_editor/MapEditorInspectorBackgroundController.cpp
     src/app/text_editor/map_editor/MapEditorInspectorBackgroundController.h
     src/app/text_editor/map_editor/MapEditorInspectorData.cpp

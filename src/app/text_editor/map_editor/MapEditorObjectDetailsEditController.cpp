@@ -961,14 +961,14 @@ void MapEditorObjectDetailsEditController::deleteSelectedObjectFromSelection()
         return;
     }
 
-    if (!context_.logicalCommandsForCurrentDocument) {
+    if (!context_.logicalSource.logicalCommandsForCurrentDocument) {
         *context_.toolbarStatusNote = tr("Object deletion failed.");
         context_.refreshToolbarSummary();
         return;
     }
 
     const QVector<MapEditorAreaReference> areaReferences =
-        mapEditorAreaReferencesForBorderLine(context_.logicalCommandsForCurrentDocument(), targetLineNumber);
+        mapEditorAreaReferencesForBorderLine(context_.logicalSource.logicalCommandsForCurrentDocument(), targetLineNumber);
     if (!areaReferences.isEmpty()) {
         *context_.toolbarStatusNote = tr("This line is used as an area border. Delete the area instead.");
         context_.refreshToolbarSummary();

@@ -782,8 +782,8 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
     const QVector<TherionParsedLine> parsedLines = context_.parsedLinesForCurrentDocument
         ? context_.parsedLinesForCurrentDocument()
         : QVector<TherionParsedLine>();
-    const QVector<TherionSourceLogicalCommand> logicalCommands = context_.logicalCommandsForCurrentDocument
-        ? context_.logicalCommandsForCurrentDocument()
+    const QVector<TherionSourceLogicalCommand> logicalCommands = context_.logicalSource.logicalCommandsForCurrentDocument
+        ? context_.logicalSource.logicalCommandsForCurrentDocument()
         : QVector<TherionSourceLogicalCommand>();
     context_.metadataLabel->setText(metadataForSourceLine(parsedLines, effectiveLineNumber));
     QVector<MapEditorAreaReference> areaReferences;

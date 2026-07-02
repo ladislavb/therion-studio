@@ -666,11 +666,11 @@ bool restoreLineVertexOwnerSelectionForContext(const MapEditorCanvasEditContext 
                                                int lineNumber,
                                                int ownerIndex)
 {
-    if (lineNumber <= 0 || ownerIndex < 0 || !context.logicalCommandsForCurrentDocument) {
+    if (lineNumber <= 0 || ownerIndex < 0 || !context.logicalSource.logicalCommandsForCurrentDocument) {
         return false;
     }
 
-    const std::optional<MapGeometryFeature> lineFeature = lineFeatureForLineNumber(context.logicalCommandsForCurrentDocument(),
+    const std::optional<MapGeometryFeature> lineFeature = lineFeatureForLineNumber(context.logicalSource.logicalCommandsForCurrentDocument(),
                                                                                    lineNumber);
     if (!lineFeature.has_value() || ownerIndex >= lineFeature->lineVertices.size()) {
         return false;
@@ -879,13 +879,13 @@ std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEdi
                 }
             };
 
-            if (context.scene == nullptr || !context.logicalCommandsForCurrentDocument || context.itemsByLine == nullptr) {
+            if (context.scene == nullptr || !context.logicalSource.logicalCommandsForCurrentDocument || context.itemsByLine == nullptr) {
                 fallbackFullRefresh(QStringLiteral("missing-context"));
                 return;
             }
 
             const std::optional<MapGeometryFeature> refreshedFeature =
-                lineFeatureForLineNumber(context.logicalCommandsForCurrentDocument(), lineNumber);
+                lineFeatureForLineNumber(context.logicalSource.logicalCommandsForCurrentDocument(), lineNumber);
             resolveMs = logTiming ? stageTimer.restart() : 0;
             if (!refreshedFeature.has_value()) {
                 fallbackFullRefresh(QStringLiteral("missing-feature"));
