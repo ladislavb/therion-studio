@@ -28,6 +28,7 @@ ProjectValidationController::ProjectValidationController(std::shared_ptr<Project
 void ProjectValidationController::requestValidation(const Request &request)
 {
     pendingTrigger_ = request.trigger;
+    pendingRequestSerial_ = ++latestRequestedSerial_;
     scanner_->requestScan(request.projectRootPath,
                           request.validationCatalog,
                           request.inMemoryProjectContentsByPath);
@@ -41,12 +42,17 @@ void ProjectValidationController::setDebounceIntervalMs(int intervalMs)
 void ProjectValidationController::handleScannerStarted(quint64 generation, const QString &projectRootPath)
 {
     triggersByGeneration_.insert(generation, pendingTrigger_);
+    requestSerialByGeneration_.insert(generation, pendingRequestSerial_);
     emit validationStarted(pendingTrigger_, generation, projectRootPath);
 }
 
 void ProjectValidationController::handleScannerFinished(const ProjectValidationScanner::Result &result)
 {
     const Trigger trigger = triggersByGeneration_.take(result.generation);
+    const quint64 requestSerial = requestSerialByGeneration_.take(result.generation);
+    if (requestSerial < latestRequestedSerial_) {
+        return;
+    }
     emit validationFinished(trigger, result);
 }
 }

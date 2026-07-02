@@ -156,6 +156,101 @@ int runControllerForwardsTriggerAndSnapshotTest()
 
     return 0;
 }
+
+int runControllerSuppressesSupersededFinishedResultTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Temporary superseded validation project directory creation failed.")) {
+        return 1;
+    }
+
+    const QString filePath = QDir(tempDir.path()).filePath(QStringLiteral("live.th2"));
+    if (!expect(writeTextFile(filePath,
+                              QStringLiteral("scrap disk\n"
+                                             "endscrap\n")),
+                "Temporary superseded validation file could not be written.")) {
+        return 1;
+    }
+
+    ProjectValidationController controller;
+    controller.setDebounceIntervalMs(0);
+
+    QHash<QString, QString> firstContents;
+    firstContents.insert(canonicalOrAbsolutePath(filePath),
+                         QStringLiteral("scrap first\n"
+                                        "endscrap\n"));
+    QHash<QString, QString> secondContents;
+    secondContents.insert(canonicalOrAbsolutePath(filePath),
+                          QStringLiteral("scrap second\n"
+                                         "line wall -clip off \"-clip off\"\n"
+                                         "endline\n"
+                                         "endscrap\n"));
+
+    ProjectValidationController::Request firstRequest;
+    firstRequest.trigger = ProjectValidationController::Trigger::ManualRefresh;
+    firstRequest.projectRootPath = tempDir.path();
+    firstRequest.validationCatalog = testCatalog();
+    firstRequest.inMemoryProjectContentsByPath = firstContents;
+
+    ProjectValidationController::Request secondRequest;
+    secondRequest.trigger = ProjectValidationController::Trigger::DocumentChanged;
+    secondRequest.projectRootPath = tempDir.path();
+    secondRequest.validationCatalog = testCatalog();
+    secondRequest.inMemoryProjectContentsByPath = secondContents;
+
+    int startedCount = 0;
+    int finishedCount = 0;
+    ProjectValidationController::Trigger finishedTrigger = ProjectValidationController::Trigger::ManualRefresh;
+    ProjectValidationScanner::Result finishedResult;
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+    timeout.setInterval(5000);
+
+    QObject::connect(&controller,
+                     &ProjectValidationController::validationStarted,
+                     &loop,
+                     [&](ProjectValidationController::Trigger, quint64, const QString &) {
+                         ++startedCount;
+                         if (startedCount == 1) {
+                             controller.requestValidation(secondRequest);
+                         }
+                     });
+    QObject::connect(&controller,
+                     &ProjectValidationController::validationFinished,
+                     &loop,
+                     [&](ProjectValidationController::Trigger trigger, const ProjectValidationScanner::Result &result) {
+                         ++finishedCount;
+                         finishedTrigger = trigger;
+                         finishedResult = result;
+                         loop.quit();
+                     });
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+
+    controller.requestValidation(firstRequest);
+
+    timeout.start();
+    loop.exec();
+
+    if (!expect(finishedCount == 1,
+                "ProjectValidationController should emit only the latest validation result when a running scan is superseded.")) {
+        return 1;
+    }
+    if (!expect(startedCount >= 2,
+                "Superseded validation test should start a replacement validation generation.")) {
+        return 1;
+    }
+    if (!expect(finishedTrigger == ProjectValidationController::Trigger::DocumentChanged,
+                "ProjectValidationController should report the trigger for the latest superseding request.")) {
+        return 1;
+    }
+    if (!expect(containsFinding(finishedResult, filePath, QStringLiteral("malformed-option-token")),
+                "ProjectValidationController should publish diagnostics from the superseding request.")) {
+        return 1;
+    }
+
+    return 0;
+}
 }
 
 int main(int argc, char **argv)
@@ -163,6 +258,9 @@ int main(int argc, char **argv)
     QCoreApplication app(argc, argv);
 
     if (runControllerForwardsTriggerAndSnapshotTest() != 0) {
+        return 1;
+    }
+    if (runControllerSuppressesSupersededFinishedResultTest() != 0) {
         return 1;
     }
     return 0;

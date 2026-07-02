@@ -53,6 +53,9 @@ private:
 
     ProjectValidationScanner *scanner_ = nullptr;
     Trigger pendingTrigger_ = Trigger::ManualRefresh;
+    quint64 pendingRequestSerial_ = 0;
+    quint64 latestRequestedSerial_ = 0;
     QHash<quint64, Trigger> triggersByGeneration_;
+    QHash<quint64, quint64> requestSerialByGeneration_;
 };
 }
