@@ -40,6 +40,9 @@ MapEditorSelectionContext MapEditorTab::selectionContext()
         .parsedLinesForCurrentDocument = [this]() {
             return parsedLinesForCurrentDocument();
         },
+        .logicalCommandsForCurrentDocument = [this]() {
+            return logicalCommandsForCurrentDocument();
+        },
         .sourcePointFromScenePosition = [this](const QPointF &scenePosition) {
             return sourcePointFromScenePosition(scenePosition);
         },

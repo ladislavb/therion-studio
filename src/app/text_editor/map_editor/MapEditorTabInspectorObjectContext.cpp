@@ -33,6 +33,9 @@ MapEditorInspectorObjectContext MapEditorTab::inspectorObjectContext()
         .parsedLinesForCurrentDocument = [this]() {
             return parsedLinesForCurrentDocument();
         },
+        .logicalCommandsForCurrentDocument = [this]() {
+            return logicalCommandsForCurrentDocument();
+        },
         .currentLineNumber = [this]() {
             return currentLineNumber();
         },

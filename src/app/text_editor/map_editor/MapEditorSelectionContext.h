@@ -18,6 +18,7 @@ namespace TherionStudio
 {
 class TextEditorTab;
 struct TherionParsedLine;
+struct TherionSourceLogicalCommand;
 
 struct MapEditorSelectionContext
 {
@@ -50,6 +51,7 @@ struct MapEditorSelectionContext
 
     std::function<int()> currentLineNumber;
     std::function<QVector<TherionParsedLine>()> parsedLinesForCurrentDocument;
+    std::function<QVector<TherionSourceLogicalCommand>()> logicalCommandsForCurrentDocument;
     std::function<QPointF(const QPointF &)> sourcePointFromScenePosition;
     std::function<void()> updateCommandSurfaceState;
     std::function<void()> updateHelpPanel;

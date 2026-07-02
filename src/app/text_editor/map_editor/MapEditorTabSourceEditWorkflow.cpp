@@ -8,6 +8,7 @@
 
 #include "../../../core/TherionBackgroundMetadata.h"
 #include "../../../core/TherionDocumentParser.h"
+#include "../../../core/TherionSourceLogicalDocument.h"
 
 #include <QDebug>
 #include <QElapsedTimer>
@@ -62,6 +63,28 @@ QVector<TherionParsedLine> MapEditorTab::parsedLinesForCurrentDocument() const
     cachedParsedLinesRevision_ = currentRevision;
     cachedParsedLinesValid_ = true;
     return cachedParsedLines_;
+}
+
+QVector<TherionSourceLogicalCommand> MapEditorTab::logicalCommandsForCurrentDocument() const
+{
+    if (textEditor_ == nullptr) {
+        return {};
+    }
+
+    const int currentRevision = textEditor_->documentRevision();
+    if (cachedLogicalCommandsValid_ && cachedLogicalCommandsRevision_ == currentRevision) {
+        return cachedLogicalCommands_;
+    }
+
+    TherionSourceDocumentMetadata metadata;
+    metadata.sourceType = TherionSourceDocumentType::TherionMap;
+    metadata.revisionId = currentRevision;
+    const TherionSourceLogicalDocument logicalDocument =
+        TherionSourceLogicalDocument::fromText(textEditor_->text(), metadata);
+    cachedLogicalCommands_ = logicalDocument.commands();
+    cachedLogicalCommandsRevision_ = currentRevision;
+    cachedLogicalCommandsValid_ = true;
+    return cachedLogicalCommands_;
 }
 
 std::optional<MapEditorInteractiveLineControlHandleRef> MapEditorTab::interactiveLineControlAt(

@@ -27,6 +27,7 @@
 #include "../../../core/CommandCatalogStore.h"
 #include "../../../core/TherionDocumentEditor.h"
 #include "../../../core/TherionDocumentParser.h"
+#include "../../../core/TherionSourceLogicalDocument.h"
 #include "../../../core/TherionSourceValidator.h"
 
 class QLabel;
@@ -495,6 +496,7 @@ private:
     bool hasUndoableInteractiveDrawStep() const;
     bool undoInteractiveDrawStep();
     QVector<TherionParsedLine> parsedLinesForCurrentDocument() const;
+    QVector<TherionSourceLogicalCommand> logicalCommandsForCurrentDocument() const;
     QRectF mapSourceBoundsForCurrentDocument() const;
     std::optional<QRectF> initialAreaAdjustRectForDraftInsertion() const;
     QRectF sourceBoundsForInteractiveDraft() const;
@@ -810,6 +812,9 @@ private:
     mutable bool cachedParsedLinesValid_ = false;
     mutable int cachedParsedLinesRevision_ = -1;
     mutable QVector<TherionParsedLine> cachedParsedLines_;
+    mutable bool cachedLogicalCommandsValid_ = false;
+    mutable int cachedLogicalCommandsRevision_ = -1;
+    mutable QVector<TherionSourceLogicalCommand> cachedLogicalCommands_;
     bool mapPanActive_ = false;
     bool mapPanMoved_ = false;
     bool mapSpacePanKeyDown_ = false;

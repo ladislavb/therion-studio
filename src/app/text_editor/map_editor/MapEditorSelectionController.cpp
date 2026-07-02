@@ -8,6 +8,7 @@
 #include "MapEditorSceneSupport.h"
 #include "MapEditorSourceReferenceResolver.h"
 #include "../../../core/TherionDocumentParser.h"
+#include "../../../core/TherionSourceLogicalDocument.h"
 
 #include <QCursor>
 #include <QElapsedTimer>
@@ -495,25 +496,26 @@ void setSelectedObjectStateForSourceLine(const MapEditorSelectionContext &contex
     }
 }
 
-QSet<int> selectedAreaBorderLineNumbers(const QString &text, const QSet<int> &selectedLines)
+QSet<int> selectedAreaBorderLineNumbers(const QVector<TherionSourceLogicalCommand> &commands,
+                                        const QSet<int> &selectedLines)
 {
     QSet<int> borderLineNumbers;
     for (const int selectedLine : selectedLines) {
-        borderLineNumbers.unite(mapEditorBorderLineNumbersForArea(text, selectedLine));
+        borderLineNumbers.unite(mapEditorBorderLineNumbersForArea(commands, selectedLine));
     }
     return borderLineNumbers;
 }
 
 void selectAreaBorderLineItems(QGraphicsScene *scene,
                                const QHash<int, QGraphicsItem *> &itemsByLine,
-                               const QString &text,
+                               const QVector<TherionSourceLogicalCommand> &commands,
                                int areaLineNumber)
 {
     if (scene == nullptr || areaLineNumber <= 0) {
         return;
     }
 
-    const QSet<int> borderLineNumbers = mapEditorBorderLineNumbersForArea(text, areaLineNumber);
+    const QSet<int> borderLineNumbers = mapEditorBorderLineNumbersForArea(commands, areaLineNumber);
     for (const int borderLineNumber : borderLineNumbers) {
         const auto itemIt = itemsByLine.constFind(borderLineNumber);
         if (itemIt != itemsByLine.constEnd() && itemIt.value() != nullptr) {
@@ -880,11 +882,11 @@ void MapEditorSelectionController::handleMapSceneSelectionChanged()
     if (selectedLineNumber > 0
         && (*context_.selectedObjectKind) == QStringLiteral("area")
         && !primarySelectionIsAreaFill
-        && context_.textEditor != nullptr) {
+        && context_.logicalCommandsForCurrentDocument) {
         const QScopedValueRollback<bool> selectionGuard((*context_.updatingSelection), true);
         selectAreaBorderLineItems(context_.scene,
                                   *context_.itemsByLine,
-                                  context_.textEditor->text(),
+                                  context_.logicalCommandsForCurrentDocument(),
                                   selectedLineNumber);
     }
 
@@ -1073,8 +1075,8 @@ void MapEditorSelectionController::updateGeometrySelectionPresentation()
                 (*context_.selectedLineSegmentEndVertexIndex));
         }
     }
-    if (context_.textEditor != nullptr) {
-        selectedLines.unite(selectedAreaBorderLineNumbers(context_.textEditor->text(), selectedLines));
+    if (context_.logicalCommandsForCurrentDocument) {
+        selectedLines.unite(selectedAreaBorderLineNumbers(context_.logicalCommandsForCurrentDocument(), selectedLines));
     }
 
     const auto sceneItems = context_.scene->items();
@@ -1150,8 +1152,11 @@ void MapEditorSelectionController::selectMapLine(int lineNumber, bool centerOnSe
 
     if (selectedItem != nullptr) {
         selectedItem->setSelected(true);
-        if (context_.textEditor != nullptr) {
-            selectAreaBorderLineItems(context_.scene, *context_.itemsByLine, context_.textEditor->text(), lineNumber);
+        if (context_.logicalCommandsForCurrentDocument) {
+            selectAreaBorderLineItems(context_.scene,
+                                      *context_.itemsByLine,
+                                      context_.logicalCommandsForCurrentDocument(),
+                                      lineNumber);
         }
         if (centerOnSelection && !(*context_.autoFitEnabled) && context_.view != nullptr) {
             context_.view->centerOn(selectedItem);
@@ -1183,14 +1188,17 @@ void MapEditorSelectionController::selectMapLines(const QSet<int> &lineNumbers, 
     QList<int> sortedLines = lineNumbers.values();
     std::sort(sortedLines.begin(), sortedLines.end());
     QGraphicsItem *firstSelectedItem = nullptr;
+    const QVector<TherionSourceLogicalCommand> logicalCommands = context_.logicalCommandsForCurrentDocument
+        ? context_.logicalCommandsForCurrentDocument()
+        : QVector<TherionSourceLogicalCommand>();
     for (const int lineNumber : std::as_const(sortedLines)) {
         auto selectedItemIt = (*context_.itemsByLine).find(lineNumber);
         if (selectedItemIt == (*context_.itemsByLine).end() || selectedItemIt.value() == nullptr) {
             continue;
         }
         selectedItemIt.value()->setSelected(true);
-        if (context_.textEditor != nullptr) {
-            selectAreaBorderLineItems(context_.scene, *context_.itemsByLine, context_.textEditor->text(), lineNumber);
+        if (!logicalCommands.isEmpty()) {
+            selectAreaBorderLineItems(context_.scene, *context_.itemsByLine, logicalCommands, lineNumber);
         }
         if (firstSelectedItem == nullptr) {
             firstSelectedItem = selectedItemIt.value();
