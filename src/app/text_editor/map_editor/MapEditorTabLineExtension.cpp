@@ -59,7 +59,8 @@ bool MapEditorTab::beginLineExtensionFromSelection(int lineNumber, int sourceVer
         return false;
     }
 
-    const std::optional<MapGeometryFeature> lineFeature = lineFeatureForLineNumber(textEditor_->text(), lineNumber);
+    const std::optional<MapGeometryFeature> lineFeature = lineFeatureForLineNumber(logicalCommandsForCurrentDocument(),
+                                                                                   lineNumber);
     if (!lineFeature.has_value() || lineFeature->lineVertices.size() < 2) {
         return false;
     }

@@ -42,8 +42,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - The object-details panel now reuses the map tab's revision-cached logical commands for read-only selected-command,
   line-feature, area-reference, quick-field, and scrap-scale lookups instead of creating local source snapshot caches per
   field refresh.
+- Line-extension start now resolves the selected endpoint feature from the map tab's revision-cached logical commands,
+  while the commit path still uses explicit before/after source text for the rewrite transaction.
 - Next implementation slice: move another focused Map read-only projection consumer to `logicalCommandsForCurrentDocument`
-  or extract a reusable map logical-source context if a third controller needs the same callback shape.
+  or extract a reusable map logical-source context if the same callback shape spreads further.
 - Keep Therion namespace/reference changes behind `docs/THERION_COMPATIBILITY.md` coverage, especially
   `object@child.parent` qualified-reference order.
 - Keep source transaction ownership work incremental: one caller or workflow per commit, with explicit result handling,
