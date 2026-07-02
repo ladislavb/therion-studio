@@ -108,9 +108,13 @@ Active planning only. Completed history belongs in archive files. Stable archite
   suppresses superseded worker results instead of finishing and emitting stale scans.
 - Project validation now passes scanner cancellation into project-index scans, allowing superseded workers to abort before
   completing map/join/station/duplicate diagnostic passes and preventing canceled index snapshots from entering the cache.
-- Next validation/project-scan slice: gather a fresh diagnostic log to identify whether any non-cache bottleneck remains
-  after cancellable project-index scans; do not reintroduce scanner-local file traversal, broad context bags, or
-  static/global cache state.
+- The latest validation log confirms superseded project-index scans now stop earlier, while alternating automatic triggers
+  can still thrash the single-entry source/index snapshot cache.
+- Project scan caching now retains a small window of recent source and project-index snapshots so alternating automatic
+  validation requests can reuse recently displaced scan results instead of rebuilding the full project index.
+- Next validation/project-scan slice: gather a fresh diagnostic log to verify alternating automatic save/change/file-watch
+  triggers now report source/index snapshot cache hits; do not reintroduce scanner-local file traversal, broad context bags,
+  or static/global cache state.
 - Prefer Settings -> troubleshooting logs for tester builds: the preference is time-limited, restart-applied, and uses
   rotated application log files instead of requiring users to set environment variables.
 - Optimize future live validation with incremental file/revision caching, generation-keyed cancellation, and cheaper

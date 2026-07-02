@@ -812,6 +812,85 @@ int runRepeatedValidationReusesProjectionCacheTest()
     return 0;
 }
 
+int runValidationRetainsRecentProjectScanCacheEntriesTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Temporary retained-cache project directory creation failed.")) {
+        return 1;
+    }
+
+    QDir projectDir(tempDir.path());
+    if (!expect(projectDir.mkpath(QStringLiteral("maps")),
+                "Temporary retained-cache map directory could not be created.")) {
+        return 1;
+    }
+
+    const QString configFile = projectDir.filePath(QStringLiteral("thconfig"));
+    const QString rootFile = projectDir.filePath(QStringLiteral("root.th"));
+    const QString mapFile = projectDir.filePath(QStringLiteral("maps/map.th2"));
+    const QString rootText =
+        QStringLiteral("survey cave\n"
+                       "  input maps/map.th2\n"
+                       "endsurvey cave\n");
+    if (!expect(writeTextFile(configFile, QStringLiteral("source root.th\n")),
+                "Retained-cache config fixture could not be written.")) {
+        return 1;
+    }
+    if (!expect(writeTextFile(rootFile, rootText),
+                "Retained-cache root fixture could not be written.")) {
+        return 1;
+    }
+    if (!expect(writeTextFile(mapFile,
+                              QStringLiteral("scrap test\n"
+                                             "line wall\n"
+                                             "endline\n"
+                                             "endscrap\n")),
+                "Retained-cache map fixture could not be written.")) {
+        return 1;
+    }
+
+    ProjectValidationScanner scanner;
+    scanner.setDebounceIntervalMs(0);
+
+    scanner.requestScan(tempDir.path(), contextualDocumentTypeCatalog(), {});
+    const ValidationWaitResult firstResult = waitForValidation(scanner);
+    if (!expect(firstResult.received, "First retained-cache validation did not finish.")) {
+        return 1;
+    }
+    if (!expect(!firstResult.result.projectSourceSnapshotCacheHit
+                    && !firstResult.result.projectIndexSnapshotCacheHit,
+                "First retained-cache validation should miss scan caches.")) {
+        return 1;
+    }
+
+    QHash<QString, QString> alternateInMemoryContents;
+    alternateInMemoryContents.insert(canonicalOrAbsolutePath(rootFile),
+                                     rootText + QStringLiteral("# alternate open-editor request\n"));
+    scanner.requestScan(tempDir.path(), contextualDocumentTypeCatalog(), alternateInMemoryContents);
+    const ValidationWaitResult alternateResult = waitForValidation(scanner);
+    if (!expect(alternateResult.received, "Alternate retained-cache validation did not finish.")) {
+        return 1;
+    }
+    if (!expect(!alternateResult.result.projectSourceSnapshotCacheHit
+                    && !alternateResult.result.projectIndexSnapshotCacheHit,
+                "Alternate retained-cache validation should miss scan caches for its distinct request key.")) {
+        return 1;
+    }
+
+    scanner.requestScan(tempDir.path(), contextualDocumentTypeCatalog(), {});
+    const ValidationWaitResult repeatedFirstKeyResult = waitForValidation(scanner);
+    if (!expect(repeatedFirstKeyResult.received, "Repeated retained-cache validation did not finish.")) {
+        return 1;
+    }
+    if (!expect(repeatedFirstKeyResult.result.projectSourceSnapshotCacheHit
+                    && repeatedFirstKeyResult.result.projectIndexSnapshotCacheHit,
+                "Project scan cache should retain recently displaced source and index snapshots.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 int runDuplicateObjectIdDiagnosticIsNotDuplicatedTest()
 {
     QTemporaryDir tempDir;
@@ -1435,6 +1514,9 @@ int main(int argc, char **argv)
         return 1;
     }
     if (runRepeatedValidationReusesProjectionCacheTest() != 0) {
+        return 1;
+    }
+    if (runValidationRetainsRecentProjectScanCacheEntriesTest() != 0) {
         return 1;
     }
     if (runDuplicateObjectIdDiagnosticIsNotDuplicatedTest() != 0) {

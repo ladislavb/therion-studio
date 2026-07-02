@@ -4,6 +4,25 @@
 
 namespace TherionStudio
 {
+namespace
+{
+constexpr qsizetype kRetainedProjectScanCacheEntries = 4;
+
+void trimProjectSourceSnapshotCache(QVector<ProjectSourceSnapshotCacheEntry> *entries)
+{
+    while (entries != nullptr && entries->size() > kRetainedProjectScanCacheEntries) {
+        entries->removeLast();
+    }
+}
+
+void trimProjectIndexSnapshotCache(QVector<ProjectIndexSnapshotCacheEntry> *entries)
+{
+    while (entries != nullptr && entries->size() > kRetainedProjectScanCacheEntries) {
+        entries->removeLast();
+    }
+}
+}
+
 ProjectSourceSnapshot ProjectScanCacheService::projectSourceSnapshot(
     const QString &projectRootPath,
     const QString &preferredConfigPath,
@@ -44,9 +63,16 @@ std::optional<ProjectSourceSnapshotCacheEntry> ProjectScanCacheService::cachedPr
     const QString &sourceRequestKey) const
 {
     const QMutexLocker locker(&mutex_);
-    if (projectSourceSnapshot_.has_value()
-        && projectSourceSnapshot_->sourceRequestKey == sourceRequestKey) {
-        return projectSourceSnapshot_;
+    for (qsizetype index = 0; index < projectSourceSnapshots_.size(); ++index) {
+        if (projectSourceSnapshots_.at(index).sourceRequestKey != sourceRequestKey) {
+            continue;
+        }
+        ProjectSourceSnapshotCacheEntry entry = projectSourceSnapshots_.at(index);
+        if (index > 0) {
+            projectSourceSnapshots_.removeAt(index);
+            projectSourceSnapshots_.prepend(entry);
+        }
+        return entry;
     }
     return std::nullopt;
 }
@@ -54,22 +80,37 @@ std::optional<ProjectSourceSnapshotCacheEntry> ProjectScanCacheService::cachedPr
 void ProjectScanCacheService::storeProjectSourceSnapshot(const ProjectSourceSnapshotCacheEntry &entry)
 {
     const QMutexLocker locker(&mutex_);
-    projectSourceSnapshot_ = entry;
+    for (qsizetype index = 0; index < projectSourceSnapshots_.size(); ++index) {
+        if (projectSourceSnapshots_.at(index).sourceRequestKey != entry.sourceRequestKey) {
+            continue;
+        }
+        projectSourceSnapshots_.removeAt(index);
+        break;
+    }
+    projectSourceSnapshots_.prepend(entry);
+    trimProjectSourceSnapshotCache(&projectSourceSnapshots_);
 }
 
 void ProjectScanCacheService::clearProjectSourceSnapshot()
 {
     const QMutexLocker locker(&mutex_);
-    projectSourceSnapshot_.reset();
+    projectSourceSnapshots_.clear();
 }
 
 std::optional<ProjectIndexSnapshotCacheEntry> ProjectScanCacheService::projectIndexSnapshot(
     const QString &sourceRequestKey) const
 {
     const QMutexLocker locker(&mutex_);
-    if (projectIndexSnapshot_.has_value()
-        && projectIndexSnapshot_->sourceRequestKey == sourceRequestKey) {
-        return projectIndexSnapshot_;
+    for (qsizetype index = 0; index < projectIndexSnapshots_.size(); ++index) {
+        if (projectIndexSnapshots_.at(index).sourceRequestKey != sourceRequestKey) {
+            continue;
+        }
+        ProjectIndexSnapshotCacheEntry entry = projectIndexSnapshots_.at(index);
+        if (index > 0) {
+            projectIndexSnapshots_.removeAt(index);
+            projectIndexSnapshots_.prepend(entry);
+        }
+        return entry;
     }
     return std::nullopt;
 }
@@ -77,12 +118,20 @@ std::optional<ProjectIndexSnapshotCacheEntry> ProjectScanCacheService::projectIn
 void ProjectScanCacheService::storeProjectIndexSnapshot(const ProjectIndexSnapshotCacheEntry &entry)
 {
     const QMutexLocker locker(&mutex_);
-    projectIndexSnapshot_ = entry;
+    for (qsizetype index = 0; index < projectIndexSnapshots_.size(); ++index) {
+        if (projectIndexSnapshots_.at(index).sourceRequestKey != entry.sourceRequestKey) {
+            continue;
+        }
+        projectIndexSnapshots_.removeAt(index);
+        break;
+    }
+    projectIndexSnapshots_.prepend(entry);
+    trimProjectIndexSnapshotCache(&projectIndexSnapshots_);
 }
 
 void ProjectScanCacheService::clearProjectIndexSnapshot()
 {
     const QMutexLocker locker(&mutex_);
-    projectIndexSnapshot_.reset();
+    projectIndexSnapshots_.clear();
 }
 }

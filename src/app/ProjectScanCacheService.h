@@ -7,6 +7,7 @@
 #include <QHash>
 #include <QMutex>
 #include <QString>
+#include <QVector>
 
 #include <optional>
 
@@ -46,7 +47,7 @@ public:
 
 private:
     mutable QMutex mutex_;
-    std::optional<ProjectSourceSnapshotCacheEntry> projectSourceSnapshot_;
-    std::optional<ProjectIndexSnapshotCacheEntry> projectIndexSnapshot_;
+    mutable QVector<ProjectSourceSnapshotCacheEntry> projectSourceSnapshots_;
+    mutable QVector<ProjectIndexSnapshotCacheEntry> projectIndexSnapshots_;
 };
 }
