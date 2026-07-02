@@ -175,6 +175,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
   bypasses.
 - Keep optional sample-data dependent tests from aborting CI when fixture directories are absent.
 - Keep Linux/Windows CI and package Qt runtime module lists aligned with QML inspector imports.
+- Keep Linux strict-warning builds green by updating aggregate initializers when project scan/source structs gain fields.
 - Keep UI smoke tests deterministic across platform event-loop timing differences.
 - When touching source-driven map scene refresh, repeat `MapEditorDragUndoRedoSmokeTest` to guard delayed refresh
   selection restoration for cursor-derived line/area ownership such as `endline` and `endarea`.

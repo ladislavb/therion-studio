@@ -268,7 +268,8 @@ ProjectStructureIndexSourceSet projectStructureIndexSourceSet(const ProjectSourc
     for (const ProjectSourceDocument &document : snapshot.documents) {
         sourceSet.sources.append({document.normalizedPath,
                                   document.text,
-                                  document.textLoaded});
+                                  document.textLoaded,
+                                  nullptr});
     }
     return sourceSet;
 }

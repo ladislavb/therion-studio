@@ -1427,7 +1427,8 @@ int runProjectIndexSourceSetUsesProvidedTextTest()
                               QStringLiteral(
                                   "survey snapshot\n"
                                   "endsurvey snapshot\n"),
-                              true});
+                              true,
+                              nullptr});
 
     QString errorMessage;
     const ProjectIndexSnapshot snapshot = ProjectStructureIndex::scanProjectIndex(sourceSet, &errorMessage);
@@ -1482,7 +1483,8 @@ int runProjectIndexSourceSetCanCancelScanTest()
                               QStringLiteral(
                                   "survey cave\n"
                                   "endsurvey cave\n"),
-                              true});
+                              true,
+                              nullptr});
     sourceSet.shouldCancel = []() {
         return true;
     };
