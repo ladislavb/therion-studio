@@ -52,6 +52,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   instead of each owning an identical callback field.
 - Map canvas source-transaction test contexts now provide the same logical-source callback shape as production contexts,
   keeping partial-refresh regression coverage aligned with the shared logical-source path.
+- Map partial-refresh regression coverage now verifies that vertex index entries point to live scene items for the
+  refreshed line after one-line item replacement.
 - Next implementation slice: pause DOM migration and switch to the next `2026.7.1` performance/UX item, or start a
   dedicated TH2 geometry projection design slice before touching rewrite planners.
 - Keep Therion namespace/reference changes behind `docs/THERION_COMPATIBILITY.md` coverage, especially

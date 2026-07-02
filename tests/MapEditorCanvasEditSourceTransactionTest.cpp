@@ -120,6 +120,26 @@ int geometryItemCountForLine(const QGraphicsScene &scene, int lineNumber)
     return count;
 }
 
+bool vertexIndexEntriesBelongToSceneLine(const QGraphicsScene &scene,
+                                         const QHash<QString, QGraphicsItem *> &vertexItemsByKey,
+                                         int lineNumber)
+{
+    if (vertexItemsByKey.isEmpty()) {
+        return false;
+    }
+
+    const auto sceneItems = scene.items();
+    for (QGraphicsItem *item : vertexItemsByKey) {
+        if (item == nullptr
+            || !sceneItems.contains(item)
+            || item->data(kMapItemRole).toInt() != kMapItemGeometryValue
+            || item->data(kMapSceneLineNumberRole).toInt() != lineNumber) {
+            return false;
+        }
+    }
+    return true;
+}
+
 int runApplySourceTextChangeWithSnapshotTest()
 {
     QTemporaryDir tempDir;
@@ -479,8 +499,8 @@ int runSegmentStyledLineVertexMoveUsesPartialRefreshTest()
                 "Segment-styled line vertex move partial refresh should replace the complete geometry item group.")) {
         return 1;
     }
-    if (!expect(itemsByLine.contains(1) && vertexItemsByKey.size() > 0,
-                "Segment-styled line vertex move partial refresh should restore primary and vertex indexes.")) {
+    if (!expect(itemsByLine.contains(1) && vertexIndexEntriesBelongToSceneLine(scene, vertexItemsByKey, 1),
+                "Segment-styled line vertex move partial refresh should restore live primary and vertex indexes.")) {
         return 1;
     }
 
