@@ -383,8 +383,19 @@ protected:
     {
         pressSourcePoint_ = mapDisplayToSource(previewToSource(pos()));
         dragActive_ = true;
+        dragMoved_ = false;
         setCursor(Qt::ClosedHandCursor);
         QGraphicsEllipseItem::mousePressEvent(event);
+    }
+
+    void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override
+    {
+        if (event != nullptr
+            && event->buttons().testFlag(Qt::LeftButton)
+            && QLineF(event->buttonDownScenePos(Qt::LeftButton), event->scenePos()).length() > 0.5) {
+            dragMoved_ = true;
+        }
+        QGraphicsEllipseItem::mouseMoveEvent(event);
     }
 
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override
@@ -394,7 +405,9 @@ protected:
         QGraphicsEllipseItem::mouseReleaseEvent(event);
 
         const QPointF releasedSourcePoint = mapDisplayToSource(previewToSource(pos()));
-        if (moveCommittedCallback_ != nullptr && mapSourcePointsDiffer(pressSourcePoint_, releasedSourcePoint)) {
+        if (moveCommittedCallback_ != nullptr
+            && dragMoved_
+            && mapSourcePointsDiffer(pressSourcePoint_, releasedSourcePoint)) {
             moveCommittedCallback_(lineNumber_, pressSourcePoint_, releasedSourcePoint);
             // The callback may trigger a scene rebuild that deletes this item.
             return;
@@ -492,6 +505,7 @@ private:
     QPointF pressSourcePoint_;
     bool hoverActive_ = false;
     bool dragActive_ = false;
+    bool dragMoved_ = false;
     std::function<QPointF(const QPointF &)> displayToSourceMapper_;
     std::function<void(int, const QPointF &, const QPointF &)> moveCommittedCallback_;
 };
@@ -675,8 +689,19 @@ protected:
         pressSourcePoint_ = sourcePointForPreviewPos(pos());
         lastPreviewSourcePoint_ = pressSourcePoint_;
         dragActive_ = true;
+        dragMoved_ = false;
         setCursor(Qt::ClosedHandCursor);
         QGraphicsEllipseItem::mousePressEvent(event);
+    }
+
+    void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override
+    {
+        if (event != nullptr
+            && event->buttons().testFlag(Qt::LeftButton)
+            && QLineF(event->buttonDownScenePos(Qt::LeftButton), event->scenePos()).length() > 0.5) {
+            dragMoved_ = true;
+        }
+        QGraphicsEllipseItem::mouseMoveEvent(event);
     }
 
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override
@@ -688,7 +713,9 @@ protected:
         QGraphicsEllipseItem::mouseReleaseEvent(event);
 
         const QPointF releasedSourcePoint = sourcePointForPreviewPos(pos());
-        if (moveCommittedCallback_ != nullptr && mapSourcePointsDiffer(pressSourcePoint_, releasedSourcePoint)) {
+        if (moveCommittedCallback_ != nullptr
+            && dragMoved_
+            && mapSourcePointsDiffer(pressSourcePoint_, releasedSourcePoint)) {
             moveCommittedCallback_(lineNumber_, geometryKind_, vertexIndex_, pressSourcePoint_, releasedSourcePoint);
             // The callback may trigger a scene rebuild that deletes this item.
             return;
@@ -1082,6 +1109,7 @@ private:
     QPointF lastPreviewSourcePoint_;
     bool hoverActive_ = false;
     bool dragActive_ = false;
+    bool dragMoved_ = false;
     bool hasStandaloneOptionRows_ = false;
     bool highlightLinePointMetadata_ = false;
     QStringList standaloneOptionRows_;

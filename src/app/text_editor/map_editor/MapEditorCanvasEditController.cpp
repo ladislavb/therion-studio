@@ -591,6 +591,16 @@ bool restoreLineVertexSourceSelectionForContext(const MapEditorCanvasEditContext
     const bool alreadySelected = selectedItems.size() == 1
         && selectedItems.first() == ownerAnchor
         && ownerAnchor->isVisible();
+    const QPointF restoredSourceCoordinate = context.sourcePointFromScenePosition(ownerAnchor->pos());
+    const bool semanticSelectionUnchanged =
+        alreadySelected
+        && (*context.selectedObjectLineNumber) == lineNumber
+        && (*context.selectedObjectVertexIndex) == ownerSourceVertexIndex
+        && (*context.selectedObjectKind) == QStringLiteral("line");
+    const bool coordinateUnchanged =
+        semanticSelectionUnchanged
+        && context.selectedObjectCoordinate->has_value()
+        && !sourcePointsDifferForCommands(context.selectedObjectCoordinate->value(), restoredSourceCoordinate);
     if (!alreadySelected) {
         const QScopedValueRollback<bool> selectionGuard((*context.updatingSelection), true);
         for (QGraphicsItem *selectedItem : selectedItems) {
@@ -606,8 +616,24 @@ bool restoreLineVertexSourceSelectionForContext(const MapEditorCanvasEditContext
     (*context.selectedObjectLineNumber) = lineNumber;
     (*context.selectedObjectVertexIndex) = ownerSourceVertexIndex;
     (*context.selectedObjectKind) = QStringLiteral("line");
-    (*context.selectedObjectCoordinate) = context.sourcePointFromScenePosition(ownerAnchor->pos());
+    (*context.selectedObjectCoordinate) = restoredSourceCoordinate;
     const qint64 stateMs = logTiming ? stageTimer.restart() : 0;
+    if (coordinateUnchanged) {
+        if (logTiming) {
+            qInfo().noquote()
+                << QStringLiteral(
+                       "map-line-selection-restore line=%1 vertex=%2 result=ok already_selected=%3 skipped_ui=1 find_ms=%4 "
+                       "select_ms=%5 state_ms=%6 presentation_ms=0 command_ms=0 help_ms=0 details_ms=0 total_ms=%7")
+                       .arg(lineNumber)
+                       .arg(ownerSourceVertexIndex)
+                       .arg(alreadySelected ? 1 : 0)
+                       .arg(findMs)
+                       .arg(selectMs)
+                       .arg(stateMs)
+                       .arg(totalTimer.elapsed());
+        }
+        return true;
+    }
     context.updateGeometrySelectionPresentation();
     const qint64 presentationMs = logTiming ? stageTimer.restart() : 0;
     context.updateCommandSurfaceState();
@@ -620,7 +646,7 @@ bool restoreLineVertexSourceSelectionForContext(const MapEditorCanvasEditContext
         qInfo().noquote()
             << QStringLiteral(
                    "map-line-selection-restore line=%1 vertex=%2 result=ok already_selected=%3 find_ms=%4 "
-                   "select_ms=%5 state_ms=%6 presentation_ms=%7 command_ms=%8 help_ms=%9 details_ms=%10 total_ms=%11")
+                   "skipped_ui=0 select_ms=%5 state_ms=%6 presentation_ms=%7 command_ms=%8 help_ms=%9 details_ms=%10 total_ms=%11")
                    .arg(lineNumber)
                    .arg(ownerSourceVertexIndex)
                    .arg(alreadySelected ? 1 : 0)

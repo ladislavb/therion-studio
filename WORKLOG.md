@@ -103,6 +103,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Point and single-vertex line/area geometry moves now pass their planned `TherionSourceTextEdit` ranges into the shared
   source transaction controller so the initial apply path edits the touched source range instead of replacing the full
   document snapshot.
+- Line vertex selection restore now short-circuits duplicate same-vertex/same-coordinate recovery calls before refreshing
+  geometry presentation, command/help state, or the details panel; diagnostics report this as `skipped_ui=1`.
+- Point and line/area geometry handles now require an actual mouse-move drag before committing a source geometry move, so
+  repeated clicks or interleaved trackpad wheel events cannot create a false `Move line Vertex` transaction.
 - If diagnostics are needed, use `map-line-partial-refresh`, `map-line-selection-restore`, `line-area-anchor-release`, and
   `line-double-click-complete` lines to separate partial-refresh fallback, selection restore, and Bezier draft issues.
 - Keep broad Map/TH2 projection rewrites out of map-input follow-up work until Windows feedback confirms the deferred
