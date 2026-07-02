@@ -1131,14 +1131,16 @@ void MapEditorCanvasEditController::recordPointGeometryMove(int lineNumber, cons
         restorePointSelection(lineNumber);
         schedulePointSelectionRecovery(context_, lineNumber);
     };
-    sourceTransactionController(context_).applyChangeWithSnapshot(
+    TextEditorSourceTransactionRequest request =
         sourceTransactionRequest(context_,
                                  tr("Move Point"),
                                  beforeText,
                                  afterText,
                                  lineNumber,
                                  TextEditorSourceSelectionRestorePolicy::CustomHook,
-                                 std::move(selectionRestoreHook)));
+                                 std::move(selectionRestoreHook));
+    request.sourceEdits = std::move(sourceEdits);
+    sourceTransactionController(context_).applyChangeWithSnapshot(request);
     (*context_.toolbarStatusNote) = tr("Updated point geometry at source line %1.").arg(lineNumber);
     context_.refreshToolbarSummary();
 }
@@ -1197,6 +1199,7 @@ void MapEditorCanvasEditController::recordLineAreaVertexMove(int lineNumber,
     const QString beforeText = context_.textEditor->text();
     QString afterText = beforeText;
     QVector<TherionSourceTextEdit> sourceEdits;
+    QVector<TherionSourceTextEdit> primarySourceEdits;
     QString errorMessage;
     if (!TherionDocumentEditor::lineAreaVertexRewriteEdits(afterText,
                                                            lineNumber,
@@ -1212,6 +1215,7 @@ void MapEditorCanvasEditController::recordLineAreaVertexMove(int lineNumber,
         context_.refreshToolbarSummary();
         return;
     }
+    primarySourceEdits = sourceEdits;
 
     for (const MapLineAreaVertexSecondaryMove &move : secondaryMoves) {
         if (move.vertexIndex < 0) {
@@ -1260,6 +1264,9 @@ void MapEditorCanvasEditController::recordLineAreaVertexMove(int lineNumber,
             deferredMapLinePartialRefreshHook(context_, lineNumber, previousSourceBounds, std::move(selectionRestoreHook));
     } else {
         request.projectionInvalidationHook = deferredMapSceneRefreshHook(context_, std::move(selectionRestoreHook));
+    }
+    if (secondaryMoves.isEmpty()) {
+        request.sourceEdits = std::move(primarySourceEdits);
     }
     sourceTransactionController(context_).applyChangeWithSnapshot(request);
     (*context_.toolbarStatusNote) = tr("Updated %1 vertex %2 at source line %3.")

@@ -100,6 +100,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   full scene refresh when a vertex edit expands map source bounds, preventing mixed projection coordinates.
 - `map-line-partial-refresh` diagnostics now include previous, current, and render source bounds so fallback logs show
   whether bounds changed, were missing, or stayed projection-compatible.
+- Point and single-vertex line/area geometry moves now pass their planned `TherionSourceTextEdit` ranges into the shared
+  source transaction controller so the initial apply path edits the touched source range instead of replacing the full
+  document snapshot.
 - If diagnostics are needed, use `map-line-partial-refresh`, `map-line-selection-restore`, `line-area-anchor-release`, and
   `line-double-click-complete` lines to separate partial-refresh fallback, selection restore, and Bezier draft issues.
 - Keep broad Map/TH2 projection rewrites out of map-input follow-up work until Windows feedback confirms the deferred
