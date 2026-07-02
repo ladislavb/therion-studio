@@ -381,6 +381,36 @@ QString mapPartialRefreshBoundsLogValue(const std::optional<QRectF> &bounds)
     return mapPartialRefreshBoundsLogValue(bounds.value());
 }
 
+bool mapGeometryItemGroupReadyForPartialRefresh(QGraphicsScene *scene,
+                                                const QHash<int, QGraphicsItem *> *itemsByLine,
+                                                int lineNumber)
+{
+    if (scene == nullptr || itemsByLine == nullptr || lineNumber <= 0) {
+        return false;
+    }
+
+    const auto primaryIt = itemsByLine->constFind(lineNumber);
+    if (primaryIt == itemsByLine->constEnd() || primaryIt.value() == nullptr) {
+        return false;
+    }
+
+    bool primaryItemInScene = false;
+    bool geometryItemInScene = false;
+    const QList<QGraphicsItem *> sceneItems = scene->items();
+    for (QGraphicsItem *item : sceneItems) {
+        if (item == primaryIt.value()) {
+            primaryItemInScene = true;
+        }
+        if (item != nullptr
+            && item->data(kMapItemRole).toInt() == kMapItemGeometryValue
+            && item->data(kMapSceneLineNumberRole).toInt() == lineNumber) {
+            geometryItemInScene = true;
+        }
+    }
+
+    return primaryItemInScene && geometryItemInScene;
+}
+
 std::optional<QPointF> defaultIncomingControlForLineVertex(const QVector<MapGeometryFeature::TH2LineVertex> &vertices,
                                                            int ownerIndex,
                                                            bool closed)
@@ -905,6 +935,11 @@ std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEdi
                 ? previousSourceBounds.value()
                 : currentSourceBounds;
             renderBoundsLog = mapPartialRefreshBoundsLogValue(renderSourceBounds);
+
+            if (!mapGeometryItemGroupReadyForPartialRefresh(context.scene, context.itemsByLine, lineNumber)) {
+                fallbackFullRefresh(QStringLiteral("missing-item-group"));
+                return;
+            }
 
             const MapGeometryItemGroupRemovalResult removalResult =
                 removeMapGeometryItemGroupForLine(context.scene,

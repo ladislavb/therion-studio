@@ -122,6 +122,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   through instead of suppressing platform handling.
 - Line partial refresh now keeps one-line item replacement on the existing source-bounds projection and falls back to a
   full scene refresh when a vertex edit expands map source bounds, preventing mixed projection coordinates.
+- Line partial refresh now preflights that the target geometry item group still has a live primary scene index before
+  removing scene items, falling back to the pending full refresh when scene metadata is incomplete.
 - `map-line-partial-refresh` diagnostics now include previous, current, and render source bounds so fallback logs show
   whether bounds changed, were missing, or stayed projection-compatible.
 - Point and single-vertex line/area geometry moves now pass their planned `TherionSourceTextEdit` ranges into the shared
