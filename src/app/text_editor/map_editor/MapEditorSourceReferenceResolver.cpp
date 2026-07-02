@@ -36,12 +36,35 @@ std::optional<MapGeometryFeature> lineFeatureForLineNumber(const QVector<Therion
 std::optional<MapGeometryFeature> lineFeatureForLineNumber(const QVector<TherionSourceLogicalCommand> &commands,
                                                            int lineNumber)
 {
+    const std::optional<MapGeometryFeature> feature =
+        geometryFeatureForLineNumber(commands, lineNumber, MapGeometryFeature::Kind::Line);
+    if (feature.has_value() && !feature->lineVertices.isEmpty()) {
+        return feature;
+    }
+    return std::nullopt;
+}
+
+std::optional<MapGeometryFeature> geometryFeatureForLineNumber(const QVector<TherionSourceLogicalCommand> &commands,
+                                                               int lineNumber,
+                                                               MapGeometryFeature::Kind expectedKind)
+{
+    if (lineNumber <= 0) {
+        return std::nullopt;
+    }
+
     QVector<TherionParsedLine> parsedLines;
     parsedLines.reserve(commands.size());
     for (const TherionSourceLogicalCommand &command : commands) {
         parsedLines.append(command.parsed);
     }
-    return lineFeatureForLineNumber(parsedLines, lineNumber);
+    const QVector<MapGeometryFeature> features = collectGeometryFeatures(parsedLines);
+    for (const MapGeometryFeature &feature : features) {
+        if (feature.kind == expectedKind && feature.lineNumber == lineNumber) {
+            return feature;
+        }
+    }
+
+    return std::nullopt;
 }
 
 QString formatSourceCoordinate(qreal value)

@@ -838,14 +838,23 @@ std::function<void()> deferredMapSelectionRestoreHook(const MapEditorCanvasEditC
     };
 }
 
-std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEditContext &context,
-                                                       int lineNumber,
-                                                       const std::optional<QRectF> &previousSourceBounds,
-                                                       std::function<void()> selectionRestoreHook = {})
+std::function<void()> deferredMapGeometryPartialRefreshHook(const MapEditorCanvasEditContext &context,
+                                                           int lineNumber,
+                                                           MapGeometryFeature::Kind expectedKind,
+                                                           const QString &diagnosticName,
+                                                           const std::optional<QRectF> &previousSourceBounds,
+                                                           std::function<void()> selectionRestoreHook = {})
 {
-    return [context, lineNumber, previousSourceBounds, selectionRestoreHook = std::move(selectionRestoreHook)]() mutable {
+    return [context,
+            lineNumber,
+            expectedKind,
+            diagnosticName,
+            previousSourceBounds,
+            selectionRestoreHook = std::move(selectionRestoreHook)]() mutable {
         auto refreshLine = [context,
                             lineNumber,
+                            expectedKind,
+                            diagnosticName,
                             previousSourceBounds,
                             selectionRestoreHook = std::move(selectionRestoreHook)]() mutable {
             const bool logTiming = diagnosticMapInputLoggingEnabled();
@@ -875,27 +884,28 @@ std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEdi
                 }
                 qInfo().noquote()
                     << QStringLiteral(
-                           "map-line-partial-refresh line=%1 fallback_full_refresh=%2 reason=%3 removed_items=%4 "
-                           "added_items=%5 removed_vertex_entries=%6 added_vertex_entries=%7 removed_primary=%8 "
-                           "added_primary=%9 previous_bounds=\"%10\" current_bounds=\"%11\" render_bounds=\"%12\" "
-                           "resolve_ms=%13 remove_ms=%14 render_ms=%15 selection_ms=%16 total_ms=%17")
-                           .arg(lineNumber)
-                           .arg(fallbackFullRefresh ? 1 : 0)
-                           .arg(reason)
-                           .arg(removedItems)
-                           .arg(addedItems)
-                           .arg(removedVertexEntries)
-                           .arg(addedVertexEntries)
-                           .arg(removedPrimaryItem ? 1 : 0)
-                           .arg(addedPrimaryItem ? 1 : 0)
-                           .arg(previousBoundsLog)
-                           .arg(currentBoundsLog)
-                           .arg(renderBoundsLog)
-                           .arg(resolveMs)
-                           .arg(removeMs)
-                           .arg(renderMs)
-                           .arg(selectionMs)
-                           .arg(totalTimer.elapsed());
+                           "%1 line=%2 fallback_full_refresh=%3 reason=%4 removed_items=%5 "
+                           "added_items=%6 removed_vertex_entries=%7 added_vertex_entries=%8 removed_primary=%9 "
+                           "added_primary=%10 previous_bounds=\"%11\" current_bounds=\"%12\" render_bounds=\"%13\" "
+                           "resolve_ms=%14 remove_ms=%15 render_ms=%16 selection_ms=%17 total_ms=%18")
+                           .arg(diagnosticName,
+                                QString::number(lineNumber),
+                                fallbackFullRefresh ? QStringLiteral("1") : QStringLiteral("0"),
+                                reason,
+                                QString::number(removedItems),
+                                QString::number(addedItems),
+                                QString::number(removedVertexEntries),
+                                QString::number(addedVertexEntries),
+                                removedPrimaryItem ? QStringLiteral("1") : QStringLiteral("0"),
+                                addedPrimaryItem ? QStringLiteral("1") : QStringLiteral("0"),
+                                previousBoundsLog,
+                                currentBoundsLog,
+                                renderBoundsLog,
+                                QString::number(resolveMs),
+                                QString::number(removeMs),
+                                QString::number(renderMs),
+                                QString::number(selectionMs),
+                                QString::number(totalTimer.elapsed()));
             };
             auto fallbackFullRefresh = [&context, &selectionRestoreHook, &logPartialRefresh](const QString &reason) {
                 logPartialRefresh(true, reason);
@@ -915,7 +925,7 @@ std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEdi
             }
 
             const std::optional<MapGeometryFeature> refreshedFeature =
-                lineFeatureForLineNumber(context.logicalSource.logicalCommandsForCurrentDocument(), lineNumber);
+                geometryFeatureForLineNumber(context.logicalSource.logicalCommandsForCurrentDocument(), lineNumber, expectedKind);
             resolveMs = logTiming ? stageTimer.restart() : 0;
             if (!refreshedFeature.has_value()) {
                 fallbackFullRefresh(QStringLiteral("missing-feature"));
@@ -957,7 +967,12 @@ std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEdi
                     renderSourceBounds,
                     context.itemsByLine,
                     context.vertexItemsByKey,
-                    {},
+                    [context](int changedLineNumber,
+                              const QPointF &oldPoint,
+                              const QPointF &newPoint) {
+                        MapEditorCanvasEditController(context)
+                            .recordPointGeometryMove(changedLineNumber, oldPoint, newPoint);
+                    },
                     [context](int changedLineNumber,
                               const QString &geometryKind,
                               int sourceVertexIndex,
@@ -1009,6 +1024,32 @@ std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEdi
             refreshLine();
         }
     };
+}
+
+std::function<void()> deferredMapLinePartialRefreshHook(const MapEditorCanvasEditContext &context,
+                                                       int lineNumber,
+                                                       const std::optional<QRectF> &previousSourceBounds,
+                                                       std::function<void()> selectionRestoreHook = {})
+{
+    return deferredMapGeometryPartialRefreshHook(context,
+                                                 lineNumber,
+                                                 MapGeometryFeature::Kind::Line,
+                                                 QStringLiteral("map-line-partial-refresh"),
+                                                 previousSourceBounds,
+                                                 std::move(selectionRestoreHook));
+}
+
+std::function<void()> deferredMapPointPartialRefreshHook(const MapEditorCanvasEditContext &context,
+                                                        int lineNumber,
+                                                        const std::optional<QRectF> &previousSourceBounds,
+                                                        std::function<void()> selectionRestoreHook = {})
+{
+    return deferredMapGeometryPartialRefreshHook(context,
+                                                 lineNumber,
+                                                 MapGeometryFeature::Kind::Point,
+                                                 QStringLiteral("map-point-partial-refresh"),
+                                                 previousSourceBounds,
+                                                 std::move(selectionRestoreHook));
 }
 
 bool lineVertexMoveCanSkipFullSceneRefresh(const MapGeometryFeature &lineFeature)
@@ -1168,6 +1209,10 @@ void MapEditorCanvasEditController::recordPointGeometryMove(int lineNumber, cons
         return;
     }
 
+    const std::optional<QRectF> previousSourceBounds =
+        context_.mapSourceBoundsForCurrentDocument
+            ? std::optional<QRectF>(context_.mapSourceBoundsForCurrentDocument())
+            : std::nullopt;
     const QString beforeText = context_.textEditor->text();
     QString afterText = beforeText;
     QVector<TherionSourceTextEdit> sourceEdits;
@@ -1198,10 +1243,11 @@ void MapEditorCanvasEditController::recordPointGeometryMove(int lineNumber, cons
                                  tr("Move Point"),
                                  beforeText,
                                  afterText,
-                                 lineNumber,
-                                 TextEditorSourceSelectionRestorePolicy::CustomHook,
-                                 std::move(selectionRestoreHook));
+                                 lineNumber);
     request.sourceEdits = std::move(sourceEdits);
+    request.projectionInvalidationPolicy = TextEditorSourceProjectionInvalidationPolicy::CustomHook;
+    request.projectionInvalidationHook =
+        deferredMapPointPartialRefreshHook(context_, lineNumber, previousSourceBounds, std::move(selectionRestoreHook));
     sourceTransactionController(context_).applyChangeWithSnapshot(request);
     (*context_.toolbarStatusNote) = tr("Updated point geometry at source line %1.").arg(lineNumber);
     context_.refreshToolbarSummary();
@@ -1455,7 +1501,18 @@ void MapEditorCanvasEditController::recordLinePointLeftHandleChange(int lineNumb
 
 void MapEditorCanvasEditController::restorePointSelection(int lineNumber)
 {
-    if (context_.scene == nullptr || lineNumber <= 0) {
+    if (context_.scene == nullptr
+        || context_.itemsByLine == nullptr
+        || context_.updatingSelection == nullptr
+        || context_.selectedObjectLineNumber == nullptr
+        || context_.selectedObjectVertexIndex == nullptr
+        || context_.selectedObjectKind == nullptr
+        || context_.selectedObjectCoordinate == nullptr
+        || !context_.updateGeometrySelectionPresentation
+        || !context_.updateCommandSurfaceState
+        || !context_.updateHelpPanel
+        || !context_.refreshObjectDetailsPanel
+        || lineNumber <= 0) {
         return;
     }
 

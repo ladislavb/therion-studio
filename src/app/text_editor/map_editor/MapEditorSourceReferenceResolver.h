@@ -36,6 +36,9 @@ std::optional<MapGeometryFeature> lineFeatureForLineNumber(const QString &docume
 std::optional<MapGeometryFeature> lineFeatureForLineNumber(const QVector<TherionParsedLine> &parsedLines, int lineNumber);
 std::optional<MapGeometryFeature> lineFeatureForLineNumber(const QVector<TherionSourceLogicalCommand> &commands,
                                                            int lineNumber);
+std::optional<MapGeometryFeature> geometryFeatureForLineNumber(const QVector<TherionSourceLogicalCommand> &commands,
+                                                               int lineNumber,
+                                                               MapGeometryFeature::Kind expectedKind);
 QString formatSourceCoordinate(qreal value);
 QStringList coordinateRowsForLineVertices(const QVector<MapGeometryFeature::TH2LineVertex> &lineVertices,
                                           bool closed = false);

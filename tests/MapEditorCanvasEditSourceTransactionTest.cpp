@@ -324,6 +324,104 @@ int runPointGeometryMoveUsesSourceEditSnapshotTest()
     return 0;
 }
 
+int runPointGeometryMoveUsesPartialRefreshTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Failed to create temporary directory.")) {
+        return 1;
+    }
+
+    const QString filePath = createTestFile(tempDir,
+                                            "point 1.0 2.0 station\n"
+                                            "point 10.0 10.0 station\n");
+    if (!expect(!filePath.isEmpty(), "Failed to create map point partial refresh test file.")) {
+        return 1;
+    }
+
+    QtFileSystem fileSystem;
+    TextEditorTab tab{fileSystem, CommandCatalogStore()};
+    if (!expect(loadTestTab(&tab, filePath), "Failed to load map point partial refresh test tab.")) {
+        return 1;
+    }
+
+    QUndoStack undoStack;
+    QString toolbarStatus;
+    bool commandApplyInProgress = false;
+    int refreshCount = 0;
+    int flushCount = 0;
+    int discardCount = 0;
+    QGraphicsScene scene;
+    QHash<int, QGraphicsItem *> itemsByLine;
+    QHash<QString, QGraphicsItem *> vertexItemsByKey;
+    const QVector<TherionParsedLine> parsedLines = TherionDocumentParser::parseTokenLines(tab.text());
+    const QVector<MapGeometryFeature> features = collectGeometryFeatures(parsedLines);
+    renderMapWorkspaceScene(&scene,
+                            filePath,
+                            collectMapSceneEntries(parsedLines),
+                            features,
+                            geometryBoundsForFeatures(features),
+                            false,
+                            &itemsByLine,
+                            &vertexItemsByKey,
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {});
+    const int geometryItemCountBefore = geometryItemCountForLine(scene, 1);
+    if (!expect(geometryItemCountBefore > 0 && itemsByLine.contains(1),
+                "Point partial refresh test should start with a rendered geometry item group.")) {
+        return 1;
+    }
+
+    MapEditorCanvasEditController controller =
+        makeController(&tab,
+                       &undoStack,
+                       &toolbarStatus,
+                       &commandApplyInProgress,
+                       &refreshCount,
+                       &flushCount,
+                       &discardCount,
+                       &scene,
+                       nullptr,
+                       &itemsByLine,
+                       &vertexItemsByKey,
+                       [&tab]() {
+                           const QVector<TherionParsedLine> currentParsedLines =
+                               TherionDocumentParser::parseTokenLines(tab.text());
+                           return geometryBoundsForFeatures(collectGeometryFeatures(currentParsedLines));
+                       });
+
+    const QString afterText = QStringLiteral("point 3.0 4.0 station\n"
+                                             "point 10.0 10.0 station\n");
+    controller.recordPointGeometryMove(1, QPointF(1.0, 2.0), QPointF(3.0, 4.0));
+
+    if (!expect(tab.text() == afterText, "Point partial refresh should apply source-edit planned coordinates.")) {
+        return 1;
+    }
+    if (!expect(flushCount == 0, "Point partial refresh should defer scene refresh out of the source transaction.")) {
+        return 1;
+    }
+    pumpEvents();
+    if (!expect(flushCount == 0, "Point partial refresh should avoid the full scene refresh when one-item refresh succeeds.")) {
+        return 1;
+    }
+    if (!expect(discardCount == 1, "Point partial refresh should discard the pending full scene refresh.")) {
+        return 1;
+    }
+    if (!expect(geometryItemCountForLine(scene, 1) == geometryItemCountBefore,
+                "Point partial refresh should replace the complete geometry item group.")) {
+        return 1;
+    }
+    if (!expect(itemsByLine.contains(1),
+                "Point partial refresh should restore the live primary geometry index.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 int runLineVertexMoveUsesSourceEditSnapshotTest()
 {
     QTemporaryDir tempDir;
@@ -882,6 +980,9 @@ int main(int argc, char **argv)
         return 1;
     }
     if (runPointGeometryMoveUsesSourceEditSnapshotTest() != 0) {
+        return 1;
+    }
+    if (runPointGeometryMoveUsesPartialRefreshTest() != 0) {
         return 1;
     }
     if (runLineVertexMoveUsesSourceEditSnapshotTest() != 0) {
