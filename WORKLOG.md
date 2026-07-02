@@ -60,6 +60,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
   `object@child.parent` qualified-reference order.
 - Keep source transaction ownership work incremental: one caller or workflow per commit, with explicit result handling,
   undo label, revision behavior, projection invalidation, dirty-state behavior, and selection/cursor restoration.
+- Source transaction diagnostics now split undo timing into command creation, `QUndoStack::push`, and guard overhead so
+  map vertex-move logs can identify whether remaining latency is snapshot allocation or undo-stack insertion.
+- Map undo-stack index changes now update the command surface once through the undo-owner handler instead of also using a
+  duplicate direct command-surface connection during every map undo push.
 - Do not delete token-line compatibility APIs until Map geometry and legacy tests have replacement coverage.
 
 ### Validation And Catalog Metadata

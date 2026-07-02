@@ -74,6 +74,18 @@ bool currentTextMatches(const TextEditorSourceTransactionContext &context, const
     return context.textEditor != nullptr && context.textEditor->text() == expectedText;
 }
 
+struct PushSnapshotCommandTiming
+{
+    qint64 createUndoMs = 0;
+    qint64 undoPushMs = 0;
+    qint64 undoGuardMs = 0;
+
+    qint64 totalMs() const
+    {
+        return createUndoMs + undoPushMs + undoGuardMs;
+    }
+};
+
 void reportStaleRequest(const TextEditorSourceTransactionContext &context,
                         const TextEditorSourceTransactionRequest &request)
 {
@@ -164,33 +176,49 @@ private:
     bool firstRedo_ = true;
 };
 
-void pushSnapshotCommand(const TextEditorSourceTransactionContext &context,
-                         const TextEditorSourceTransactionRequest &request,
-                         const QString &afterText)
+PushSnapshotCommandTiming pushSnapshotCommand(const TextEditorSourceTransactionContext &context,
+                                              const TextEditorSourceTransactionRequest &request,
+                                              const QString &afterText)
 {
+    PushSnapshotCommandTiming timing;
     if (context.textEditor == nullptr || context.undoStack == nullptr || request.beforeText == afterText) {
-        return;
+        return timing;
     }
 
-    const auto pushCommand = [&context, &request, &afterText]() {
-        context.undoStack->push(new TextEditorSourceSnapshotCommand(context.textEditor,
-                                                                    request.label,
-                                                                    request.beforeText,
-                                                                    afterText,
-                                                                    request.undoStatusMessage,
-                                                                    request.redoStatusMessage,
-                                                                    request.initialRedoHook,
-                                                                    request.undoHook,
-                                                                    request.redoHook,
-                                                                    context.statusCallback));
+    QElapsedTimer stageTimer;
+    stageTimer.start();
+    auto *command = new TextEditorSourceSnapshotCommand(context.textEditor,
+                                                       request.label,
+                                                       request.beforeText,
+                                                       afterText,
+                                                       request.undoStatusMessage,
+                                                       request.redoStatusMessage,
+                                                       request.initialRedoHook,
+                                                       request.undoHook,
+                                                       request.redoHook,
+                                                       context.statusCallback);
+    timing.createUndoMs = stageTimer.restart();
+
+    const auto pushCommand = [&context, command, &timing, &stageTimer]() {
+        context.undoStack->push(command);
+        timing.undoPushMs = stageTimer.restart();
     };
 
     if (context.commandApplyInProgress != nullptr) {
-        const QScopedValueRollback<bool> commandGuard((*context.commandApplyInProgress), true);
-        pushCommand();
+        QElapsedTimer guardTimer;
+        guardTimer.start();
+        stageTimer.restart();
+        {
+            const QScopedValueRollback<bool> commandGuard((*context.commandApplyInProgress), true);
+            pushCommand();
+        }
+        const qint64 guardElapsedMs = guardTimer.elapsed();
+        timing.undoGuardMs = guardElapsedMs > timing.undoPushMs ? guardElapsedMs - timing.undoPushMs : 0;
     } else {
+        stageTimer.restart();
         pushCommand();
     }
+    return timing;
 }
 
 void applyRequestPolicies(const TextEditorSourceTransactionContext &context,
@@ -349,10 +377,10 @@ TextEditorSourceTransactionResult TextEditorSourceTransactionController::applyCh
         }
         return stageTimer.elapsed();
     };
-    auto pushUndo = [&]() -> qint64 {
-        stageTimer.restart();
-        pushSnapshotCommand(context_, request, afterText.value());
-        return stageTimer.elapsed();
+    PushSnapshotCommandTiming pushUndoTiming;
+    auto pushUndo = [&]() {
+        pushUndoTiming = pushSnapshotCommand(context_, request, afterText.value());
+        return pushUndoTiming.totalMs();
     };
     auto applyPolicies = [&]() -> qint64 {
         stageTimer.restart();
@@ -370,7 +398,8 @@ TextEditorSourceTransactionResult TextEditorSourceTransactionController::applyCh
             qInfo().noquote()
                 << QStringLiteral(
                        "source-transaction label=\"%1\" result=applied guarded=1 before_chars=%2 after_chars=%3 resolve_ms=%4 "
-                       "apply_snapshot_ms=%5 mark_ms=%6 push_undo_ms=%7 policies_ms=%8 total_ms=%9 snapshot_chars=%10 %11")
+                       "apply_snapshot_ms=%5 mark_ms=%6 push_undo_ms=%7 create_undo_ms=%8 undo_push_ms=%9 "
+                       "undo_guard_ms=%10 policies_ms=%11 total_ms=%12 snapshot_chars=%13 %14")
                        .arg(request.label)
                        .arg(request.beforeText.size())
                        .arg(afterText->size())
@@ -378,6 +407,9 @@ TextEditorSourceTransactionResult TextEditorSourceTransactionController::applyCh
                        .arg(applySnapshotMs)
                        .arg(markMs)
                        .arg(pushUndoMs)
+                       .arg(pushUndoTiming.createUndoMs)
+                       .arg(pushUndoTiming.undoPushMs)
+                       .arg(pushUndoTiming.undoGuardMs)
                        .arg(policiesMs)
                        .arg(totalTimer.elapsed())
                        .arg(request.beforeText.size() + afterText->size())
@@ -394,7 +426,8 @@ TextEditorSourceTransactionResult TextEditorSourceTransactionController::applyCh
         qInfo().noquote()
             << QStringLiteral(
                    "source-transaction label=\"%1\" result=applied guarded=0 before_chars=%2 after_chars=%3 resolve_ms=%4 "
-                   "apply_snapshot_ms=%5 mark_ms=%6 push_undo_ms=%7 policies_ms=%8 total_ms=%9 snapshot_chars=%10 %11")
+                   "apply_snapshot_ms=%5 mark_ms=%6 push_undo_ms=%7 create_undo_ms=%8 undo_push_ms=%9 "
+                   "undo_guard_ms=%10 policies_ms=%11 total_ms=%12 snapshot_chars=%13 %14")
                    .arg(request.label)
                    .arg(request.beforeText.size())
                    .arg(afterText->size())
@@ -402,6 +435,9 @@ TextEditorSourceTransactionResult TextEditorSourceTransactionController::applyCh
                    .arg(applySnapshotMs)
                    .arg(markMs)
                    .arg(pushUndoMs)
+                   .arg(pushUndoTiming.createUndoMs)
+                   .arg(pushUndoTiming.undoPushMs)
+                   .arg(pushUndoTiming.undoGuardMs)
                    .arg(policiesMs)
                    .arg(totalTimer.elapsed())
                    .arg(request.beforeText.size() + afterText->size())

@@ -200,7 +200,6 @@ void MapEditorTab::buildUi()
 
     connect(undoStack_, &QUndoStack::canUndoChanged, this, &MapEditorTab::updateCommandSurfaceState);
     connect(undoStack_, &QUndoStack::canRedoChanged, this, &MapEditorTab::updateCommandSurfaceState);
-    connect(undoStack_, &QUndoStack::indexChanged, this, &MapEditorTab::updateCommandSurfaceState);
     connect(undoStack_, &QUndoStack::indexChanged, this, &MapEditorTab::handleMapUndoStackIndexChanged);
 
     mapPaneContainer_ = new QWidget(splitter_);
