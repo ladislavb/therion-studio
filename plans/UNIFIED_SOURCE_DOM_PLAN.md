@@ -41,13 +41,22 @@ This plan tracks the long-running migration toward one shared, lossless Therion 
 - `ProjectStructureIndex` uses `TherionSourceSnapshotCache` and `TherionSourceLogicalDocument` for several file, namespace, survey, scrap, map, and reference passes.
 - Raw editor completion, cursor token context, required-argument tooltips, context help, validation tooltips, and syntax-highlighter validation underlines use revision-keyed source snapshots in focused paths.
 - Blocks canvas rebuild and document outline building already use `TherionSourceSnapshotCache` / `TherionSourceLogicalDocument` for broad command projection.
-- Map inspector/object-details code uses shared logical documents for selected option reads in focused areas, but geometry/object projection is still mostly token-line based.
+- Map inspector/object-details, area-reference, selection-restore, line-extension start, and partial-refresh feature
+  resolution paths use shared logical commands in focused read-only areas, while geometry/object projection and rewrite
+  planning still keep token-line compatibility boundaries.
 
 ### Remaining Local Parsing And Lookup Hotspots
 
 - `TherionDocumentEditor.cpp` still contains many rewrite planners that split lines, parse rows, infer insertion offsets, and preserve line endings locally. These are high-risk because they own source mutation semantics.
-- `MapEditorTab::parsedLinesForCurrentDocument()` still caches `TherionDocumentParser::parseTokenLines()` as a TH2 token-line compatibility projection used by scene refresh, selection, inspector object contexts, object move/delete planning, line split planning, area/reference resolution, and background metadata workflows.
-- `MapEditorSceneRefreshController`, `MapEditorSelectionController`, `MapEditorObjectDetailsLogic`, `MapEditorObjectDetailsEditController`, `MapEditorObjectDeletePlanner`, `MapEditorObjectMovePlanner`, `MapEditorLineSplitPlanner`, `MapEditorSourceReferenceResolver`, `MapEditorAreaReferenceResolver`, and `MapEditorBackgroundLayers` still contain direct `parseLine`, `parseTokenLines`, `splitTextLines`, or `detectedLineEnding` calls.
+- `MapEditorTab::parsedLinesForCurrentDocument()` still caches `TherionDocumentParser::parseTokenLines()` as a TH2
+  token-line compatibility projection used by scene refresh, structure/object discovery, rewrite planners, background
+  metadata workflows, and geometry compatibility tests.
+- `MapEditorSceneRefreshController`, `MapEditorObjectDetailsLogic`, `MapEditorObjectDeletePlanner`,
+  `MapEditorObjectMovePlanner`, `MapEditorLineSplitPlanner`, `MapEditorSourceReferenceResolver`,
+  `MapEditorAreaReferenceResolver`, and `MapEditorBackgroundLayers` still contain direct `parseLine`, `parseTokenLines`,
+  `splitTextLines`, or `detectedLineEnding` calls. Recent Map migrations have removed several UI-side full-text reparses,
+  but rewrite planners intentionally remain on explicit before/after source text snapshots until transaction-specific
+  coverage exists.
 - Blocks details, delete, data-block, toolbox, line-build, and option-argument helpers still contain small local `parseLine` / `tokenizeLine` calls where the logical document does not yet expose the exact needed operation.
 - Map geometry tests and map geometry feature parsing still exercise token-line compatibility inputs; this is useful guardrail coverage but also marks the migration boundary for a future TH2 projection.
 - `TherionBackgroundMetadata` and map background workflows preserve XTherion/Mapiah metadata through local line edits. They should move only after map background round-trip coverage is explicit.
@@ -99,11 +108,16 @@ Goal: reduce TH2 map parser drift by making Map scene objects consume shared com
 - Migrate Map object discovery, option parsing, area/line reference resolution, and Smart Area insert planning to shared logical commands in small vertical slices.
 - Keep geometry-specific parsing in map-focused types, but remove duplicated generic command/option token rules.
 - Add round-trip and undo/redo coverage for line/area/point edits, background metadata, object delete/move, and inspector quick-field writes.
-- Do not start with scene rebuild or selection/handles. Start with read-only inspector/reference helpers that already have focused tests.
+- Read-only inspector/reference and selection-refresh migrations are now underway and should continue only while they can
+  stay separate from source rewrite planning.
+- Do not migrate scene rebuild or source rewrite planners before a tested TH2 geometry projection contract exists.
 - Next slices:
-  - Convert one Map inspector option read that currently scans `parsedLinesForCurrentDocument()` to logical command ranges.
-  - Convert one area/reference resolver lookup from token-line compatibility to `TherionSourceLogicalDocument` while preserving Therion namespace order.
-  - Introduce a `Th2GeometryProjection` only after read-only option/reference migrations prove the shared logical input is sufficient.
+  - Extract a small reusable Map logical-source access context so controller contexts do not each grow their own
+    `logicalCommandsForCurrentDocument` callback.
+  - Convert another focused non-mutating Map consumer to logical commands only if it can stay independent of before/after
+    rewrite snapshots.
+  - Introduce a `Th2GeometryProjection` only after the shared logical input has covered the remaining read-only
+    object/reference/option lookups and geometry projection boundaries are clear.
   - Keep `MapEditorTab::parsedLinesForCurrentDocument()` as a compatibility adapter until geometry projection has its own tests.
 
 ### Slice 6 - Transaction Ownership Closure
@@ -150,7 +164,8 @@ collection.
 
 1. Raw cursor-token consumer: use `TherionSourceLogicalDocument::tokenAtOffset()` in one existing Raw completion/context-help path and preserve quoted/comment/continuation behavior.
 2. Blocks read-only detail consumer: replace one local `parseLine(logicalLine.text, logicalLine.startLine)` call with a logical-command range helper.
-3. Map inspector read-only option consumer: migrate one tested option read from `parsedLinesForCurrentDocument()` to `TherionSourceLogicalDocument`.
+3. Map logical-source context cleanup: extract the repeated `logicalCommandsForCurrentDocument` controller callback shape
+   before adding more Map DOM consumers.
 4. ProjectStructureIndex cache cleanup: remove one repeated logical-document lookup or local rescan inside an existing cached project-index pass.
 5. TH2 projection design slice: define the smallest `Th2GeometryProjection` input/output contract before moving scene rendering.
 
