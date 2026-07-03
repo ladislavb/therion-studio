@@ -105,7 +105,7 @@ When a project is open, the welcome tab shows the active project name and path. 
 - `.th2` files open in the map editor.
 - `.lox` files open in the 3D viewer.
 - Therion SQL database export `.sql` files open in the SQL report viewer.
-- Generated `.3d` model outputs and `.pdf` map or atlas outputs open in the system default application.
+- Generated `.pdf` map or atlas outputs open in the system default application.
 - `.th`, `thconfig`, `*.thconfig`, `thconfig.*`, `.log`, `.txt`, and ordinary text files open in the text editor.
 - Unsupported files, such as images or PDF, show an `Unsupported file` message with `Open in External App`.
 
@@ -115,7 +115,7 @@ The SQL report viewer is read-only. Open a Therion `export database` `.sql` file
 
 ### Outputs
 
-Use the left `Outputs` rail item to browse generated Therion export artifacts in the open project. Outputs are grouped as `Model`, `Map / Atlas`, and `Database`. Entries show project-relative paths so files with the same name in different directories remain distinct. The list refreshes when a Therion run finishes and when project output files change on disk. Activate `.lox` outputs to open the internal 3D viewer, `.sql` outputs to open the SQL report viewer, and `.pdf` or `.3d` outputs to open them in the system default application.
+Use the left `Outputs` rail item to browse generated Therion export artifacts in the open project. Outputs are grouped as `Model`, `Map / Atlas`, and `Database`. Entries show project-relative paths so files with the same name in different directories remain distinct. The list refreshes when a Therion run finishes and when project output files change on disk. Activate `.lox` outputs to open the internal 3D viewer, `.sql` outputs to open the SQL report viewer, and `.pdf` outputs to open them in the system default application. Therion `.3d` model outputs are not listed until Therion Studio provides a supported viewer or import workflow for them.
 
 ### 3.4 Create and Manage Files
 

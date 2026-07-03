@@ -26,7 +26,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
   read-only table model, and exports the current result table as CSV.
 - A first `Outputs` project sidebar slice groups generated Therion exports by model, map/atlas, and database artifacts,
   keeps duplicate filenames distinct through project-relative paths and canonical-path identity, opens `.lox` and `.sql`
-  internally where supported, sends `.3d`/`.pdf` outputs to the system default application, refreshes after Therion runs
+  internally where supported, sends `.pdf` outputs to the system default application, refreshes after Therion runs
   finish, and shares project file-discovery traversal with project search instead of owning UI-side recursive scanning.
 - Project source snapshot collection now also uses shared project file discovery for filesystem traversal and skip rules,
   so validation and structure scans inherit the same low-level project-tree discovery behavior without changing their
@@ -226,6 +226,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Next implementation slice should add or identify a real Therion-exported `.lox` fixture with terrain surface chunks,
   or add debug/log load/render statistics before renderer refactoring.
 - Keep the viewer read-only and keep `.lox` loading/model/statistics in core.
+- Decide whether to add Therion `.3d` model support to the 3D viewer or keep `.3d` outputs hidden from the Outputs pane.
 
 ## Blocked / Needs Input
 

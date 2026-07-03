@@ -61,7 +61,7 @@ void ProjectOutputsScannerTest::keepsDuplicateNamesDistinctAndClassifiesArtifact
     loop.exec();
     QVERIFY(received);
     QVERIFY(result.errorMessage.isEmpty());
-    QCOMPARE(result.artifacts.size(), 5);
+    QCOMPARE(result.artifacts.size(), 4);
 
     int modelCount = 0;
     int mapAtlasCount = 0;
@@ -82,11 +82,12 @@ void ProjectOutputsScannerTest::keepsDuplicateNamesDistinctAndClassifiesArtifact
         }
     }
 
-    QCOMPARE(modelCount, 2);
+    QCOMPARE(modelCount, 1);
     QCOMPARE(mapAtlasCount, 2);
     QCOMPARE(databaseCount, 1);
     QVERIFY(relativePaths.contains(QStringLiteral("a/out/map.pdf")));
     QVERIFY(relativePaths.contains(QStringLiteral("b/out/map.pdf")));
+    QVERIFY(!relativePaths.contains(QStringLiteral("output/cave.3d")));
 }
 
 int runProjectOutputsScannerTest(int argc, char **argv)

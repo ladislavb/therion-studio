@@ -60,9 +60,7 @@ inline bool isTherionSqlExportFilePath(const QString &filePath)
 
 inline bool isTherionModelOutputFileName(const QString &fileName)
 {
-    const QString suffix = QFileInfo(fileName).suffix().toLower();
-    return suffix == QStringLiteral("lox")
-        || suffix == QStringLiteral("3d");
+    return isThreeDViewerArtifactFileName(fileName);
 }
 
 inline bool isTherionModelOutputFilePath(const QString &filePath)
