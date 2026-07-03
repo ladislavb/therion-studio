@@ -3,8 +3,8 @@
 #include "MainWindowTherionConsoleController.h"
 
 #include <QLineEdit>
-#include <QPlainTextEdit>
 #include <QPushButton>
+#include <QTextBrowser>
 #include <QVBoxLayout>
 #include <QWidget>
 

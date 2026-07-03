@@ -47,6 +47,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   pending object message names the draft scrap that will be created.
 - New raster background insertion keeps XTherion raster metadata anchored at the top edge while the inspector reports the
   corresponding model-space image position, such as `Y = -image height` for a new image anchored at zero.
+- Compiler output now turns Therion source diagnostics such as `file.th2 [64]` into clickable links that open the source
+  document on the reported line, compiler `error --` output is highlighted in red, and Therion warnings are highlighted
+  in orange.
 - Reporting follow-ups should stay incremental: decide whether to add saved report presets, per-report filters, result
   summaries/charts, or a direct Therion `export database` action before expanding the SQL viewer into a broader analysis
   workspace.

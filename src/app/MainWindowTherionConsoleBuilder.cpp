@@ -7,9 +7,10 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
-#include <QPlainTextEdit>
 #include <QPushButton>
 #include <QSizePolicy>
+#include <QTextBrowser>
+#include <QTextOption>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -180,9 +181,12 @@ MainWindowTherionConsoleBuilder::build(const BuildInput &input)
     buttonGrid->setColumnStretch(1, 1);
     layout->addLayout(buttonGrid);
 
-    result.consoleView = new QPlainTextEdit(widget);
+    result.consoleView = new QTextBrowser(widget);
     result.consoleView->setReadOnly(true);
-    result.consoleView->setLineWrapMode(QPlainTextEdit::WidgetWidth);
+    result.consoleView->setLineWrapMode(QTextEdit::WidgetWidth);
+    result.consoleView->setWordWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
+    result.consoleView->setOpenExternalLinks(false);
+    result.consoleView->setOpenLinks(false);
     result.consoleView->setPlaceholderText(QCoreApplication::translate("MainWindow", "Therion runner output will appear here."));
     layout->addWidget(result.consoleView, 1);
 

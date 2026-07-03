@@ -261,6 +261,8 @@ set(THERION_APP_SOURCES
     src/app/TherionRunnerConfigResolver.h
     src/app/TherionRunnerLifecyclePresenter.cpp
     src/app/TherionRunnerLifecyclePresenter.h
+    src/app/TherionRunnerOutputLinker.cpp
+    src/app/TherionRunnerOutputLinker.h
     src/app/TherionRunnerService.cpp
     src/app/TherionRunnerService.h
     src/app/TherionRunnerStartResultPresenter.cpp
@@ -1242,6 +1244,7 @@ qt_add_executable(TherionRunnerSupportQTests
     tests/TherionExecutableSelectionControllerTest.cpp
     tests/TherionRunnerConfigDisplayControllerTest.cpp
     tests/TherionRunnerConfigResolverTest.cpp
+    tests/TherionRunnerOutputLinkerTest.cpp
     tests/TherionRunnerPresenterTest.cpp)
 
 target_link_libraries(TherionRunnerSupportQTests PRIVATE therion_app Qt6::Test)

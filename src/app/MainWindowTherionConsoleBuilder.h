@@ -5,7 +5,7 @@
 class QLabel;
 class QComboBox;
 class QLineEdit;
-class QPlainTextEdit;
+class QTextBrowser;
 class QPushButton;
 class QWidget;
 
@@ -40,7 +40,7 @@ public:
         QPushButton *therionResetWorkingDirectoryButton = nullptr;
         QPushButton *therionClearOutputButton = nullptr;
         QPushButton *therionCopyOutputButton = nullptr;
-        QPlainTextEdit *consoleView = nullptr;
+        QTextBrowser *consoleView = nullptr;
     };
 
     static BuildResult build(const BuildInput &input);

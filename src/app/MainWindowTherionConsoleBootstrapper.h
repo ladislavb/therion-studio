@@ -5,7 +5,7 @@
 #include <QString>
 
 class QLineEdit;
-class QPlainTextEdit;
+class QTextBrowser;
 class QPushButton;
 class QVBoxLayout;
 class QWidget;
@@ -20,7 +20,7 @@ public:
     struct BootstrapInput
     {
         MainWindowTherionConsoleController *consoleController = nullptr;
-        QPlainTextEdit *consoleView = nullptr;
+        QTextBrowser *consoleView = nullptr;
         QPushButton *therionRunButton = nullptr;
         QPushButton *therionStopButton = nullptr;
         QLineEdit *therionWorkingDirectoryEdit = nullptr;

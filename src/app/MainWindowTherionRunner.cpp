@@ -7,11 +7,15 @@
 #include "MainWindowTherionRunnerController.h"
 #include "TherionRunnerConfigDisplayController.h"
 #include "TherionRunnerLifecyclePresenter.h"
+#include "TherionRunnerOutputLinker.h"
 #include "TherionRunnerService.h"
 #include "TherionRunnerStartResultPresenter.h"
 #include "TherionRunnerStartSuccessPresenter.h"
+#include "text_editor/TextEditorTab.h"
+#include "text_editor/map_editor/MapEditorTab.h"
 
 #include <QComboBox>
+#include <QFileInfo>
 #include <QFileDialog>
 #include <QLabel>
 #include <QLineEdit>
@@ -19,6 +23,8 @@
 #include <QSignalBlocker>
 #include <QStatusBar>
 #include <QStringList>
+#include <QTextBrowser>
+#include <QUrl>
 
 namespace
 {
@@ -53,6 +59,12 @@ void MainWindow::buildConsole()
     therionClearOutputButton_ = buildResult.therionClearOutputButton;
     therionCopyOutputButton_ = buildResult.therionCopyOutputButton;
     consoleView_ = buildResult.consoleView;
+    if (consoleView_ != nullptr) {
+        connect(consoleView_,
+                &QTextBrowser::anchorClicked,
+                this,
+                &MainWindow::handleTherionConsoleLinkActivated);
+    }
 
     therionRunnerService_ = new TherionStudio::TherionRunnerService(this);
     TherionStudio::MainWindowTherionConsoleWiring::WiringInput wiringInput;
@@ -504,6 +516,7 @@ void MainWindow::runTherion()
     }
 
     activeTherionRunConfigPath_ = state.resolvedConfigPath;
+    activeTherionRunWorkingDirectory_ = state.resolvedWorkingDirectory;
     const TherionStudio::TherionRunnerStartSuccessPresenter::Presentation successPresentation =
         TherionStudio::TherionRunnerStartSuccessPresenter::present(startResult,
                                                                    state.runArguments.join(QLatin1Char(' ')),
@@ -573,13 +586,15 @@ void MainWindow::stopTherion()
 
 void MainWindow::handleTherionRunnerStandardOutput(const QString &output)
 {
-    therionConsoleController_.appendProcessStandardOutput(output);
+    therionConsoleController_.appendProcessStandardOutput(output, activeTherionRunWorkingDirectory_);
 }
 
 void MainWindow::handleTherionRunnerStandardError(const QString &output)
 {
     activeTherionRunStandardError_ += output;
-    therionConsoleController_.appendProcessStandardError(output, tr("[stderr] %1"));
+    therionConsoleController_.appendProcessStandardError(output,
+                                                        tr("[stderr] %1"),
+                                                        activeTherionRunWorkingDirectory_);
 }
 
 void MainWindow::handleTherionRunnerFinished(int exitCode, QProcess::ExitStatus exitStatus)
@@ -590,6 +605,7 @@ void MainWindow::handleTherionRunnerFinished(int exitCode, QProcess::ExitStatus 
                                                                         activeTherionRunStandardError_);
     setCompilerStatusResult(eventPresentation.succeeded, eventPresentation.statusText);
     activeTherionRunConfigPath_.clear();
+    activeTherionRunWorkingDirectory_.clear();
     activeTherionRunStandardError_.clear();
     requestProjectOutputsRefresh();
     updateTherionRunnerState();
@@ -601,8 +617,31 @@ void MainWindow::handleTherionRunnerError(const QString &errorText)
         TherionStudio::TherionRunnerLifecyclePresenter::presentError(errorText);
     setCompilerStatusResult(false, eventPresentation.statusText);
     activeTherionRunConfigPath_.clear();
+    activeTherionRunWorkingDirectory_.clear();
     activeTherionRunStandardError_.clear();
     updateTherionRunnerState();
+}
+
+void MainWindow::handleTherionConsoleLinkActivated(const QUrl &url)
+{
+    const TherionStudio::TherionRunnerOutputLinker::SourceLocation location =
+        TherionStudio::TherionRunnerOutputLinker::sourceLocationFromUrl(url);
+    if (!location.isValid()) {
+        return;
+    }
+
+    const QString filePath = location.path;
+    if (QFileInfo(filePath).suffix().toLower() == QStringLiteral("th2")) {
+        if (auto *mapTab = openMapEditorTab(filePath)) {
+            mapTab->goToLine(location.lineNumber);
+            showSidebarPane(SidebarPane::Console);
+        }
+    } else {
+        if (auto *textTab = openTextTab(filePath)) {
+            textTab->goToLine(location.lineNumber);
+            showSidebarPane(SidebarPane::Console);
+        }
+    }
 }
 
 void MainWindow::handleTherionRunnerStateChanged(bool running)

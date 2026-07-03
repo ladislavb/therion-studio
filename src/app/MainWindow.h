@@ -37,6 +37,8 @@ class QListWidget;
 class QMenu;
 class QPlainTextEdit;
 class QPushButton;
+class QTextBrowser;
+class QUrl;
 class QFileSystemWatcher;
 class QSlider;
 class QSplitter;
@@ -116,6 +118,7 @@ private slots:
     void handleTherionRunnerFinished(int exitCode, QProcess::ExitStatus exitStatus);
     void handleTherionRunnerError(const QString &errorText);
     void handleTherionRunnerStateChanged(bool running);
+    void handleTherionConsoleLinkActivated(const QUrl &url);
     void showComingSoon(const QString &featureName);
     void handleMapEditorDetachRequested(TherionStudio::MapEditorTab *tab);
 
@@ -404,7 +407,7 @@ private:
     QAction *mapMagnifierAction_ = nullptr;
     QAction *fullScreenAction_ = nullptr;
     bool restartAfterClose_ = false;
-    QPlainTextEdit *consoleView_ = nullptr;
+    QTextBrowser *consoleView_ = nullptr;
     QLineEdit *therionWorkingDirectoryEdit_ = nullptr;
     QLineEdit *projectSearchEdit_ = nullptr;
     QPushButton *projectSearchButton_ = nullptr;
@@ -446,6 +449,7 @@ private:
     QToolButton *statusCompilerButton_ = nullptr;
     QLabel *statusDocumentEncodingLabel_ = nullptr;
     QString activeTherionRunConfigPath_;
+    QString activeTherionRunWorkingDirectory_;
     QString activeTherionRunStandardError_;
     QWidget *workspaceModeSwitcher_ = nullptr;
     QWidget *workspaceMapModeSwitcher_ = nullptr;
