@@ -15,6 +15,7 @@ public:
     struct RestoreOpenDocumentsActions
     {
         std::function<void(const QString &)> openMapEditorDocument;
+        std::function<bool(const QString &)> openSqlReportDocument;
         std::function<bool(const QString &)> openTextEditorDocument;
         std::function<void(const QString &)> appendSkippedUnsupportedDocumentConsole;
         std::function<void(const QString &)> activateRestoredDocumentPath;

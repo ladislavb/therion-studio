@@ -34,6 +34,7 @@ The application is primarily used to:
 - edit Therion source files with syntax highlighting and assistance
 - visually inspect and edit TH2 map data
 - inspect compiled 3D `.lox` artifacts in a read-only viewer tab
+- inspect Therion SQL database exports in a read-only report tab
 - review survey structure and map object relationships
 - run the Therion command-line tool and inspect its output
 
@@ -58,13 +59,14 @@ Required capabilities:
 - create a new empty project folder from `File -> New Project -> Empty Project...`
 - create a new project from a bundled template when no project exists or from `File -> New Project -> Project from Template...`
 - display project files and subfolders
-- recognize common Therion-related file types such as `.th`, `.th2`, `thconfig`, `*.thconfig`, and `thconfig.*`, plus compiled 3D `.lox` artifacts
+- recognize common Therion-related file types such as `.th`, `.th2`, `thconfig`, `*.thconfig`, and `thconfig.*`, plus compiled 3D `.lox` artifacts and Therion SQL database export `.sql` files
 - open files in editor tabs
 - opening a `.lox` file shall create a read-only 3D viewer tab with Reset, Fit, orthogonal-projection toggle, Top/Side view, rotate-left/rotate-right, automatic-rotation, and measurement controls, plus orbit, pan, zoom, arrow-key yaw/tilt navigation, precise camera-orientation, distance, and focal-length adjustment, and world-blue-axis rotation navigation; Fit shall frame the current 3D scene bounds using the active camera orientation and viewport aspect ratio
 - the 3D viewer shall let the user switch model coloring between altitude-based coloring and no model coloring
 - the 3D viewer shall color centerline shots using the same altitude-based or uncolored palette as the meshes
 - the 3D viewer shall render a bounding box around the loaded 3D scene extent
 - the 3D viewer shall show a screen-space compass and scale bar when scene bounds are available, and shall show the altitude legend only when model coloring is set to Altitude
+- opening a Therion SQL database export `.sql` file shall create a read-only report tab that loads the export into an in-memory database, places a read-only `SELECT` query editor above the result table, offers predefined centreline-analysis query presets, exposes the imported table schema, and can export the current result table to CSV without modifying the source export file
 - support file selection, multi-tab workflows, and recent project reopening
 - preserve folder expansion state where practical
 
@@ -297,6 +299,14 @@ The rules below define the expected day-to-day interaction model. If a later req
 - A supported Therion file row shall be shown with a Therion document icon; an unsupported file shall use a generic document icon.
 - A `.th2` file shall offer an explicit "Open in Map Editor" action.
 - A `.lox` file shall open in a read-only 3D viewer tab and shall not be offered for map editing.
+- A Therion SQL database export `.sql` file shall open in a read-only SQL report tab and shall not be offered for text editing by default.
+- The SQL report tab shall import Therion SQL export statements into an in-memory SQLite database, reject unsupported import statements, validate that the expected Therion export tables are present, and report import failures without modifying the original `.sql` file.
+- The SQL report tab shall provide predefined query presets for survey overview, survey lengths, exploration by person, surveying by person, survey and exploration activity by year, recent activity, continuation stations, lead flags by survey, entrances, depth by survey, and shot error ranking where the imported schema supports them.
+- Built-in SQL report presets shall be data-driven from bundled application resources rather than hardcoded directly in UI code.
+- Activating a SQL report preset shall copy that preset query into the visible query editor and run it, so the user can inspect and modify the SQL before running a related custom query.
+- The SQL report tab shall show query presets and imported schema in a right-side sidebar with separate `Presets` and `Schema` sections.
+- The SQL report tab shall allow custom queries only when they are a single read-only `SELECT` or `WITH` query, shall reject mutating statements, shall cap displayed result rows to keep the UI responsive, and shall present results through a read-only table model rather than constructing per-cell editable widgets.
+- The SQL report tab shall export the currently displayed result table as CSV on explicit user request.
 - When an opened `.lox` file changes on disk, the 3D viewer shall reload the scene automatically where practical and shall preserve the current camera and inspector settings rather than refitting the scene unless the user explicitly invokes Fit or Reset.
 - The 3D viewer inspector shall expose a model-coloring control that allows switching between altitude-based coloring and no coloring. Altitude-based coloring shall be the default. The inspector shall expose a Scene Settings section after Layers with visibility toggles for the bounding box, the head-up display, and the title/statistics overlay, all enabled by default.
 - The 3D viewer inspector shall expose compass heading, camera-tilt, camera-distance, focal-length, and automatic-rotation speed controls, shall follow the active application color palette, and the 3D viewer toolbar shall expose one play/stop toggle that starts and stops rotation around the world Z axis. The focal-length control shall be disabled while orthographic projection is active because it only affects perspective projection.

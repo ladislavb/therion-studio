@@ -13,7 +13,8 @@ public:
     enum class RestoreTarget
     {
         TextEditor,
-        MapEditor
+        MapEditor,
+        SqlReport
     };
 
     struct RestoreEntry
@@ -36,5 +37,6 @@ public:
                                                       const QStringList &activeDetachedDocumentPaths,
                                                       const QString &currentDocumentPath);
     static bool isMapDocumentPath(const QString &filePath);
+    static bool isSqlReportPath(const QString &filePath);
 };
 }

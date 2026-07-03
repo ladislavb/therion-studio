@@ -1,0 +1,196 @@
+[
+  {
+    "id": "overview",
+    "title": "Overview",
+    "query": [
+      "select 'Surveys' as Metric, count(*) as Value from SURVEY",
+      "union all select 'Centrelines', count(*) from CENTRELINE",
+      "union all select 'Stations', count(*) from STATION",
+      "union all select 'Shots', count(*) from SHOT",
+      "union all select 'People', count(*) from PERSON",
+      "union all select 'Total length', round(coalesce(sum(LENGTH), 0), 2) from CENTRELINE",
+      "union all select 'Surface length', round(coalesce(sum(SURFACE_LENGTH), 0), 2) from CENTRELINE",
+      "union all select 'Duplicate length', round(coalesce(sum(DUPLICATE_LENGTH), 0), 2) from CENTRELINE"
+    ]
+  },
+  {
+    "id": "survey-lengths",
+    "title": "Survey Lengths",
+    "query": [
+      "select coalesce(S.FULL_NAME, S.NAME) as Survey,",
+      "       count(C.ID) as Centrelines,",
+      "       round(coalesce(sum(C.LENGTH), 0), 2) as Length,",
+      "       round(coalesce(sum(C.SURFACE_LENGTH), 0), 2) as Surface,",
+      "       round(coalesce(sum(C.DUPLICATE_LENGTH), 0), 2) as Duplicate",
+      "from SURVEY S",
+      "left join CENTRELINE C on C.SURVEY_ID = S.ID",
+      "group by S.ID, S.FULL_NAME, S.NAME",
+      "order by Length desc, Survey asc"
+    ]
+  },
+  {
+    "id": "exploration-by-person",
+    "title": "Exploration by Person",
+    "query": [
+      "select P.NAME as Name, P.SURNAME as Surname,",
+      "       count(distinct C.ID) as Centrelines,",
+      "       round(coalesce(sum(C.LENGTH), 0), 2) as ExploredLength,",
+      "       min(C.EXPLO_DATE) as FirstExploration,",
+      "       max(C.EXPLO_DATE) as LastExploration",
+      "from PERSON P",
+      "join EXPLO E on E.PERSON_ID = P.ID",
+      "join CENTRELINE C on C.ID = E.CENTRELINE_ID",
+      "group by P.ID, P.NAME, P.SURNAME",
+      "order by ExploredLength desc, Surname asc, Name asc"
+    ]
+  },
+  {
+    "id": "surveying-by-person",
+    "title": "Surveying by Person",
+    "query": [
+      "select P.NAME as Name, P.SURNAME as Surname,",
+      "       count(distinct C.ID) as Centrelines,",
+      "       round(coalesce(sum(C.LENGTH), 0), 2) as SurveyedLength,",
+      "       min(C.TOPO_DATE) as FirstSurvey,",
+      "       max(C.TOPO_DATE) as LastSurvey",
+      "from PERSON P",
+      "join TOPO T on T.PERSON_ID = P.ID",
+      "join CENTRELINE C on C.ID = T.CENTRELINE_ID",
+      "group by P.ID, P.NAME, P.SURNAME",
+      "order by SurveyedLength desc, Surname asc, Name asc"
+    ]
+  },
+  {
+    "id": "length-by-survey-year",
+    "title": "Length by Survey Year",
+    "query": [
+      "select substr(TOPO_DATE, 1, 4) as Year,",
+      "       count(*) as Centrelines,",
+      "       round(coalesce(sum(LENGTH), 0), 2) as Length",
+      "from CENTRELINE",
+      "where TOPO_DATE is not null and TOPO_DATE <> ''",
+      "group by substr(TOPO_DATE, 1, 4)",
+      "order by Year asc"
+    ]
+  },
+  {
+    "id": "exploration-by-year",
+    "title": "Exploration by Year",
+    "query": [
+      "select substr(EXPLO_DATE, 1, 4) as Year,",
+      "       count(*) as Centrelines,",
+      "       round(coalesce(sum(LENGTH), 0), 2) as ExploredLength",
+      "from CENTRELINE",
+      "where EXPLO_DATE is not null and EXPLO_DATE <> ''",
+      "group by substr(EXPLO_DATE, 1, 4)",
+      "order by Year asc"
+    ]
+  },
+  {
+    "id": "recent-activity",
+    "title": "Recent Activity",
+    "query": [
+      "select coalesce(C.TOPO_DATE, C.EXPLO_DATE) as Date,",
+      "       coalesce(S.FULL_NAME, S.NAME) as Survey,",
+      "       C.TITLE as Centreline,",
+      "       round(coalesce(C.LENGTH, 0), 2) as Length,",
+      "       C.TOPO_DATE as SurveyDate,",
+      "       C.EXPLO_DATE as ExplorationDate",
+      "from CENTRELINE C",
+      "left join SURVEY S on S.ID = C.SURVEY_ID",
+      "where coalesce(C.TOPO_DATE, C.EXPLO_DATE) is not null",
+      "  and coalesce(C.TOPO_DATE, C.EXPLO_DATE) <> ''",
+      "order by Date desc, Survey asc",
+      "limit 100"
+    ]
+  },
+  {
+    "id": "continuation-stations",
+    "title": "Continuation Stations",
+    "query": [
+      "select coalesce(SV.FULL_NAME, SV.NAME) as Survey,",
+      "       ST.NAME as Station,",
+      "       round(ST.X, 2) as X,",
+      "       round(ST.Y, 2) as Y,",
+      "       round(ST.Z, 2) as Z",
+      "from STATION ST",
+      "join STATION_FLAG F on F.STATION_ID = ST.ID",
+      "left join SURVEY SV on SV.ID = ST.SURVEY_ID",
+      "where F.FLAG = 'con'",
+      "order by Survey asc, Station asc"
+    ]
+  },
+  {
+    "id": "lead-flags-by-survey",
+    "title": "Lead Flags by Survey",
+    "query": [
+      "select coalesce(SV.FULL_NAME, SV.NAME) as Survey,",
+      "       F.FLAG as Flag,",
+      "       count(*) as Stations",
+      "from STATION_FLAG F",
+      "join STATION ST on ST.ID = F.STATION_ID",
+      "left join SURVEY SV on SV.ID = ST.SURVEY_ID",
+      "where F.FLAG in ('con', 'dig', 'air', 'spr', 'sin')",
+      "group by SV.ID, SV.FULL_NAME, SV.NAME, F.FLAG",
+      "order by Survey asc, Stations desc, Flag asc"
+    ]
+  },
+  {
+    "id": "entrances",
+    "title": "Entrances",
+    "query": [
+      "select coalesce(SV.FULL_NAME, SV.NAME) as Survey,",
+      "       ST.NAME as Station,",
+      "       round(ST.X, 2) as X,",
+      "       round(ST.Y, 2) as Y,",
+      "       round(ST.Z, 2) as Z",
+      "from STATION ST",
+      "join STATION_FLAG F on F.STATION_ID = ST.ID",
+      "left join SURVEY SV on SV.ID = ST.SURVEY_ID",
+      "where F.FLAG = 'ent'",
+      "order by Survey asc, Station asc"
+    ]
+  },
+  {
+    "id": "depth-by-survey",
+    "title": "Depth by Survey",
+    "query": [
+      "select coalesce(SV.FULL_NAME, SV.NAME) as Survey,",
+      "       count(ST.ID) as Stations,",
+      "       round(min(ST.Z), 2) as MinZ,",
+      "       round(max(ST.Z), 2) as MaxZ,",
+      "       round(max(ST.Z) - min(ST.Z), 2) as Depth",
+      "from SURVEY SV",
+      "join STATION ST on ST.SURVEY_ID = SV.ID",
+      "where ST.Z is not null",
+      "group by SV.ID, SV.FULL_NAME, SV.NAME",
+      "order by Depth desc, Survey asc"
+    ]
+  },
+  {
+    "id": "shot-error-ranking",
+    "title": "Shot Error Ranking",
+    "query": [
+      "select SH.ID as ShotId,",
+      "       FS.NAME as FromStation,",
+      "       TS.NAME as ToStation,",
+      "       coalesce(SV.FULL_NAME, SV.NAME) as Survey,",
+      "       round(coalesce(SH.ERR_LENGTH, 0), 3) as LengthError,",
+      "       round(coalesce(SH.ERR_BEARING, 0), 3) as BearingError,",
+      "       round(coalesce(SH.ERR_GRADIENT, 0), 3) as GradientError,",
+      "       round(coalesce(SH.LENGTH, 0), 2) as Length",
+      "from SHOT SH",
+      "left join STATION FS on FS.ID = SH.FROM_ID",
+      "left join STATION TS on TS.ID = SH.TO_ID",
+      "left join CENTRELINE C on C.ID = SH.CENTRELINE_ID",
+      "left join SURVEY SV on SV.ID = C.SURVEY_ID",
+      "where coalesce(SH.ERR_LENGTH, 0) <> 0",
+      "   or coalesce(SH.ERR_BEARING, 0) <> 0",
+      "   or coalesce(SH.ERR_GRADIENT, 0) <> 0",
+      "order by abs(coalesce(SH.ERR_LENGTH, 0)) desc,",
+      "         abs(coalesce(SH.ERR_BEARING, 0)) desc,",
+      "         abs(coalesce(SH.ERR_GRADIENT, 0)) desc",
+      "limit 100"
+    ]
+  }
+]

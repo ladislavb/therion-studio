@@ -19,7 +19,13 @@ std::vector<MainWindowSessionDocumentService::RestoreEntry> MainWindowSessionDoc
 
         RestoreEntry entry;
         entry.filePath = documentPath;
-        entry.target = isMapDocumentPath(documentPath) ? RestoreTarget::MapEditor : RestoreTarget::TextEditor;
+        if (isMapDocumentPath(documentPath)) {
+            entry.target = RestoreTarget::MapEditor;
+        } else if (isSqlReportPath(documentPath)) {
+            entry.target = RestoreTarget::SqlReport;
+        } else {
+            entry.target = RestoreTarget::TextEditor;
+        }
         entries.push_back(std::move(entry));
     }
 
@@ -77,5 +83,10 @@ MainWindowSessionDocumentService::OpenDocumentsState MainWindowSessionDocumentSe
 bool MainWindowSessionDocumentService::isMapDocumentPath(const QString &filePath)
 {
     return QFileInfo(filePath).suffix().compare(QStringLiteral("th2"), Qt::CaseInsensitive) == 0;
+}
+
+bool MainWindowSessionDocumentService::isSqlReportPath(const QString &filePath)
+{
+    return QFileInfo(filePath).suffix().compare(QStringLiteral("sql"), Qt::CaseInsensitive) == 0;
 }
 }

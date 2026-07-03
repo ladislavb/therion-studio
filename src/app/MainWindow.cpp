@@ -754,6 +754,9 @@ void MainWindow::restoreOpenDocuments()
     actions.openMapEditorDocument = [this](const QString &documentPath) {
         openMapEditorTab(documentPath, false);
     };
+    actions.openSqlReportDocument = [this](const QString &documentPath) {
+        return openTherionSqlReportTab(documentPath, false) != nullptr;
+    };
     actions.openTextEditorDocument = [this](const QString &documentPath) {
         return openTextTab(documentPath, false, false) != nullptr;
     };

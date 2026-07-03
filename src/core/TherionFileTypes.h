@@ -48,6 +48,16 @@ inline bool isThreeDViewerArtifactFilePath(const QString &filePath)
     return isThreeDViewerArtifactFileName(QFileInfo(filePath).fileName());
 }
 
+inline bool isTherionSqlExportFileName(const QString &fileName)
+{
+    return QFileInfo(fileName).suffix().toLower() == QStringLiteral("sql");
+}
+
+inline bool isTherionSqlExportFilePath(const QString &filePath)
+{
+    return isTherionSqlExportFileName(QFileInfo(filePath).fileName());
+}
+
 inline TherionSourceDocumentType therionSourceDocumentTypeForFileName(const QString &fileName)
 {
     if (isTherionConfigFileName(fileName)) {

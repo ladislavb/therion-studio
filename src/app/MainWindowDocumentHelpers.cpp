@@ -7,6 +7,7 @@
 #include "text_editor/TextEditorTab.h"
 #include "text_editor/map_editor/MapEditorTab.h"
 #include "three_d_viewer/ThreeDViewerTab.h"
+#include "reports/TherionSqlReportTab.h"
 
 QString documentPathForWidget(QWidget *widget)
 {
@@ -20,6 +21,10 @@ QString documentPathForWidget(QWidget *widget)
 
     if (auto *viewerTab = qobject_cast<TherionStudio::ThreeDViewerTab *>(widget)) {
         return viewerTab->filePath();
+    }
+
+    if (auto *reportTab = qobject_cast<TherionStudio::TherionSqlReportTab *>(widget)) {
+        return reportTab->filePath();
     }
 
     return QString();
@@ -39,6 +44,10 @@ QString documentDisplayNameForWidget(QWidget *widget)
         return viewerTab->displayName();
     }
 
+    if (auto *reportTab = qobject_cast<TherionStudio::TherionSqlReportTab *>(widget)) {
+        return reportTab->displayName();
+    }
+
     return QString();
 }
 
@@ -56,6 +65,11 @@ void documentGoToLineForWidget(QWidget *widget, int lineNumber)
 
     if (auto *viewerTab = qobject_cast<TherionStudio::ThreeDViewerTab *>(widget)) {
         viewerTab->goToLine(lineNumber);
+        return;
+    }
+
+    if (auto *reportTab = qobject_cast<TherionStudio::TherionSqlReportTab *>(widget)) {
+        reportTab->goToLine(lineNumber);
     }
 }
 
@@ -71,6 +85,10 @@ int documentCurrentLineNumberForWidget(QWidget *widget)
 
     if (auto *viewerTab = qobject_cast<TherionStudio::ThreeDViewerTab *>(widget)) {
         return viewerTab->currentLineNumber();
+    }
+
+    if (auto *reportTab = qobject_cast<TherionStudio::TherionSqlReportTab *>(widget)) {
+        return reportTab->currentLineNumber();
     }
 
     return 0;
@@ -90,6 +108,10 @@ bool documentIsDirtyForWidget(QWidget *widget)
         return viewerTab->isDirty();
     }
 
+    if (auto *reportTab = qobject_cast<TherionStudio::TherionSqlReportTab *>(widget)) {
+        return reportTab->isDirty();
+    }
+
     return false;
 }
 
@@ -105,6 +127,10 @@ bool documentSaveForWidget(QWidget *widget, QString *errorMessage)
 
     if (auto *viewerTab = qobject_cast<TherionStudio::ThreeDViewerTab *>(widget)) {
         return viewerTab->save(errorMessage);
+    }
+
+    if (auto *reportTab = qobject_cast<TherionStudio::TherionSqlReportTab *>(widget)) {
+        return reportTab->save(errorMessage);
     }
 
     if (errorMessage != nullptr) {
@@ -128,6 +154,11 @@ void documentSetProjectRootPathForWidget(QWidget *widget, const QString &project
 
     if (auto *viewerTab = qobject_cast<TherionStudio::ThreeDViewerTab *>(widget)) {
         viewerTab->setProjectRootPath(projectRootPath);
+        return;
+    }
+
+    if (auto *reportTab = qobject_cast<TherionStudio::TherionSqlReportTab *>(widget)) {
+        reportTab->setProjectRootPath(projectRootPath);
     }
 }
 
@@ -145,6 +176,11 @@ void documentShowFindBarForWidget(QWidget *widget, bool replaceMode)
 
     if (auto *viewerTab = qobject_cast<TherionStudio::ThreeDViewerTab *>(widget)) {
         viewerTab->showFindBar(replaceMode);
+        return;
+    }
+
+    if (auto *reportTab = qobject_cast<TherionStudio::TherionSqlReportTab *>(widget)) {
+        reportTab->showFindBar(replaceMode);
     }
 }
 

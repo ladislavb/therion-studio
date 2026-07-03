@@ -47,7 +47,7 @@ option(THERION_ENABLE_QT_LINUX_DEPLOY_INSTALL
     "Run Qt's Linux runtime deployment script during install; intended for AppDir/AppImage builds"
     OFF)
 
-find_package(Qt6 6.4 REQUIRED COMPONENTS Core Widgets Svg Concurrent Test Quick QuickWidgets Qml QuickControls2)
+find_package(Qt6 6.4 REQUIRED COMPONENTS Core Widgets Svg Sql Concurrent Test Quick QuickWidgets Qml QuickControls2)
 find_package(Qt6LinguistTools 6.4 QUIET)
 
 qt_standard_project_setup()
@@ -263,6 +263,10 @@ set(THERION_APP_SOURCES
     src/app/TherionRunnerStartResultPresenter.h
     src/app/TherionRunnerStartSuccessPresenter.cpp
     src/app/TherionRunnerStartSuccessPresenter.h
+    src/app/reports/TherionSqlReportDatabase.cpp
+    src/app/reports/TherionSqlReportDatabase.h
+    src/app/reports/TherionSqlReportTab.cpp
+    src/app/reports/TherionSqlReportTab.h
     src/app/three_d_viewer/ThreeDViewerTab.cpp
     src/app/three_d_viewer/ThreeDViewerTab.h
     src/app/three_d_viewer/ThreeDViewerInspectorState.cpp
@@ -290,6 +294,7 @@ target_link_libraries(therion_app
         Qt6::Core
         Qt6::Widgets
         Qt6::Svg
+        Qt6::Sql
         Qt6::Quick
         Qt6::QuickWidgets
         Qt6::Qml
@@ -705,6 +710,7 @@ set(THERION_STUDIO_RESOURCE_FILES
     ${THERION_MAP_OBJECT_STYLE_FILES}
     resources/therion_command_catalog.json
     resources/therion_syntax_palette.json
+    resources/sql_report_presets.json
     resources/project_templates/default/template.json
     resources/project_templates/default/main.thconfig
     resources/project_templates/default/main.th
@@ -832,7 +838,7 @@ if(APPLE)
         MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}")
 endif()
 
-target_link_libraries(TherionStudio PRIVATE therion_app therion_core therion_platform Qt6::Widgets Qt6::Svg Qt6::Concurrent)
+target_link_libraries(TherionStudio PRIVATE therion_app therion_core therion_platform Qt6::Widgets Qt6::Svg Qt6::Sql Qt6::Concurrent)
 
 target_compile_definitions(TherionStudio PRIVATE
     THERION_STUDIO_VERSION_STRING="${THERION_STUDIO_VERSION}"
@@ -1275,10 +1281,16 @@ qt_add_executable(MainWindowServiceQTests
     tests/MainWindowSessionStateServiceTest.cpp
     tests/MainWindowSessionWindowRestoreServiceTest.cpp
     tests/MainWindowStructureNameOverridesServiceTest.cpp
+    tests/TherionSqlReportDatabaseTest.cpp
     src/app/MainWindowHelpDocument.cpp
     src/app/MainWindowHelpDocument.h)
 
 target_link_libraries(MainWindowServiceQTests PRIVATE therion_app Qt6::Test)
+
+qt_add_resources(MainWindowServiceQTests MainWindowServiceQTestResources
+    PREFIX "/"
+    FILES
+        resources/sql_report_presets.json)
 
 therion_add_app_unit_test(ProjectTemplateServiceTest
     tests/ProjectTemplateServiceTest.cpp)

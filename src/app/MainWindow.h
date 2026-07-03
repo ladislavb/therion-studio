@@ -54,6 +54,7 @@ namespace TherionStudio
 class TextEditorTab;
 class MapEditorTab;
 class ThreeDViewerTab;
+class TherionSqlReportTab;
 class TherionRunnerService;
 class ProjectScanCacheService;
 }
@@ -152,6 +153,7 @@ private:
     TherionStudio::TextEditorTab *createUntitledTextTab(const QString &suggestedFileName, const QString &contents);
     TherionStudio::MapEditorTab *createUntitledMapEditorTab(const QString &suggestedFileName, const QString &contents);
     TherionStudio::ThreeDViewerTab *openThreeDViewerTab(const QString &filePath, bool recordRecentFile = true);
+    TherionStudio::TherionSqlReportTab *openTherionSqlReportTab(const QString &filePath, bool recordRecentFile = true);
     bool saveDocumentWidget(QWidget *documentWidget, QString *errorMessage = nullptr);
     QString requestSavePathForDocument(QWidget *documentWidget) const;
     void restoreSessionState();

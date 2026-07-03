@@ -7,7 +7,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
 1. `2026.7.1` development planning and first implementation slices after `v2026.6.9`.
 2. Unified Source DOM consumer migration in small, tested slices.
 3. Project source snapshot and validation/cache reuse work for repeated project scans.
-4. Plan-driven follow-ups for map partial refresh, GUI cleanup, SVG backgrounds, and 3D viewer refinement.
+4. Plan-driven follow-ups for map partial refresh, GUI cleanup, SVG backgrounds, reporting, and 3D viewer refinement.
 
 ## Active Work
 
@@ -19,6 +19,13 @@ Active planning only. Completed history belongs in archive files. Stable archite
   before proposing a commit.
 - Keep user-visible feature work aligned with `SPECIFICATION.md`; update the specification and `docs/USER_MANUAL.md` in the
   same change when behavior or workflows change.
+- A first reporting POC opens Therion database export `.sql` files as read-only tabs, imports them into in-memory SQLite,
+  exposes a guarded `SELECT` query editor above the result table, uses predefined centreline reports as query presets in
+  the right sidebar, loads built-in preset SQL from `resources/sql_report_presets.json`, shows schema beside those presets,
+  presents capped query results through a read-only table model, and exports the current result table as CSV.
+- Reporting follow-ups should stay incremental: decide whether to add saved report presets, per-report filters, result
+  summaries/charts, or a direct Therion `export database` action before expanding the SQL viewer into a broader analysis
+  workspace.
 
 ### Unified Source DOM / Transactions
 

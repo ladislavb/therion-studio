@@ -32,8 +32,14 @@ void MainWindowSessionDocumentController::restoreOpenDocuments(const ISessionSto
             continue;
         }
 
-        const bool opened = !actions.openTextEditorDocument
-            || actions.openTextEditorDocument(documentPath);
+        bool opened = false;
+        if (entry.target == MainWindowSessionDocumentService::RestoreTarget::SqlReport) {
+            opened = !actions.openSqlReportDocument
+                || actions.openSqlReportDocument(documentPath);
+        } else {
+            opened = !actions.openTextEditorDocument
+                || actions.openTextEditorDocument(documentPath);
+        }
         if (!opened) {
             skippedUnsupportedDocument = true;
             if (actions.appendSkippedUnsupportedDocumentConsole) {

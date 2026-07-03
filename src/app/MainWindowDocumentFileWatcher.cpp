@@ -5,6 +5,7 @@
 #include "text_editor/TextEditorTab.h"
 #include "text_editor/map_editor/MapEditorTab.h"
 #include "three_d_viewer/ThreeDViewerTab.h"
+#include "reports/TherionSqlReportTab.h"
 
 #include <QFileInfo>
 #include <QFileSystemWatcher>
@@ -109,6 +110,8 @@ bool MainWindow::reloadDocumentWidgetFromDisk(QWidget *documentWidget, QString *
         loaded = mapTab->loadFile(documentPath, errorMessage);
     } else if (auto *viewerTab = qobject_cast<TherionStudio::ThreeDViewerTab *>(documentWidget)) {
         loaded = viewerTab->reloadFile(errorMessage);
+    } else if (auto *reportTab = qobject_cast<TherionStudio::TherionSqlReportTab *>(documentWidget)) {
+        loaded = reportTab->reloadFile(errorMessage);
     }
 
     if (loaded) {

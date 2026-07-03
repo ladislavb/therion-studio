@@ -2,6 +2,7 @@
 
 #include "MainWindowDocumentOpenController.h"
 #include "three_d_viewer/ThreeDViewerTab.h"
+#include "reports/TherionSqlReportTab.h"
 #include "../core/TherionFileTypes.h"
 
 #include <QApplication>
@@ -82,6 +83,8 @@ void MainWindow::openProjectFilePath(const QString &filePath)
 {
     if (TherionStudio::isThreeDViewerArtifactFilePath(filePath)) {
         openThreeDViewerTab(filePath);
+    } else if (TherionStudio::isTherionSqlExportFilePath(filePath)) {
+        openTherionSqlReportTab(filePath);
     } else if (QFileInfo(filePath).suffix().toLower() == QStringLiteral("th2")) {
         openMapEditorTab(filePath);
     } else if (isSupportedTextEditorFilePath(filePath)) {
@@ -104,6 +107,8 @@ void MainWindow::handleProjectTreeActivated(const QModelIndex &index)
 
     if (TherionStudio::isThreeDViewerArtifactFilePath(filePath)) {
         openThreeDViewerTab(filePath);
+    } else if (TherionStudio::isTherionSqlExportFilePath(filePath)) {
+        openTherionSqlReportTab(filePath);
     } else if (QFileInfo(filePath).suffix().toLower() == QStringLiteral("th2")) {
         openMapEditorTab(filePath);
     } else if (isSupportedTextEditorFilePath(filePath)) {
@@ -162,5 +167,49 @@ TherionStudio::ThreeDViewerTab *MainWindow::openThreeDViewerTab(const QString &f
         recordRecentFilePath(tab->filePath());
     }
     updateTabTitle(tab);
+    return tab;
+}
+
+TherionStudio::TherionSqlReportTab *MainWindow::openTherionSqlReportTab(const QString &filePath,
+                                                                        bool recordRecentFile)
+{
+    const QString canonicalPath = TherionStudio::MainWindowDocumentOpenController::canonicalDocumentPath(filePath);
+    if (auto *existingTab = qobject_cast<TherionStudio::TherionSqlReportTab *>(documentWidgetForFilePath(canonicalPath))) {
+        const int existingIndex = editorTabs_->indexOf(existingTab);
+        if (existingIndex >= 0) {
+            editorTabs_->setCurrentIndex(existingIndex);
+        }
+        if (recordRecentFile) {
+            recordRecentFilePath(existingTab->filePath());
+        }
+        return existingTab;
+    }
+
+    auto *tab = new TherionStudio::TherionSqlReportTab();
+    tab->setProjectRootPath(projectRootPath_);
+    QString errorMessage;
+    if (!tab->loadFile(canonicalPath, &errorMessage)) {
+        QMessageBox::warning(this, tr("Open SQL Export"), errorMessage);
+        tab->deleteLater();
+        return nullptr;
+    }
+
+    connect(tab, &TherionStudio::TherionSqlReportTab::titleChanged, this, [this, tab]() {
+        updateTabTitle(tab);
+    });
+    connect(tab, &TherionStudio::TherionSqlReportTab::statusChanged, this, [this, tab]() {
+        if (currentDocumentWidget() == tab) {
+            refreshDocumentStatusWidgets();
+        }
+    });
+
+    const int tabIndex = editorTabs_->addTab(tab, tab->displayName());
+    editorTabs_->setCurrentIndex(tabIndex);
+    registerDocumentFileWatcher(tab->filePath());
+    if (recordRecentFile) {
+        recordRecentFilePath(tab->filePath());
+    }
+    updateTabTitle(tab);
+    persistOpenDocuments();
     return tab;
 }
