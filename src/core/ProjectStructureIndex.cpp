@@ -1169,7 +1169,6 @@ QVector<QString> rootProjectFiles(const QVector<QString> &filePaths,
         const TherionSourceLogicalDocument &logicalDocument =
             logicalDocumentForFile(filePath, cache, inMemoryFileContentsByPath);
         for (const TherionSourceLogicalCommand &command : logicalDocument.commands()) {
-            const TherionParsedLine &parsedLine = command.parsed;
             if (command.metadata.commandName != QStringLiteral("input")
                 && command.metadata.commandName != QStringLiteral("source")) {
                 continue;
