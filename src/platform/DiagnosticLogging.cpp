@@ -235,6 +235,15 @@ QString diagnosticLogFilePath()
     return defaultDiagnosticLogFilePath();
 }
 
+bool diagnosticLoggingEnabled()
+{
+    if (auto &state = diagnosticLogState()) {
+        QMutexLocker locker(&state->mutex);
+        return state->file.isOpen();
+    }
+    return false;
+}
+
 bool clearDiagnosticLogs(QString *errorMessage)
 {
     const QFileInfoList files = diagnosticLogFiles();

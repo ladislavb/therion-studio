@@ -407,7 +407,7 @@ Settings include:
 - automatic full-project validation after project, document, and file changes
 - troubleshooting logs for 24 hours, with actions to open the log folder or clear existing logs
 
-Troubleshooting log changes take effect after restarting Therion Studio. Logs are written to the application log folder, rotated automatically, and the preference expires after 24 hours so logging cannot stay enabled indefinitely.
+Troubleshooting log changes take effect after restarting Therion Studio. Logs are written to the application log folder, rotated automatically, and the preference expires after 24 hours so logging cannot stay enabled indefinitely. When enabled, the log includes startup timing checkpoints that can help diagnose slow application launch.
 
 ## 9. Keyboard Shortcuts
 
