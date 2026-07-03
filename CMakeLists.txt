@@ -273,6 +273,10 @@ set(THERION_APP_SOURCES
     src/app/reports/TherionSqlReportDatabase.h
     src/app/reports/TherionSqlReportTab.cpp
     src/app/reports/TherionSqlReportTab.h
+    src/app/text_editor/InspectorPanel.cpp
+    src/app/text_editor/InspectorPanel.h
+    src/app/text_editor/InspectorPanelStyle.cpp
+    src/app/text_editor/InspectorPanelStyle.h
     src/app/three_d_viewer/ThreeDViewerTab.cpp
     src/app/three_d_viewer/ThreeDViewerTab.h
     src/app/three_d_viewer/ThreeDViewerInspectorState.cpp
@@ -378,10 +382,6 @@ set(THERION_TEXT_EDITOR_SHARED_SOURCES
     src/app/text_editor/DocumentFileInspector.h
     src/app/text_editor/DocumentInspectorPanel.cpp
     src/app/text_editor/DocumentInspectorPanel.h
-    src/app/text_editor/InspectorPanel.cpp
-    src/app/text_editor/InspectorPanel.h
-    src/app/text_editor/InspectorPanelStyle.cpp
-    src/app/text_editor/InspectorPanelStyle.h
     src/app/text_editor/TextEditorOptionValidation.cpp
     src/app/text_editor/TextEditorCommandMetadata.h
     src/app/text_editor/TextEditorOptionValidation.h
@@ -1292,11 +1292,7 @@ qt_add_executable(MainWindowServiceQTests
     tests/MainWindowStructureNameOverridesServiceTest.cpp
     tests/TherionSqlReportDatabaseTest.cpp
     src/app/MainWindowHelpDocument.cpp
-    src/app/MainWindowHelpDocument.h
-    src/app/text_editor/InspectorPanel.cpp
-    src/app/text_editor/InspectorPanel.h
-    src/app/text_editor/InspectorPanelStyle.cpp
-    src/app/text_editor/InspectorPanelStyle.h)
+    src/app/MainWindowHelpDocument.h)
 
 target_link_libraries(MainWindowServiceQTests PRIVATE therion_app Qt6::Test)
 
