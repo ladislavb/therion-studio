@@ -38,6 +38,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   document restore, project open, or first event-loop readiness is the bottleneck.
 - Clean synthetic text-change notifications during session restore are logged as skipped and no longer request duplicate
   `DocumentChanged` project validation; dirty project text edits still trigger live validation.
+- Troubleshooting logging no longer writes `THERION_STUDIO_ENABLE_LOG` when enabled from the UI preference; internal
+  diagnostic timing helpers follow the active diagnostic handler so the 24-hour preference expiry is honored on restart,
+  while explicit environment overrides remain available for developer launches.
 - Reporting follow-ups should stay incremental: decide whether to add saved report presets, per-report filters, result
   summaries/charts, or a direct Therion `export database` action before expanding the SQL viewer into a broader analysis
   workspace.

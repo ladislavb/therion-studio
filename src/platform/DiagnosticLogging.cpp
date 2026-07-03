@@ -277,10 +277,6 @@ bool clearDiagnosticLogs(QString *errorMessage)
 
 void initializeDiagnosticLogging(bool enableFromPreference)
 {
-    if (enableFromPreference && !diagnosticLoggingEnvironmentEnabled()) {
-        qputenv("THERION_STUDIO_ENABLE_LOG", "1");
-    }
-
     const QString filePath = diagnosticLogPath(enableFromPreference);
     if (filePath.isEmpty()) {
         pruneDiagnosticLogs();

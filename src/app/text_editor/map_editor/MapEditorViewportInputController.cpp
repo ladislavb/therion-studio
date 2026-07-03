@@ -6,6 +6,7 @@
 #include "MapEditorLineDecorationItem.h"
 #include "MapEditorSceneInternals.h"
 #include "MapEditorSceneSupport.h"
+#include "../../../platform/DiagnosticLogging.h"
 
 #include <QContextMenuEvent>
 #include <QCursor>
@@ -54,14 +55,7 @@ constexpr int kInteractiveDrawCloseHitRadiusPixels = 6;
 
 bool diagnosticMapInputLoggingEnabled()
 {
-    static const bool enabled = [] {
-        const QString value = QString::fromLocal8Bit(qgetenv("THERION_STUDIO_ENABLE_LOG")).trimmed().toLower();
-        return value == QStringLiteral("1")
-            || value == QStringLiteral("true")
-            || value == QStringLiteral("yes")
-            || value == QStringLiteral("on");
-    }();
-    return enabled;
+    return TherionStudio::diagnosticLoggingEnabled();
 }
 
 const char *mapInputEventTypeName(QEvent::Type type)

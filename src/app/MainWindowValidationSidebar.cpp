@@ -5,6 +5,7 @@
 #include "text_editor/TextEditorValidationCatalog.h"
 #include "text_editor/TextEditorTab.h"
 #include "text_editor/map_editor/MapEditorTab.h"
+#include "../platform/DiagnosticLogging.h"
 
 #include <QAbstractItemView>
 #include <QApplication>
@@ -48,14 +49,7 @@ enum ValidationResultRole
 
 bool diagnosticProjectValidationLoggingEnabled()
 {
-    static const bool enabled = []() {
-        const QString value = QString::fromLocal8Bit(qgetenv("THERION_STUDIO_ENABLE_LOG")).trimmed().toLower();
-        return value == QStringLiteral("1")
-            || value == QStringLiteral("true")
-            || value == QStringLiteral("yes")
-            || value == QStringLiteral("on");
-    }();
-    return enabled;
+    return TherionStudio::diagnosticLoggingEnabled();
 }
 
 bool isAutomaticProjectValidationTrigger(TherionStudio::ProjectValidationController::Trigger trigger)

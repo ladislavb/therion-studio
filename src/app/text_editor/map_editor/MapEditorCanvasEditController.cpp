@@ -11,6 +11,7 @@
 #include "MapEditorSceneSupport.h"
 #include "MapEditorSourceReferenceResolver.h"
 #include "../../../core/TherionDocumentEditor.h"
+#include "../../../platform/DiagnosticLogging.h"
 
 #include <QDebug>
 #include <QElapsedTimer>
@@ -36,14 +37,7 @@ namespace
 {
 bool diagnosticMapInputLoggingEnabled()
 {
-    static const bool enabled = [] {
-        const QString value = QString::fromLocal8Bit(qgetenv("THERION_STUDIO_ENABLE_LOG")).trimmed().toLower();
-        return value == QStringLiteral("1")
-            || value == QStringLiteral("true")
-            || value == QStringLiteral("yes")
-            || value == QStringLiteral("on");
-    }();
-    return enabled;
+    return TherionStudio::diagnosticLoggingEnabled();
 }
 
 int lineVertexIndexForSourceVertex(const MapGeometryFeature &lineFeature, int sourceVertexIndex)

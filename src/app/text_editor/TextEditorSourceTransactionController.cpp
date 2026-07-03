@@ -1,6 +1,7 @@
 #include "TextEditorSourceTransactionController.h"
 
 #include "TextEditorTab.h"
+#include "../../platform/DiagnosticLogging.h"
 
 #include <QCoreApplication>
 #include <QDebug>
@@ -19,14 +20,7 @@ namespace
 {
 bool diagnosticSourceTransactionLoggingEnabled()
 {
-    static const bool enabled = [] {
-        const QString value = QString::fromLocal8Bit(qgetenv("THERION_STUDIO_ENABLE_LOG")).trimmed().toLower();
-        return value == QStringLiteral("1")
-            || value == QStringLiteral("true")
-            || value == QStringLiteral("yes")
-            || value == QStringLiteral("on");
-    }();
-    return enabled;
+    return TherionStudio::diagnosticLoggingEnabled();
 }
 
 QString undoStackDiagnosticSummary(const QUndoStack *undoStack)

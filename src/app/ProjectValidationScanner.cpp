@@ -7,6 +7,7 @@
 #include "../core/TherionFileTypes.h"
 #include "../core/TherionSourceLogicalDocument.h"
 #include "../core/TherionSourceReferenceResolver.h"
+#include "../platform/DiagnosticLogging.h"
 
 #include <QDir>
 #include <QCryptographicHash>
@@ -28,14 +29,7 @@ constexpr int kMaximumProjectValidationFindings = 2000;
 
 bool diagnosticProjectValidationLoggingEnabled()
 {
-    static const bool enabled = []() {
-        const QString value = QString::fromLocal8Bit(qgetenv("THERION_STUDIO_ENABLE_LOG")).trimmed().toLower();
-        return value == QStringLiteral("1")
-            || value == QStringLiteral("true")
-            || value == QStringLiteral("yes")
-            || value == QStringLiteral("on");
-    }();
-    return enabled;
+    return TherionStudio::diagnosticLoggingEnabled();
 }
 
 void addHashPart(QCryptographicHash *hash, const QString &value)
