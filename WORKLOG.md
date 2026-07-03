@@ -27,6 +27,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   keeps duplicate filenames distinct through project-relative paths and canonical-path identity, opens `.lox` and `.sql`
   internally where supported, sends `.3d`/`.pdf` outputs to the system default application, refreshes after Therion runs
   finish, and shares project file-discovery traversal with project search instead of owning UI-side recursive scanning.
+- Project source snapshot collection now also uses shared project file discovery for filesystem traversal and skip rules,
+  so validation and structure scans inherit the same low-level project-tree discovery behavior without changing their
+  source snapshot, cache, or project-index semantics.
 - Reporting follow-ups should stay incremental: decide whether to add saved report presets, per-report filters, result
   summaries/charts, or a direct Therion `export database` action before expanding the SQL viewer into a broader analysis
   workspace.

@@ -182,16 +182,23 @@ void ProjectSourceSnapshotTest::collectorReadsSortedProjectSourceFiles()
     QDir projectDir(tempDir.path());
     QVERIFY(projectDir.mkdir(QStringLiteral("sub")));
     QVERIFY(projectDir.mkdir(QStringLiteral("build")));
+    QVERIFY(projectDir.mkdir(QStringLiteral(".git")));
     QVERIFY2(writeTextFile(projectDir.filePath(QStringLiteral("b.th")), QStringLiteral("survey b\nendsurvey b\n")),
              "b.th could not be written.");
     QVERIFY2(writeTextFile(projectDir.filePath(QStringLiteral("a.th2")), QStringLiteral("scrap a\nendscrap\n")),
              "a.th2 could not be written.");
     QVERIFY2(writeTextFile(projectDir.filePath(QStringLiteral("thconfig")), QStringLiteral("source b.th\n")),
              "thconfig could not be written.");
+    QVERIFY2(writeTextFile(projectDir.filePath(QStringLiteral("thconfig.debug")), QStringLiteral("source b.th\n")),
+             "thconfig.debug could not be written.");
+    QVERIFY2(writeTextFile(projectDir.filePath(QStringLiteral("survey.thconfig")), QStringLiteral("source b.th\n")),
+             "survey.thconfig could not be written.");
     QVERIFY2(writeTextFile(projectDir.filePath(QStringLiteral("ignore.txt")), QStringLiteral("ignored\n")),
              "ignore.txt could not be written.");
     QVERIFY2(writeTextFile(projectDir.filePath(QStringLiteral("build/generated.th")), QStringLiteral("survey generated\n")),
              "build/generated.th could not be written.");
+    QVERIFY2(writeTextFile(projectDir.filePath(QStringLiteral(".git/ignored.th")), QStringLiteral("survey ignored\n")),
+             ".git/ignored.th could not be written.");
     QVERIFY2(writeTextFile(projectDir.filePath(QStringLiteral("sub/c.th")), QStringLiteral("survey c\nendsurvey c\n")),
              "sub/c.th could not be written.");
 
@@ -209,7 +216,9 @@ void ProjectSourceSnapshotTest::collectorReadsSortedProjectSourceFiles()
              QStringList({QStringLiteral("a.th2"),
                           QStringLiteral("b.th"),
                           QStringLiteral("sub/c.th"),
-                          QStringLiteral("thconfig")}));
+                          QStringLiteral("survey.thconfig"),
+                          QStringLiteral("thconfig"),
+                          QStringLiteral("thconfig.debug")}));
 }
 
 void ProjectSourceSnapshotTest::collectorUsesInMemoryOverrideText()

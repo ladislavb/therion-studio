@@ -1,5 +1,6 @@
 #include "ProjectSourceSnapshot.h"
 
+#include "ProjectFileDiscovery.h"
 #include "../core/DocumentFile.h"
 #include "../core/TherionFileTypes.h"
 
@@ -25,40 +26,6 @@ bool hasProjectSourceFileName(const QString &filePath)
     const QString suffix = info.suffix().toLower();
     return suffix == QStringLiteral("th")
         || suffix == QStringLiteral("th2");
-}
-
-bool shouldSkipProjectSourceDirectory(const QFileInfo &info)
-{
-    const QString name = info.fileName();
-    return name == QStringLiteral(".git")
-        || name == QStringLiteral(".svn")
-        || name == QStringLiteral(".hg")
-        || name == QStringLiteral("CMakeFiles")
-        || name == QStringLiteral("build")
-        || name.startsWith(QStringLiteral("cmake-build"));
-}
-
-void collectProjectSourceFilePaths(const QString &directoryPath, QVector<QString> *filePaths)
-{
-    if (filePaths == nullptr) {
-        return;
-    }
-
-    const QFileInfo directoryInfo(directoryPath);
-    if (!directoryInfo.isDir() || shouldSkipProjectSourceDirectory(directoryInfo)) {
-        return;
-    }
-
-    const QFileInfoList entries = QDir(directoryPath).entryInfoList(
-        QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot,
-        QDir::DirsFirst | QDir::Name);
-    for (const QFileInfo &entry : entries) {
-        if (entry.isDir()) {
-            collectProjectSourceFilePaths(entry.absoluteFilePath(), filePaths);
-        } else if (entry.isFile() && hasProjectSourceFileName(entry.absoluteFilePath())) {
-            filePaths->append(entry.absoluteFilePath());
-        }
-    }
 }
 
 QHash<QString, QString> normalizedInMemoryContents(const QHash<QString, QString> &inMemoryContentsByPath)
@@ -198,8 +165,15 @@ ProjectSourceSnapshot collectProjectSourceSnapshot(const QString &projectRootPat
 
     const QHash<QString, QString> memoryContents = normalizedInMemoryContents(inMemoryContentsByPath);
 
+    const QVector<ProjectDiscoveredFile> discoveredFiles =
+        ProjectFileDiscovery::collectFiles(normalizedProjectRootPath, [](const QFileInfo &info) {
+            return info.isFile() && hasProjectSourceFileName(info.absoluteFilePath());
+        });
     QVector<QString> candidateFilePaths;
-    collectProjectSourceFilePaths(normalizedProjectRootPath, &candidateFilePaths);
+    candidateFilePaths.reserve(discoveredFiles.size());
+    for (const ProjectDiscoveredFile &file : discoveredFiles) {
+        candidateFilePaths.append(file.filePath);
+    }
     std::sort(candidateFilePaths.begin(), candidateFilePaths.end(), [](const QString &left, const QString &right) {
         return normalizeProjectSourcePath(left).toLower() < normalizeProjectSourcePath(right).toLower();
     });
