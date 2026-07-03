@@ -52,7 +52,9 @@ private slots:
         TherionStudio::ValidationResultsMarkdownExporter::Options options;
         options.projectRootPath = projectRoot;
         options.scopeLabel = QStringLiteral("Project validation");
-        options.generatedAt = QDateTime(QDate(2026, 7, 3), QTime(12, 30), QTimeZone::UTC);
+        options.generatedAt = QDateTime(QDate(2026, 7, 3),
+                                        QTime(12, 30),
+                                        QTimeZone(QByteArrayLiteral("UTC")));
         options.searchedFileCount = 2;
         options.limitReached = true;
 
