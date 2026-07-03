@@ -1788,6 +1788,14 @@ QPointF MapEditorTab::backgroundLayerPosition(int index) const
     if (isMapEditorXviBackgroundPath(layerPath) || !layerPath.isEmpty()) {
         const QPointF basePosition = backgroundLayerBaseModelPosition(item);
         if (!qIsNaN(basePosition.x()) && !qIsNaN(basePosition.y())) {
+            if (!isMapEditorXviBackgroundPath(layerPath)
+                && !itemUsesMapiahBackgroundMetadata(item)
+                && !isMapEditorSvgBackgroundItem(item)) {
+                const QSizeF modelSize = backgroundLayerModelSize(item);
+                if (modelSize.isValid() && modelSize.height() > 0.0) {
+                    return QPointF(basePosition.x(), basePosition.y() - modelSize.height());
+                }
+            }
             return basePosition;
         }
     }
@@ -2153,7 +2161,10 @@ void MapEditorTab::setSelectedBackgroundLayerPosition(const QPointF &position)
     if (sourceBounds.isValid() && previewBounds.isValid()) {
         const QRectF currentModelRect = backgroundLayerModelRectForItem(item, sourceBounds, previewBounds);
         if (currentModelRect.isValid()) {
-            const QRectF movedModelRect(QPointF(position.x(), position.y() - currentModelRect.height()),
+            const bool xtherionRasterLayer = !itemUsesMapiahBackgroundMetadata(item)
+                && !isMapEditorSvgBackgroundItem(item);
+            const QRectF movedModelRect(QPointF(position.x(),
+                                                xtherionRasterLayer ? position.y() : position.y() - currentModelRect.height()),
                                         currentModelRect.size());
             const QRectF movedPreviewRect = previewRectForBackgroundModelRect(movedModelRect,
                                                                               sourceBounds,
@@ -2166,11 +2177,19 @@ void MapEditorTab::setSelectedBackgroundLayerPosition(const QPointF &position)
         }
     }
 
+    const bool xtherionRasterLayer = !itemUsesMapiahBackgroundMetadata(item)
+        && !isMapEditorSvgBackgroundItem(item);
+    const QSizeF modelSize = backgroundLayerModelSize(item);
+    const QPointF metadataPosition = xtherionRasterLayer
+        && modelSize.isValid()
+        && modelSize.height() > 0.0
+            ? QPointF(position.x(), position.y() + modelSize.height())
+            : position;
     if (itemUsesMapiahBackgroundMetadata(item)) {
-        item->setData(kBackgroundLayerRasterBasePositionRole, position);
+        item->setData(kBackgroundLayerRasterBasePositionRole, metadataPosition);
         syncBackgroundLayerMapiahMetadata(item, tr("Move Background Image"), true);
     } else {
-        item->setData(kBackgroundLayerRasterBasePositionRole, position);
+        item->setData(kBackgroundLayerRasterBasePositionRole, metadataPosition);
         syncBackgroundLayerXtherionMetadata(item, tr("Move Background Image"), true);
     }
     saveBackgroundLayersToSession();
@@ -3945,6 +3964,7 @@ bool MapEditorTab::addBackgroundImageFromSourceImage(const QString &imagePath,
             modelBounds = modelRect.adjusted(-128.0, -128.0, 128.0, 128.0);
         }
         placed = placeMapEditorRasterLayerByModelRect(backgroundItem, image, modelRect, modelBounds, previewBounds);
+        backgroundItem->setData(kBackgroundLayerRasterBasePositionRole, QPointF(0.0, 0.0));
     }
     if (!placed) {
         const QSizeF modelSize = mapEditorRasterModelSize(imagePath, 1.0);

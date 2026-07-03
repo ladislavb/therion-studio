@@ -533,6 +533,80 @@ int runRasterBackgroundKeepsFullResolutionTest()
     return 0;
 }
 
+int runNewRasterBackgroundUsesXtherionTopEdgeAnchorTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Failed to create temporary directory for new raster anchor test.")) {
+        return 1;
+    }
+
+    const QString imagePath = tempDir.filePath(QStringLiteral("origin.png"));
+    QImage image(320, 128, QImage::Format_ARGB32);
+    image.fill(QColor(180, 180, 180, 255));
+    if (!expect(image.save(imagePath), "Failed to create temporary raster anchor image.")) {
+        return 1;
+    }
+
+    const QString filePath = tempDir.filePath(QStringLiteral("new_raster_anchor.th2"));
+    if (!expect(writeTextFile(filePath, QByteArray("encoding utf-8\n")),
+                "Failed to create temporary TH2 file for new raster anchor test.")) {
+        return 1;
+    }
+
+    QtFileSystem fileSystem;
+    FakeSessionStore sessionStore;
+    QMainWindow hostWindow;
+    hostWindow.resize(960, 720);
+    auto *central = new QWidget(&hostWindow);
+    auto *layout = new QVBoxLayout(central);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+
+    auto *mapTab = new MapEditorTab(fileSystem, sessionStore, CommandCatalogStore(), central);
+    layout->addWidget(mapTab);
+    hostWindow.setCentralWidget(central);
+    hostWindow.show();
+    pumpEvents();
+
+    QString errorMessage;
+    if (!expect(mapTab->loadFile(filePath, &errorMessage),
+                "MapEditorTab failed to load TH2 file for new raster anchor test.")) {
+        if (!errorMessage.isEmpty()) {
+            std::cerr << errorMessage.toStdString() << '\n';
+        }
+        return 1;
+    }
+    pumpEvents();
+
+    if (!expect(mapTab->addRasterBackgroundImageForTest(imagePath, image, true),
+                "Adding a raster background to a new TH2 file should succeed.")) {
+        return 1;
+    }
+    pumpEvents();
+
+    if (!expect(mapTab->backgroundLayerCount() == 1,
+                "Expected one newly inserted raster background layer.")) {
+        return 1;
+    }
+    const QPointF insertedPosition = mapTab->backgroundLayerPosition(0);
+    if (!expect(nearlyEqual(insertedPosition.x(), 0.0)
+                    && nearlyEqual(insertedPosition.y(), -static_cast<qreal>(image.height())),
+                "New raster background insertion should report the model-space image position, not the XTherion top-edge anchor.")) {
+        return 1;
+    }
+
+    const QVector<TherionBackgroundReference> references = parseTherionBackgroundReferences(mapTab->text(), filePath);
+    if (!expect(references.size() == 1
+                    && references.first().hasBasePosition
+                    && nearlyEqual(references.first().basePosition.x(), 0.0)
+                    && nearlyEqual(references.first().basePosition.y(), 0.0),
+                "New raster background insertion should keep XTherion top-edge metadata anchored at the origin.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 int runMapiahRasterBackgroundTransformTest()
 {
     QTemporaryDir tempDir;
@@ -2011,6 +2085,9 @@ int main(int argc, char **argv)
         return rc;
     }
     if (const int rc = runRasterBackgroundKeepsFullResolutionTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runNewRasterBackgroundUsesXtherionTopEdgeAnchorTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runMapiahRasterBackgroundTransformTest(); rc != 0) {

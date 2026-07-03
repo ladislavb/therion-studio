@@ -233,6 +233,12 @@ public:
     void browseAndAddBackgroundImages();
 #ifdef THERION_STUDIO_TESTING
     bool addSvgBackgroundImageForTest(const QString &imagePath) { return addSvgBackgroundImage(imagePath); }
+    bool addRasterBackgroundImageForTest(const QString &imagePath,
+                                         const QImage &image,
+                                         bool writeXtherionMetadata = false)
+    {
+        return addBackgroundImageFromSourceImage(imagePath, image, writeXtherionMetadata);
+    }
     bool backgroundLayerPaintsVisiblePixelsForTest(int index) const { return backgroundLayerPaintsVisiblePixels(index); }
     void setSelectedBackgroundLayerPivotAtScenePositionForTest(const QPointF &scenePosition)
     {
