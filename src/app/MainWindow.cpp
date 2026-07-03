@@ -8,6 +8,7 @@
 #include <QDialog>
 #include <QDockWidget>
 #include <QEvent>
+#include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
 #include <QCryptographicHash>
@@ -80,6 +81,7 @@
 #include "../core/SessionStore.h"
 #include "../core/TherionFileTypes.h"
 #include "../platform/ApplicationLanguageOverride.h"
+#include "../platform/DiagnosticLogging.h"
 
 namespace
 {
@@ -706,6 +708,8 @@ void MainWindow::buildMenus()
 
 void MainWindow::restoreSessionState()
 {
+    QElapsedTimer timer;
+    timer.start();
     TherionStudio::MainWindowSessionController::RestoreSessionActions actions;
     actions.restoreGeometry = [this](const QByteArray &geometry) {
         return restoreGeometry(geometry);
@@ -735,6 +739,13 @@ void MainWindow::restoreSessionState()
     actions.updateProjectActionState = [this]() { updateProjectActionState(); };
     actions.restoreOpenDocuments = [this]() { restoreOpenDocuments(); };
     TherionStudio::MainWindowSessionController::restoreSession(*sessionStore_, actions);
+    if (TherionStudio::diagnosticLoggingEnabled()) {
+        qInfo("startup-timing phase=session-restore elapsed_ms=%lld project_open=%d tabs=%d root=\"%s\"",
+              static_cast<long long>(timer.elapsed()),
+              projectRootPath_.trimmed().isEmpty() ? 0 : 1,
+              editorTabs_ != nullptr ? editorTabs_->count() : 0,
+              qPrintable(projectRootPath_));
+    }
 }
 
 void MainWindow::persistSessionState()
@@ -755,6 +766,11 @@ void MainWindow::persistSessionState()
 
 void MainWindow::restoreOpenDocuments()
 {
+    QElapsedTimer timer;
+    timer.start();
+    const int requestedDocumentCount =
+        sessionStore_ != nullptr ? sessionStore_->openDocumentPaths().size() : 0;
+
     TherionStudio::MainWindowSessionDocumentController::RestoreOpenDocumentsActions actions;
     actions.openMapEditorDocument = [this](const QString &documentPath) {
         openMapEditorTab(documentPath, false);
@@ -787,6 +803,12 @@ void MainWindow::restoreOpenDocuments()
         persistOpenDocuments();
     };
     TherionStudio::MainWindowSessionDocumentController::restoreOpenDocuments(*sessionStore_, actions);
+    if (TherionStudio::diagnosticLoggingEnabled()) {
+        qInfo("startup-timing phase=session-documents-restore elapsed_ms=%lld requested=%d tabs=%d",
+              static_cast<long long>(timer.elapsed()),
+              requestedDocumentCount,
+              editorTabs_ != nullptr ? editorTabs_->count() : 0);
+    }
 }
 
 void MainWindow::persistOpenDocuments()
@@ -988,6 +1010,8 @@ void MainWindow::openProject()
 
 void MainWindow::openProjectPath(const QString &selectedProjectPath)
 {
+    QElapsedTimer timer;
+    timer.start();
     const QString previousProjectRootPath = projectRootPath_;
 
     TherionStudio::MainWindowProjectController::Actions actions;
@@ -1023,10 +1047,18 @@ void MainWindow::openProjectPath(const QString &selectedProjectPath)
                                                             findWelcomeTabIndex(editorTabs_) >= 0,
                                                             *sessionStore_,
                                                             actions);
-    if (projectRootPath_ != previousProjectRootPath
+    const bool projectChanged = projectRootPath_ != previousProjectRootPath
         && !projectRootPath_.trimmed().isEmpty()
-        && QDir(projectRootPath_).exists()) {
+        && QDir(projectRootPath_).exists();
+    if (projectChanged) {
         requestProjectValidation(TherionStudio::ProjectValidationController::Trigger::ProjectOpened, false);
+    }
+    if (TherionStudio::diagnosticLoggingEnabled()) {
+        qInfo("startup-timing phase=open-project elapsed_ms=%lld changed=%d validation_requested=%d root=\"%s\"",
+              static_cast<long long>(timer.elapsed()),
+              projectRootPath_ != previousProjectRootPath ? 1 : 0,
+              projectChanged ? 1 : 0,
+              qPrintable(projectRootPath_));
     }
 }
 
