@@ -494,7 +494,7 @@ void appendFindingsForDocument(ProjectValidationScanner::Result *result,
             continue;
         }
 
-        const QString referencedPath = command.parsed.tokens.value(1).trimmed();
+        const QString referencedPath = therionSourceReferencePathToken(command).trimmed();
         if (referencedPath.isEmpty()
             || !resolveTherionSourceReferencePath(document.normalizedPath, referencedPath, knownProjectFilePaths).isEmpty()) {
             continue;
@@ -510,8 +510,8 @@ void appendFindingsForDocument(ProjectValidationScanner::Result *result,
         diagnostic.message = QObject::tr("Command `%1` references `%2`, but no matching project file was found.")
                                  .arg(commandName, referencedPath);
         diagnostic.currentText = command.text;
-        TherionSourcePhysicalRange tokenRange;
-        if (command.physicalRangeForTokenIndex(1, &tokenRange)) {
+        const TherionSourcePhysicalRange tokenRange = therionSourceReferencePathRange(command);
+        if (tokenRange.columnLength > 0) {
             diagnostic.lineNumber = tokenRange.lineNumber;
             diagnostic.columnNumber = tokenRange.columnNumber;
             diagnostic.columnLength = tokenRange.columnLength;

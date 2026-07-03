@@ -264,6 +264,7 @@ TherionSourceValidationCatalog basicCatalog()
     catalog.commandNames = {
         QStringLiteral("encoding"),
         QStringLiteral("survey"),
+        QStringLiteral("source"),
         QStringLiteral("input"),
         QStringLiteral("map"),
         QStringLiteral("export"),
@@ -282,6 +283,7 @@ TherionSourceValidationCatalog basicCatalog()
         QStringLiteral("legend"),
     };
     catalog.commandRequiredPositionalCount.insert(QStringLiteral("survey"), 1);
+    catalog.commandRequiredPositionalCount.insert(QStringLiteral("source"), 1);
     catalog.commandRequiredPositionalCount.insert(QStringLiteral("input"), 1);
     catalog.commandRequiredPositionalCount.insert(QStringLiteral("map"), 1);
     catalog.commandRequiredPositionalCount.insert(QStringLiteral("export"), 1);
@@ -576,6 +578,49 @@ void acceptsCatalogWildcardOptions()
         TherionSourceValidator::validate(QStringLiteral("export map -layout-foobar 1\n"), basicCatalog());
     require(containsDiagnostic(unknownLayoutResult, QStringLiteral("unknown-option")),
             "Catalog wildcard layout options should match only options known on the layout command.");
+}
+
+void reportsAndFixesWindowsPathSeparators()
+{
+    const QString inputContents = QStringLiteral("input .\\date\\G0_99\\grind_intrare_0.th\n");
+    const TherionSourceValidationResult inputResult = TherionSourceValidator::validate(inputContents, basicCatalog());
+
+    require(containsDiagnostic(inputResult, QStringLiteral("windows-path-separator")),
+            "Input paths with Windows separators should produce a portable-path diagnostic.");
+    const TherionSourceDiagnostic *inputDiagnostic =
+        diagnosticForCode(inputResult, QStringLiteral("windows-path-separator"));
+    require(inputDiagnostic != nullptr
+                && inputDiagnostic->severity == TherionSourceDiagnosticSeverity::Warning,
+            "Windows path separator diagnostics should be warnings.");
+    require(inputDiagnostic != nullptr
+                && diagnosticSourceRange(*inputDiagnostic) == QStringLiteral(".\\date\\G0_99\\grind_intrare_0.th"),
+            "Windows path separator diagnostics should cover only the path token.");
+    require(inputDiagnostic != nullptr
+                && inputDiagnostic->hasFix
+                && inputDiagnostic->fix.replacementText == QStringLiteral("./date/G0_99/grind_intrare_0.th"),
+            "Windows path separator diagnostics should offer a forward-slash replacement.");
+    require(inputDiagnostic != nullptr
+                && inputDiagnostic->title == QStringLiteral("Portable path separator"),
+            "Path separator diagnostics should use a portable-path title.");
+    require(inputDiagnostic != nullptr
+                && inputDiagnostic->suggestedText == QStringLiteral("input ./date/G0_99/grind_intrare_0.th"),
+            "Path separator diagnostics should preview the full source line with the replacement applied.");
+    require(inputDiagnostic != nullptr
+                && inputDiagnostic->fix.description == QStringLiteral("Convert selected path to /"),
+            "Path separator fix button text should describe the selected-path edit.");
+    require(TherionSourceValidator::applyFixes(inputContents, {inputDiagnostic->fix})
+                == QStringLiteral("input ./date/G0_99/grind_intrare_0.th\n"),
+            "Applying a Windows path separator fix should preserve the command and normalize separators.");
+
+    const QString exportContents = QStringLiteral("export map -output rez\\map.pdf\n");
+    const TherionSourceValidationResult exportResult = TherionSourceValidator::validate(exportContents, basicCatalog());
+    const TherionSourceDiagnostic *exportDiagnostic =
+        diagnosticForCode(exportResult, QStringLiteral("windows-path-separator"));
+    require(exportDiagnostic != nullptr
+                && diagnosticSourceRange(*exportDiagnostic) == QStringLiteral("rez\\map.pdf")
+                && exportDiagnostic->fix.replacementText == QStringLiteral("rez/map.pdf")
+                && exportDiagnostic->suggestedText == QStringLiteral("export map -output rez/map.pdf"),
+            "Export -output paths with Windows separators should also offer a portable replacement and line preview.");
 }
 
 void reportsUnknownArgumentValue()
@@ -950,6 +995,7 @@ int main(int argc, char **argv)
     keepsDashPrefixedPointTextAsTextValue();
     acceptsOptionAliasesExtractedFromCatalogSignature();
     acceptsCatalogWildcardOptions();
+    reportsAndFixesWindowsPathSeparators();
     reportsUnknownArgumentValue();
     reportsUnknownLaterArgumentValue();
     reportsExtraPositionalArgument();

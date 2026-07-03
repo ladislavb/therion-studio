@@ -1100,7 +1100,7 @@ void appendProjectStructureFromFile(const QString &filePath,
         const QString directive = normalizedStructureDirective(command.metadata.commandName);
 
         if (directive == QStringLiteral("input") || directive == QStringLiteral("source")) {
-            const QString inputTarget = parsedLine.tokens.value(1);
+            const QString inputTarget = therionSourceReferencePathToken(command);
             const QString resolvedInputPath = resolveTherionSourceReferencePath(normalizedPath, inputTarget);
             if (!resolvedInputPath.isEmpty()) {
                 appendProjectStructureFromFile(resolvedInputPath,
@@ -1175,7 +1175,7 @@ QVector<QString> rootProjectFiles(const QVector<QString> &filePaths,
                 continue;
             }
 
-            const QString inputTarget = parsedLine.tokens.value(1);
+            const QString inputTarget = therionSourceReferencePathToken(command);
             const QString resolvedInputPath = resolveTherionSourceReferencePath(filePath, inputTarget);
             if (!resolvedInputPath.isEmpty()) {
                 includedFiles.insert(normalizedFilePathKey(resolvedInputPath));

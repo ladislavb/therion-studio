@@ -6,6 +6,7 @@
 #include "TherionDocumentParser.h"
 #include "TherionSourceDocument.h"
 #include "TherionSourceLogicalDocument.h"
+#include "TherionSourceReferenceResolver.h"
 #include "TherionSourceSnapshotCache.h"
 #include "TherionTokenRules.h"
 
@@ -357,6 +358,97 @@ bool isKnownCatalogOption(const QSet<QString> &knownOptions,
         }
     }
     return false;
+}
+
+QString pathTokenWithForwardSlashes(QString pathToken)
+{
+    pathToken.replace(QLatin1Char('\\'), QLatin1Char('/'));
+    return pathToken;
+}
+
+TherionSourcePhysicalRange expandedPathTokenRange(TherionSourcePhysicalRange range)
+{
+    if (range.lineText.isEmpty() || range.columnNumber <= 0) {
+        return range;
+    }
+
+    const int originalStart = range.columnNumber - 1;
+    int start = originalStart;
+    while (start > 0 && !range.lineText.at(start - 1).isSpace()) {
+        --start;
+    }
+
+    int end = qMin(range.lineText.size(), originalStart + qMax(range.columnLength, 1));
+    if (start < range.lineText.size() && range.lineText.at(start) == QLatin1Char('"')) {
+        end = qMin(range.lineText.size(), qMax(end, start + 1));
+        while (end < range.lineText.size()) {
+            const QChar ch = range.lineText.at(end);
+            ++end;
+            if (ch == QLatin1Char('"')) {
+                break;
+            }
+        }
+    } else {
+        while (end < range.lineText.size() && !range.lineText.at(end).isSpace()) {
+            ++end;
+        }
+    }
+
+    range.columnNumber = start + 1;
+    range.columnLength = end - start;
+    range.startOffset += start - originalStart;
+    range.length = range.columnLength;
+    return range;
+}
+
+TherionSourcePhysicalRange pathPhysicalRangeForTokenIndex(const TherionSourceLogicalCommand &command, int tokenIndex)
+{
+    TherionSourcePhysicalRange physicalRange;
+    if (!command.physicalRangeForTokenIndex(tokenIndex, &physicalRange)) {
+        return {};
+    }
+    return expandedPathTokenRange(physicalRange);
+}
+
+QString physicalRangeText(const TherionSourcePhysicalRange &physicalRange)
+{
+    if (physicalRange.columnNumber <= 0 || physicalRange.columnLength <= 0) {
+        return {};
+    }
+    return physicalRange.lineText.mid(physicalRange.columnNumber - 1, physicalRange.columnLength);
+}
+
+QString physicalTokenText(const TherionSourceLogicalCommand &command, int tokenIndex)
+{
+    const TherionSourcePhysicalRange physicalRange = pathPhysicalRangeForTokenIndex(command, tokenIndex);
+    if (physicalRange.columnLength > 0) {
+        return physicalRangeText(physicalRange);
+    }
+    return tokenIndex >= 0 && tokenIndex < command.parsed.tokens.size()
+        ? command.parsed.tokens.at(tokenIndex)
+        : QString();
+}
+
+bool pathTokenUsesBackslashSeparator(const TherionSourceLogicalCommand &command, int tokenIndex)
+{
+    return physicalTokenText(command, tokenIndex).contains(QLatin1Char('\\'));
+}
+
+bool physicalRangeUsesBackslashSeparator(const TherionSourcePhysicalRange &physicalRange)
+{
+    return physicalRangeText(physicalRange).contains(QLatin1Char('\\'));
+}
+
+QString lineWithPhysicalRangeReplacement(const TherionSourcePhysicalRange &physicalRange,
+                                         const QString &replacementText)
+{
+    if (physicalRange.columnNumber <= 0 || physicalRange.columnLength <= 0) {
+        return replacementText;
+    }
+
+    QString lineText = physicalRange.lineText;
+    lineText.replace(physicalRange.columnNumber - 1, physicalRange.columnLength, replacementText);
+    return lineText;
 }
 
 QString optionDeduplicationKey(const QString &optionToken, const QStringList &values)
@@ -891,6 +983,80 @@ TherionSourceDiagnostic diagnosticForToken(const TherionSourceLogicalCommand &co
     return diagnostic;
 }
 
+TherionSourceDiagnostic diagnosticForBackslashPathSeparator(const TherionSourceLogicalCommand &command,
+                                                           const TherionSourcePhysicalRange &physicalRange)
+{
+    const QString pathToken = physicalRangeText(physicalRange);
+    TherionSourceDiagnostic diagnostic = diagnosticForToken(
+        command,
+        0,
+        QStringLiteral("windows-path-separator"),
+        QCoreApplication::translate("TherionStudio::TherionSourceValidator", "Portable path separator"),
+        QCoreApplication::translate("TherionStudio::TherionSourceValidator", "Path `%1` uses backslash separators. Use `/` separators for portable Therion projects.")
+            .arg(pathToken));
+
+    if (physicalRange.columnLength <= 0) {
+        return diagnostic;
+    }
+
+    diagnostic.lineNumber = physicalRange.lineNumber;
+    diagnostic.columnNumber = physicalRange.columnNumber;
+    diagnostic.columnLength = physicalRange.columnLength;
+    diagnostic.currentText = physicalRange.lineText;
+    const QString replacementText = pathTokenWithForwardSlashes(pathToken);
+    diagnostic.suggestedText = lineWithPhysicalRangeReplacement(physicalRange, replacementText);
+    diagnostic.hasFix = true;
+    diagnostic.fix.startOffset = physicalRange.startOffset;
+    diagnostic.fix.length = physicalRange.length;
+    diagnostic.fix.replacementText = replacementText;
+    diagnostic.fix.description = QCoreApplication::translate("TherionStudio::TherionSourceValidator", "Convert selected path to /");
+    return diagnostic;
+}
+
+TherionSourceDiagnostic diagnosticForBackslashPathSeparator(const TherionSourceLogicalCommand &command,
+                                                           int tokenIndex)
+{
+    return diagnosticForBackslashPathSeparator(command, pathPhysicalRangeForTokenIndex(command, tokenIndex));
+}
+
+void appendPathSeparatorDiagnostics(TherionSourceValidationResult *result,
+                                    const TherionSourceLogicalCommand &command)
+{
+    if (result == nullptr) {
+        return;
+    }
+
+    const QString commandName = command.metadata.commandName.isEmpty()
+        ? command.normalizedDirective
+        : command.metadata.commandName;
+    if (commandName == QStringLiteral("input") || commandName == QStringLiteral("source")) {
+        const TherionSourcePhysicalRange pathRange = therionSourceReferencePathRange(command);
+        if (physicalRangeUsesBackslashSeparator(pathRange)) {
+            result->diagnostics.append(diagnosticForBackslashPathSeparator(command, pathRange));
+        }
+    }
+
+    if (commandName != QStringLiteral("export")) {
+        return;
+    }
+
+    for (const TherionSourceLogicalOptionEntryRange &optionEntry : command.optionEntryRanges) {
+        const QString normalizedOption = QStringLiteral("-") + normalizedCommandOptionName(optionEntry.key);
+        if (normalizedOption != QStringLiteral("-output")
+            && normalizedOption != QStringLiteral("-o")) {
+            continue;
+        }
+        if (optionEntry.firstValueTokenIndex < 0
+            || optionEntry.firstValueTokenIndex >= command.parsed.tokens.size()) {
+            continue;
+        }
+        if (pathTokenUsesBackslashSeparator(command, optionEntry.firstValueTokenIndex)) {
+            result->diagnostics.append(diagnosticForBackslashPathSeparator(command,
+                                                                          optionEntry.firstValueTokenIndex));
+        }
+    }
+}
+
 void appendCommandCatalogDiagnostics(TherionSourceValidationResult *result,
                                      const TherionSourceLogicalCommand &command,
                                      const TherionSourceValidationCatalog &catalog)
@@ -1293,6 +1459,10 @@ TherionSourceValidationResult validateSourceDocuments(const TherionSourceDocumen
                 }
                 result.diagnostics.append(diagnosticForUnknownAreaLineReference(tokenRange));
             }
+        }
+
+        if (validateCatalog && command.role != TherionSourceLineRole::BlockContent) {
+            appendPathSeparatorDiagnostics(&result, command);
         }
 
         if (validateCatalog && command.shouldValidateCommandCatalog()) {

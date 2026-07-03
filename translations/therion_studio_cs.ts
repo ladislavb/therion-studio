@@ -4,9 +4,9 @@
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="400"/>
-        <location filename="../src/app/MainWindow.cpp" line="834"/>
-        <location filename="../src/app/MainWindow.cpp" line="854"/>
+        <location filename="../src/app/MainWindow.cpp" line="402"/>
+        <location filename="../src/app/MainWindow.cpp" line="858"/>
+        <location filename="../src/app/MainWindow.cpp" line="874"/>
         <source>Therion Studio</source>
         <translation>Therion Studio</translation>
     </message>
@@ -67,8 +67,8 @@
         <translation type="vanished">Zavřít projekt</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1392"/>
-        <location filename="../src/app/MainWindow.cpp" line="1399"/>
+        <location filename="../src/app/MainWindow.cpp" line="1424"/>
+        <location filename="../src/app/MainWindow.cpp" line="1431"/>
         <location filename="../src/app/MainWindowProjectLifecycle.cpp" line="95"/>
         <location filename="../src/app/MainWindowProjectLifecycle.cpp" line="104"/>
         <location filename="../src/app/MainWindowWorkspaceCommandBar.cpp" line="275"/>
@@ -223,90 +223,90 @@
         <translation>Mapový panel je oddělený: zdrojový editor zůstává na této kartě a vizuální mapa je v odděleném okně.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="524"/>
+        <location filename="../src/app/MainWindow.cpp" line="526"/>
         <source>&amp;File</source>
         <translation>&amp;Soubor</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="526"/>
+        <location filename="../src/app/MainWindow.cpp" line="528"/>
         <source>New &amp;Window</source>
         <translation>Nové &amp;okno</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="531"/>
+        <location filename="../src/app/MainWindow.cpp" line="533"/>
         <location filename="../src/app/MainWindowProjectTemplate.cpp" line="159"/>
         <location filename="../src/app/MainWindowProjectTemplate.cpp" line="203"/>
         <source>New Project</source>
         <translation>Nový projekt</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="532"/>
+        <location filename="../src/app/MainWindow.cpp" line="534"/>
         <source>Project from Template...</source>
         <translation>Projekt ze šablony...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="534"/>
+        <location filename="../src/app/MainWindow.cpp" line="536"/>
         <source>Empty Project...</source>
         <translation>Prázdný projekt...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="537"/>
+        <location filename="../src/app/MainWindow.cpp" line="539"/>
         <source>New File</source>
         <translation>Nový soubor</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="538"/>
+        <location filename="../src/app/MainWindow.cpp" line="540"/>
         <source>Therion Source (.th)</source>
         <translation>Zdroj Therion (.th)</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="540"/>
+        <location filename="../src/app/MainWindow.cpp" line="542"/>
         <source>Therion Map (.th2)</source>
         <translation>Mapa Therion (.th2)</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="542"/>
+        <location filename="../src/app/MainWindow.cpp" line="544"/>
         <source>Therion Config (.thconfig)</source>
         <translation>Konfigurace Therion (.thconfig)</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="547"/>
+        <location filename="../src/app/MainWindow.cpp" line="549"/>
         <source>&amp;Open Project...</source>
         <translation>&amp;Otevřít projekt...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="556"/>
+        <location filename="../src/app/MainWindow.cpp" line="558"/>
         <source>Import</source>
         <translation>Import</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="557"/>
+        <location filename="../src/app/MainWindow.cpp" line="559"/>
         <source>Import PocketTopo Text...</source>
         <translation>Importovat PocketTopo text...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="572"/>
+        <location filename="../src/app/MainWindow.cpp" line="574"/>
         <source>&amp;Close Project</source>
         <translation>&amp;Zavřít projekt</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="551"/>
-        <location filename="../src/app/MainWindowWelcomeWidget.cpp" line="110"/>
+        <location filename="../src/app/MainWindow.cpp" line="553"/>
+        <location filename="../src/app/MainWindowWelcomeWidget.cpp" line="121"/>
         <source>Recent Projects</source>
         <translation>Poslední projekty</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="575"/>
+        <location filename="../src/app/MainWindow.cpp" line="577"/>
         <source>Close Tab</source>
         <translation>Zavřít kartu</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="836"/>
+        <location filename="../src/app/MainWindow.cpp" line="860"/>
         <source>Open Existing Project...</source>
         <translation>Otevřít existující projekt...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="840"/>
+        <location filename="../src/app/MainWindow.cpp" line="862"/>
         <location filename="../src/app/MainWindowProjectTemplate.cpp" line="202"/>
         <location filename="../src/app/MainWindowProjectTemplate.cpp" line="214"/>
         <location filename="../src/app/MainWindowProjectTemplate.cpp" line="220"/>
@@ -314,44 +314,44 @@
         <translation>Nový prázdný projekt</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="844"/>
+        <location filename="../src/app/MainWindow.cpp" line="864"/>
         <source>New Project from Template...</source>
         <translation>Nový projekt ze šablony...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1082"/>
+        <location filename="../src/app/MainWindow.cpp" line="1114"/>
         <source>No Recent Projects</source>
         <translation>Žádné poslední projekty</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowWelcomeWidget.cpp" line="149"/>
+        <location filename="../src/app/MainWindowWelcomeWidget.cpp" line="162"/>
         <source>Project: %1</source>
         <translation>Projekt: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="552"/>
-        <location filename="../src/app/MainWindowWelcomeWidget.cpp" line="171"/>
+        <location filename="../src/app/MainWindow.cpp" line="554"/>
+        <location filename="../src/app/MainWindowWelcomeWidget.cpp" line="193"/>
         <source>Recent Files</source>
         <translation>Poslední soubory</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1116"/>
-        <location filename="../src/app/MainWindow.cpp" line="1122"/>
+        <location filename="../src/app/MainWindow.cpp" line="1148"/>
+        <location filename="../src/app/MainWindow.cpp" line="1154"/>
         <source>No Recent Files</source>
         <translation>Žádné poslední soubory</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowWelcomeWidget.cpp" line="179"/>
+        <location filename="../src/app/MainWindowWelcomeWidget.cpp" line="201"/>
         <source>No recent files yet.</source>
         <translation>Zatím žádné poslední soubory.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="562"/>
+        <location filename="../src/app/MainWindow.cpp" line="564"/>
         <source>&amp;Save</source>
         <translation>&amp;Uložit</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="566"/>
+        <location filename="../src/app/MainWindow.cpp" line="568"/>
         <source>Save &amp;All</source>
         <translation>Uložit &amp;vše</translation>
     </message>
@@ -360,184 +360,186 @@
         <translation type="vanished">&amp;Zavřít</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="578"/>
+        <location filename="../src/app/MainWindow.cpp" line="580"/>
         <source>Close All Tabs</source>
         <translation>Zavřít všechny karty</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="583"/>
+        <location filename="../src/app/MainWindow.cpp" line="585"/>
         <source>Settings...</source>
         <translation>Nastavení...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="588"/>
+        <location filename="../src/app/MainWindow.cpp" line="590"/>
         <source>E&amp;xit</source>
         <translation>&amp;Ukončit</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="592"/>
+        <location filename="../src/app/MainWindow.cpp" line="594"/>
         <source>&amp;Edit</source>
         <translation>&amp;Úpravy</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="593"/>
+        <location filename="../src/app/MainWindow.cpp" line="595"/>
         <source>&amp;Undo</source>
         <translation>&amp;Zpět</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="595"/>
+        <location filename="../src/app/MainWindow.cpp" line="597"/>
         <source>Undo the last change in the active document.</source>
         <translation>Vrátit poslední změnu v aktivním dokumentu.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="598"/>
+        <location filename="../src/app/MainWindow.cpp" line="600"/>
         <source>&amp;Redo</source>
         <translation>&amp;Znovu</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="600"/>
+        <location filename="../src/app/MainWindow.cpp" line="602"/>
         <source>Redo the last undone change in the active document.</source>
         <translation>Zopakovat poslední vrácenou změnu v aktivním dokumentu.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="604"/>
+        <location filename="../src/app/MainWindow.cpp" line="606"/>
         <source>&amp;Find</source>
         <translation>&amp;Hledat</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="608"/>
+        <location filename="../src/app/MainWindow.cpp" line="610"/>
         <source>Search in Project</source>
         <translation>Hledat v projektu</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="622"/>
+        <location filename="../src/app/MainWindow.cpp" line="624"/>
         <source>Find and &amp;Replace</source>
         <translation>Hledat a &amp;nahradit</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="638"/>
+        <location filename="../src/app/MainWindow.cpp" line="640"/>
         <source>&amp;View</source>
         <translation>&amp;Zobrazení</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="640"/>
+        <location filename="../src/app/MainWindow.cpp" line="642"/>
         <source>Expand or collapse the left sidebar.</source>
         <translation>Rozbalit nebo sbalit levý postranní panel.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="646"/>
+        <location filename="../src/app/MainWindow.cpp" line="648"/>
         <source>Expand or collapse the active document right-side panel.</source>
         <translation>Rozbalit nebo sbalit pravý panel aktivního dokumentu.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="651"/>
+        <location filename="../src/app/MainWindow.cpp" line="653"/>
         <source>Expand or collapse the help panel while the map pane is detached.</source>
         <translation>Rozbalit nebo sbalit nápovědu při odděleném mapovém panelu.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="659"/>
+        <location filename="../src/app/MainWindow.cpp" line="661"/>
         <source>Show or hide the map magnifier overlay in map editors.</source>
         <translation>Zobrazit nebo skrýt překryv lupy v mapových editorech.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="675"/>
+        <location filename="../src/app/MainWindow.cpp" line="677"/>
         <source>Enter or exit full screen mode.</source>
         <translation>Vstoupit do režimu celé obrazovky nebo ho ukončit.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="686"/>
+        <location filename="../src/app/MainWindow.cpp" line="688"/>
         <source>&amp;Help</source>
         <translation>&amp;Nápověda</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="687"/>
-        <location filename="../src/app/MainWindowHelpDialog.cpp" line="507"/>
-        <location filename="../src/app/MainWindowHelpDialog.cpp" line="517"/>
-        <location filename="../src/app/MainWindowHelpDialog.cpp" line="525"/>
+        <location filename="../src/app/MainWindow.cpp" line="689"/>
+        <location filename="../src/app/MainWindow.cpp" line="866"/>
+        <location filename="../src/app/MainWindow.cpp" line="877"/>
+        <location filename="../src/app/MainWindowHelpDialog.cpp" line="509"/>
+        <location filename="../src/app/MainWindowHelpDialog.cpp" line="519"/>
+        <location filename="../src/app/MainWindowHelpDialog.cpp" line="527"/>
         <source>User Manual</source>
         <translation>Uživatelská příručka</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="692"/>
-        <location filename="../src/app/MainWindowHelpDialog.cpp" line="497"/>
+        <location filename="../src/app/MainWindow.cpp" line="694"/>
+        <location filename="../src/app/MainWindowHelpDialog.cpp" line="499"/>
         <source>About Therion Studio</source>
         <translation>O aplikaci Therion Studio</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="768"/>
+        <location filename="../src/app/MainWindow.cpp" line="785"/>
         <source>Skipped unsupported document during session restore: %1</source>
         <translation>Při obnově relace byl přeskočen nepodporovaný dokument: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="835"/>
+        <location filename="../src/app/MainWindow.cpp" line="859"/>
         <source>Open or create a project to begin working with Therion documents, maps, and structure views.</source>
         <translation>Otevřete nebo vytvořte projekt a začněte pracovat s dokumenty Therionu, mapami a strukturou.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1174"/>
-        <location filename="../src/app/MainWindow.cpp" line="1184"/>
-        <location filename="../src/app/MainWindow.cpp" line="1193"/>
+        <location filename="../src/app/MainWindow.cpp" line="1206"/>
+        <location filename="../src/app/MainWindow.cpp" line="1216"/>
+        <location filename="../src/app/MainWindow.cpp" line="1225"/>
         <source>Import PocketTopo Text</source>
         <translation>Importovat PocketTopo text</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1176"/>
+        <location filename="../src/app/MainWindow.cpp" line="1208"/>
         <source>PocketTopo Therion Export (*.txt *.TXT);;All Files (*)</source>
         <translation>PocketTopo Therion export (*.txt *.TXT);;Všechny soubory (*)</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1185"/>
+        <location filename="../src/app/MainWindow.cpp" line="1217"/>
         <source>Could not read %1.</source>
         <translation>Nepodařilo se přečíst %1.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1194"/>
+        <location filename="../src/app/MainWindow.cpp" line="1226"/>
         <source>No PocketTopo centreline data was found in %1.</source>
         <translation>V %1 nebyla nalezena žádná centerline data PocketTopo.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1206"/>
+        <location filename="../src/app/MainWindow.cpp" line="1238"/>
         <source>PocketTopo import skipped: document changed.</source>
         <translation>Import PocketTopo přeskočen: dokument se změnil.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1209"/>
+        <location filename="../src/app/MainWindow.cpp" line="1241"/>
         <source>Imported PocketTopo centreline data from %1.</source>
         <translation>Importována centerline data PocketTopo z %1.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1237"/>
-        <location filename="../src/app/MainWindowUntitledDocumentWorkflow.cpp" line="269"/>
+        <location filename="../src/app/MainWindow.cpp" line="1269"/>
+        <location filename="../src/app/MainWindowUntitledDocumentWorkflow.cpp" line="284"/>
         <source>untitled.th</source>
         <translation>bez-nazvu.th</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1243"/>
+        <location filename="../src/app/MainWindow.cpp" line="1275"/>
         <source>untitled.th2</source>
         <translation>bez-nazvu.th2</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1249"/>
+        <location filename="../src/app/MainWindow.cpp" line="1281"/>
         <source>untitled.thconfig</source>
         <translation>bez-nazvu.thconfig</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1404"/>
+        <location filename="../src/app/MainWindow.cpp" line="1436"/>
         <source>Saved %1</source>
         <translation>Uloženo %1</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1438"/>
+        <location filename="../src/app/MainWindow.cpp" line="1470"/>
         <source>Save All</source>
         <translation>Uložit vše</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1445"/>
+        <location filename="../src/app/MainWindow.cpp" line="1477"/>
         <source>Saved all modified documents.</source>
         <translation>Všechny změněné dokumenty byly uloženy.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1445"/>
+        <location filename="../src/app/MainWindow.cpp" line="1477"/>
         <source>No modified documents to save.</source>
         <translation>Žádné změněné dokumenty k uložení.</translation>
     </message>
@@ -547,43 +549,43 @@
         <translation>Otevřít projekt...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="856"/>
+        <location filename="../src/app/MainWindow.cpp" line="876"/>
         <source>Open file from sidebar to begin editing this project.</source>
         <translation>Otevřete soubor z postranního panelu a začněte projekt upravovat.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="872"/>
-        <location filename="../src/app/MainWindow.cpp" line="877"/>
+        <location filename="../src/app/MainWindow.cpp" line="894"/>
+        <location filename="../src/app/MainWindow.cpp" line="899"/>
         <source>Welcome</source>
         <translation>Vítejte</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="968"/>
+        <location filename="../src/app/MainWindow.cpp" line="990"/>
         <source>Settings</source>
         <translation>Nastavení</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="958"/>
+        <location filename="../src/app/MainWindow.cpp" line="980"/>
         <source>Language changes will take effect after restarting Therion Studio.</source>
         <translation>Změna jazyka se projeví po restartu Therion Studia.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="961"/>
+        <location filename="../src/app/MainWindow.cpp" line="983"/>
         <source>Troubleshooting log changes will take effect after restarting Therion Studio.</source>
         <translation>Změny diagnostického logování se projeví po restartu Therion Studia.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="971"/>
+        <location filename="../src/app/MainWindow.cpp" line="993"/>
         <source>Restart Now</source>
         <translation>Restartovat nyní</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="972"/>
+        <location filename="../src/app/MainWindow.cpp" line="994"/>
         <source>Later</source>
         <translation>Později</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="983"/>
+        <location filename="../src/app/MainWindow.cpp" line="1005"/>
         <source>Open Therion Project</source>
         <translation>Otevřít projekt Therion</translation>
     </message>
@@ -596,35 +598,35 @@
         <translation type="vanished">Otevřený dokument %1 nelze určit</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1453"/>
+        <location filename="../src/app/MainWindow.cpp" line="1485"/>
         <source>Replace</source>
         <translation>Nahradit</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1453"/>
+        <location filename="../src/app/MainWindow.cpp" line="1485"/>
         <source>Find</source>
         <translation>Hledat</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1521"/>
-        <location filename="../src/app/MainWindow.cpp" line="1736"/>
+        <location filename="../src/app/MainWindow.cpp" line="1553"/>
+        <location filename="../src/app/MainWindow.cpp" line="1768"/>
         <location filename="../src/app/MainWindowFileOpen.cpp" line="139"/>
         <source>Open File</source>
         <translation>Otevřít soubor</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1589"/>
-        <location filename="../src/app/MainWindow.cpp" line="1817"/>
+        <location filename="../src/app/MainWindow.cpp" line="1621"/>
+        <location filename="../src/app/MainWindow.cpp" line="1849"/>
         <source>Opened %1</source>
         <translation>Otevřeno %1</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1887"/>
+        <location filename="../src/app/MainWindow.cpp" line="1919"/>
         <source>File Changed on Disk</source>
         <translation>Soubor se změnil na disku</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1888"/>
+        <location filename="../src/app/MainWindow.cpp" line="1920"/>
         <source>The file %1 changed on disk while it has unsaved changes in Therion Studio.
 
 Reload from disk and discard the in-memory changes?</source>
@@ -633,32 +635,32 @@ Reload from disk and discard the in-memory changes?</source>
 Načíst z disku a zahodit změny v paměti?</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1895"/>
+        <location filename="../src/app/MainWindow.cpp" line="1927"/>
         <source>Kept in-memory version of %1.</source>
         <translation>Ponechána verze %1 z paměti.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1903"/>
+        <location filename="../src/app/MainWindow.cpp" line="1935"/>
         <source>Reload File</source>
         <translation>Znovu načíst soubor</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1905"/>
+        <location filename="../src/app/MainWindow.cpp" line="1937"/>
         <source>Unable to reload %1 from disk.</source>
         <translation>Nepodařilo se znovu načíst %1 z disku.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1912"/>
+        <location filename="../src/app/MainWindow.cpp" line="1944"/>
         <source>Reloaded %1 from disk.</source>
         <translation>%1 znovu načteno z disku.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="2011"/>
+        <location filename="../src/app/MainWindow.cpp" line="2043"/>
         <source>Opened dedicated map window for %1</source>
         <translation>Otevřeno samostatné mapové okno pro %1</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="2127"/>
+        <location filename="../src/app/MainWindow.cpp" line="2159"/>
         <source>%1 is not implemented yet.</source>
         <translation>%1 zatím není implementováno.</translation>
     </message>
@@ -752,7 +754,7 @@ Načíst z disku a zahodit změny v paměti?</translation>
     </message>
     <message>
         <location filename="../src/app/MainWindowMapBackground.cpp" line="265"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="478"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="472"/>
         <source>%1 (%2)</source>
         <translation>%1 (%2)</translation>
     </message>
@@ -869,20 +871,20 @@ Načíst z disku a zahodit změny v paměti?</translation>
         <translation>Soubor se nepodařilo inicializovat: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowUntitledDocumentWorkflow.cpp" line="171"/>
-        <location filename="../src/app/MainWindowUntitledDocumentWorkflow.cpp" line="250"/>
+        <location filename="../src/app/MainWindowUntitledDocumentWorkflow.cpp" line="186"/>
+        <location filename="../src/app/MainWindowUntitledDocumentWorkflow.cpp" line="265"/>
         <location filename="../src/app/MainWindowProjectBrowserSidebar.cpp" line="496"/>
         <location filename="../src/app/MainWindowProjectBrowserSidebar.cpp" line="497"/>
         <source>Created %1</source>
         <translation>Vytvořeno %1</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowUntitledDocumentWorkflow.cpp" line="274"/>
+        <location filename="../src/app/MainWindowUntitledDocumentWorkflow.cpp" line="289"/>
         <source>Save As</source>
         <translation>Uložit jako</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowUntitledDocumentWorkflow.cpp" line="283"/>
+        <location filename="../src/app/MainWindowUntitledDocumentWorkflow.cpp" line="298"/>
         <source>Unable to resolve active document.</source>
         <translation>Nepodařilo se určit aktivní dokument.</translation>
     </message>
@@ -905,14 +907,14 @@ Načíst z disku a zahodit změny v paměti?</translation>
     <message>
         <location filename="../src/app/MainWindowFileOpen.cpp" line="26"/>
         <location filename="../src/app/MainWindowFileOpen.cpp" line="69"/>
-        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="55"/>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="56"/>
         <source>Open in External App</source>
         <translation>Otevřít v externí aplikaci</translation>
     </message>
     <message>
         <location filename="../src/app/MainWindowFileOpen.cpp" line="27"/>
         <location filename="../src/app/MainWindowProjectBrowserSidebar.cpp" line="519"/>
-        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="56"/>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="57"/>
         <source>Failed to open %1 with the system default application.</source>
         <translation>%1 se nepodařilo otevřít ve výchozí systémové aplikaci.</translation>
     </message>
@@ -1161,7 +1163,7 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <translation type="vanished">Nový thconfig</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="375"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="387"/>
         <source>thconfig</source>
         <translation>thconfig</translation>
     </message>
@@ -1422,28 +1424,28 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <translation>V aktuálním dokumentu nebyly nalezeny žádné TH2 scrappy, body, linie ani plochy</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="129"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="141"/>
         <source>Console output is empty</source>
         <translation>Výstup konzole je prázdný</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="132"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="144"/>
         <source>Clipboard is unavailable</source>
         <translation>Schránka není dostupná</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="135"/>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="146"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="147"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="158"/>
         <source>Console output is unavailable</source>
         <translation>Výstup konzole není dostupný</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="140"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="152"/>
         <source>Copied console output</source>
         <translation>Výstup konzole zkopírován</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="150"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="162"/>
         <source>Cleared console output</source>
         <translation>Výstup konzole vymazán</translation>
     </message>
@@ -1463,163 +1465,163 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <translation>Spustitelný soubor Therion byl aktualizován</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="168"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="180"/>
         <source>Select Therion Config</source>
         <translation>Vyberte konfiguraci Therion</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="170"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="182"/>
         <source>Therion config files (thconfig thconfig.* *.thconfig);;All files (*)</source>
         <translation>Konfigurační soubory Therion (thconfig thconfig.* *.thconfig);;Všechny soubory (*)</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="200"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="212"/>
         <source>Select Working Directory Override</source>
         <translation>Vyberte náhradní pracovní adresář</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="363"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="375"/>
         <source>No working directory resolved</source>
         <translation>Nebyl určen pracovní adresář</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="61"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="62"/>
         <source>Run Therion for the current project or active config.</source>
         <translation>Spustit Therion pro aktuální projekt nebo aktivní konfiguraci.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="71"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="72"/>
         <source>Additional Therion command-line options</source>
         <translation>Další volby příkazové řádky Therionu</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="74"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="75"/>
         <source>Arguments</source>
         <translation>Argumenty</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="77"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="78"/>
         <source>Current Config</source>
         <translation>Aktuální konfigurace</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="78"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="79"/>
         <source>Project Config</source>
         <translation>Projektová konfigurace</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="82"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="83"/>
         <source>Run Target</source>
         <translation>Cíl spuštění</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="85"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="86"/>
         <source>Path to project Therion config</source>
         <translation>Cesta k projektové konfiguraci Therion</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="88"/>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="124"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="89"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="125"/>
         <source>...</source>
         <translation>...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="89"/>
         <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="90"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="91"/>
         <source>Browse for target Therion config</source>
         <translation>Vybrat cílovou konfiguraci Therion</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="99"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="100"/>
         <source>Target Config</source>
         <translation>Cílová konfigurace</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="101"/>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="369"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="102"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="381"/>
         <source>Auto-detect</source>
         <translation>Automaticky zjistit</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="112"/>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="370"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="113"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="382"/>
         <source>No config file resolved from the current context</source>
         <translation>Z aktuálního kontextu nebyl určen žádný konfigurační soubor</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="121"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="122"/>
         <source>Auto: selected config folder</source>
         <translation>Auto: složka vybrané konfigurace</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="126"/>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="128"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="127"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="129"/>
         <source>Browse for working directory override</source>
         <translation>Vybrat náhradní pracovní složku</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="137"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="138"/>
         <source>Working Directory Override</source>
         <translation>Náhradní pracovní složka</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="140"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="141"/>
         <source>Project root or selected config folder</source>
         <translation>Kořen projektu nebo složka vybrané konfigurace</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="148"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="149"/>
         <source>Reset Override</source>
         <translation>Zrušit náhradu</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="150"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="151"/>
         <source>Clear the project working directory override and use the selected config folder</source>
         <translation>Zrušit náhradní pracovní složku projektu a použít složku vybrané konfigurace</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="163"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="164"/>
         <source>Stop</source>
         <translation>Zastavit</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="165"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="166"/>
         <source>Clear Output</source>
         <translation>Vymazat výstup</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="166"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="167"/>
         <source>Copy Output</source>
         <translation>Kopírovat výstup</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="186"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="190"/>
         <source>Therion runner output will appear here.</source>
         <translation>Zde se zobrazí výstup spuštění Therionu.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="411"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="423"/>
         <source>Open a Therion config tab to use Current Config.</source>
         <translation>Pro použití aktuální konfigurace otevřete kartu s konfigurací Therion.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="426"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="438"/>
         <source>Current Config always runs from the active config file folder.</source>
         <translation>Aktuální konfigurace se vždy spouští ze složky aktivního konfiguračního souboru.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="447"/>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="448"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="459"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="460"/>
         <source>Therion runner is unavailable.</source>
         <translation>Spouštění Therionu není dostupné.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="453"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="465"/>
         <source>Compile canceled because open documents could not be saved.</source>
         <translation>Kompilace zrušena, protože otevřené dokumenty nešlo uložit.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="471"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="483"/>
         <source>Select a current or project Therion config before running Therion.</source>
         <translation>Před spuštěním Therionu vyberte aktuální nebo projektovou konfiguraci Therion.</translation>
     </message>
@@ -1632,9 +1634,9 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <location filename="../src/app/TherionRunnerStartResultPresenter.cpp" line="29"/>
         <location filename="../src/app/TherionRunnerStartResultPresenter.cpp" line="37"/>
         <location filename="../src/app/TherionRunnerStartResultPresenter.cpp" line="48"/>
-        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="162"/>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="472"/>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="535"/>
+        <location filename="../src/app/MainWindowTherionConsoleBuilder.cpp" line="163"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="484"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="549"/>
         <source>Run Therion</source>
         <translation>Spustit Therion</translation>
     </message>
@@ -1654,12 +1656,12 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <translation>Spustitelný soubor Therionu „%1“ nebyl nalezen nebo není spustitelný. Nastavte úplnou cestu ke spustitelnému souboru nebo nainstalujte Therion do aplikační PATH.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="534"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="548"/>
         <source>Open a Therion config tab before compiling the current config.</source>
         <translation>Před kompilací aktuální konfigurace otevřete kartu s konfigurací Therion.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowTherionRunner.cpp" line="580"/>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="596"/>
         <source>[stderr] %1</source>
         <translation>[stderr] %1</translation>
     </message>
@@ -1729,32 +1731,32 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <translation>Automatické obnovení projektu bylo přeskočeno pro chráněnou složku %1</translation>
     </message>
     <message>
-        <location filename="../src/app/TherionRunnerLifecyclePresenter.cpp" line="14"/>
+        <location filename="../src/app/TherionRunnerLifecyclePresenter.cpp" line="26"/>
         <source>Therion is not running.</source>
         <translation>Therion neběží.</translation>
     </message>
     <message>
-        <location filename="../src/app/TherionRunnerLifecyclePresenter.cpp" line="20"/>
+        <location filename="../src/app/TherionRunnerLifecyclePresenter.cpp" line="32"/>
         <source>Stopping Therion...</source>
         <translation>Zastavuji Therion...</translation>
     </message>
     <message>
-        <location filename="../src/app/TherionRunnerLifecyclePresenter.cpp" line="29"/>
+        <location filename="../src/app/TherionRunnerLifecyclePresenter.cpp" line="56"/>
         <source>Therion finished with exit code %1.</source>
         <translation>Therion skončil s návratovým kódem %1.</translation>
     </message>
     <message>
-        <location filename="../src/app/TherionRunnerLifecyclePresenter.cpp" line="30"/>
+        <location filename="../src/app/TherionRunnerLifecyclePresenter.cpp" line="43"/>
         <source>Therion crashed while running.</source>
         <translation>Therion během běhu spadl.</translation>
     </message>
     <message>
-        <location filename="../src/app/TherionRunnerLifecyclePresenter.cpp" line="38"/>
+        <location filename="../src/app/TherionRunnerLifecyclePresenter.cpp" line="48"/>
         <source>Therion reported an output writing error despite exit code %1.</source>
         <translation>Therion ohlásil chybu zápisu výstupu navzdory návratovému kódu %1.</translation>
     </message>
     <message>
-        <location filename="../src/app/TherionRunnerLifecyclePresenter.cpp" line="38"/>
+        <location filename="../src/app/TherionRunnerLifecyclePresenter.cpp" line="64"/>
         <source>Therion runner error: %1</source>
         <translation>Chyba spouštěče Therionu: %1</translation>
     </message>
@@ -1769,12 +1771,12 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <translation>Spouštím Therion...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowHelpDialog.cpp" line="509"/>
+        <location filename="../src/app/MainWindowHelpDialog.cpp" line="511"/>
         <source>User manual file was not found in expected locations.</source>
         <translation>Soubor uživatelské příručky nebyl nalezen v očekávaných umístěních.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowHelpDialog.cpp" line="519"/>
+        <location filename="../src/app/MainWindowHelpDialog.cpp" line="521"/>
         <source>Failed to load `%1`.</source>
         <translation>Nepodařilo se načíst `%1`.</translation>
     </message>
@@ -1815,7 +1817,7 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <translation>Prázdný projekt vytvořen</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="357"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="351"/>
         <source>Validate source files and review problems.</source>
         <translation>Validovat zdrojové soubory a zkontrolovat problémy.</translation>
     </message>
@@ -1824,39 +1826,39 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <translation type="vanished">Validace projektu běží pro projektové soubory automaticky. Pomocí Validovat projekt obnovíte otevřený projekt.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="581"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="575"/>
         <source>Automatic project validation is enabled. Use Validate Project to refresh now.</source>
         <translation>Automatická validace projektu je zapnutá. Pomocí Validovat projekt ji můžete spustit hned.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="584"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="578"/>
         <source>Automatic project validation is disabled. Use Validate Project to run it manually.</source>
         <translation>Automatická validace projektu je vypnutá. Pomocí Validovat projekt ji spusťte ručně.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="361"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="355"/>
         <source>Validate Project</source>
         <translation>Validovat projekt</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="373"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="451"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="560"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="705"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="866"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="367"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="445"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="554"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="699"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="860"/>
         <source>Problems</source>
         <translation>Problémy</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="395"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1038"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="389"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1032"/>
         <source>Select a validation finding.</source>
         <translation>Vyberte nález validace.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="403"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1044"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1073"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="397"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1038"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1067"/>
         <source>Current source line</source>
         <translation>Aktuální zdrojový řádek</translation>
     </message>
@@ -1865,151 +1867,151 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <translation type="vanished">Navržený zdrojový řádek</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="409"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1047"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1081"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="403"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1041"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1075"/>
         <source>Automatic fix preview</source>
         <translation>Náhled automatické opravy</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="418"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1057"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1096"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="412"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1051"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1090"/>
         <source>Apply Fix</source>
         <translation>Použít opravu</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="467"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="461"/>
         <source>No validation problems found in %1.</source>
         <translation>V %1 nebyly nalezeny žádné validační problémy.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="498"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="947"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="492"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="941"/>
         <source> (safe fix available)</source>
         <translation> (bezpečná oprava k dispozici)</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="499"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="948"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="493"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="942"/>
         <source>Line %1: %2: %3%4</source>
         <translation>Řádek %1: %2: %3%4</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="519"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="513"/>
         <source>%1 validation problem(s) found in %2.</source>
         <translation>V %2 nalezeno %1 validačních problémů.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="566"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="621"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="560"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="615"/>
         <source>Open a project before validating.</source>
         <translation>Před validací otevřete projekt.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="670"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="710"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="664"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="704"/>
         <source>Validating project...</source>
         <translation>Validuje se projekt...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="894"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="888"/>
         <source>No validation problems found in %1 searched file(s).</source>
         <translation>V %1 prohledaných souborech nebyly nalezeny žádné validační problémy.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="981"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="975"/>
         <source>%1 validation problem(s) found in %2 searched file(s).</source>
         <translation>V %2 prohledaných souborech nalezeno %1 validačních problémů.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="986"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="980"/>
         <source>Showing the first %1 problem(s).</source>
         <translation>Zobrazuje se prvních %1 problémů.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1065"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1059"/>
         <source>Line %1: %2</source>
         <translation>Řádek %1: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1072"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1066"/>
         <source>Source block to remove</source>
         <translation>Zdrojový blok k odstranění</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1080"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1074"/>
         <source>Automatic fix</source>
         <translation>Automatická oprava</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1085"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1079"/>
         <source>No automatic fix is available for this finding.</source>
         <translation>Pro tento nález není k dispozici automatická oprava.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1087"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1081"/>
         <source>This fix will remove the source block shown above.</source>
         <translation>Tato oprava odstraní výše zobrazený zdrojový blok.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="30"/>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="31"/>
         <source>Model</source>
         <translation>Model</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="32"/>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="33"/>
         <source>Map / Atlas</source>
         <translation>Mapa / Atlas</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="34"/>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="35"/>
         <source>Database</source>
         <translation>Databáze</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="74"/>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="76"/>
         <source>Open a project to browse outputs.</source>
         <translation>Otevřete projekt pro procházení výstupů.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="109"/>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="117"/>
         <location filename="../src/app/MainWindowSidebar.cpp" line="213"/>
         <source>Outputs</source>
         <translation>Výstupy</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="148"/>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="158"/>
         <source>Model (%1)</source>
         <translation>Model (%1)</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="149"/>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="159"/>
         <source>Map / Atlas (%1)</source>
         <translation>Mapa / Atlas (%1)</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="150"/>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="160"/>
         <source>Database (%1)</source>
         <translation>Databáze (%1)</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="157"/>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="167"/>
         <source>No Therion output artifacts found.</source>
         <translation>Nebyly nalezeny žádné výstupní artefakty Therionu.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="158"/>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="168"/>
         <source>%1 output artifact(s) found.</source>
         <translation>Nalezeno %1 výstupních artefaktů.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="176"/>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="186"/>
         <source>Open Output</source>
         <translation>Otevřít výstup</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="177"/>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="187"/>
         <source>Output file no longer exists:
 %1</source>
         <translation>Výstupní soubor už neexistuje:
@@ -2099,33 +2101,33 @@ Očekávané soubory jsou `docs/USER_MANUAL.&lt;language&gt;.md` nebo `docs/USER
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/platform/DiagnosticLogging.cpp" line="261"/>
+        <location filename="../src/platform/DiagnosticLogging.cpp" line="270"/>
         <source>Could not remove log file `%1`.</source>
         <translation>Soubor logu `%1` se nepodařilo smazat.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="189"/>
-        <location filename="../src/app/MainWindow.cpp" line="204"/>
+        <location filename="../src/app/MainWindow.cpp" line="191"/>
+        <location filename="../src/app/MainWindow.cpp" line="206"/>
         <source>Open in External App</source>
         <translation>Otevřít v externí aplikaci</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="190"/>
+        <location filename="../src/app/MainWindow.cpp" line="192"/>
         <source>Failed to open %1 with the system default application.</source>
         <translation>%1 se nepodařilo otevřít ve výchozí systémové aplikaci.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="199"/>
+        <location filename="../src/app/MainWindow.cpp" line="201"/>
         <source>Unsupported File</source>
         <translation>Nepodporovaný soubor</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="200"/>
+        <location filename="../src/app/MainWindow.cpp" line="202"/>
         <source>Unsupported file.</source>
         <translation>Nepodporovaný soubor.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="202"/>
+        <location filename="../src/app/MainWindow.cpp" line="204"/>
         <source>Therion Studio cannot open this file type in the internal editor:
 %1</source>
         <translation>Therion Studio neumí tento typ souboru otevřít v interním editoru:
@@ -2542,163 +2544,163 @@ Line-point options: %1</translation>
         <translation>Nepřiřazené objekty</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectSearchScanner.cpp" line="160"/>
+        <location filename="../src/app/ProjectSearchScanner.cpp" line="120"/>
         <source>Open a project before searching.</source>
         <translation>Před hledáním otevřete projekt.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectSearchScanner.cpp" line="164"/>
+        <location filename="../src/app/ProjectSearchScanner.cpp" line="124"/>
         <source>Enter text to search for.</source>
         <translation>Zadejte hledaný text.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="177"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="171"/>
         <source>Unknown map scrap reference</source>
         <translation>Neznámý odkaz na mapový scrap</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="178"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="172"/>
         <source>Map references scrap `%1`, but no matching scrap was found in the project index.</source>
         <translation>Mapa odkazuje na scrap `%1`, ale v indexu projektu nebyl nalezen odpovídající scrap.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="183"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="177"/>
         <source>Unknown map reference</source>
         <translation>Neznámý odkaz na mapu</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="184"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="178"/>
         <source>Map references child map `%1`, but no matching map was found in the project index.</source>
         <translation>Mapa odkazuje na podřízenou mapu `%1`, ale v indexu projektu nebyla nalezena odpovídající mapa.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="189"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="183"/>
         <source>Ambiguous map scrap reference</source>
         <translation>Nejednoznačný odkaz na mapový scrap</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="190"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="184"/>
         <source>Map scrap reference `%1` matches %2 scraps in the project index.</source>
         <translation>Odkaz na mapový scrap `%1` odpovídá %2 scrapům v indexu projektu.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="196"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="190"/>
         <source>Ambiguous map reference</source>
         <translation>Nejednoznačný odkaz na mapu</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="197"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="191"/>
         <source>Map reference `%1` matches %2 maps in the project index.</source>
         <translation>Odkaz na mapu `%1` odpovídá %2 mapám v indexu projektu.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="204"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="198"/>
         <source>Mixed map and scrap references</source>
         <translation>Smíšené odkazy na mapy a scrapy</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="205"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="199"/>
         <source>Map composition mixes child map and scrap references; `%1` changes the content kind.</source>
         <translation>Mapová kompozice míchá odkazy na podřízené mapy a scrapy; `%1` mění druh obsahu.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="210"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="204"/>
         <source>Unknown join reference</source>
         <translation>Neznámý odkaz join</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="211"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="205"/>
         <source>Join references `%1`, but no matching scrap, line, or point was found in the project index.</source>
         <translation>Join odkazuje na `%1`, ale v indexu projektu nebyl nalezen odpovídající scrap, linie ani bod.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="216"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="210"/>
         <source>Unknown join line-point mark</source>
         <translation>Neznámá značka line-point v join</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="217"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="211"/>
         <source>Join references `%1`, but the resolved line does not define that line-point mark.</source>
         <translation>Join odkazuje na `%1`, ale vyřešená linie tuto značku line-point nedefinuje.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="222"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="216"/>
         <source>Ambiguous join reference</source>
         <translation>Nejednoznačný odkaz join</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="223"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="217"/>
         <source>Join reference `%1` matches %2 objects in the project index.</source>
         <translation>Odkaz join `%1` odpovídá %2 objektům v indexu projektu.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="229"/>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="360"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="223"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="354"/>
         <source>Unknown station reference</source>
         <translation>Neznámý odkaz na stanici</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="230"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="224"/>
         <source>Station reference `%1` has no matching station in the project index.</source>
         <translation>Odkaz na stanici `%1` nemá v indexu projektu odpovídající stanici.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="235"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="229"/>
         <source>Ambiguous station reference</source>
         <translation>Nejednoznačný odkaz na stanici</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="236"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="230"/>
         <source>Station reference `%1` matches %2 stations in the project index.</source>
         <translation>Odkaz na stanici `%1` odpovídá %2 stanicím v indexu projektu.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="242"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="236"/>
         <source>Duplicate object id</source>
         <translation>Duplicitní ID objektu</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="243"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="237"/>
         <source>Object id `%1` is already used by another object in this namespace.</source>
         <translation>ID objektu `%1` už v tomto namespace používá jiný objekt.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="361"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="355"/>
         <source>Station reference `%1` cannot be resolved because this file is not included in the project source graph.</source>
         <translation>Odkaz na stanici `%1` nelze vyřešit, protože tento soubor není zahrnut ve zdrojovém grafu projektu.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="394"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="388"/>
         <source>Project index unavailable</source>
         <translation>Index projektu není dostupný</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="515"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="509"/>
         <source>Missing referenced source file</source>
         <translation>Chybí odkazovaný zdrojový soubor</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="516"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="510"/>
         <source>Command `%1` references `%2`, but no matching project file was found.</source>
         <translation>Příkaz `%1` odkazuje na `%2`, ale nebyl nalezen odpovídající projektový soubor.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="604"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="598"/>
         <source>Open a project before validating.</source>
         <translation>Před validací otevřete projekt.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowUntitledDocumentWorkflow.cpp" line="46"/>
+        <location filename="../src/app/MainWindowUntitledDocumentWorkflow.cpp" line="48"/>
         <source>Therion Config (thconfig *.thconfig);;All Files (*)</source>
         <translation>Konfigurace Therion (thconfig *.thconfig);;Všechny soubory (*)</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowUntitledDocumentWorkflow.cpp" line="49"/>
+        <location filename="../src/app/MainWindowUntitledDocumentWorkflow.cpp" line="51"/>
         <source>Therion Map (*.th2);;All Files (*)</source>
         <translation>Mapa Therion (*.th2);;Všechny soubory (*)</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowUntitledDocumentWorkflow.cpp" line="51"/>
+        <location filename="../src/app/MainWindowUntitledDocumentWorkflow.cpp" line="53"/>
         <source>Therion Source (*.th);;All Files (*)</source>
         <translation>Zdroj Therion (*.th);;Všechny soubory (*)</translation>
     </message>
@@ -2750,7 +2752,7 @@ Line-point options: %1</translation>
         <translation>Vybrané umístění projektu neexistuje.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectOutputsScanner.cpp" line="100"/>
+        <location filename="../src/app/ProjectOutputsScanner.cpp" line="74"/>
         <source>Open a project to browse outputs.</source>
         <translation>Otevřete projekt pro procházení výstupů.</translation>
     </message>
@@ -3547,18 +3549,18 @@ Line-point options: %1</translation>
 <context>
     <name>TherionStudio::MainWindow</name>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="234"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="228"/>
         <source>Error</source>
         <translation>Chyba</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="236"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="238"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="230"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="232"/>
         <source>Warning</source>
         <translation>Varování</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="249"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="243"/>
         <source>Untitled document</source>
         <translation>Nepojmenovaný dokument</translation>
     </message>
@@ -3750,47 +3752,47 @@ Použijte Procházet a vyberte ho ručně.</translation>
         <translation type="vanished">Přesun svázaného vrcholu objektu %1 selhal: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="215"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="209"/>
         <source>Removed inserted map object at source line %1.</source>
         <translation>Vložený mapový objekt na zdrojovém řádku %1 byl odebrán.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="218"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="212"/>
         <source>Removed inserted map object.</source>
         <translation>Vložený mapový objekt byl odebrán.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="225"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="219"/>
         <source>Restored inserted map object at source line %1.</source>
         <translation>Vložený mapový objekt na zdrojovém řádku %1 byl obnoven.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="228"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="222"/>
         <source>Restored inserted map object.</source>
         <translation>Vložený mapový objekt byl obnoven.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="235"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="229"/>
         <source>Reverted completed draft at source line %1.</source>
         <translation>Dokončený náčrt na zdrojovém řádku %1 byl vrácen zpět.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="238"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="232"/>
         <source>Reverted completed draft.</source>
         <translation>Dokončený náčrt byl vrácen zpět.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="245"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="239"/>
         <source>Restored completed draft at source line %1.</source>
         <translation>Dokončený náčrt na zdrojovém řádku %1 byl obnoven.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="248"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="242"/>
         <source>Restored completed draft.</source>
         <translation>Dokončený náčrt byl obnoven.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="272"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="266"/>
         <source>Map source change skipped: document changed.</source>
         <translation>Změna mapového zdroje přeskočena: dokument se změnil.</translation>
     </message>
@@ -3798,7 +3800,7 @@ Použijte Procházet a vyberte ho ručně.</translation>
 <context>
     <name>TherionStudio::MapEditorCanvasEditController</name>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="200"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="194"/>
         <source>This vertex has additional line-point options (for example altitude/direction settings).
 
 Line %1, point %2:
@@ -3813,365 +3815,365 @@ Delete the vertex anyway?</source>
 Přesto bod smazat?</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="206"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="200"/>
         <source>Delete Point</source>
         <translation>Odstranit bod</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1271"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1265"/>
         <source>Geometry move failed: unsupported geometry kind &apos;%1&apos;.</source>
         <translation>Přesun geometrie selhal: nepodporovaný typ geometrie &apos;%1&apos;.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1227"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1221"/>
         <source>Point move failed.</source>
         <translation>Přesun bodu selhal.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1228"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1222"/>
         <source>Point move failed: %1</source>
         <translation>Přesun bodu selhal: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1243"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1237"/>
         <source>Move Point</source>
         <translation>Přesunout bod</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1252"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1246"/>
         <source>Updated point geometry at source line %1.</source>
         <translation>Geometrie bodu na zdrojovém řádku %1 byla aktualizována.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1321"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1315"/>
         <source>%1 vertex move failed.</source>
         <translation>Přesun vrcholu objektu %1 selhal.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1322"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1316"/>
         <source>%1 vertex move failed: %2</source>
         <translation>Přesun vrcholu objektu %1 selhal: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1342"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1336"/>
         <source>%1 coupled vertex move failed.</source>
         <translation>Přesun svázaného vrcholu objektu %1 selhal.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1343"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1337"/>
         <source>%1 coupled vertex move failed: %2</source>
         <translation>Přesun svázaného vrcholu objektu %1 selhal: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1363"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1357"/>
         <source>Move %1 Vertex</source>
         <translation>Přesunout vrchol objektu %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1380"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1374"/>
         <source>Updated %1 vertex %2 at source line %3.</source>
         <translation>Vrchol %2 objektu %1 na zdrojovém řádku %3 byl aktualizován.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1407"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1401"/>
         <source>Point orientation update failed.</source>
         <translation>Aktualizace orientace bodu selhala.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1408"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1402"/>
         <source>Point orientation update failed: %1</source>
         <translation>Aktualizace orientace bodu selhala: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1423"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1417"/>
         <source>Edit Point Orientation</source>
         <translation>Upravit orientaci bodu</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1429"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1423"/>
         <source>Updated point orientation to %1 degrees.</source>
         <translation>Orientace bodu aktualizována na %1 stupňů.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1458"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1452"/>
         <source>Line point orientation update failed.</source>
         <translation>Aktualizace orientace bodu linie selhala.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1459"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1453"/>
         <source>Line point orientation update failed: %1</source>
         <translation>Aktualizace orientace bodu linie selhala: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1474"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1468"/>
         <source>Line point l-size update failed.</source>
         <translation>Aktualizace l-size bodu linie selhala.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1475"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1469"/>
         <source>Line point l-size update failed: %1</source>
         <translation>Aktualizace l-size bodu linie selhala: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1490"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1484"/>
         <source>Edit Line Point Options</source>
         <translation>Upravit volby bodu linie</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1496"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1490"/>
         <source>Updated line point orientation %1 deg and l-size %2.</source>
         <translation>Aktualizována orientace bodu linie %1° a l-size %2.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1678"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1767"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1672"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1761"/>
         <source>Insert vertex failed: line geometry could not be resolved.</source>
         <translation>Vložení vrcholu selhalo: geometrii linie nelze určit.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1685"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1679"/>
         <source>Insert vertex failed: selected line anchor could not be resolved.</source>
         <translation>Vložení vrcholu selhalo: vybranou kotvu linie nelze určit.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1700"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1694"/>
         <source>Extend line failed: selected endpoint could not start continuation mode.</source>
         <translation>Prodloužení linie selhalo: vybraný koncový bod nemohl spustit režim pokračování.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1708"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1702"/>
         <source>Insert vertex failed: selected line vertex has no adjacent segment in that direction.</source>
         <translation>Vložení vrcholu selhalo: vybraný vrchol linie nemá v tomto směru sousední segment.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1716"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1797"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1710"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1791"/>
         <source>Insert vertex failed: segment split could not be computed.</source>
         <translation>Vložení vrcholu selhalo: rozdělení segmentu se nepodařilo vypočítat.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1726"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1807"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1720"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1801"/>
         <source>Insert vertex failed.</source>
         <translation>Vložení vrcholu selhalo.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1727"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1808"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1721"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1802"/>
         <source>Insert vertex failed: %1</source>
         <translation>Vložení vrcholu selhalo: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1738"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1819"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1732"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1813"/>
         <source>Insert Line Vertex</source>
         <translation>Vložit bod čáry</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1745"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1826"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1739"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1820"/>
         <source>Inserted line vertex %1 on source line %2.</source>
         <translation>Vložen vrchol linie %1 na zdrojovém řádku %2.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1789"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1783"/>
         <source>Insert vertex failed: no line segment could be resolved.</source>
         <translation>Vložení vertexu selhalo: nepodařilo se určit žádný segment linie.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1862"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1856"/>
         <source>Split line failed: line geometry could not be resolved.</source>
         <translation>Rozdělení linie selhalo: geometrii linie nelze určit.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1867"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1861"/>
         <source>Split line failed: closed lines cannot be split yet.</source>
         <translation>Rozdělení linie selhalo: uzavřené linie zatím nelze dělit.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1874"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1868"/>
         <source>Split line failed: select an interior line vertex.</source>
         <translation>Rozdělení linie selhalo: vyberte vnitřní vrchol linie.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1886"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1880"/>
         <source>Split line failed: split produced invalid line geometry.</source>
         <translation>Rozdělení linie selhalo: rozdělení vytvořilo neplatnou geometrii linie.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1895"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1889"/>
         <source>Split line failed.</source>
         <translation>Rozdělení linie selhalo.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1896"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1890"/>
         <source>Split line failed: %1</source>
         <translation>Rozdělení linie selhalo: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1911"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1905"/>
         <source>Split Line</source>
         <translation>Rozdělit linii</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1919"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1913"/>
         <source>Split line at vertex %1 on source line %2 and updated area references.</source>
         <translation>Linie rozdělena ve vrcholu %1 na zdrojovém řádku %2 a odkazy ploch byly aktualizovány.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1920"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1914"/>
         <source>Split line at vertex %1 on source line %2.</source>
         <translation>Linie rozdělena ve vrcholu %1 na zdrojovém řádku %2.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1954"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1948"/>
         <source>Delete vertex failed: line geometry could not be resolved.</source>
         <translation>Odstranění vrcholu selhalo: geometrii linie nelze určit.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1961"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1955"/>
         <source>Delete vertex failed: selected line anchor could not be resolved.</source>
         <translation>Odstranění vrcholu selhalo: vybranou kotvu linie nelze určit.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1969"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1963"/>
         <source>Vertex delete canceled.</source>
         <translation>Mazání bodu zrušeno.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1975"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1969"/>
         <source>Delete vertex failed: line needs at least two vertices.</source>
         <translation>Odstranění vrcholu selhalo: linie musí mít alespoň dva vrcholy.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1982"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1976"/>
         <source>Delete vertex failed: selected anchor could not be removed while keeping a valid line.</source>
         <translation>Odstranění vrcholu selhalo: vybranou kotvu nelze odstranit při zachování platné linie.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2002"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1996"/>
         <source>Delete vertex failed.</source>
         <translation>Odstranění vrcholu selhalo.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2003"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1997"/>
         <source>Delete vertex failed: %1</source>
         <translation>Odstranění vrcholu selhalo: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2014"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2008"/>
         <source>Delete Line Vertex</source>
         <translation>Odstranit bod čáry</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2020"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2014"/>
         <source>Removed line vertex %1 on source line %2.</source>
         <translation>Odstraněn vrchol linie %1 na zdrojovém řádku %2.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2040"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2034"/>
         <source>Toggle smooth failed: line geometry could not be resolved.</source>
         <translation>Přepnutí smooth selhalo: geometrii linie nelze určit.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2047"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2041"/>
         <source>Toggle smooth failed: selected line vertex could not be resolved.</source>
         <translation>Přepnutí smooth selhalo: vybraný vrchol linie nelze určit.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2068"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2062"/>
         <source>Toggle smooth failed.</source>
         <translation>Přepnutí smooth selhalo.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2069"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2063"/>
         <source>Toggle smooth failed: %1</source>
         <translation>Přepnutí smooth selhalo: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2079"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2073"/>
         <source>Toggle Line Vertex Smooth</source>
         <translation>Přepnout smooth bodu čáry</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2087"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2160"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2081"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2154"/>
         <source>Line vertex %1 on source line %2 set to smooth.</source>
         <translation>Vrchol linie %1 na zdrojovém řádku %2 nastaven jako smooth.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2088"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2161"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2082"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2155"/>
         <source>Line vertex %1 on source line %2 set to corner (smooth off).</source>
         <translation>Vrchol linie %1 na zdrojovém řádku %2 nastaven jako roh (smooth vypnuto).</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2108"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2102"/>
         <source>Set smooth failed: line geometry could not be resolved.</source>
         <translation>Nastavení smooth selhalo: geometrii linie nelze určit.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2115"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2109"/>
         <source>Set smooth failed: selected line vertex could not be resolved.</source>
         <translation>Nastavení smooth selhalo: vybraný vrchol linie nelze určit.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2141"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2135"/>
         <source>Set smooth failed.</source>
         <translation>Nastavení smooth selhalo.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2142"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2136"/>
         <source>Set smooth failed: %1</source>
         <translation>Nastavení smooth selhalo: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2152"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2146"/>
         <source>Set Line Vertex Smooth</source>
         <translation>Nastavit smooth bodu čáry</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2181"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2175"/>
         <source>Set control handle failed: line geometry could not be resolved.</source>
         <translation>Nastavení řídicího úchytu selhalo: geometrii linie nelze určit.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2188"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2182"/>
         <source>Set control handle failed: selected line vertex could not be resolved.</source>
         <translation>Nastavení řídicího úchytu selhalo: vybraný vrchol linie nelze určit.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2224"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2218"/>
         <source>Set control handle failed.</source>
         <translation>Nastavení řídicího úchytu selhalo.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2225"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2219"/>
         <source>Set control handle failed: %1</source>
         <translation>Nastavení řídicího úchytu selhalo: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2235"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2229"/>
         <source>Set Line Vertex Control Handle</source>
         <translation>Nastavit kontrolní bod čáry</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2242"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2236"/>
         <source>previous</source>
         <translation>předchozí</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2242"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2236"/>
         <source>next</source>
         <translation>další</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2244"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2238"/>
         <source>Line vertex %1 on source line %2 now uses %3 control handle.</source>
         <translation>Vrchol linie %1 na zdrojovém řádku %2 nyní používá řídicí úchyt %3.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2245"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2239"/>
         <source>Line vertex %1 on source line %2 no longer uses %3 control handle.</source>
         <translation>Vrchol linie %1 na zdrojovém řádku %2 už nepoužívá řídicí úchyt %3.</translation>
     </message>
@@ -4881,22 +4883,22 @@ Přesto bod smazat?</translation>
 <context>
     <name>TherionStudio::MapEditorObjectDetailsPanelController</name>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="499"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="515"/>
         <source>New Line</source>
         <translation>Nová linie</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="501"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="517"/>
         <source>New Area</source>
         <translation>Nová plocha</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="503"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="519"/>
         <source>New Point</source>
         <translation>Nový bod</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="505"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="521"/>
         <source>New Scrap</source>
         <translation>Nový scrap</translation>
     </message>
@@ -4919,7 +4921,7 @@ Přesto bod smazat?</translation>
         <translation> - Cílový scrap %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="132"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="131"/>
         <source>First object will create scrap &quot;%1&quot;.</source>
         <translation>První objekt vytvoří scrap &quot;%1&quot;.</translation>
     </message>
@@ -4929,72 +4931,72 @@ Přesto bod smazat?</translation>
         <translation>Čekající vložení%1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="177"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="193"/>
         <source>Use recent type/subtype %1</source>
         <translation>Použít poslední typ/podtyp %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="191"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="207"/>
         <source>Source line %1%2</source>
         <translation>Zdrojový řádek %1%2</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="513"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="781"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="529"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="800"/>
         <source>Options</source>
         <translation>Volby</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="618"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="859"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="636"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="879"/>
         <source>ID</source>
         <translation>ID</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="638"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="1128"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="656"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="1148"/>
         <source>Orientation override (-orientation)</source>
         <translation>Přepsání orientace (-orientation)</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="639"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="1127"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="657"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="1147"/>
         <source>Orientation (-orientation)</source>
         <translation>Orientace (-orientation)</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="704"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="722"/>
         <source>No map object selected.</source>
         <translation>Není vybrán žádný mapový objekt.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="707"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="725"/>
         <source>Object</source>
         <translation>Objekt</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="770"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="789"/>
         <source>Line</source>
         <translation>Linie</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="772"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="791"/>
         <source>Area</source>
         <translation>Plocha</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="774"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="793"/>
         <source>Point</source>
         <translation>Bod</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="776"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="795"/>
         <source>Scrap</source>
         <translation>Scrap</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="514"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="780"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="530"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="799"/>
         <source>Line Point</source>
         <translation>Bod linie</translation>
     </message>
@@ -5003,79 +5005,79 @@ Přesto bod smazat?</translation>
         <translation type="vanished">Zdrojový řádek %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="798"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="818"/>
         <source>This line is used as an area border. Select or delete the area instead.</source>
         <translation>Tato linie se používá jako hranice plochy. Místo ní vyberte nebo odstraňte plochu.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="808"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="828"/>
         <source>Used by area: %1</source>
         <translation>Používá plocha: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="809"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="829"/>
         <source>Click the area name to select the area that owns this border line.</source>
         <translation>Kliknutím na název plochy vyberete plochu, které tato hraniční linie patří.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="893"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="913"/>
         <source>Split Here is available for interior vertices of open lines.</source>
         <translation>Rozdělení zde je dostupné pro vnitřní vrcholy otevřených linií.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="906"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="926"/>
         <source>Cannot split at the first or last vertex.</source>
         <translation>Nelze rozdělit v prvním ani posledním vrcholu.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="908"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="928"/>
         <source>Cannot split closed lines yet.</source>
         <translation>Uzavřené linie zatím nelze dělit.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="910"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="930"/>
         <source>Split the selected line at this vertex.</source>
         <translation>Rozdělit vybranou linii v tomto vrcholu.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="913"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="933"/>
         <source>Extend Before</source>
         <translation>Prodloužit před</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="913"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="922"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="933"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="942"/>
         <source>Insert Before</source>
         <translation>Vložit před</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="914"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="934"/>
         <source>Extend After</source>
         <translation>Prodloužit za</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="914"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="923"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="934"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="943"/>
         <source>Insert After</source>
         <translation>Vložit za</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="916"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="936"/>
         <source>Extend the line before the first vertex.</source>
         <translation>Prodloužit linii před prvním vrcholem.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="917"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="937"/>
         <source>Insert a vertex before the selected vertex.</source>
         <translation>Vložit vrchol před vybraný vrchol.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="919"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="939"/>
         <source>Extend the line after the last vertex.</source>
         <translation>Prodloužit linii za posledním vrcholem.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="920"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="940"/>
         <source>Insert a vertex after the selected vertex.</source>
         <translation>Vložit vrchol za vybraný vrchol.</translation>
     </message>
@@ -5189,7 +5191,7 @@ Přesto bod smazat?</translation>
         <translation>Pozadí</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1850"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1858"/>
         <source>Add Background Layers</source>
         <translation>Přidat vrstvy pozadí</translation>
     </message>
@@ -5258,182 +5260,182 @@ Přesto bod smazat?</translation>
         <translation>Vygenerované XVI se nepodařilo parsovat: %1.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1852"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1860"/>
         <source>Background layers (*.png *.jpg *.jpeg *.bmp *.tif *.tiff *.gif *.webp *.svg *.xvi *.txt *.TXT)</source>
         <translation>Vrstvy pozadí (*.png *.jpg *.jpeg *.bmp *.tif *.tiff *.gif *.webp *.svg *.xvi *.txt *.TXT)</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1857"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1984"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1865"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1992"/>
         <source>No background layers were added.</source>
         <translation>Nebyly přidány žádné vrstvy pozadí.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1885"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1956"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1893"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1964"/>
         <source>Import PocketTopo Background</source>
         <translation>Importovat PocketTopo pozadí</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1977"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1985"/>
         <source>Added %1 background layer(s), but PocketTopo metadata sync was skipped because the document changed.</source>
         <translation>Přidáno %1 vrstev pozadí, ale synchronizace metadat PocketTopo byla přeskočena, protože dokument se změnil.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1979"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1987"/>
         <source>Added %1 background layer(s).</source>
         <translation>Přidáno %1 vrstev pozadí.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1982"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1990"/>
         <source>Adding %1 background layer(s)...</source>
         <translation>Přidává se %1 vrstev pozadí...</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2012"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2020"/>
         <source>Removed selected background layer.</source>
         <translation>Vybraná vrstva pozadí odebrána.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2013"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2021"/>
         <source>Remove Background Image</source>
         <translation>Odebrat obrázek pozadí</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2090"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2091"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2098"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2099"/>
         <source>Set Background Gamma</source>
         <translation>Nastavit Gamma pozadí</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2142"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2171"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2174"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2244"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2246"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2150"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2190"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2193"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2263"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2265"/>
         <source>Move Background Image</source>
         <translation>Přesunout obrázek pozadí</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2191"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2207"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2210"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2226"/>
         <source>Scale Background Image</source>
         <translation>Změnit měřítko obrázku pozadí</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2226"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2245"/>
         <source>Rotate Background Image</source>
         <translation>Otočit obrázek pozadí</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2515"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2534"/>
         <source>Select a background layer before setting its pivot.</source>
         <translation>Před nastavením pivotu vyberte vrstvu pozadí.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2522"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2541"/>
         <source>Set pivot: click in the map to choose the rotation center. Esc cancels.</source>
         <translation>Nastavení pivotu: kliknutím v mapě vyberte střed otáčení. Esc zruší akci.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2541"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2560"/>
         <source>Set pivot canceled.</source>
         <translation>Nastavení pivotu zrušeno.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2561"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2574"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2580"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2593"/>
         <source>Set pivot failed: map bounds are not available.</source>
         <translation>Nastavení pivotu selhalo: nejsou dostupné hranice mapy.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2595"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2614"/>
         <source>Set Background Pivot</source>
         <translation>Nastavit pivot pozadí</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2598"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2617"/>
         <source>Background pivot set.</source>
         <translation>Pivot pozadí nastaven.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2620"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2639"/>
         <source>Reset Background Pivot</source>
         <translation>Resetovat pivot pozadí</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2623"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2642"/>
         <source>Background pivot reset.</source>
         <translation>Pivot pozadí resetován.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3609"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3628"/>
         <source>Background transform metadata sync skipped: document changed.</source>
         <translation>Synchronizace metadat transformace pozadí přeskočena: dokument se změnil.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2256"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2275"/>
         <source>Fit + BG: no background layers loaded, fitting geometry only.</source>
         <translation>Přizpůsobit + pozadí: nejsou načteny žádné vrstvy pozadí, přizpůsobuje se pouze geometrie.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2257"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2276"/>
         <source>Fit + BG: fitting geometry plus %1 background layer(s).</source>
         <translation>Přizpůsobit + pozadí: přizpůsobuje se geometrie a %1 vrstev pozadí.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3188"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3207"/>
         <source>Auto-loaded %1 background layer(s) from xth_me_image_insert metadata.</source>
         <translation>Automaticky načteno %1 vrstev pozadí z metadat xth_me_image_insert.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3489"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3508"/>
         <source>Background metadata sync skipped: document changed.</source>
         <translation>Synchronizace metadat pozadí přeskočena: dokument se změnil.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3652"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3671"/>
         <source>Background gamma metadata sync skipped: document changed.</source>
         <translation>Synchronizace metadat gamma pozadí přeskočena: dokument se změnil.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3695"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3714"/>
         <source>Background metadata removal skipped: document changed.</source>
         <translation>Odstranění metadat pozadí přeskočeno: dokument se změnil.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3749"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3900"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3768"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3919"/>
         <source>Could not load background image.</source>
         <translation>Nepodařilo se načíst obrázek pozadí.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3756"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3775"/>
         <source>Added background layer.</source>
         <translation>Vrstva pozadí přidána.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3773"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3792"/>
         <source>Could not load SVG background metadata.</source>
         <translation>Nepodařilo se načíst metadata SVG pozadí.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3811"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3830"/>
         <source>Could not load SVG background.</source>
         <translation>Nepodařilo se načíst SVG pozadí.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3818"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3837"/>
         <source>Add SVG Background</source>
         <translation>Přidat SVG pozadí</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3901"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3920"/>
         <source>Could not load background image: %1.</source>
         <translation>Nepodařilo se načíst obrázek pozadí: %1.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3970"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3990"/>
         <source>Add Background Image</source>
         <translation>Přidat obrázek pozadí</translation>
     </message>
@@ -6094,7 +6096,7 @@ subtype blocks</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorTabSelectionInspectorWorkflow.cpp" line="214"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="264"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="258"/>
         <source>Complete Draft failed: no active TH2 text editor.</source>
         <translation>Dokončení návrhu selhalo: žádný aktivní textový editor TH2.</translation>
     </message>
@@ -6106,34 +6108,34 @@ subtype blocks</translation>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorTabSelectionInspectorWorkflow.cpp" line="252"/>
         <location filename="../src/app/text_editor/map_editor/MapEditorTabSelectionInspectorWorkflow.cpp" line="261"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="305"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="327"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="299"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="321"/>
         <source>Complete Draft failed.</source>
         <translation>Dokončení návrhu selhalo.</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorTabSelectionInspectorWorkflow.cpp" line="253"/>
         <location filename="../src/app/text_editor/map_editor/MapEditorTabSelectionInspectorWorkflow.cpp" line="262"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="306"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="328"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="300"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="322"/>
         <source>Complete Draft failed: %1</source>
         <translation>Dokončení návrhu selhalo: %1</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorTabSelectionInspectorWorkflow.cpp" line="268"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="348"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="342"/>
         <source>Complete Draft</source>
         <translation>Dokončit návrh</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorTabSelectionInspectorWorkflow.cpp" line="270"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="356"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="350"/>
         <source>Complete Draft wrote %1 geometry at source line %2.</source>
         <translation>Dokončení návrhu zapsalo geometrii %1 na zdrojový řádek %2.</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorTabSelectionInspectorWorkflow.cpp" line="271"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="357"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="351"/>
         <source>Complete Draft wrote %1 geometry to source.</source>
         <translation>Dokončení návrhu zapsalo geometrii %1 do zdroje.</translation>
     </message>
@@ -6208,32 +6210,32 @@ subtype blocks</translation>
         <translation>Mapový panel je oddělený: zdrojový editor zůstává na této kartě a vizuální mapa je v odděleném okně.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="474"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="468"/>
         <source>Smart Area candidate %1 of %2 selected. Press Enter or Complete Draft to insert.</source>
         <translation>Vybrán kandidát Smart Area %1 z %2. Pro vložení stiskněte Enter nebo Dokončit návrh.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="508"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="502"/>
         <source>Smart Area insert failed.</source>
         <translation>Vložení Smart Area selhalo.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="509"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="503"/>
         <source>Smart Area insert failed: %1</source>
         <translation>Vložení Smart Area selhalo: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="515"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="509"/>
         <source>Insert Smart Area</source>
         <translation>Vložit Smart Area</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="521"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="515"/>
         <source>Smart Area inserted at source line %1.</source>
         <translation>Smart Area vložena na zdrojový řádek %1.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="522"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="516"/>
         <source>Smart Area inserted.</source>
         <translation>Smart Area vložena.</translation>
     </message>
@@ -6241,78 +6243,78 @@ subtype blocks</translation>
 <context>
     <name>TherionStudio::MapEditorViewportInputController</name>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="1711"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="1705"/>
         <source>Drawing failed: no active TH2 text editor.</source>
         <translation>Kreslení selhalo: žádný aktivní textový editor TH2.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="1724"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="1718"/>
         <source>Freehand mode: drawing stroke...</source>
         <translation>Režim volné kresby: kreslí se tah...</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="1753"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="1747"/>
         <source>Line mode: dragging draft point.</source>
         <translation>Režim linie: tažení bodu návrhu.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="1754"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="1748"/>
         <source>Area mode: dragging draft point.</source>
         <translation>Režim plochy: tažení bodu návrhu.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="1757"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="1751"/>
         <source>Line mode: dragging bezier control point.</source>
         <translation>Režim linie: tažení řídicího bodu Bézierovy křivky.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="1758"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="1752"/>
         <source>Area mode: dragging bezier control point.</source>
         <translation>Režim plochy: tažení řídicího bodu Bézierovy křivky.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="2089"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="2083"/>
         <source>Line mode: draft point moved.</source>
         <translation>Režim linie: bod návrhu přesunut.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="2090"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="2084"/>
         <source>Area mode: draft point moved.</source>
         <translation>Režim plochy: bod návrhu přesunut.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="2093"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="2087"/>
         <source>Line mode: bezier control adjusted.</source>
         <translation>Režim linie: řídicí bod Bézierovy křivky upraven.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="2094"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="2088"/>
         <source>Area mode: bezier control adjusted.</source>
         <translation>Režim plochy: řídicí bod Bézierovy křivky upraven.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="2164"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="2158"/>
         <source>Line mode: %1 vertex/vertices captured. Press Enter or Complete Draft.</source>
         <translation>Režim linie: zachyceno %1 vrcholů. Stiskněte Enter nebo Dokončit návrh.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="2166"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="2160"/>
         <source>Area mode: %1 vertex/vertices captured. Press Enter or Complete Draft.</source>
         <translation>Režim plochy: zachyceno %1 vrcholů. Stiskněte Enter nebo Dokončit návrh.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="2193"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="2187"/>
         <source>Freehand mode needs a drag stroke to create a line.</source>
         <translation>Režim volné kresby vyžaduje pro vytvoření linie tažený tah.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="2204"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="2198"/>
         <source>freehand line</source>
         <translation>linie volnou rukou</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="1553"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="1568"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="1547"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="1562"/>
         <source>Vertex removed from current draft (%1 remaining).</source>
         <translation>Vrchol odebrán z aktuálního návrhu (zbývá %1).</translation>
     </message>
@@ -6422,7 +6424,7 @@ subtype blocks</translation>
 <context>
     <name>TherionStudio::TextEditorSourceTransactionController</name>
     <message>
-        <location filename="../src/app/text_editor/TextEditorSourceTransactionController.cpp" line="59"/>
+        <location filename="../src/app/text_editor/TextEditorSourceTransactionController.cpp" line="53"/>
         <source>Source transaction skipped: document changed.</source>
         <translation>Zdrojová transakce přeskočena: dokument se změnil.</translation>
     </message>
@@ -7153,211 +7155,244 @@ subtype blocks</translation>
 <context>
     <name>TherionStudio::TherionSourceValidator</name>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="454"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="592"/>
         <source>Empty scrap object</source>
         <translation>Prázdný objekt ve scrapu</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="455"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="593"/>
         <source>This `%1` object in a scrap has no geometry rows.</source>
         <translation>Tento objekt `%1` ve scrapu nemá žádné geometrické řádky.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="464"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="602"/>
         <source>Remove empty %1 block</source>
         <translation>Odstranit prázdný blok %1</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="524"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="662"/>
         <source>Duplicate object id</source>
         <translation>Duplicitní ID objektu</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="525"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="663"/>
         <source>Object id `%1` is already used by another object in this namespace.</source>
         <translation>ID objektu `%1` už v tomto namespace používá jiný objekt.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="561"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="699"/>
         <source>Unknown area line reference</source>
         <translation>Neznámý odkaz na linii plochy</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="562"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="700"/>
         <source>Area references line `%1`, but no line with this id exists in the current scrap.</source>
         <translation>Plocha odkazuje na linii `%1`, ale v aktuálním scrapu neexistuje linie s tímto ID.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="583"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="721"/>
         <source>Duplicate line-point smooth option</source>
         <translation>Duplicitní volba smooth bodu linie</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="584"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="722"/>
         <source>This line point already has a `smooth off` option before the next coordinate row.</source>
         <translation>Tento bod linie už má před dalším souřadnicovým řádkem volbu `smooth off`.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="591"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="729"/>
         <source>Remove duplicate smooth off on line %1</source>
         <translation>Odstranit duplicitní smooth off na řádku %1</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="770"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="908"/>
         <source>Malformed or duplicate option token</source>
         <translation>Chybný nebo duplicitní token volby</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="771"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="909"/>
         <source>This command contains an option-like token or duplicate option/value pair that Therion may reject.</source>
         <translation>Tento příkaz obsahuje token vypadající jako volba nebo duplicitní dvojici volba/hodnota, kterou může Therion odmítnout.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="778"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="916"/>
         <source>Rewrite line %1</source>
         <translation>Přepsat řádek %1</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="863"/>
+        <source>Windows path separator</source>
+        <translation type="vanished">Oddělovač cesty z Windows</translation>
+    </message>
+    <message>
+        <source>Path `%1` uses backslash separators. Use `/` separators for portable Therion source files.</source>
+        <translation type="vanished">Cesta `%1` používá zpětná lomítka. Pro přenositelné zdrojové soubory Therionu používejte oddělovače `/`.</translation>
+    </message>
+    <message>
+        <source>Convert path separators to /</source>
+        <translation type="vanished">Převést oddělovače cest na /</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1076"/>
         <source>Unknown command</source>
         <translation>Neznámý příkaz</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="864"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1077"/>
         <source>Command `%1` is not present in the Therion command catalog.</source>
         <translation>Příkaz `%1` není v katalogu příkazů Therion.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="874"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1087"/>
         <source>Unexpected command context</source>
         <translation>Neočekávaný kontext příkazu</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="875"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1088"/>
         <source>Command `%1` is not listed for context `%2`. Expected context: %3.</source>
         <translation>Příkaz `%1` není uveden pro kontext `%2`. Očekávaný kontext: %3.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="888"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1101"/>
         <source>Unexpected document type</source>
         <translation>Neočekávaný typ dokumentu</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="889"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1102"/>
         <source>Command `%1` is not listed for document type `%2`. Expected document type: %3.</source>
         <translation>Příkaz `%1` není uveden pro typ dokumentu `%2`. Očekávaný typ dokumentu: %3.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="900"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1113"/>
         <source>Missing argument</source>
         <translation>Chybějící argument</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="901"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1114"/>
         <source>Command `%1` expects at least %2 positional argument(s), but %3 provided.</source>
         <translation>Příkaz `%1` očekává alespoň %2 pozičních argumentů, ale zadáno je %3.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="915"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1128"/>
         <source>Extra argument</source>
         <translation>Nadbytečný argument</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="916"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1129"/>
         <source>Command `%1` declares %2 positional argument(s), but %3 provided.</source>
         <translation>Příkaz `%1` deklaruje %2 pozičních argumentů, ale zadáno je %3.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="935"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1148"/>
         <source>Unknown argument value</source>
         <translation>Neznámá hodnota argumentu</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="936"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1149"/>
         <source>Command `%1` does not list `%2` as a known value. Known values: %3.</source>
         <translation>Příkaz `%1` neuvádí `%2` jako známou hodnotu. Známé hodnoty: %3.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="949"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1162"/>
         <source>Unknown option</source>
         <translation>Neznámá volba</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="950"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1163"/>
         <source>Command `%1` does not list option `%2` in the Therion command catalog.</source>
         <translation>Příkaz `%1` v katalogu příkazů Therion neuvádí volbu `%2`.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="961"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1174"/>
         <source>Missing option value</source>
         <translation>Chybějící hodnota volby</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="962"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1175"/>
         <source>Option `%1` on command `%2` expects a value.</source>
         <translation>Volba `%1` u příkazu `%2` očekává hodnotu.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="969"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1182"/>
         <source>Unexpected option value count</source>
         <translation>Neočekávaný počet hodnot volby</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="970"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1183"/>
         <source>Option `%1` on command `%2` expects exactly %3 value(s), but %4 provided.</source>
         <translation>Volba `%1` u příkazu `%2` očekává přesně %3 hodnot, ale zadáno je %4.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="992"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1205"/>
         <source>Unknown option value</source>
         <translation>Neznámá hodnota volby</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="993"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1206"/>
         <source>Option `%1` on command `%2` does not list `%3` as a known value. Known values: %4.</source>
         <translation>Volba `%1` u příkazu `%2` neuvádí `%3` jako známou hodnotu. Známé hodnoty: %4.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1014"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1227"/>
         <source>Unmatched block close</source>
         <translation>Neodpovídající uzavření bloku</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1015"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1228"/>
         <source>Closing directive `%1` does not match the currently open block.</source>
         <translation>Uzavírací direktiva `%1` neodpovídá aktuálně otevřenému bloku.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1027"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1240"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1286"/>
         <source>Unclosed block</source>
         <translation>Neuzavřený blok</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1028"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1241"/>
         <source>Block `%1` is not closed before the end of the document. Expected `%2`.</source>
         <translation>Blok `%1` není před koncem dokumentu uzavřen. Očekáváno `%2`.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="138"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1287"/>
+        <source>Block `%1` should be closed with `%2` before command `%3` in `%4` context.</source>
+        <translation>Blok `%1` by měl být uzavřen pomocí `%2` před příkazem `%3` v kontextu `%4`.</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="139"/>
         <source>Insert before line %1:
 %2</source>
         <translation>Vložit před řádek %1:
 %2</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="141"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="142"/>
         <source>Insert at end of file:
 %1</source>
         <translation>Vložit na konec souboru:
 %1</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1039"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="994"/>
+        <source>Portable path separator</source>
+        <translation>Přenosný oddělovač cesty</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="995"/>
+        <source>Path `%1` uses backslash separators. Use `/` separators for portable Therion projects.</source>
+        <translation>Cesta `%1` používá zpětná lomítka. Pro přenositelné projekty Therionu používejte oddělovače `/`.</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1012"/>
+        <source>Convert selected path to /</source>
+        <translation>Převést vybranou cestu na /</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1252"/>
         <source>Insert %1 before line %2</source>
         <translation>Vložit %1 před řádek %2</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1042"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1255"/>
         <source>Insert %1 at end of file</source>
         <translation>Vložit %1 na konec souboru</translation>
     </message>
@@ -7365,7 +7400,7 @@ subtype blocks</translation>
 <context>
     <name>TherionStudio::TherionSqlReportDatabase</name>
     <message>
-        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="166"/>
+        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="163"/>
         <source>SQL Reports</source>
         <translation>SQL reporty</translation>
     </message>
@@ -7445,72 +7480,71 @@ subtype blocks</translation>
         <translation>Hloubka podle survey</translation>
     </message>
     <message>
-        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="80"/>
         <source>Shot Error Ranking</source>
-        <translation>Záměry podle chyby</translation>
+        <translation type="vanished">Záměry podle chyby</translation>
     </message>
     <message>
-        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="227"/>
+        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="224"/>
         <source>Could not open in-memory SQLite database: %1</source>
         <translation>Nepodařilo se otevřít SQLite databázi v paměti: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="240"/>
+        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="237"/>
         <source>Could not read %1.</source>
         <translation>Nepodařilo se přečíst %1.</translation>
     </message>
     <message>
-        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="259"/>
+        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="256"/>
         <source>Could not start SQLite import transaction: %1</source>
         <translation>Nepodařilo se spustit importní transakci SQLite: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="284"/>
+        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="281"/>
         <source>Could not import SQL statement %1: %2</source>
         <translation>Nepodařilo se importovat SQL příkaz %1: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="294"/>
+        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="291"/>
         <source>Could not commit SQLite import transaction: %1</source>
         <translation>Nepodařilo se potvrdit importní transakci SQLite: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="303"/>
+        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="300"/>
         <source>The SQL file does not look like a Therion database export. Missing tables: %1</source>
         <translation>Soubor SQL nevypadá jako databázový export Therionu. Chybějící tabulky: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="321"/>
+        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="318"/>
         <source>No Therion SQL export is open.</source>
         <translation>Není otevřen žádný SQL export Therionu.</translation>
     </message>
     <message>
-        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="409"/>
+        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="406"/>
         <source>The SQL export contains an unterminated string literal.</source>
         <translation>SQL export obsahuje neukončený řetězcový literál.</translation>
     </message>
     <message>
-        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="445"/>
+        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="442"/>
         <source>Unsupported SQL export statement: %1</source>
         <translation>Nepodporovaný příkaz SQL exportu: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="455"/>
+        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="452"/>
         <source>Enter a SELECT query.</source>
         <translation>Zadejte dotaz SELECT.</translation>
     </message>
     <message>
-        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="461"/>
+        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="458"/>
         <source>Only one SQL statement is allowed.</source>
         <translation>Je povolen jen jeden SQL příkaz.</translation>
     </message>
     <message>
-        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="470"/>
+        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="467"/>
         <source>Only read-only SELECT queries are allowed.</source>
         <translation>Jsou povoleny jen dotazy SELECT pouze pro čtení.</translation>
     </message>
     <message>
-        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="480"/>
+        <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="477"/>
         <source>The query contains a blocked SQL keyword.</source>
         <translation>Dotaz obsahuje blokované klíčové slovo SQL.</translation>
     </message>

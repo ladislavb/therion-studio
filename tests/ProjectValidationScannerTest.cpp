@@ -381,6 +381,7 @@ int runMissingSourceReferenceValidationTest()
     if (!expect(writeTextFile(sourceFile,
                               QStringLiteral("survey cave\n"
                                              "  input existing\n"
+                                             "  input .\\existing\n"
                                              "  input missing\n"
                                              "  input missing_explicit.th222\n"
                                              "  input generated\n"
@@ -441,6 +442,53 @@ int runMissingSourceReferenceValidationTest()
     }
     if (!expect(findingCount(waitResult.result, configFile, QStringLiteral("missing-source-reference")) == 1,
                 "Project validation should report unresolved source references in thconfig files.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int runSourceReferencePathNormalizationTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Temporary source reference normalization directory creation failed.")) {
+        return 1;
+    }
+
+    QDir projectDir(tempDir.path());
+    if (!expect(projectDir.mkpath(QStringLiteral("date/G0_99")),
+                "Temporary source reference normalization subdirectory could not be created.")) {
+        return 1;
+    }
+
+    const QString sourceFile = projectDir.filePath(QStringLiteral("index.th"));
+    const QString referencedFile = projectDir.filePath(QStringLiteral("date/G0_99/grind_intrare_0.th"));
+    if (!expect(writeTextFile(sourceFile, QStringLiteral("survey cave\nendsurvey\n")),
+                "Temporary source reference normalization root could not be written.")) {
+        return 1;
+    }
+    if (!expect(writeTextFile(referencedFile, QStringLiteral("survey referenced\nendsurvey\n")),
+                "Temporary source reference normalization target could not be written.")) {
+        return 1;
+    }
+
+    const QString expectedPath = canonicalOrAbsolutePath(referencedFile);
+    if (!expect(resolveTherionSourceReferencePath(sourceFile,
+                                                  QStringLiteral(".\\date\\G0_99\\grind_intrare_0.th"))
+                    == expectedPath,
+                "Source-reference resolver should resolve Windows separator paths relative to the current source file.")) {
+        return 1;
+    }
+    if (!expect(resolveTherionSourceReferencePath(sourceFile,
+                                                  QStringLiteral("./date/G0_99/grind_intrare_0.th"))
+                    == expectedPath,
+                "Source-reference resolver should resolve ./-prefixed paths as normal relative paths.")) {
+        return 1;
+    }
+    if (!expect(resolveTherionSourceReferencePath(sourceFile,
+                                                  QStringLiteral("date/G0_99/grind_intrare_0.th"))
+                    == expectedPath,
+                "Source-reference resolver should keep normal relative path resolution unchanged.")) {
         return 1;
     }
 
@@ -1502,6 +1550,9 @@ int main(int argc, char **argv)
         return 1;
     }
     if (runMissingSourceReferenceValidationTest() != 0) {
+        return 1;
+    }
+    if (runSourceReferencePathNormalizationTest() != 0) {
         return 1;
     }
     if (runUnsavedMissingSourceReferenceValidationTest() != 0) {

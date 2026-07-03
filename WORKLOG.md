@@ -59,6 +59,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
   start with non-layout Therion-looking words do not open nested blocks; parent-context layout commands before `endcode`
   report the active `code` block as unclosed, and closing directives validate against the parent block context so
   `endcode` no longer triggers unexpected-context warnings inside `layout`.
+- Project source-reference resolution now treats leading `./` paths and Windows-style backslash separators as equivalent
+  to normal forward-slash relative paths, while validation warns on backslash path tokens and offers an `Apply Fix` that
+  converts only the affected path token to portable `/` separators while previewing the full source line after the
+  replacement.
 - Draft release notes for `2026.7.1` are now available in `docs/releases/2026.7.1.md` with the SQL report viewer covered
   as one feature block and the Improvements/Bug Fixes sections condensed for release readability; final release prep
   should still confirm version/build metadata, packaging outputs, and a short manual smoke pass before tagging.

@@ -1,5 +1,7 @@
 #include "TherionSourceReferenceResolver.h"
 
+#include "TherionSourceLogicalDocument.h"
+
 #include <QDir>
 #include <QFileInfo>
 
@@ -26,9 +28,68 @@ QString canonicalOrAbsoluteFilePath(const QString &path)
     return info.absoluteFilePath();
 }
 
+QString normalizedTherionSourceReferencePath(QString referencePath)
+{
+    referencePath = referencePath.trimmed();
+    referencePath.replace(QLatin1Char('\\'), QLatin1Char('/'));
+    return QDir::cleanPath(referencePath);
+}
+
+TherionSourcePhysicalRange therionSourceReferencePathRange(const TherionSourceLogicalCommand &command)
+{
+    TherionSourcePhysicalRange range;
+    range.lineNumber = command.startLineNumber;
+    range.lineText = command.text;
+
+    int start = 0;
+    while (start < command.text.size() && command.text.at(start).isSpace()) {
+        ++start;
+    }
+    while (start < command.text.size() && !command.text.at(start).isSpace()) {
+        ++start;
+    }
+    while (start < command.text.size() && command.text.at(start).isSpace()) {
+        ++start;
+    }
+    if (start >= command.text.size()) {
+        return {};
+    }
+
+    int end = start;
+    if (command.text.at(start) == QLatin1Char('"')) {
+        ++end;
+        while (end < command.text.size()) {
+            const QChar ch = command.text.at(end);
+            ++end;
+            if (ch == QLatin1Char('"')) {
+                break;
+            }
+        }
+    } else {
+        while (end < command.text.size() && !command.text.at(end).isSpace()) {
+            ++end;
+        }
+    }
+
+    range.columnNumber = start + 1;
+    range.columnLength = end - start;
+    range.startOffset = command.startOffset + start;
+    range.length = range.columnLength;
+    return range;
+}
+
+QString therionSourceReferencePathToken(const TherionSourceLogicalCommand &command)
+{
+    const TherionSourcePhysicalRange range = therionSourceReferencePathRange(command);
+    if (range.columnNumber <= 0 || range.columnLength <= 0) {
+        return {};
+    }
+    return range.lineText.mid(range.columnNumber - 1, range.columnLength);
+}
+
 QStringList therionSourceReferencePathCandidates(const QString &currentFilePath, const QString &referencePath)
 {
-    const QString trimmedReference = referencePath.trimmed();
+    const QString trimmedReference = normalizedTherionSourceReferencePath(referencePath);
     if (trimmedReference.isEmpty()) {
         return {};
     }
