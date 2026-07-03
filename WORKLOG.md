@@ -63,6 +63,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   to normal forward-slash relative paths, while validation warns on backslash path tokens and offers an `Apply Fix` that
   converts only the affected path token to portable `/` separators while previewing the full source line after the
   replacement.
+- Validation results can now be exported as a single Markdown report from the Validation panel, including the current
+  summary, grouped findings, source snippets, and safe-fix previews for sharing or documentation.
 - Draft release notes for `2026.7.1` are now available in `docs/releases/2026.7.1.md` with the SQL report viewer covered
   as one feature block and the Improvements/Bug Fixes sections condensed for release readability; final release prep
   should still confirm version/build metadata, packaging outputs, and a short manual smoke pass before tagging.

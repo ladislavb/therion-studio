@@ -1,6 +1,7 @@
 #include "MainWindow.h"
 
 #include "MainWindowValidationFixApplyService.h"
+#include "ValidationResultsMarkdownExporter.h"
 #include "../editor/ValidationSeverityStyle.h"
 #include "text_editor/TextEditorValidationCatalog.h"
 #include "text_editor/TextEditorTab.h"
@@ -16,15 +17,18 @@
 #include <QDebug>
 #include <QDir>
 #include <QElapsedTimer>
+#include <QFileDialog>
 #include <QFileInfo>
 #include <QHash>
 #include <QHeaderView>
 #include <QHBoxLayout>
 #include <QItemSelectionModel>
 #include <QLabel>
+#include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QPointer>
+#include <QSaveFile>
 #include <QSizePolicy>
 #include <QStandardItem>
 #include <QStandardItemModel>
@@ -352,11 +356,22 @@ void MainWindow::buildValidationSidebar()
     validationHeader->setWordWrap(true);
     validationLayout->addWidget(validationHeader);
 
+    auto *validationRunRow = new QHBoxLayout;
+    validationRunRow->setContentsMargins(0, 0, 0, 0);
+    validationRunRow->setSpacing(6);
+
     validationScanProjectButton_ = new QPushButton(tr("Validate Project"), validationPage);
     connect(validationScanProjectButton_, &QPushButton::clicked, this, [this]() {
         requestProjectValidation();
     });
-    validationLayout->addWidget(validationScanProjectButton_);
+    validationRunRow->addWidget(validationScanProjectButton_);
+
+    validationExportMarkdownButton_ = new QPushButton(tr("Export Markdown..."), validationPage);
+    validationExportMarkdownButton_->setEnabled(false);
+    connect(validationExportMarkdownButton_, &QPushButton::clicked, this, &MainWindow::exportValidationResultsMarkdown);
+    validationRunRow->addWidget(validationExportMarkdownButton_);
+
+    validationLayout->addLayout(validationRunRow);
 
     validationStatusLabel_ = new QLabel(validationPage);
     validationStatusLabel_->setWordWrap(true);
@@ -446,14 +461,25 @@ void MainWindow::triggerValidateDocumentForActiveDocument()
     validationDiagnostics_ = validation.diagnostics;
     validationDiagnosticFilePaths_.clear();
     validationDiagnosticFilePaths_.reserve(validation.diagnostics.size());
+    validationExportFindings_.clear();
+    validationExportFindings_.reserve(validation.diagnostics.size());
     for (qsizetype index = 0; index < validation.diagnostics.size(); ++index) {
         validationDiagnosticFilePaths_.append(filePath);
+        validationExportFindings_.append({filePath, validation.diagnostics.at(index)});
     }
     validationDocumentPath_ = filePath;
+    validationExportScopeLabel_ = validationDocumentLabel(displayName, filePath);
+    validationExportProjectRootPath_.clear();
+    validationExportSearchedFileCount_ = 1;
+    validationExportLimitReached_ = false;
+    validationExportAvailable_ = true;
+    if (validationExportMarkdownButton_ != nullptr) {
+        validationExportMarkdownButton_->setEnabled(true);
+    }
     validationProjectMode_ = false;
     lastAppliedProjectValidationSignature_.clear();
 
-    const QString documentLabel = validationDocumentLabel(displayName, filePath);
+    const QString documentLabel = validationExportScopeLabel_;
     if (validation.diagnostics.isEmpty()) {
         clearValidationRailIndicator();
         pendingValidationFixNavigation_ = false;
@@ -541,7 +567,13 @@ void MainWindow::clearProjectValidationResults()
 {
     validationDiagnostics_.clear();
     validationDiagnosticFilePaths_.clear();
+    validationExportFindings_.clear();
     validationDocumentPath_.clear();
+    validationExportScopeLabel_.clear();
+    validationExportProjectRootPath_.clear();
+    validationExportSearchedFileCount_ = 0;
+    validationExportLimitReached_ = false;
+    validationExportAvailable_ = false;
     validationRevealByGeneration_.clear();
     pendingProjectValidationRevealPanel_ = false;
     pendingValidationFixNavigation_ = false;
@@ -555,6 +587,9 @@ void MainWindow::clearProjectValidationResults()
     }
     if (validationScanProjectButton_ != nullptr) {
         validationScanProjectButton_->setEnabled(true);
+    }
+    if (validationExportMarkdownButton_ != nullptr) {
+        validationExportMarkdownButton_->setEnabled(false);
     }
     if (validationStatusLabel_ != nullptr) {
         validationStatusLabel_->setText(tr("Open a project before validating."));
@@ -690,7 +725,13 @@ void MainWindow::handleProjectValidationStarted(TherionStudio::ProjectValidation
     if (replaceVisibleResults) {
         validationDiagnostics_.clear();
         validationDiagnosticFilePaths_.clear();
+        validationExportFindings_.clear();
         validationDocumentPath_.clear();
+        validationExportScopeLabel_.clear();
+        validationExportProjectRootPath_.clear();
+        validationExportSearchedFileCount_ = 0;
+        validationExportLimitReached_ = false;
+        validationExportAvailable_ = false;
         lastAppliedProjectValidationSignature_.clear();
         clearValidationRailIndicator();
         validationProjectMode_ = true;
@@ -705,6 +746,9 @@ void MainWindow::handleProjectValidationStarted(TherionStudio::ProjectValidation
     }
     if (replaceVisibleResults && validationScanProjectButton_ != nullptr) {
         validationScanProjectButton_->setEnabled(false);
+    }
+    if (replaceVisibleResults && validationExportMarkdownButton_ != nullptr) {
+        validationExportMarkdownButton_->setEnabled(false);
     }
     if (revealPanel) {
         showSidebarPane(SidebarPane::Validation);
@@ -860,11 +904,25 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
     validationResultsModel_->setHorizontalHeaderLabels({tr("Problems")});
     validationDiagnostics_.clear();
     validationDiagnosticFilePaths_.clear();
+    validationExportFindings_ = result.findings;
+    validationExportScopeLabel_ = tr("Project validation");
+    validationExportProjectRootPath_ = result.projectRootPath;
+    validationExportSearchedFileCount_ = result.searchedFileCount;
+    validationExportLimitReached_ = result.limitReached;
+    validationExportAvailable_ = result.errorMessage.isEmpty();
     validationDocumentPath_.clear();
     validationProjectMode_ = true;
     lastAppliedProjectValidationSignature_ = resultSignature;
+    if (validationExportMarkdownButton_ != nullptr) {
+        validationExportMarkdownButton_->setEnabled(validationExportAvailable_);
+    }
 
     if (!result.errorMessage.isEmpty()) {
+        validationExportFindings_.clear();
+        validationExportAvailable_ = false;
+        if (validationExportMarkdownButton_ != nullptr) {
+            validationExportMarkdownButton_->setEnabled(false);
+        }
         clearValidationRailIndicator();
         QElapsedTimer diagnosticsTimer;
         diagnosticsTimer.start();
@@ -1175,6 +1233,65 @@ void MainWindow::openValidationResult(const QModelIndex &index)
             guardedTab->setEditorMode(TherionStudio::TextEditorTab::EditorMode::Raw);
             guardedTab->goToLineColumn(lineNumber, columnNumber);
         });
+    }
+}
+
+void MainWindow::exportValidationResultsMarkdown()
+{
+    if (!validationExportAvailable_) {
+        QMessageBox::information(this,
+                                 tr("Export Validation Results"),
+                                 tr("No validation results are available to export."));
+        return;
+    }
+
+    QString defaultDirectory = validationExportProjectRootPath_.trimmed();
+    if (defaultDirectory.isEmpty() && !validationDocumentPath_.trimmed().isEmpty()) {
+        defaultDirectory = QFileInfo(validationDocumentPath_).absolutePath();
+    }
+    if (defaultDirectory.isEmpty()) {
+        defaultDirectory = QDir::homePath();
+    }
+
+    QString selectedPath = QFileDialog::getSaveFileName(
+        this,
+        tr("Export Validation Results"),
+        QDir(defaultDirectory).filePath(QStringLiteral("validation-results.md")),
+        tr("Markdown files (*.md);;All files (*)"));
+    if (selectedPath.isEmpty()) {
+        return;
+    }
+    if (QFileInfo(selectedPath).suffix().isEmpty()) {
+        selectedPath += QStringLiteral(".md");
+    }
+
+    TherionStudio::ValidationResultsMarkdownExporter::Options options;
+    options.projectRootPath = validationExportProjectRootPath_;
+    options.scopeLabel = validationExportScopeLabel_;
+    options.generatedAt = QDateTime::currentDateTime();
+    options.searchedFileCount = validationExportSearchedFileCount_;
+    options.limitReached = validationExportLimitReached_;
+    const QString markdown =
+        TherionStudio::ValidationResultsMarkdownExporter::exportFindings(validationExportFindings_, options);
+
+    QSaveFile file(selectedPath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::warning(this,
+                             tr("Export Validation Results"),
+                             tr("Could not write %1.").arg(QDir::toNativeSeparators(selectedPath)));
+        return;
+    }
+    file.write(markdown.toUtf8());
+    if (!file.commit()) {
+        QMessageBox::warning(this,
+                             tr("Export Validation Results"),
+                             tr("Could not write %1.").arg(QDir::toNativeSeparators(selectedPath)));
+        return;
+    }
+
+    if (validationStatusLabel_ != nullptr) {
+        validationStatusLabel_->setText(
+            tr("Validation results exported to %1.").arg(QDir::toNativeSeparators(selectedPath)));
     }
 }
 

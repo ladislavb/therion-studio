@@ -255,6 +255,8 @@ set(THERION_APP_SOURCES
     src/app/ProjectValidationController.h
     src/app/ProjectValidationScanner.cpp
     src/app/ProjectValidationScanner.h
+    src/app/ValidationResultsMarkdownExporter.cpp
+    src/app/ValidationResultsMarkdownExporter.h
     src/app/ProjectStructureScanner.cpp
     src/app/ProjectStructureScanner.h
     src/app/TherionExecutableSelectionController.cpp
@@ -1242,6 +1244,10 @@ therion_add_app_unit_test(ProjectValidationScannerTest
 therion_add_app_unit_test(ProjectValidationControllerTest
     tests/ProjectValidationControllerTest.cpp)
 
+qt_add_executable(ValidationResultsMarkdownExporterTest
+    tests/ValidationResultsMarkdownExporterTest.cpp)
+target_link_libraries(ValidationResultsMarkdownExporterTest PRIVATE therion_app Qt6::Test)
+
 qt_add_executable(TherionRunnerSupportQTests
     tests/TherionRunnerSupportQTestMain.cpp
     tests/TherionExecutableSelectionControllerTest.cpp
@@ -1597,6 +1603,7 @@ set(THERION_UNIT_TEST_TARGETS
     ProjectSearchScannerTest
     ProjectValidationScannerTest
     ProjectValidationControllerTest
+    ValidationResultsMarkdownExporterTest
     SessionStoreTest
     MainWindowServiceQTests
     MainWindowSessionDocumentControllerTest

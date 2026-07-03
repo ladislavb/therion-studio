@@ -195,6 +195,7 @@ private:
     void handleValidationSelectionChanged(const QModelIndex &current, const QModelIndex &previous);
     void openValidationResult(const QModelIndex &index);
     void applySelectedValidationFix();
+    void exportValidationResultsMarkdown();
     bool applyValidationFixesToValidatedDocument(const QString &filePath,
                                                  const QVector<TherionStudio::TherionSourceDiagnosticFix> &fixes);
     bool activateStructureSidebarAction(const QString &action);
@@ -422,6 +423,7 @@ private:
     QPlainTextEdit *validationCurrentSourceEdit_ = nullptr;
     QPlainTextEdit *validationSuggestedSourceEdit_ = nullptr;
     QPushButton *validationScanProjectButton_ = nullptr;
+    QPushButton *validationExportMarkdownButton_ = nullptr;
     QPushButton *validationApplyFixButton_ = nullptr;
     QPushButton *therionBrowseWorkingDirectoryButton_ = nullptr;
     QLineEdit *therionArgumentsEdit_ = nullptr;
@@ -501,12 +503,18 @@ private:
     QStandardItemModel *mapObjectsModel_ = nullptr;
     QVector<TherionStudio::TherionSourceDiagnostic> validationDiagnostics_;
     QVector<QString> validationDiagnosticFilePaths_;
+    QVector<TherionStudio::ProjectValidationScanner::Finding> validationExportFindings_;
     QString validationDocumentPath_;
+    QString validationExportScopeLabel_;
+    QString validationExportProjectRootPath_;
     QString lastAppliedProjectValidationSignature_;
     QHash<quint64, bool> validationRevealByGeneration_;
     bool pendingProjectValidationRevealPanel_ = false;
     bool pendingValidationFixNavigation_ = false;
     bool validationProjectMode_ = false;
+    bool validationExportAvailable_ = false;
+    bool validationExportLimitReached_ = false;
+    int validationExportSearchedFileCount_ = 0;
     int validationProblemCount_ = 0;
     TherionStudio::TherionSourceDiagnosticSeverity validationHighestSeverity_ =
         TherionStudio::TherionSourceDiagnosticSeverity::Warning;
