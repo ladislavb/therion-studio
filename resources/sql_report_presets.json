@@ -168,31 +168,5 @@
       "group by SV.ID, SV.FULL_NAME, SV.NAME",
       "order by Depth desc, Survey asc"
     ]
-  },
-  {
-    "id": "shot-error-ranking",
-    "title": "Shot Error Ranking",
-    "query": [
-      "select SH.ID as ShotId,",
-      "       FS.NAME as FromStation,",
-      "       TS.NAME as ToStation,",
-      "       coalesce(SV.FULL_NAME, SV.NAME) as Survey,",
-      "       round(coalesce(SH.ERR_LENGTH, 0), 3) as LengthError,",
-      "       round(coalesce(SH.ERR_BEARING, 0), 3) as BearingError,",
-      "       round(coalesce(SH.ERR_GRADIENT, 0), 3) as GradientError,",
-      "       round(coalesce(SH.LENGTH, 0), 2) as Length",
-      "from SHOT SH",
-      "left join STATION FS on FS.ID = SH.FROM_ID",
-      "left join STATION TS on TS.ID = SH.TO_ID",
-      "left join CENTRELINE C on C.ID = SH.CENTRELINE_ID",
-      "left join SURVEY SV on SV.ID = C.SURVEY_ID",
-      "where coalesce(SH.ERR_LENGTH, 0) <> 0",
-      "   or coalesce(SH.ERR_BEARING, 0) <> 0",
-      "   or coalesce(SH.ERR_GRADIENT, 0) <> 0",
-      "order by abs(coalesce(SH.ERR_LENGTH, 0)) desc,",
-      "         abs(coalesce(SH.ERR_BEARING, 0)) desc,",
-      "         abs(coalesce(SH.ERR_GRADIENT, 0)) desc",
-      "limit 100"
-    ]
   }
 ]

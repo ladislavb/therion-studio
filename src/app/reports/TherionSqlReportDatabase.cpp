@@ -76,9 +76,6 @@ QString translatedPresetTitle(const QString &id, const QString &fallbackTitle)
     if (id == QStringLiteral("depth-by-survey")) {
         return TherionSqlReportDatabase::tr("Depth by Survey");
     }
-    if (id == QStringLiteral("shot-error-ranking")) {
-        return TherionSqlReportDatabase::tr("Shot Error Ranking");
-    }
     return fallbackTitle.trimmed().isEmpty() ? id : fallbackTitle;
 }
 

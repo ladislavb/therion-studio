@@ -61,7 +61,7 @@ QString writeSqlFixture(QTemporaryDir *tempDir)
 void TherionSqlReportDatabaseTest::loadsPredefinedReportsFromResource()
 {
     const QVector<TherionSqlReportDefinition> reports = TherionSqlReportDatabase::predefinedReports();
-    QCOMPARE(reports.size(), 12);
+    QCOMPARE(reports.size(), 11);
 
     auto findPreset = [&reports](const QString &id) {
         return std::find_if(reports.cbegin(), reports.cend(), [&id](const TherionSqlReportDefinition &report) {
