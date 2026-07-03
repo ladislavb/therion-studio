@@ -7,10 +7,12 @@
       "union all select 'Centrelines', count(*) from CENTRELINE",
       "union all select 'Stations', count(*) from STATION",
       "union all select 'Shots', count(*) from SHOT",
-      "union all select 'People', count(*) from PERSON",
-      "union all select 'Total length', round(coalesce(sum(LENGTH), 0), 2) from CENTRELINE",
+      "union all select 'Explorers', count(distinct PERSON_ID) from EXPLO",
+      "union all select 'Surveyors', count(distinct PERSON_ID) from TOPO",
+      "union all select 'Length', round(coalesce(sum(LENGTH), 0), 2) from CENTRELINE",
       "union all select 'Surface length', round(coalesce(sum(SURFACE_LENGTH), 0), 2) from CENTRELINE",
-      "union all select 'Duplicate length', round(coalesce(sum(DUPLICATE_LENGTH), 0), 2) from CENTRELINE"
+      "union all select 'Duplicate length', round(coalesce(sum(DUPLICATE_LENGTH), 0), 2) from CENTRELINE",
+      "union all select 'Depth', round(coalesce(max(Z) - min(Z), 0), 2) from STATION"
     ]
   },
   {

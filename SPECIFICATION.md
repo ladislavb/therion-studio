@@ -302,7 +302,7 @@ The rules below define the expected day-to-day interaction model. If a later req
 - A `.lox` file shall open in a read-only 3D viewer tab and shall not be offered for map editing.
 - A Therion SQL database export `.sql` file shall open in a read-only SQL report tab and shall not be offered for text editing by default.
 - The SQL report tab shall import Therion SQL export statements into an in-memory SQLite database, reject unsupported import statements, validate that the expected Therion export tables are present, and report import failures without modifying the original `.sql` file.
-- The SQL report tab shall provide predefined query presets for survey overview, survey lengths, exploration by person, surveying by person, survey and exploration activity by year, recent activity, continuation stations, lead flags by survey, entrances, depth by survey, and shot error ranking where the imported schema supports them.
+- The SQL report tab shall provide predefined query presets for survey overview including explorer and surveyor counts plus total depth, survey lengths, exploration by person, surveying by person, survey and exploration activity by year, recent activity, continuation stations, lead flags by survey, entrances, depth by survey, and shot error ranking where the imported schema supports them.
 - Built-in SQL report presets shall be data-driven from bundled application resources rather than hardcoded directly in UI code.
 - Activating a SQL report preset shall copy that preset query into the visible query editor and run it, so the user can inspect and modify the SQL before running a related custom query.
 - The SQL report tab shall show query presets and imported schema in a right-side sidebar with separate `Presets` and `Schema` sections.

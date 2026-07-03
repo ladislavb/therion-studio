@@ -104,6 +104,23 @@ void TherionSqlReportDatabaseTest::importsTherionSqlExportAndRunsReports()
     QCOMPARE(table.columns, QStringList{QStringLiteral("Stations")});
     QCOMPARE(table.rows.size(), 1);
     QCOMPARE(table.rows.first().first(), QStringLiteral("2"));
+
+    const QVector<TherionSqlReportDefinition> reports = TherionSqlReportDatabase::predefinedReports();
+    const auto overview = std::find_if(reports.cbegin(), reports.cend(), [](const TherionSqlReportDefinition &report) {
+        return report.id == QStringLiteral("overview");
+    });
+    QVERIFY(overview != reports.cend());
+
+    errorMessage.clear();
+    const TherionSqlReportTable overviewTable = database.executeReportQuery(overview->query, &errorMessage);
+    QVERIFY2(errorMessage.isEmpty(), qPrintable(errorMessage));
+    QCOMPARE(overviewTable.columns, (QStringList{QStringLiteral("Metric"), QStringLiteral("Value")}));
+    QVERIFY(!overviewTable.rows.contains(QStringList{QStringLiteral("People"), QStringLiteral("1")}));
+    QVERIFY(!overviewTable.rows.contains(QStringList{QStringLiteral("Total length"), QStringLiteral("12.5")}));
+    QVERIFY(overviewTable.rows.contains(QStringList{QStringLiteral("Explorers"), QStringLiteral("1")}));
+    QVERIFY(overviewTable.rows.contains(QStringList{QStringLiteral("Surveyors"), QStringLiteral("1")}));
+    QVERIFY(overviewTable.rows.contains(QStringList{QStringLiteral("Length"), QStringLiteral("12.5")}));
+    QVERIFY(overviewTable.rows.contains(QStringList{QStringLiteral("Depth"), QStringLiteral("10")}));
 }
 
 void TherionSqlReportDatabaseTest::rejectsCustomMutationQuery()
