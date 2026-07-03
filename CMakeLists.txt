@@ -187,6 +187,12 @@ endif()
 
 therion_enable_strict_warnings(therion_platform)
 
+set(THERION_INSPECTOR_PANEL_SOURCES
+    src/app/text_editor/InspectorPanel.cpp
+    src/app/text_editor/InspectorPanel.h
+    src/app/text_editor/InspectorPanelStyle.cpp
+    src/app/text_editor/InspectorPanelStyle.h)
+
 set(THERION_APP_SOURCES
     src/app/MainWindowSessionDocumentService.cpp
     src/app/MainWindowSessionDocumentService.h
@@ -273,10 +279,7 @@ set(THERION_APP_SOURCES
     src/app/reports/TherionSqlReportDatabase.h
     src/app/reports/TherionSqlReportTab.cpp
     src/app/reports/TherionSqlReportTab.h
-    src/app/text_editor/InspectorPanel.cpp
-    src/app/text_editor/InspectorPanel.h
-    src/app/text_editor/InspectorPanelStyle.cpp
-    src/app/text_editor/InspectorPanelStyle.h
+    ${THERION_INSPECTOR_PANEL_SOURCES}
     src/app/three_d_viewer/ThreeDViewerTab.cpp
     src/app/three_d_viewer/ThreeDViewerTab.h
     src/app/three_d_viewer/ThreeDViewerInspectorState.cpp
@@ -1363,6 +1366,7 @@ target_link_libraries(BlockEditorToolboxControllerTest PRIVATE therion_core Qt6:
 
 set(THERION_EDITOR_UI_TEST_BASE_SOURCES
     ${THERION_APP_UI_STYLE_SOURCES}
+    ${THERION_INSPECTOR_PANEL_SOURCES}
     ${THERION_TEXT_EDITOR_SHARED_SOURCES})
 
 set(THERION_TEXT_EDITOR_UI_TEST_SOURCES

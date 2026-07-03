@@ -215,8 +215,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Keep optional sample-data dependent tests from aborting CI when fixture directories are absent.
 - Keep Linux/Windows CI and package Qt runtime module lists aligned with QML inspector imports.
 - Keep Linux strict-warning builds green by updating aggregate initializers when project scan/source structs gain fields.
-- Keep app-library source ownership aligned with static-link boundaries; UI components used by app-level tabs must be linked
-  through `therion_app`, not only through the main executable or a single test runner.
+- Keep app-library and editor-test support source ownership aligned with static-link boundaries; shared UI components such
+  as `InspectorPanel` must be linked through every static library that compiles consumers of those symbols, not only
+  through the main executable or a single test runner.
 - Keep UI smoke tests deterministic across platform event-loop timing differences.
 - When touching source-driven map scene refresh, repeat `MapEditorDragUndoRedoSmokeTest` to guard delayed refresh
   selection restoration for cursor-derived line/area ownership such as `endline` and `endarea`.
