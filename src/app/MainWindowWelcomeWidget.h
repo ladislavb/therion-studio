@@ -17,12 +17,16 @@ QWidget *createMainWindowProjectWelcomeWidget(const QString &title,
                                               std::function<void()> onEmptyProjectButtonClick,
                                               const QString &templateButtonText,
                                               std::function<void()> onTemplateButtonClick,
+                                              const QString &userManualButtonText,
+                                              std::function<void()> onUserManualButtonClick,
                                               const QStringList &recentProjectPaths,
                                               std::function<void(const QString &)> onRecentProjectClick);
 
 QWidget *createMainWindowActiveProjectWelcomeWidget(const QString &title,
                                                     const QString &projectPath,
                                                     const QString &body,
+                                                    const QString &userManualButtonText,
+                                                    std::function<void()> onUserManualButtonClick,
                                                     const QStringList &recentFilePaths,
                                                     std::function<void(const QString &)> onRecentFileClick);
 }

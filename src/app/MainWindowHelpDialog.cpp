@@ -488,6 +488,8 @@ void showUserManualMarkdownDialog(QWidget *parent,
     dialog->show();
     dialog->raise();
     dialog->activateWindow();
+    searchField->setFocus(Qt::ShortcutFocusReason);
+    searchField->selectAll();
 }
 }
 

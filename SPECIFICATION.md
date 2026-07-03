@@ -690,7 +690,7 @@ Platform modifier mapping:
 | Find Next | Find | Command+G | Jump to the next match |
 | Find Previous | Find | Command+Shift+G | Jump to the previous match |
 | Toggle Debug Sidebar | Debug | none in the current Swift app | Toggle the debug sidebar state from the menu |
-| User Manual | Help | none | Open the localized full user manual document in-app, using `USER_MANUAL.<language>.md` with fallback to `USER_MANUAL.md`; the in-app manual reader shall render readable Markdown spacing, keep a generated table of contents visible beside the document, support local table-of-contents links, and provide in-manual text search with next/previous navigation |
+| User Manual | Help and Welcome | none | Open the localized full user manual document in-app, using `USER_MANUAL.<language>.md` with fallback to `USER_MANUAL.md`; the in-app manual reader shall render readable Markdown spacing, keep a generated table of contents visible beside the document, support local table-of-contents links, and provide in-manual text search with next/previous navigation. Opening the manual shall place keyboard focus in the manual search field. |
 
 The Qt application may add additional platform-standard shortcuts only if they do not conflict with the behavior above and do not change the documented commands.
 

@@ -852,22 +852,19 @@ void MainWindow::persistOpenDocuments()
 void MainWindow::addWelcomeTab()
 {
     QWidget *welcomeWidget = nullptr;
+    const auto openUserManual = [this]() { TherionStudio::showUserManualDialog(this); };
     if (projectRootPath_.isEmpty()) {
         welcomeWidget = TherionStudio::createMainWindowProjectWelcomeWidget(
             tr("Therion Studio"),
             tr("Open or create a project to begin working with Therion documents, maps, and structure views."),
             tr("Open Existing Project..."),
-            [this]() {
-                openProject();
-            },
+            [this]() { openProject(); },
             tr("New Empty Project"),
-            [this]() {
-                createEmptyProject();
-            },
+            [this]() { createEmptyProject(); },
             tr("New Project from Template..."),
-            [this]() {
-                createProjectFromDefaultTemplate();
-            },
+            [this]() { createProjectFromDefaultTemplate(); },
+            tr("User Manual"),
+            openUserManual,
             sessionStore_ != nullptr ? sessionStore_->recentProjectPaths() : QStringList(),
             [this](const QString &projectPath) {
                 openProjectPath(projectPath);
@@ -877,6 +874,8 @@ void MainWindow::addWelcomeTab()
             tr("Therion Studio"),
             projectRootPath_,
             tr("Open file from sidebar to begin editing this project."),
+            tr("User Manual"),
+            openUserManual,
             sessionStore_ != nullptr ? sessionStore_->recentFilePathsForProject(projectRootPath_) : QStringList(),
             [this](const QString &filePath) {
                 openProjectFilePath(filePath);

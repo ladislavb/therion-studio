@@ -41,6 +41,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Troubleshooting logging no longer writes `THERION_STUDIO_ENABLE_LOG` when enabled from the UI preference; internal
   diagnostic timing helpers follow the active diagnostic handler so the 24-hour preference expiry is honored on restart,
   while explicit environment overrides remain available for developer launches.
+- Feedback follow-up: the Welcome tab now exposes the existing searchable user manual directly, and opening the manual
+  places keyboard focus in its search field across platforms.
 - Reporting follow-ups should stay incremental: decide whether to add saved report presets, per-report filters, result
   summaries/charts, or a direct Therion `export database` action before expanding the SQL viewer into a broader analysis
   workspace.

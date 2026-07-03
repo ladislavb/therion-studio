@@ -48,6 +48,8 @@ QWidget *createMainWindowProjectWelcomeWidget(const QString &title,
                                               std::function<void()> onEmptyProjectButtonClick,
                                               const QString &templateButtonText,
                                               std::function<void()> onTemplateButtonClick,
+                                              const QString &userManualButtonText,
+                                              std::function<void()> onUserManualButtonClick,
                                               const QStringList &recentProjectPaths,
                                               std::function<void(const QString &)> onRecentProjectClick)
 {
@@ -100,6 +102,15 @@ QWidget *createMainWindowProjectWelcomeWidget(const QString &title,
         }
     });
     buttonLayout->addWidget(button);
+
+    auto *manualButton = new QPushButton(userManualButtonText, buttonRow);
+    manualButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    QObject::connect(manualButton, &QPushButton::clicked, widget, [onUserManualButtonClick]() {
+        if (onUserManualButtonClick) {
+            onUserManualButtonClick();
+        }
+    });
+    buttonLayout->addWidget(manualButton);
     buttonLayout->addStretch(1);
     layout->addWidget(buttonRow);
 
@@ -131,6 +142,8 @@ QWidget *createMainWindowProjectWelcomeWidget(const QString &title,
 QWidget *createMainWindowActiveProjectWelcomeWidget(const QString &title,
                                                     const QString &projectPath,
                                                     const QString &body,
+                                                    const QString &userManualButtonText,
+                                                    std::function<void()> onUserManualButtonClick,
                                                     const QStringList &recentFilePaths,
                                                     std::function<void(const QString &)> onRecentFileClick)
 {
@@ -164,6 +177,15 @@ QWidget *createMainWindowActiveProjectWelcomeWidget(const QString &title,
     layout->addWidget(projectLabel);
     layout->addWidget(projectPathLabel);
     layout->addWidget(bodyLabel);
+
+    auto *manualButton = new QPushButton(userManualButtonText, widget);
+    manualButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    QObject::connect(manualButton, &QPushButton::clicked, widget, [onUserManualButtonClick]() {
+        if (onUserManualButtonClick) {
+            onUserManualButtonClick();
+        }
+    });
+    layout->addWidget(manualButton);
 
     const QStringList normalizedRecentFilePaths =
         MainWindowRecentFilesService::normalizedRecentFilePaths(projectPath, recentFilePaths);
