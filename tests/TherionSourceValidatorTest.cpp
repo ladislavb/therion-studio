@@ -294,12 +294,18 @@ TherionSourceValidationCatalog basicCatalog()
     catalog.commandMaxPositionalCount.insert(QStringLiteral("layout"), 1);
     catalog.commandOptionNames.insert(QStringLiteral("survey"), {QStringLiteral("-title")});
     catalog.commandOptionNames.insert(QStringLiteral("map"), {QStringLiteral("-title")});
-    catalog.commandOptionNames.insert(QStringLiteral("export"), {QStringLiteral("-output"), QStringLiteral("-o"), QStringLiteral("-layout")});
+    catalog.commandOptionNames.insert(QStringLiteral("export"),
+                                      {QStringLiteral("-output"),
+                                       QStringLiteral("-o"),
+                                       QStringLiteral("-layout"),
+                                       QStringLiteral("-layout-xxx")});
     catalog.commandOptionNames.insert(QStringLiteral("revise"), {QStringLiteral("-stations")});
     catalog.commandOptionNames.insert(QStringLiteral("point"), {QStringLiteral("-name"), QStringLiteral("-text")});
     catalog.commandOptionNames.insert(QStringLiteral("line"),
                                       {QStringLiteral("-close"), QStringLiteral("-clip"), QStringLiteral("-subtype")});
     catalog.commandOptionNames.insert(QStringLiteral("scrap"), {QStringLiteral("-projection"), QStringLiteral("-scale")});
+    catalog.commandOptionNames.insert(QStringLiteral("layout"),
+                                      {QStringLiteral("-scale"), QStringLiteral("-map-header")});
     catalog.commandTypeValues.insert(QStringLiteral("line"), {QStringLiteral("wall"), QStringLiteral("border")});
     catalog.commandTypeValues.insert(QStringLiteral("area"), {QStringLiteral("water"), QStringLiteral("sand")});
     catalog.commandArgumentAllowedValuesByKey.insert(TherionStudio::commandArgumentValueKey(QStringLiteral("line"), 0),
@@ -542,6 +548,30 @@ void acceptsOptionAliasesExtractedFromCatalogSignature()
         TherionSourceValidator::validate(QStringLiteral("export map -o map.pdf -layout moj\n"), basicCatalog());
     require(!containsDiagnostic(result, QStringLiteral("unknown-option")),
             "Known option aliases such as export -o should not be reported as unknown options.");
+}
+
+void acceptsCatalogWildcardOptions()
+{
+    const TherionSourceValidationResult result =
+        TherionSourceValidator::validate(QStringLiteral("export map -layout-scale 1 500 -layout-map-header 0 0 sw\n"),
+                                         basicCatalog());
+    require(!containsDiagnostic(result, QStringLiteral("unknown-option")),
+            "Catalog wildcard options such as export -layout-xxx should match concrete -layout-* options.");
+
+    const TherionSourceValidationResult invalidResult =
+        TherionSourceValidator::validate(QStringLiteral("export map -layoutfoo 1\n"), basicCatalog());
+    require(containsDiagnostic(invalidResult, QStringLiteral("unknown-option")),
+            "Catalog wildcard options should not match option names outside the wildcard prefix.");
+
+    const TherionSourceValidationResult placeholderResult =
+        TherionSourceValidator::validate(QStringLiteral("export map -layout-xxx 1\n"), basicCatalog());
+    require(containsDiagnostic(placeholderResult, QStringLiteral("unknown-option")),
+            "Catalog wildcard placeholder options should not be accepted as literal option tokens.");
+
+    const TherionSourceValidationResult unknownLayoutResult =
+        TherionSourceValidator::validate(QStringLiteral("export map -layout-foobar 1\n"), basicCatalog());
+    require(containsDiagnostic(unknownLayoutResult, QStringLiteral("unknown-option")),
+            "Catalog wildcard layout options should match only options known on the layout command.");
 }
 
 void reportsUnknownArgumentValue()
@@ -825,6 +855,7 @@ int main(int argc, char **argv)
     doesNotTreatZeroFixedArityAsValidationError();
     keepsDashPrefixedPointTextAsTextValue();
     acceptsOptionAliasesExtractedFromCatalogSignature();
+    acceptsCatalogWildcardOptions();
     reportsUnknownArgumentValue();
     reportsUnknownLaterArgumentValue();
     reportsExtraPositionalArgument();

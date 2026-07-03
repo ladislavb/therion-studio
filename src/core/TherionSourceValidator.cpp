@@ -313,6 +313,52 @@ bool looksLikeCommandDirective(const QString &token)
     return true;
 }
 
+bool layoutWildcardOptionMatches(const QString &knownOption,
+                                 const QString &normalizedOption,
+                                 const TherionSourceValidationCatalog &catalog)
+{
+    if (knownOption != QStringLiteral("-layout-xxx")) {
+        return false;
+    }
+
+    static const QString layoutPrefix = QStringLiteral("-layout-");
+    if (!normalizedOption.startsWith(layoutPrefix)
+        || normalizedOption.size() <= layoutPrefix.size()) {
+        return false;
+    }
+
+    const QString layoutOption = QStringLiteral("-") + normalizedOption.mid(layoutPrefix.size());
+    return catalog.commandOptionNames.value(QStringLiteral("layout")).contains(layoutOption);
+}
+
+bool knownOptionMatches(const QString &knownOption,
+                        const QString &normalizedOption,
+                        const TherionSourceValidationCatalog &catalog)
+{
+    if (normalizedOption.endsWith(QStringLiteral("xxx"))) {
+        return false;
+    }
+
+    return knownOption == normalizedOption
+        || layoutWildcardOptionMatches(knownOption, normalizedOption, catalog);
+}
+
+bool isKnownCatalogOption(const QSet<QString> &knownOptions,
+                          const QString &normalizedOption,
+                          const TherionSourceValidationCatalog &catalog)
+{
+    if (!normalizedOption.endsWith(QStringLiteral("xxx"))
+        && knownOptions.contains(normalizedOption)) {
+        return true;
+    }
+    for (const QString &knownOption : knownOptions) {
+        if (knownOptionMatches(knownOption, normalizedOption, catalog)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 QString optionDeduplicationKey(const QString &optionToken, const QStringList &values)
 {
     return normalizedCommandOptionName(optionToken)
@@ -846,7 +892,8 @@ TherionSourceDiagnostic diagnosticForToken(const TherionSourceLogicalCommand &co
 }
 
 void appendCommandCatalogDiagnostics(TherionSourceValidationResult *result,
-                                     const TherionSourceLogicalCommand &command)
+                                     const TherionSourceLogicalCommand &command,
+                                     const TherionSourceValidationCatalog &catalog)
 {
     if (result == nullptr || command.parsed.tokens.isEmpty()) {
         return;
@@ -942,7 +989,7 @@ void appendCommandCatalogDiagnostics(TherionSourceValidationResult *result,
     for (const TherionSourceLogicalOptionEntryRange &optionEntry : command.optionEntryRanges) {
         const QString optionToken = optionEntry.key;
         const QString normalizedOption = QStringLiteral("-") + normalizedCommandOptionName(optionToken);
-        if (!knownOptions.isEmpty() && !knownOptions.contains(normalizedOption)) {
+        if (!knownOptions.isEmpty() && !isKnownCatalogOption(knownOptions, normalizedOption, catalog)) {
             result->diagnostics.append(diagnosticForToken(command,
                                                           optionEntry.optionTokenIndex,
                                                           QStringLiteral("unknown-option"),
@@ -1114,6 +1161,7 @@ void appendDuplicateLinePointSmoothOffDiagnostics(TherionSourceValidationResult 
 
 TherionSourceValidationResult validateSourceDocuments(const TherionSourceDocument &sourceDocument,
                                                       const TherionSourceLogicalDocument &logicalDocument,
+                                                      const TherionSourceValidationCatalog &validationCatalog,
                                                       bool validateCatalog)
 {
     TherionSourceValidationResult result;
@@ -1171,7 +1219,7 @@ TherionSourceValidationResult validateSourceDocuments(const TherionSourceDocumen
         }
 
         if (validateCatalog && command.shouldValidateCommandCatalog()) {
-            appendCommandCatalogDiagnostics(&result, command);
+            appendCommandCatalogDiagnostics(&result, command, validationCatalog);
         }
     }
 
@@ -1206,7 +1254,7 @@ TherionSourceValidationResult TherionSourceValidator::validate(const QString &co
                                                   catalog,
                                                   metadata,
                                                   TherionSourceSnapshotCatalogKey::fromRevision(metadata.revisionId));
-    return validateSourceDocuments(sourceDocument, logicalDocument, !catalog.commandNames.isEmpty());
+    return validateSourceDocuments(sourceDocument, logicalDocument, catalog, !catalog.commandNames.isEmpty());
 }
 
 TherionSourceValidationResult TherionSourceValidator::validate(
@@ -1214,7 +1262,7 @@ TherionSourceValidationResult TherionSourceValidator::validate(
     const TherionSourceLogicalDocument &logicalDocument,
     const TherionSourceValidationCatalog &catalog)
 {
-    return validateSourceDocuments(sourceDocument, logicalDocument, !catalog.commandNames.isEmpty());
+    return validateSourceDocuments(sourceDocument, logicalDocument, catalog, !catalog.commandNames.isEmpty());
 }
 
 QVector<TherionSourceTextEdit> TherionSourceValidator::validationFixEdits(

@@ -52,6 +52,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Compiler output now turns Therion source diagnostics such as `file.th2 [64]` into clickable links that open the source
   document on the reported line, compiler `error --` output is highlighted in red, and Therion warnings are highlighted
   in orange.
+- Thconfig syntax validation now treats catalog wildcard options such as `export map -layout-xxx` as option families
+  backed by known `layout` command options, so valid `-layout-*` export overrides no longer produce false
+  unknown-option warnings while unknown layout suffixes and literal placeholder options still do.
 - Draft release notes for `2026.7.1` are now available in `docs/releases/2026.7.1.md` with the SQL report viewer covered
   as one feature block and the Improvements/Bug Fixes sections condensed for release readability; final release prep
   should still confirm version/build metadata, packaging outputs, and a short manual smoke pass before tagging.

@@ -57,6 +57,7 @@ Therion Studio is an editor and early-feedback tool. The Therion compiler remain
 ## Metadata Sources
 
 - Command, option, help, style, and symbol metadata should come from the generated Therion catalog where possible. See `docs/THERION_COMMAND_CATALOG_PIPELINE.md`.
+- Catalog option names ending in `xxx` represent Therion option-family metadata, not literal source options. `export map -layout-xxx` should match only concrete options known on the `layout` command, for example `-layout-scale` matching layout option `-scale`; literal `-layout-xxx` source text should remain an unknown option.
 - Do not solve command semantics by hardcoding UI-side lists when the catalog generator or source model can own the rule.
 - Local catalog overrides are a short-term compatibility patch, not the default path for durable Therion language behavior.
 
