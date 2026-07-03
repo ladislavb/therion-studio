@@ -4920,8 +4920,8 @@ Napriek tomu bod zmazať?</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="132"/>
-        <source>Pending insert%1 (will create scrap)</source>
-        <translation>Čakajúce vloženie%1 (vytvorí scrap)</translation>
+        <source>First object will create scrap &quot;%1&quot;.</source>
+        <translation>Prvý objekt vytvorí scrap &quot;%1&quot;.</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="137"/>

@@ -524,7 +524,7 @@ InspectorScrapContext inspectorDraftInsertionScrapContext(const QVector<TherionP
     }
 
     InspectorScrapContext createdContext;
-    createdContext.identifier = QStringLiteral("map-draft");
+    createdContext.identifier = QStringLiteral("scrap-1");
     createdContext.willBeCreated = true;
     return createdContext;
 }

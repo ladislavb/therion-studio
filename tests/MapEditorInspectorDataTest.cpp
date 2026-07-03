@@ -269,7 +269,7 @@ int runScrapContextMetadataTest()
     }
 
     const InspectorScrapContext createdScrap = inspectorDraftInsertionScrapContext({});
-    if (!expect(createdScrap.identifier == QStringLiteral("map-draft") && createdScrap.willBeCreated,
+    if (!expect(createdScrap.identifier == QStringLiteral("scrap-1") && createdScrap.willBeCreated,
                 "Pending draft insertion should report the generated scrap when no scrap exists.")) {
         return 1;
     }

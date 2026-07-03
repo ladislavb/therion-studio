@@ -1379,6 +1379,7 @@ add_library(therion_text_editor_ui_test_support STATIC
 
 target_link_libraries(therion_text_editor_ui_test_support
     PUBLIC
+        therion_platform
         therion_core
         Qt6::Widgets
         Qt6::Svg)

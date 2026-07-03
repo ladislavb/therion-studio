@@ -4920,8 +4920,8 @@ Přesto bod smazat?</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="132"/>
-        <source>Pending insert%1 (will create scrap)</source>
-        <translation>Čekající vložení%1 (vytvoří scrap)</translation>
+        <source>First object will create scrap &quot;%1&quot;.</source>
+        <translation>První objekt vytvoří scrap &quot;%1&quot;.</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp" line="137"/>

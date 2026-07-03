@@ -1272,6 +1272,62 @@ int runObjectsInspectorAutoCollapseExpandScrapsTest()
     return 0;
 }
 
+int runPendingInsertWithoutScrapExplainsDraftScrapTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Temporary directory for pending insert without scrap test was not created.")) {
+        return 1;
+    }
+
+    const QString filePath = tempDir.filePath(QStringLiteral("selection-panel-no-scrap.th2"));
+    QFile file(filePath);
+    if (!expect(file.open(QIODevice::WriteOnly | QIODevice::Text),
+                "TH2 test file without scraps could not be created.")) {
+        return 1;
+    }
+    file.write("encoding utf-8\n");
+    file.close();
+
+    QtFileSystem fileSystem;
+    FakeSessionStore sessionStore;
+    QMainWindow hostWindow;
+    hostWindow.resize(960, 720);
+    auto *mapTab = new MapEditorTab(fileSystem, sessionStore, CommandCatalogStore(), &hostWindow);
+    hostWindow.setCentralWidget(mapTab);
+    hostWindow.show();
+    pumpEvents();
+
+    QString errorMessage;
+    if (!expect(mapTab->loadFile(filePath, &errorMessage),
+                "MapEditorTab failed to load TH2 file without scraps.")) {
+        if (!errorMessage.isEmpty()) {
+            std::cerr << errorMessage.toStdString() << '\n';
+        }
+        return 1;
+    }
+    pumpEvents();
+
+    mapTab->triggerAddLine();
+    pumpEvents();
+    auto *targetScrapCombo = mapTab->findChild<QComboBox *>(QStringLiteral("mapObjectQuickTargetScrapCombo"));
+    if (!expect(targetScrapCombo != nullptr && !targetScrapCombo->isVisible(),
+                "Pending insert without existing scraps should not show the target scrap selector.")) {
+        return 1;
+    }
+    QLabel *noScrapLabel = visibleLabelContaining(mapTab, QStringLiteral("First object will create scrap"));
+    if (!expect(noScrapLabel != nullptr
+                    && noScrapLabel->text().contains(QStringLiteral("\"scrap-1\"")),
+                "Pending insert without existing scraps should explain the generated draft scrap target.")) {
+        return 1;
+    }
+    if (!expect(noScrapLabel->styleSheet().contains(QStringLiteral("palette(highlight)")),
+                "Pending insert without existing scraps should use a visible notice style instead of muted metadata styling.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 int runRecentPendingInsertTypeSubtypePersistsAcrossRestartTest()
 {
     QTemporaryDir tempDir;
@@ -1384,6 +1440,9 @@ int main(int argc, char **argv)
         return result;
     }
     if (const int result = runObjectsInspectorAutoCollapseExpandScrapsTest(); result != 0) {
+        return result;
+    }
+    if (const int result = runPendingInsertWithoutScrapExplainsDraftScrapTest(); result != 0) {
         return result;
     }
     return runRecentPendingInsertTypeSubtypePersistsAcrossRestartTest();

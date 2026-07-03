@@ -127,16 +127,32 @@ QString targetScrapMetadataSuffix(const std::optional<InspectorScrapContext> &sc
 
 QString metadataForPendingInsert(const std::optional<InspectorScrapContext> &scrapContext)
 {
-    const QString suffix = targetScrapMetadataSuffix(scrapContext);
     if (scrapContext.has_value() && scrapContext->willBeCreated) {
         return QCoreApplication::translate("TherionStudio::MapEditorObjectDetailsPanelController",
-                                           "Pending insert%1 (will create scrap)")
-            .arg(suffix);
+                                           "First object will create scrap \"%1\".")
+            .arg(scrapContext->identifier.trimmed());
     }
 
+    const QString suffix = targetScrapMetadataSuffix(scrapContext);
     return QCoreApplication::translate("TherionStudio::MapEditorObjectDetailsPanelController",
                                        "Pending insert%1")
         .arg(suffix);
+}
+
+QString metadataLabelStyleSheet(bool notice)
+{
+    if (notice) {
+        return QStringLiteral(
+            "QLabel {"
+            " color: palette(text);"
+            " background-color: palette(alternate-base);"
+            " border: 1px solid palette(highlight);"
+            " border-radius: 3px;"
+            " padding: 6px;"
+            "}");
+    }
+
+    return QStringLiteral("QLabel { color: palette(midlight); }");
 }
 
 QString recentPendingSymbolButtonText(const InspectorObjectQuickFields &fields)
@@ -590,6 +606,8 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
             const bool targetScrapVisible = commandKind != QStringLiteral("scrap") && !scrapContexts.isEmpty();
             context_.metadataLabel->setVisible(commandKind != QStringLiteral("scrap") && !targetScrapVisible);
             context_.metadataLabel->setText(metadataForPendingInsert(targetScrapContext));
+            context_.metadataLabel->setStyleSheet(metadataLabelStyleSheet(targetScrapContext.has_value()
+                                                                          && targetScrapContext->willBeCreated));
             context_.quickTargetScrapLabel->setVisible(targetScrapVisible);
             context_.quickProjectionEditor->setVisible(false);
             context_.scrapOptionsEditor->setVisible(projectionFieldVisible);
@@ -725,6 +743,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
         context_.linePointActionsSection->setVisible(false);
         context_.vertexActionsEditor->setVisible(false);
         context_.metadataLabel->setText(QStringLiteral("-"));
+        context_.metadataLabel->setStyleSheet(metadataLabelStyleSheet(false));
         context_.orientationEditor->setVisible(false);
         context_.linePointPreviousControlCheck->setChecked(false);
         context_.linePointPreviousControlCheck->setVisible(false);
@@ -786,6 +805,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
         ? context_.logicalSource.logicalCommandsForCurrentDocument()
         : QVector<TherionSourceLogicalCommand>();
     context_.metadataLabel->setText(metadataForSourceLine(parsedLines, effectiveLineNumber));
+    context_.metadataLabel->setStyleSheet(metadataLabelStyleSheet(false));
     QVector<MapEditorAreaReference> areaReferences;
     if (context_.textEditor != nullptr
         && effectiveLineNumber > 0

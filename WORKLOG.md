@@ -43,6 +43,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   while explicit environment overrides remain available for developer launches.
 - Feedback follow-up: the Welcome tab now exposes the existing searchable user manual directly, and opening the manual
   places keyboard focus in its search field across platforms.
+- Map insertion onboarding now makes the no-scrap state explicit in `Selection`: the target selector stays hidden and the
+  pending object message names the draft scrap that will be created.
 - Reporting follow-ups should stay incremental: decide whether to add saved report presets, per-report filters, result
   summaries/charts, or a direct Therion `export database` action before expanding the SQL viewer into a broader analysis
   workspace.
