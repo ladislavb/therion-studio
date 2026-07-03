@@ -28,6 +28,7 @@ public:
     {
         QString filePath;
         QString relativePath;
+        QString displayName;
         ArtifactKind kind = ArtifactKind::Model;
     };
 

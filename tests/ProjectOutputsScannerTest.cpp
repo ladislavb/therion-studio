@@ -4,6 +4,7 @@
 #include <QEventLoop>
 #include <QFile>
 #include <QFileInfo>
+#include <QHash>
 #include <QTemporaryDir>
 #include <QTest>
 #include <QTimer>
@@ -67,8 +68,11 @@ void ProjectOutputsScannerTest::keepsDuplicateNamesDistinctAndClassifiesArtifact
     int mapAtlasCount = 0;
     int databaseCount = 0;
     QStringList relativePaths;
+    QHash<QString, QString> displayNamesByRelativePath;
     for (const ProjectOutputsScanner::Artifact &artifact : result.artifacts) {
-        relativePaths.append(QDir::fromNativeSeparators(artifact.relativePath));
+        const QString relativePath = QDir::fromNativeSeparators(artifact.relativePath);
+        relativePaths.append(relativePath);
+        displayNamesByRelativePath.insert(relativePath, artifact.displayName);
         switch (artifact.kind) {
         case ProjectOutputsScanner::ArtifactKind::Model:
             ++modelCount;
@@ -88,6 +92,10 @@ void ProjectOutputsScannerTest::keepsDuplicateNamesDistinctAndClassifiesArtifact
     QVERIFY(relativePaths.contains(QStringLiteral("a/out/map.pdf")));
     QVERIFY(relativePaths.contains(QStringLiteral("b/out/map.pdf")));
     QVERIFY(!relativePaths.contains(QStringLiteral("output/cave.3d")));
+    QCOMPARE(displayNamesByRelativePath.value(QStringLiteral("a/out/map.pdf")), QStringLiteral("map.pdf (a/out)"));
+    QCOMPARE(displayNamesByRelativePath.value(QStringLiteral("b/out/map.pdf")), QStringLiteral("map.pdf (b/out)"));
+    QCOMPARE(displayNamesByRelativePath.value(QStringLiteral("output/cave.lox")), QStringLiteral("cave.lox"));
+    QCOMPARE(displayNamesByRelativePath.value(QStringLiteral("output/cave.sql")), QStringLiteral("cave.sql"));
 }
 
 int runProjectOutputsScannerTest(int argc, char **argv)

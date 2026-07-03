@@ -26,8 +26,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   read-only table model, and exports the current result table as CSV.
 - A first `Outputs` project sidebar slice groups generated Therion exports by model, map/atlas, and database artifacts,
   keeps duplicate filenames distinct through project-relative paths and canonical-path identity, opens `.lox` and `.sql`
-  internally where supported, sends `.pdf` outputs to the system default application, refreshes after Therion runs
-  finish, and shares project file-discovery traversal with project search instead of owning UI-side recursive scanning.
+  internally where supported, sends `.pdf` outputs to the system default application, shows compact filenames while adding
+  project-relative folder context only for duplicate names, refreshes after Therion runs finish, and shares project
+  file-discovery traversal with project search instead of owning UI-side recursive scanning.
 - Project source snapshot collection now also uses shared project file discovery for filesystem traversal and skip rules,
   so validation and structure scans inherit the same low-level project-tree discovery behavior without changing their
   source snapshot, cache, or project-index semantics.
@@ -50,6 +51,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Compiler output now turns Therion source diagnostics such as `file.th2 [64]` into clickable links that open the source
   document on the reported line, compiler `error --` output is highlighted in red, and Therion warnings are highlighted
   in orange.
+- Draft release notes for `2026.7.1` are now available in `docs/releases/2026.7.1.md` with the SQL report viewer covered
+  as one feature block and the Improvements/Bug Fixes sections condensed for release readability; final release prep
+  should still confirm version/build metadata, packaging outputs, and a short manual smoke pass before tagging.
 - Reporting follow-ups should stay incremental: decide whether to add saved report presets, per-report filters, result
   summaries/charts, or a direct Therion `export database` action before expanding the SQL viewer into a broader analysis
   workspace.

@@ -5,6 +5,7 @@
 
 #include <QDir>
 #include <QFutureWatcher>
+#include <QHash>
 #include <QTimer>
 #include <QtConcurrent>
 
@@ -15,6 +16,37 @@ namespace TherionStudio
 {
 namespace
 {
+QString artifactDuplicateKey(ProjectOutputsScanner::ArtifactKind kind, const QString &relativePath)
+{
+    return QString::number(static_cast<int>(kind)) + QLatin1Char('|') + QFileInfo(relativePath).fileName().toCaseFolded();
+}
+
+QString relativeFolderForDisplay(const QString &relativePath)
+{
+    const QString folder = QFileInfo(relativePath).path();
+    if (folder.isEmpty()) {
+        return QStringLiteral(".");
+    }
+    return QDir::fromNativeSeparators(folder);
+}
+
+void populateArtifactDisplayNames(QVector<ProjectOutputsScanner::Artifact> &artifacts)
+{
+    QHash<QString, int> nameCounts;
+    for (const ProjectOutputsScanner::Artifact &artifact : artifacts) {
+        ++nameCounts[artifactDuplicateKey(artifact.kind, artifact.relativePath)];
+    }
+
+    for (ProjectOutputsScanner::Artifact &artifact : artifacts) {
+        const QString fileName = QFileInfo(artifact.relativePath).fileName();
+        if (nameCounts.value(artifactDuplicateKey(artifact.kind, artifact.relativePath)) <= 1) {
+            artifact.displayName = fileName;
+            continue;
+        }
+        artifact.displayName = QStringLiteral("%1 (%2)").arg(fileName, relativeFolderForDisplay(artifact.relativePath));
+    }
+}
+
 std::optional<ProjectOutputsScanner::ArtifactKind> artifactKindForFile(const QFileInfo &info)
 {
     if (!info.isFile()) {
@@ -56,6 +88,7 @@ ProjectOutputsScanner::Result performProjectOutputsScan(const QString &projectRo
         result.artifacts.append({
             file.filePath,
             file.relativePath,
+            QString(),
             *kind,
         });
     }
@@ -67,6 +100,7 @@ ProjectOutputsScanner::Result performProjectOutputsScan(const QString &projectRo
                   }
                   return QString::compare(left.relativePath, right.relativePath, Qt::CaseInsensitive) < 0;
               });
+    populateArtifactDisplayNames(result.artifacts);
     return result;
 }
 }

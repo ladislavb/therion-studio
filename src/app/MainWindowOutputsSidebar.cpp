@@ -131,9 +131,11 @@ void MainWindow::handleProjectOutputsScanFinished(const TherionStudio::ProjectOu
     int mapAtlasCount = 0;
     int databaseCount = 0;
     for (const TherionStudio::ProjectOutputsScanner::Artifact &artifact : result.artifacts) {
-        auto *item = new QStandardItem(artifact.relativePath);
+        auto *item = new QStandardItem(artifact.displayName.isEmpty() ? artifact.relativePath : artifact.displayName);
         item->setEditable(false);
-        item->setToolTip(QDir::toNativeSeparators(artifact.filePath));
+        item->setToolTip(QStringLiteral("%1\n%2")
+                             .arg(QDir::toNativeSeparators(artifact.relativePath),
+                                  QDir::toNativeSeparators(artifact.filePath)));
         item->setData(artifact.filePath, kOutputArtifactPathRole);
         item->setData(static_cast<int>(artifact.kind), kOutputArtifactKindRole);
 
