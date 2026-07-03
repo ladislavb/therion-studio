@@ -476,6 +476,7 @@ void MainWindow::runTherion()
 
     if (!therionRunnerService_->isRunning()) {
         therionConsoleController_.clearConsoleOutput();
+        activeTherionRunStandardError_.clear();
     }
 
     const TherionStudio::TherionRunnerService::StartResult startResult =
@@ -577,16 +578,19 @@ void MainWindow::handleTherionRunnerStandardOutput(const QString &output)
 
 void MainWindow::handleTherionRunnerStandardError(const QString &output)
 {
+    activeTherionRunStandardError_ += output;
     therionConsoleController_.appendProcessStandardError(output, tr("[stderr] %1"));
 }
 
 void MainWindow::handleTherionRunnerFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
     const TherionStudio::TherionRunnerLifecyclePresenter::EventPresentation eventPresentation =
-        TherionStudio::TherionRunnerLifecyclePresenter::presentFinished(exitCode, exitStatus);
-    setCompilerStatusResult(exitStatus == QProcess::NormalExit && exitCode == 0,
-                            eventPresentation.statusText);
+        TherionStudio::TherionRunnerLifecyclePresenter::presentFinished(exitCode,
+                                                                        exitStatus,
+                                                                        activeTherionRunStandardError_);
+    setCompilerStatusResult(eventPresentation.succeeded, eventPresentation.statusText);
     activeTherionRunConfigPath_.clear();
+    activeTherionRunStandardError_.clear();
     requestProjectOutputsRefresh();
     updateTherionRunnerState();
 }
@@ -597,6 +601,7 @@ void MainWindow::handleTherionRunnerError(const QString &errorText)
         TherionStudio::TherionRunnerLifecyclePresenter::presentError(errorText);
     setCompilerStatusResult(false, eventPresentation.statusText);
     activeTherionRunConfigPath_.clear();
+    activeTherionRunStandardError_.clear();
     updateTherionRunnerState();
 }
 

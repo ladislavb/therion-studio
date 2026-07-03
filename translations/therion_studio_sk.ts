@@ -1750,6 +1750,11 @@ Ak je súbor otvorený, najprv sa zavrie.</translation>
     </message>
     <message>
         <location filename="../src/app/TherionRunnerLifecyclePresenter.cpp" line="38"/>
+        <source>Therion reported an output writing error despite exit code %1.</source>
+        <translation>Therion ohlásil chybu zápisu výstupu napriek návratovému kódu %1.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/TherionRunnerLifecyclePresenter.cpp" line="38"/>
         <source>Therion runner error: %1</source>
         <translation>Chyba spúšťača Therionu: %1</translation>
     </message>

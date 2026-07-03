@@ -86,10 +86,26 @@ void TherionRunnerPresenterTest::presentsLifecycleEvents()
 
     const TherionRunnerLifecyclePresenter::EventPresentation normalFinish =
         TherionRunnerLifecyclePresenter::presentFinished(7, QProcess::NormalExit);
+    QVERIFY(!normalFinish.succeeded);
     QCOMPARE(normalFinish.statusText, QStringLiteral("Therion finished with exit code 7."));
+
+    const TherionRunnerLifecyclePresenter::EventPresentation successfulFinish =
+        TherionRunnerLifecyclePresenter::presentFinished(0, QProcess::NormalExit);
+    QVERIFY(successfulFinish.succeeded);
+    QCOMPARE(successfulFinish.statusText, QStringLiteral("Therion finished with exit code 0."));
+
+    const TherionRunnerLifecyclePresenter::EventPresentation outputWriteError =
+        TherionRunnerLifecyclePresenter::presentFinished(
+            0,
+            QProcess::NormalExit,
+            QStringLiteral("/opt/homebrew/bin/therion: warning -- error writing /tmp/out.lox\n"));
+    QVERIFY(!outputWriteError.succeeded);
+    QCOMPARE(outputWriteError.statusText,
+             QStringLiteral("Therion reported an output writing error despite exit code 0."));
 
     const TherionRunnerLifecyclePresenter::EventPresentation crashFinish =
         TherionRunnerLifecyclePresenter::presentFinished(1, QProcess::CrashExit);
+    QVERIFY(!crashFinish.succeeded);
     QCOMPARE(crashFinish.statusText, QStringLiteral("Therion crashed while running."));
 
     const TherionRunnerLifecyclePresenter::EventPresentation error =

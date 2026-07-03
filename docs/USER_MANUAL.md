@@ -393,7 +393,7 @@ Closing a project clears `Target Config` and `Working Directory Override` becaus
 - `Clear Output`
 - `Copy Output`
 
-The status bar shows compile state with the compact `C:` prefix: `C: Idle`, `C: Running`, `C: OK`, or `C: Failed`.
+The status bar shows compile state with the compact `C:` prefix: `C: Idle`, `C: Running`, `C: OK`, or `C: Failed`. `C: OK` is used only when the Therion process exits successfully and Studio does not detect known output-write errors in stderr, such as `warning -- error writing`.
 
 ## 8. Settings
 

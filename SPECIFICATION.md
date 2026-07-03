@@ -597,6 +597,7 @@ The rules below define the expected day-to-day interaction model. If a later req
 - Therion output shall be streamed to a console view in the order it is produced.
 - The compiler console output view shall contain Therion process output only; application status messages such as project-open events, runner setup notes, and UI workflow messages shall be shown outside the console output view.
 - The console shall capture stdout, stderr, and the exit status of each run.
+- The compiler status shall not report `OK` when Therion exits with code 0 but stderr contains a known output-write error such as `warning -- error writing`; that run shall be surfaced as a failed run with an actionable status detail.
 - The console surface shall show the active config name and location, the working directory, and the active command-line options.
 - The working-directory editor shall act as a `Project Config` override and shall be empty by default.
 - When `Current Config` is active, the working-directory override shall be disabled and ignored; the effective working directory shall be the active config file directory.

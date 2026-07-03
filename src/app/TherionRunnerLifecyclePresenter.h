@@ -18,10 +18,13 @@ public:
     struct EventPresentation
     {
         QString statusText;
+        bool succeeded = false;
     };
 
     static StopPresentation presentStopRequest(bool isRunning);
-    static EventPresentation presentFinished(int exitCode, QProcess::ExitStatus exitStatus);
+    static EventPresentation presentFinished(int exitCode,
+                                             QProcess::ExitStatus exitStatus,
+                                             const QString &standardErrorText = QString());
     static EventPresentation presentError(const QString &errorText);
 };
 }

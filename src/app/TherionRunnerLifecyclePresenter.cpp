@@ -1,9 +1,21 @@
 #include "TherionRunnerLifecyclePresenter.h"
 
 #include <QCoreApplication>
+#include <QRegularExpression>
 
 namespace TherionStudio
 {
+namespace
+{
+bool containsTherionOutputWriteError(const QString &standardErrorText)
+{
+    static const QRegularExpression outputWriteErrorPattern(
+        QStringLiteral("\\bwarning\\s+--\\s+error\\s+writing\\b"),
+        QRegularExpression::CaseInsensitiveOption);
+    return outputWriteErrorPattern.match(standardErrorText).hasMatch();
+}
+}
+
 TherionRunnerLifecyclePresenter::StopPresentation
 TherionRunnerLifecyclePresenter::presentStopRequest(bool isRunning)
 {
@@ -22,12 +34,26 @@ TherionRunnerLifecyclePresenter::presentStopRequest(bool isRunning)
 }
 
 TherionRunnerLifecyclePresenter::EventPresentation
-TherionRunnerLifecyclePresenter::presentFinished(int exitCode, QProcess::ExitStatus exitStatus)
+TherionRunnerLifecyclePresenter::presentFinished(int exitCode,
+                                                 QProcess::ExitStatus exitStatus,
+                                                 const QString &standardErrorText)
 {
     EventPresentation result;
-    result.statusText = exitStatus == QProcess::NormalExit
-        ? QCoreApplication::translate("MainWindow", "Therion finished with exit code %1.").arg(exitCode)
-        : QCoreApplication::translate("MainWindow", "Therion crashed while running.");
+    if (exitStatus != QProcess::NormalExit) {
+        result.statusText = QCoreApplication::translate("MainWindow", "Therion crashed while running.");
+        return result;
+    }
+
+    if (containsTherionOutputWriteError(standardErrorText)) {
+        result.statusText = QCoreApplication::translate(
+                                "MainWindow",
+                                "Therion reported an output writing error despite exit code %1.")
+                                .arg(exitCode);
+        return result;
+    }
+
+    result.succeeded = exitCode == 0;
+    result.statusText = QCoreApplication::translate("MainWindow", "Therion finished with exit code %1.").arg(exitCode);
     return result;
 }
 

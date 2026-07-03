@@ -446,6 +446,7 @@ private:
     QToolButton *statusCompilerButton_ = nullptr;
     QLabel *statusDocumentEncodingLabel_ = nullptr;
     QString activeTherionRunConfigPath_;
+    QString activeTherionRunStandardError_;
     QWidget *workspaceModeSwitcher_ = nullptr;
     QWidget *workspaceMapModeSwitcher_ = nullptr;
     QWidget *workspaceTextModeSwitcher_ = nullptr;

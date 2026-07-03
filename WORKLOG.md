@@ -31,6 +31,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Project source snapshot collection now also uses shared project file discovery for filesystem traversal and skip rules,
   so validation and structure scans inherit the same low-level project-tree discovery behavior without changing their
   source snapshot, cache, or project-index semantics.
+- Therion runner status now treats stderr output-write warnings such as `warning -- error writing` as failed runs even
+  when the process exits with code 0, so the status bar does not show a misleading `C: OK`.
 - Reporting follow-ups should stay incremental: decide whether to add saved report presets, per-report filters, result
   summaries/charts, or a direct Therion `export database` action before expanding the SQL viewer into a broader analysis
   workspace.
