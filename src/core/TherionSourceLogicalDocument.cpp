@@ -172,6 +172,23 @@ void populateArgumentAndOptionRanges(TherionSourceLogicalCommand *command)
     command->positionalArgumentGroupRange = argumentGroupRange(command->positionalArgumentRanges);
 }
 
+QString catalogContextForCommand(const TherionSourceLogicalCommand &command)
+{
+    if (command.blockStackBefore.isEmpty()) {
+        return QStringLiteral("none");
+    }
+    if (command.closesBlock
+        && !command.hasUnmatchedClose()
+        && command.blockStackBefore.size() > 1) {
+        return command.blockStackBefore.at(command.blockStackBefore.size() - 2).directive;
+    }
+    if (command.closesBlock
+        && !command.hasUnmatchedClose()) {
+        return QStringLiteral("none");
+    }
+    return command.blockStackBefore.constLast().directive;
+}
+
 void populateCommandMetadata(TherionSourceLogicalCommand *command,
                              TherionSourceDocumentType sourceType,
                              const TherionSourceValidationCatalog *catalog)
@@ -182,9 +199,7 @@ void populateCommandMetadata(TherionSourceLogicalCommand *command,
 
     command->metadata.commandName = command->normalizedDirective;
     command->metadata.positionalArgumentCount = command->positionalArgumentRanges.size();
-    command->metadata.catalogCurrentContext = command->blockStackBefore.isEmpty()
-        ? QStringLiteral("none")
-        : command->blockStackBefore.constLast().directive;
+    command->metadata.catalogCurrentContext = catalogContextForCommand(*command);
     command->metadata.catalogCurrentDocumentType = therionSourceDocumentTypeCatalogToken(sourceType);
     command->metadata.normalizedOptionNames.clear();
     command->metadata.optionEntryIndexesByNormalizedName.clear();

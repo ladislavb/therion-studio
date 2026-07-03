@@ -276,6 +276,10 @@ TherionSourceValidationCatalog basicCatalog()
         QStringLiteral("map-header"),
         QStringLiteral("join"),
         QStringLiteral("layout"),
+        QStringLiteral("code"),
+        QStringLiteral("endcode"),
+        QStringLiteral("scale"),
+        QStringLiteral("legend"),
     };
     catalog.commandRequiredPositionalCount.insert(QStringLiteral("survey"), 1);
     catalog.commandRequiredPositionalCount.insert(QStringLiteral("input"), 1);
@@ -644,6 +648,96 @@ void acceptsLayoutIdArgument()
             "Layout id should count as the declared positional argument.");
 }
 
+void treatsLayoutCodeBodyAsRawContent()
+{
+    TherionSourceValidationCatalog catalog = basicCatalog();
+    catalog.commandContexts.insert(QStringLiteral("code"), {QStringLiteral("layout")});
+    catalog.commandContexts.insert(QStringLiteral("endcode"), {QStringLiteral("layout")});
+    catalog.commandContexts.insert(QStringLiteral("scale"), {QStringLiteral("layout")});
+
+    const QString contents = QStringLiteral("layout l_plan\n"
+                                            "code metapost\n"
+                                            "  code_like_macro := 1;\n"
+                                            "  thfill p withcolor (0.0, 0.5, 1.0);\n"
+                                            "endcode\n"
+                                            "endlayout\n");
+    const TherionSourceValidationResult result = TherionSourceValidator::validate(contents, catalog);
+
+    require(!containsDiagnostic(result, QStringLiteral("invalid-command-context")),
+            "Raw code block content should not be validated as nested Therion commands.");
+    require(!containsDiagnostic(result, QStringLiteral("unclosed-block")),
+            "Raw code block content should not open nested Therion blocks.");
+    require(!containsDiagnostic(result, QStringLiteral("unmatched-block-close")),
+            "Code block endcode should close the active code block.");
+}
+
+void acceptsMultipleClosedLayoutCodeBlocks()
+{
+    TherionSourceValidationCatalog catalog = basicCatalog();
+    catalog.commandContexts.insert(QStringLiteral("code"), {QStringLiteral("layout")});
+    catalog.commandContexts.insert(QStringLiteral("endcode"), {QStringLiteral("layout")});
+    catalog.commandContexts.insert(QStringLiteral("scale"), {QStringLiteral("layout")});
+    catalog.commandContexts.insert(QStringLiteral("legend"), {QStringLiteral("layout")});
+
+    const QString contents = QStringLiteral("layout l1\n"
+                                            "  code metapost\n"
+                                            "    def a_water (expr p) =\n"
+                                            "      T:=identity;\n"
+                                            "    enddef;\n"
+                                            "  endcode\n"
+                                            "  scale 1 100\n"
+                                            "  code tex-map\n"
+                                            "    \\legendwidth=15cm\n"
+                                            "  endcode\n"
+                                            "  legend on\n"
+                                            "endlayout\n");
+    const TherionSourceValidationResult result = TherionSourceValidator::validate(contents, catalog);
+
+    require(!containsDiagnostic(result, QStringLiteral("unclosed-block")),
+            "Explicitly closed layout code blocks should not produce unclosed diagnostics.");
+    require(!containsDiagnostic(result, QStringLiteral("invalid-command-context")),
+            "Explicitly closed layout code blocks should keep endcode in layout context.");
+}
+
+void reportsMissingEndcodeBeforeNextLayoutCommand()
+{
+    TherionSourceValidationCatalog catalog = basicCatalog();
+    catalog.commandContexts.insert(QStringLiteral("code"), {QStringLiteral("layout")});
+    catalog.commandContexts.insert(QStringLiteral("endcode"), {QStringLiteral("layout")});
+    catalog.commandContexts.insert(QStringLiteral("scale"), {QStringLiteral("layout")});
+    catalog.commandContexts.insert(QStringLiteral("legend"), {QStringLiteral("layout")});
+
+    const QString contents = QStringLiteral("layout l1\n"
+                                            "  code metapost\n"
+                                            "  def a_water (expr p) =\n"
+                                            "    T:=identity;\n"
+                                            "    thfill p withcolor (0.0, 0.5, 1.0);\n"
+                                            "  enddef;\n"
+                                            "\n"
+                                            "   scale 1 100\n"
+                                            "\n"
+                                            "   code metapost\n"
+                                            "      #fonts_setup(3,4,5,7,11);\n"
+                                            "   endcode\n"
+                                            "\n"
+                                            "  code tex-map\n"
+                                            "     \\legendwidth=15cm\n"
+                                            "  endcode\n"
+                                            "\n"
+                                            "  legend on\n"
+                                            "endlayout\n");
+    const TherionSourceValidationResult result = TherionSourceValidator::validate(contents, catalog);
+
+    require(containsDiagnostic(result, QStringLiteral("unclosed-block")),
+            "A layout command before endcode should report the active code block as unclosed.");
+    const TherionSourceDiagnostic *unclosedCode =
+        diagnosticForCode(result, QStringLiteral("unclosed-block"));
+    require(unclosedCode != nullptr && diagnosticSourceRange(*unclosedCode) == QStringLiteral("code"),
+            "Missing endcode diagnostics should highlight the opening code token without leading indentation.");
+    require(!containsDiagnostic(result, QStringLiteral("invalid-command-context")),
+            "Missing endcode diagnostics should not be reported as unexpected command context.");
+}
+
 void reportsUnknownOptionValue()
 {
     const QString contents = QStringLiteral("line wall -close maybe\n"
@@ -862,6 +956,9 @@ int main(int argc, char **argv)
     doesNotCountOptionsAsExtraPositionalArguments();
     acceptsVariadicJoinArguments();
     acceptsLayoutIdArgument();
+    treatsLayoutCodeBodyAsRawContent();
+    acceptsMultipleClosedLayoutCodeBlocks();
+    reportsMissingEndcodeBeforeNextLayoutCommand();
     reportsUnknownOptionValue();
     reportsUnknownSubtypeValueForCurrentSymbolType();
     reportsInvalidCommandContextWhenCatalogListsContexts();

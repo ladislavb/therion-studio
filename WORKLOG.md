@@ -55,6 +55,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Thconfig syntax validation now treats catalog wildcard options such as `export map -layout-xxx` as option families
   backed by known `layout` command options, so valid `-layout-*` export overrides no longer produce false
   unknown-option warnings while unknown layout suffixes and literal placeholder options still do.
+- Thconfig/layout validation now treats `code ... endcode` bodies as raw backend code, so content lines that happen to
+  start with non-layout Therion-looking words do not open nested blocks; parent-context layout commands before `endcode`
+  report the active `code` block as unclosed, and closing directives validate against the parent block context so
+  `endcode` no longer triggers unexpected-context warnings inside `layout`.
 - Draft release notes for `2026.7.1` are now available in `docs/releases/2026.7.1.md` with the SQL report viewer covered
   as one feature block and the Improvements/Bug Fixes sections condensed for release readability; final release prep
   should still confirm version/build metadata, packaging outputs, and a short manual smoke pass before tagging.

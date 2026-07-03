@@ -100,6 +100,13 @@ bool therionBlockTreatsChildrenAsContent(const QString &directive)
         || normalized == QStringLiteral("code");
 }
 
+bool lineInsideCodeBlockIsRawContent(const QString &currentBlockDirective,
+                                     const QString &normalizedDirective)
+{
+    return normalizedTherionDirectiveToken(currentBlockDirective) == QStringLiteral("code")
+        && normalizedDirective != QStringLiteral("endcode");
+}
+
 TherionSourceDocument TherionSourceDocument::fromText(
     const QString &contents,
     const TherionSourceDocumentMetadata &metadata)
@@ -133,6 +140,12 @@ TherionSourceDocument TherionSourceDocument::fromText(
         semanticLine.opensBlock = openToClose.contains(semanticLine.normalizedDirective);
         semanticLine.closesBlock = closeToOpen.contains(semanticLine.normalizedDirective);
         semanticLine.closeMatchesOpenDirective = closeToOpen.value(semanticLine.normalizedDirective);
+        if (lineInsideCodeBlockIsRawContent(semanticLine.currentBlockDirective,
+                                            semanticLine.normalizedDirective)) {
+            semanticLine.opensBlock = false;
+            semanticLine.closesBlock = false;
+            semanticLine.closeMatchesOpenDirective.clear();
+        }
         semanticLine.role = therionBlockTreatsChildrenAsContent(semanticLine.currentBlockDirective)
                 && !semanticLine.opensBlock
                 && !semanticLine.closesBlock

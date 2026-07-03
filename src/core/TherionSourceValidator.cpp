@@ -1093,6 +1093,83 @@ void appendBlockDiagnostics(TherionSourceValidationResult *result,
     }
 }
 
+bool catalogCommandAllowedInContext(const TherionSourceValidationCatalog &catalog,
+                                    const QString &commandName,
+                                    const QString &context)
+{
+    if (!catalog.commandNames.contains(commandName)) {
+        return false;
+    }
+
+    const QStringList contexts = catalog.commandContexts.value(commandName);
+    return contexts.contains(QStringLiteral("all"), Qt::CaseInsensitive)
+        || contexts.contains(context, Qt::CaseInsensitive);
+}
+
+TherionSourceDiagnostic diagnosticForUnclosedCodeBeforeParentCommand(const TherionSourceDocument &sourceDocument,
+                                                                     const TherionSourceBlockFrame &codeBlock,
+                                                                     const QString &parentCommand,
+                                                                     const QString &parentContext)
+{
+    TherionSourceDiagnostic diagnostic;
+    diagnostic.code = QStringLiteral("unclosed-block");
+    diagnostic.severity = TherionSourceDiagnosticSeverity::Error;
+    diagnostic.lineNumber = codeBlock.lineNumber;
+    diagnostic.columnNumber = 1;
+    diagnostic.columnLength = codeBlock.directive.size();
+    diagnostic.title = QCoreApplication::translate("TherionStudio::TherionSourceValidator", "Unclosed block");
+    diagnostic.message = QCoreApplication::translate("TherionStudio::TherionSourceValidator", "Block `%1` should be closed with `%2` before command `%3` in `%4` context.")
+                             .arg(QStringLiteral("code"),
+                                  QStringLiteral("endcode"),
+                                  parentCommand,
+                                  parentContext);
+    diagnostic.currentText = codeBlock.lineText;
+
+    const TherionSourceDocumentLine *codeLine = sourceDocument.lineAtLineNumber(codeBlock.lineNumber);
+    if (codeLine != nullptr && !codeLine->sourceLine.parsed.tokenSpans.isEmpty()) {
+        const TherionParsedToken &token = codeLine->sourceLine.parsed.tokenSpans.constFirst();
+        diagnostic.columnNumber = token.start + 1;
+        diagnostic.columnLength = token.length;
+        diagnostic.currentText = codeLine->sourceLine.text;
+    }
+    return diagnostic;
+}
+
+void appendCodeBoundaryDiagnostics(TherionSourceValidationResult *result,
+                                   const TherionSourceDocument &sourceDocument,
+                                   const TherionSourceValidationCatalog &catalog)
+{
+    if (result == nullptr) {
+        return;
+    }
+
+    QSet<int> reportedCodeOpenLines;
+    for (const TherionSourceDocumentLine &line : sourceDocument.lines()) {
+        if (line.blockStackBefore.size() < 2
+            || line.normalizedDirective.isEmpty()
+            || line.normalizedDirective == QStringLiteral("endcode")
+            || line.blockStackBefore.constLast().directive != QStringLiteral("code")) {
+            continue;
+        }
+
+        const QString parentContext = line.blockStackBefore.at(line.blockStackBefore.size() - 2).directive;
+        if (!catalogCommandAllowedInContext(catalog, line.normalizedDirective, parentContext)) {
+            continue;
+        }
+
+        const TherionSourceBlockFrame codeBlock = line.blockStackBefore.constLast();
+        if (reportedCodeOpenLines.contains(codeBlock.lineNumber)) {
+            continue;
+        }
+        reportedCodeOpenLines.insert(codeBlock.lineNumber);
+
+        result->diagnostics.append(diagnosticForUnclosedCodeBeforeParentCommand(sourceDocument,
+                                                                                codeBlock,
+                                                                                line.normalizedDirective,
+                                                                                parentContext));
+    }
+}
+
 void appendEmptyScrapObjectDiagnostics(TherionSourceValidationResult *result,
                                        const TherionSourceDocument &sourceDocument)
 {
@@ -1225,6 +1302,7 @@ TherionSourceValidationResult validateSourceDocuments(const TherionSourceDocumen
 
     if (validateCatalog) {
         appendBlockDiagnostics(&result, sourceDocument);
+        appendCodeBoundaryDiagnostics(&result, sourceDocument, validationCatalog);
     }
     return result;
 }
