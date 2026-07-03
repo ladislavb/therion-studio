@@ -383,6 +383,7 @@ MainWindow::MainWindow(TherionStudio::ISessionStore &sessionStore,
     , editorTabs_(new QTabWidget(this))
     , projectModel_(new QFileSystemModel(this))
     , structureModel_(new QStandardItemModel(this))
+    , outputsModel_(new QStandardItemModel(this))
     , searchResultsModel_(new QStandardItemModel(this))
     , validationResultsModel_(new QStandardItemModel(this))
     , mapObjectsModel_(new QStandardItemModel(this))
@@ -392,6 +393,7 @@ MainWindow::MainWindow(TherionStudio::ISessionStore &sessionStore,
     , commandCatalogStore_(std::move(commandCatalogStore))
     , projectScanCacheService_(std::make_shared<TherionStudio::ProjectScanCacheService>())
     , projectSearchScanner_(new TherionStudio::ProjectSearchScanner(this))
+    , projectOutputsScanner_(new TherionStudio::ProjectOutputsScanner(this))
     , projectValidationController_(new TherionStudio::ProjectValidationController(projectScanCacheService_, this))
     , structureSidebarScanner_(new TherionStudio::ProjectStructureScanner(projectScanCacheService_, this))
 {
@@ -400,6 +402,8 @@ MainWindow::MainWindow(TherionStudio::ISessionStore &sessionStore,
 
     connect(projectSearchScanner_, &TherionStudio::ProjectSearchScanner::searchFinished,
             this, &MainWindow::handleProjectSearchFinished);
+    connect(projectOutputsScanner_, &TherionStudio::ProjectOutputsScanner::scanFinished,
+            this, &MainWindow::handleProjectOutputsScanFinished);
     connect(projectValidationController_, &TherionStudio::ProjectValidationController::validationStarted,
             this, &MainWindow::handleProjectValidationStarted);
     connect(projectValidationController_, &TherionStudio::ProjectValidationController::validationFinished,
@@ -719,6 +723,7 @@ void MainWindow::restoreSessionState()
         projectRootPath_ = projectPath;
         rebuildProjectFileWatcher();
         refreshProjectBrowserView();
+        requestProjectOutputsRefresh();
     };
     actions.appendConsoleLine = [this](const QString &line) {
         appendConsoleLine(line);
@@ -1005,6 +1010,7 @@ void MainWindow::openProjectPath(const QString &selectedProjectPath)
     actions.applyProjectRootToBrowser = [this](const QString &projectRootPath) {
         Q_UNUSED(projectRootPath);
         refreshProjectBrowserView();
+        requestProjectOutputsRefresh();
     };
     actions.loadStructureNameOverrides = [this]() { loadStructureNameOverrides(); };
     actions.syncOpenDocumentsToProjectRoot = [this]() { syncOpenDocumentsToProjectRoot(); };
@@ -1041,7 +1047,10 @@ void MainWindow::closeProject()
         }
     };
     actions.clearDocumentTabs = [this]() { clearDocumentTabs(); };
-    actions.resetProjectBrowser = [this]() { resetProjectBrowser(); };
+    actions.resetProjectBrowser = [this]() {
+        resetProjectBrowser();
+        requestProjectOutputsRefresh();
+    };
     actions.clearProjectValidationResults = [this]() { clearProjectValidationResults(); };
     actions.persistOpenDocuments = [this]() { persistOpenDocuments(); };
     actions.resetProjectTherionRunContext = [this]() { resetProjectTherionRunContext(); };

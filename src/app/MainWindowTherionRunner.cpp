@@ -587,6 +587,7 @@ void MainWindow::handleTherionRunnerFinished(int exitCode, QProcess::ExitStatus 
     setCompilerStatusResult(exitStatus == QProcess::NormalExit && exitCode == 0,
                             eventPresentation.statusText);
     activeTherionRunConfigPath_.clear();
+    requestProjectOutputsRefresh();
     updateTherionRunnerState();
 }
 

@@ -190,6 +190,7 @@ void MainWindow::handleProjectDirectoryChanged(const QString &directoryPath)
     projectFileWatcherSignatures_.insert(normalizedPath, currentSignature);
 
     rebuildProjectFileWatcher();
+    requestProjectOutputsRefresh();
     requestProjectValidationForFileSystemChange(directoryPath);
 }
 
@@ -213,6 +214,7 @@ void MainWindow::handleProjectFileChanged(const QString &filePath)
         projectFileWatcher_->addPath(normalizedPath);
     }
 
+    requestProjectOutputsRefresh();
     requestProjectValidationForFileSystemChange(filePath);
 }
 

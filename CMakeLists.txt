@@ -239,6 +239,10 @@ set(THERION_APP_SOURCES
     src/app/ProjectSourceProjectionCache.h
     src/app/ProjectScanCacheService.cpp
     src/app/ProjectScanCacheService.h
+    src/app/ProjectFileDiscovery.cpp
+    src/app/ProjectFileDiscovery.h
+    src/app/ProjectOutputsScanner.cpp
+    src/app/ProjectOutputsScanner.h
     src/app/ProjectSearchScanner.cpp
     src/app/ProjectSearchScanner.h
     src/app/ProjectValidationController.cpp
@@ -339,6 +343,7 @@ set(THERION_MAIN_WINDOW_SOURCES
     src/app/MainWindowMapBackground.cpp
     src/app/MainWindowProjectFileWatcher.cpp
     src/app/MainWindowProjectBrowserSidebar.cpp
+    src/app/MainWindowOutputsSidebar.cpp
     src/app/MainWindowProjectTemplate.cpp
     src/app/MainWindowProjectLifecycle.cpp
     src/app/MainWindowSettingsDialog.cpp
@@ -1274,6 +1279,7 @@ qt_add_executable(MainWindowServiceQTests
     tests/MainWindowProjectWorkspaceServiceTest.cpp
     tests/MainWindowRecentFilesServiceTest.cpp
     tests/MainWindowRecentProjectsServiceTest.cpp
+    tests/ProjectOutputsScannerTest.cpp
     tests/MainWindowSessionDocumentServiceTest.cpp
     tests/MainWindowSessionProjectServiceTest.cpp
     tests/MainWindowSessionRestoreOrchestrationServiceTest.cpp
@@ -1283,7 +1289,11 @@ qt_add_executable(MainWindowServiceQTests
     tests/MainWindowStructureNameOverridesServiceTest.cpp
     tests/TherionSqlReportDatabaseTest.cpp
     src/app/MainWindowHelpDocument.cpp
-    src/app/MainWindowHelpDocument.h)
+    src/app/MainWindowHelpDocument.h
+    src/app/text_editor/InspectorPanel.cpp
+    src/app/text_editor/InspectorPanel.h
+    src/app/text_editor/InspectorPanelStyle.cpp
+    src/app/text_editor/InspectorPanelStyle.h)
 
 target_link_libraries(MainWindowServiceQTests PRIVATE therion_app Qt6::Test)
 

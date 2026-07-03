@@ -4,9 +4,9 @@
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="398"/>
-        <location filename="../src/app/MainWindow.cpp" line="830"/>
-        <location filename="../src/app/MainWindow.cpp" line="850"/>
+        <location filename="../src/app/MainWindow.cpp" line="400"/>
+        <location filename="../src/app/MainWindow.cpp" line="834"/>
+        <location filename="../src/app/MainWindow.cpp" line="854"/>
         <source>Therion Studio</source>
         <translation>Therion Studio</translation>
     </message>
@@ -67,8 +67,8 @@
         <translation type="vanished">Zavřít projekt</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1384"/>
-        <location filename="../src/app/MainWindow.cpp" line="1391"/>
+        <location filename="../src/app/MainWindow.cpp" line="1392"/>
+        <location filename="../src/app/MainWindow.cpp" line="1399"/>
         <location filename="../src/app/MainWindowProjectLifecycle.cpp" line="95"/>
         <location filename="../src/app/MainWindowProjectLifecycle.cpp" line="104"/>
         <location filename="../src/app/MainWindowWorkspaceCommandBar.cpp" line="275"/>
@@ -223,90 +223,90 @@
         <translation>Mapový panel je oddělený: zdrojový editor zůstává na této kartě a vizuální mapa je v odděleném okně.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="520"/>
+        <location filename="../src/app/MainWindow.cpp" line="524"/>
         <source>&amp;File</source>
         <translation>&amp;Soubor</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="522"/>
+        <location filename="../src/app/MainWindow.cpp" line="526"/>
         <source>New &amp;Window</source>
         <translation>Nové &amp;okno</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="527"/>
+        <location filename="../src/app/MainWindow.cpp" line="531"/>
         <location filename="../src/app/MainWindowProjectTemplate.cpp" line="159"/>
         <location filename="../src/app/MainWindowProjectTemplate.cpp" line="203"/>
         <source>New Project</source>
         <translation>Nový projekt</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="528"/>
+        <location filename="../src/app/MainWindow.cpp" line="532"/>
         <source>Project from Template...</source>
         <translation>Projekt ze šablony...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="530"/>
+        <location filename="../src/app/MainWindow.cpp" line="534"/>
         <source>Empty Project...</source>
         <translation>Prázdný projekt...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="533"/>
+        <location filename="../src/app/MainWindow.cpp" line="537"/>
         <source>New File</source>
         <translation>Nový soubor</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="534"/>
+        <location filename="../src/app/MainWindow.cpp" line="538"/>
         <source>Therion Source (.th)</source>
         <translation>Zdroj Therion (.th)</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="536"/>
+        <location filename="../src/app/MainWindow.cpp" line="540"/>
         <source>Therion Map (.th2)</source>
         <translation>Mapa Therion (.th2)</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="538"/>
+        <location filename="../src/app/MainWindow.cpp" line="542"/>
         <source>Therion Config (.thconfig)</source>
         <translation>Konfigurace Therion (.thconfig)</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="543"/>
+        <location filename="../src/app/MainWindow.cpp" line="547"/>
         <source>&amp;Open Project...</source>
         <translation>&amp;Otevřít projekt...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="552"/>
+        <location filename="../src/app/MainWindow.cpp" line="556"/>
         <source>Import</source>
         <translation>Import</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="553"/>
+        <location filename="../src/app/MainWindow.cpp" line="557"/>
         <source>Import PocketTopo Text...</source>
         <translation>Importovat PocketTopo text...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="568"/>
+        <location filename="../src/app/MainWindow.cpp" line="572"/>
         <source>&amp;Close Project</source>
         <translation>&amp;Zavřít projekt</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="547"/>
+        <location filename="../src/app/MainWindow.cpp" line="551"/>
         <location filename="../src/app/MainWindowWelcomeWidget.cpp" line="110"/>
         <source>Recent Projects</source>
         <translation>Poslední projekty</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="571"/>
+        <location filename="../src/app/MainWindow.cpp" line="575"/>
         <source>Close Tab</source>
         <translation>Zavřít kartu</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="832"/>
+        <location filename="../src/app/MainWindow.cpp" line="836"/>
         <source>Open Existing Project...</source>
         <translation>Otevřít existující projekt...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="836"/>
+        <location filename="../src/app/MainWindow.cpp" line="840"/>
         <location filename="../src/app/MainWindowProjectTemplate.cpp" line="202"/>
         <location filename="../src/app/MainWindowProjectTemplate.cpp" line="214"/>
         <location filename="../src/app/MainWindowProjectTemplate.cpp" line="220"/>
@@ -314,12 +314,12 @@
         <translation>Nový prázdný projekt</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="840"/>
+        <location filename="../src/app/MainWindow.cpp" line="844"/>
         <source>New Project from Template...</source>
         <translation>Nový projekt ze šablony...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1074"/>
+        <location filename="../src/app/MainWindow.cpp" line="1082"/>
         <source>No Recent Projects</source>
         <translation>Žádné poslední projekty</translation>
     </message>
@@ -329,14 +329,14 @@
         <translation>Projekt: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="548"/>
+        <location filename="../src/app/MainWindow.cpp" line="552"/>
         <location filename="../src/app/MainWindowWelcomeWidget.cpp" line="171"/>
         <source>Recent Files</source>
         <translation>Poslední soubory</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1108"/>
-        <location filename="../src/app/MainWindow.cpp" line="1114"/>
+        <location filename="../src/app/MainWindow.cpp" line="1116"/>
+        <location filename="../src/app/MainWindow.cpp" line="1122"/>
         <source>No Recent Files</source>
         <translation>Žádné poslední soubory</translation>
     </message>
@@ -346,12 +346,12 @@
         <translation>Zatím žádné poslední soubory.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="558"/>
+        <location filename="../src/app/MainWindow.cpp" line="562"/>
         <source>&amp;Save</source>
         <translation>&amp;Uložit</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="562"/>
+        <location filename="../src/app/MainWindow.cpp" line="566"/>
         <source>Save &amp;All</source>
         <translation>Uložit &amp;vše</translation>
     </message>
@@ -360,97 +360,97 @@
         <translation type="vanished">&amp;Zavřít</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="574"/>
+        <location filename="../src/app/MainWindow.cpp" line="578"/>
         <source>Close All Tabs</source>
         <translation>Zavřít všechny karty</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="579"/>
+        <location filename="../src/app/MainWindow.cpp" line="583"/>
         <source>Settings...</source>
         <translation>Nastavení...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="584"/>
+        <location filename="../src/app/MainWindow.cpp" line="588"/>
         <source>E&amp;xit</source>
         <translation>&amp;Ukončit</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="588"/>
+        <location filename="../src/app/MainWindow.cpp" line="592"/>
         <source>&amp;Edit</source>
         <translation>&amp;Úpravy</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="589"/>
+        <location filename="../src/app/MainWindow.cpp" line="593"/>
         <source>&amp;Undo</source>
         <translation>&amp;Zpět</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="591"/>
+        <location filename="../src/app/MainWindow.cpp" line="595"/>
         <source>Undo the last change in the active document.</source>
         <translation>Vrátit poslední změnu v aktivním dokumentu.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="594"/>
+        <location filename="../src/app/MainWindow.cpp" line="598"/>
         <source>&amp;Redo</source>
         <translation>&amp;Znovu</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="596"/>
+        <location filename="../src/app/MainWindow.cpp" line="600"/>
         <source>Redo the last undone change in the active document.</source>
         <translation>Zopakovat poslední vrácenou změnu v aktivním dokumentu.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="600"/>
+        <location filename="../src/app/MainWindow.cpp" line="604"/>
         <source>&amp;Find</source>
         <translation>&amp;Hledat</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="604"/>
+        <location filename="../src/app/MainWindow.cpp" line="608"/>
         <source>Search in Project</source>
         <translation>Hledat v projektu</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="618"/>
+        <location filename="../src/app/MainWindow.cpp" line="622"/>
         <source>Find and &amp;Replace</source>
         <translation>Hledat a &amp;nahradit</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="634"/>
+        <location filename="../src/app/MainWindow.cpp" line="638"/>
         <source>&amp;View</source>
         <translation>&amp;Zobrazení</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="636"/>
+        <location filename="../src/app/MainWindow.cpp" line="640"/>
         <source>Expand or collapse the left sidebar.</source>
         <translation>Rozbalit nebo sbalit levý postranní panel.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="642"/>
+        <location filename="../src/app/MainWindow.cpp" line="646"/>
         <source>Expand or collapse the active document right-side panel.</source>
         <translation>Rozbalit nebo sbalit pravý panel aktivního dokumentu.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="647"/>
+        <location filename="../src/app/MainWindow.cpp" line="651"/>
         <source>Expand or collapse the help panel while the map pane is detached.</source>
         <translation>Rozbalit nebo sbalit nápovědu při odděleném mapovém panelu.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="655"/>
+        <location filename="../src/app/MainWindow.cpp" line="659"/>
         <source>Show or hide the map magnifier overlay in map editors.</source>
         <translation>Zobrazit nebo skrýt překryv lupy v mapových editorech.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="671"/>
+        <location filename="../src/app/MainWindow.cpp" line="675"/>
         <source>Enter or exit full screen mode.</source>
         <translation>Vstoupit do režimu celé obrazovky nebo ho ukončit.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="682"/>
+        <location filename="../src/app/MainWindow.cpp" line="686"/>
         <source>&amp;Help</source>
         <translation>&amp;Nápověda</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="683"/>
+        <location filename="../src/app/MainWindow.cpp" line="687"/>
         <location filename="../src/app/MainWindowHelpDialog.cpp" line="507"/>
         <location filename="../src/app/MainWindowHelpDialog.cpp" line="517"/>
         <location filename="../src/app/MainWindowHelpDialog.cpp" line="525"/>
@@ -458,86 +458,86 @@
         <translation>Uživatelská příručka</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="688"/>
+        <location filename="../src/app/MainWindow.cpp" line="692"/>
         <location filename="../src/app/MainWindowHelpDialog.cpp" line="497"/>
         <source>About Therion Studio</source>
         <translation>O aplikaci Therion Studio</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="764"/>
+        <location filename="../src/app/MainWindow.cpp" line="768"/>
         <source>Skipped unsupported document during session restore: %1</source>
         <translation>Při obnově relace byl přeskočen nepodporovaný dokument: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="831"/>
+        <location filename="../src/app/MainWindow.cpp" line="835"/>
         <source>Open or create a project to begin working with Therion documents, maps, and structure views.</source>
         <translation>Otevřete nebo vytvořte projekt a začněte pracovat s dokumenty Therionu, mapami a strukturou.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1166"/>
-        <location filename="../src/app/MainWindow.cpp" line="1176"/>
-        <location filename="../src/app/MainWindow.cpp" line="1185"/>
+        <location filename="../src/app/MainWindow.cpp" line="1174"/>
+        <location filename="../src/app/MainWindow.cpp" line="1184"/>
+        <location filename="../src/app/MainWindow.cpp" line="1193"/>
         <source>Import PocketTopo Text</source>
         <translation>Importovat PocketTopo text</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1168"/>
+        <location filename="../src/app/MainWindow.cpp" line="1176"/>
         <source>PocketTopo Therion Export (*.txt *.TXT);;All Files (*)</source>
         <translation>PocketTopo Therion export (*.txt *.TXT);;Všechny soubory (*)</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1177"/>
+        <location filename="../src/app/MainWindow.cpp" line="1185"/>
         <source>Could not read %1.</source>
         <translation>Nepodařilo se přečíst %1.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1186"/>
+        <location filename="../src/app/MainWindow.cpp" line="1194"/>
         <source>No PocketTopo centreline data was found in %1.</source>
         <translation>V %1 nebyla nalezena žádná centerline data PocketTopo.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1198"/>
+        <location filename="../src/app/MainWindow.cpp" line="1206"/>
         <source>PocketTopo import skipped: document changed.</source>
         <translation>Import PocketTopo přeskočen: dokument se změnil.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1201"/>
+        <location filename="../src/app/MainWindow.cpp" line="1209"/>
         <source>Imported PocketTopo centreline data from %1.</source>
         <translation>Importována centerline data PocketTopo z %1.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1229"/>
+        <location filename="../src/app/MainWindow.cpp" line="1237"/>
         <location filename="../src/app/MainWindowUntitledDocumentWorkflow.cpp" line="269"/>
         <source>untitled.th</source>
         <translation>bez-nazvu.th</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1235"/>
+        <location filename="../src/app/MainWindow.cpp" line="1243"/>
         <source>untitled.th2</source>
         <translation>bez-nazvu.th2</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1241"/>
+        <location filename="../src/app/MainWindow.cpp" line="1249"/>
         <source>untitled.thconfig</source>
         <translation>bez-nazvu.thconfig</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1396"/>
+        <location filename="../src/app/MainWindow.cpp" line="1404"/>
         <source>Saved %1</source>
         <translation>Uloženo %1</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1430"/>
+        <location filename="../src/app/MainWindow.cpp" line="1438"/>
         <source>Save All</source>
         <translation>Uložit vše</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1437"/>
+        <location filename="../src/app/MainWindow.cpp" line="1445"/>
         <source>Saved all modified documents.</source>
         <translation>Všechny změněné dokumenty byly uloženy.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1437"/>
+        <location filename="../src/app/MainWindow.cpp" line="1445"/>
         <source>No modified documents to save.</source>
         <translation>Žádné změněné dokumenty k uložení.</translation>
     </message>
@@ -547,43 +547,43 @@
         <translation>Otevřít projekt...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="852"/>
+        <location filename="../src/app/MainWindow.cpp" line="856"/>
         <source>Open file from sidebar to begin editing this project.</source>
         <translation>Otevřete soubor z postranního panelu a začněte projekt upravovat.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="868"/>
-        <location filename="../src/app/MainWindow.cpp" line="873"/>
+        <location filename="../src/app/MainWindow.cpp" line="872"/>
+        <location filename="../src/app/MainWindow.cpp" line="877"/>
         <source>Welcome</source>
         <translation>Vítejte</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="964"/>
+        <location filename="../src/app/MainWindow.cpp" line="968"/>
         <source>Settings</source>
         <translation>Nastavení</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="954"/>
+        <location filename="../src/app/MainWindow.cpp" line="958"/>
         <source>Language changes will take effect after restarting Therion Studio.</source>
         <translation>Změna jazyka se projeví po restartu Therion Studia.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="957"/>
+        <location filename="../src/app/MainWindow.cpp" line="961"/>
         <source>Troubleshooting log changes will take effect after restarting Therion Studio.</source>
         <translation>Změny diagnostického logování se projeví po restartu Therion Studia.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="967"/>
+        <location filename="../src/app/MainWindow.cpp" line="971"/>
         <source>Restart Now</source>
         <translation>Restartovat nyní</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="968"/>
+        <location filename="../src/app/MainWindow.cpp" line="972"/>
         <source>Later</source>
         <translation>Později</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="979"/>
+        <location filename="../src/app/MainWindow.cpp" line="983"/>
         <source>Open Therion Project</source>
         <translation>Otevřít projekt Therion</translation>
     </message>
@@ -596,35 +596,35 @@
         <translation type="vanished">Otevřený dokument %1 nelze určit</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1445"/>
+        <location filename="../src/app/MainWindow.cpp" line="1453"/>
         <source>Replace</source>
         <translation>Nahradit</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1445"/>
+        <location filename="../src/app/MainWindow.cpp" line="1453"/>
         <source>Find</source>
         <translation>Hledat</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1513"/>
-        <location filename="../src/app/MainWindow.cpp" line="1728"/>
+        <location filename="../src/app/MainWindow.cpp" line="1521"/>
+        <location filename="../src/app/MainWindow.cpp" line="1736"/>
         <location filename="../src/app/MainWindowFileOpen.cpp" line="139"/>
         <source>Open File</source>
         <translation>Otevřít soubor</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1581"/>
-        <location filename="../src/app/MainWindow.cpp" line="1809"/>
+        <location filename="../src/app/MainWindow.cpp" line="1589"/>
+        <location filename="../src/app/MainWindow.cpp" line="1817"/>
         <source>Opened %1</source>
         <translation>Otevřeno %1</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1879"/>
+        <location filename="../src/app/MainWindow.cpp" line="1887"/>
         <source>File Changed on Disk</source>
         <translation>Soubor se změnil na disku</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1880"/>
+        <location filename="../src/app/MainWindow.cpp" line="1888"/>
         <source>The file %1 changed on disk while it has unsaved changes in Therion Studio.
 
 Reload from disk and discard the in-memory changes?</source>
@@ -633,32 +633,32 @@ Reload from disk and discard the in-memory changes?</source>
 Načíst z disku a zahodit změny v paměti?</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1887"/>
+        <location filename="../src/app/MainWindow.cpp" line="1895"/>
         <source>Kept in-memory version of %1.</source>
         <translation>Ponechána verze %1 z paměti.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1895"/>
+        <location filename="../src/app/MainWindow.cpp" line="1903"/>
         <source>Reload File</source>
         <translation>Znovu načíst soubor</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1897"/>
+        <location filename="../src/app/MainWindow.cpp" line="1905"/>
         <source>Unable to reload %1 from disk.</source>
         <translation>Nepodařilo se znovu načíst %1 z disku.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="1904"/>
+        <location filename="../src/app/MainWindow.cpp" line="1912"/>
         <source>Reloaded %1 from disk.</source>
         <translation>%1 znovu načteno z disku.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="2003"/>
+        <location filename="../src/app/MainWindow.cpp" line="2011"/>
         <source>Opened dedicated map window for %1</source>
         <translation>Otevřeno samostatné mapové okno pro %1</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindow.cpp" line="2119"/>
+        <location filename="../src/app/MainWindow.cpp" line="2127"/>
         <source>%1 is not implemented yet.</source>
         <translation>%1 zatím není implementováno.</translation>
     </message>
@@ -803,7 +803,7 @@ Načíst z disku a zahodit změny v paměti?</translation>
     <message>
         <location filename="../src/app/MainWindowSearchSidebar.cpp" line="79"/>
         <location filename="../src/app/MainWindowSearchSidebar.cpp" line="83"/>
-        <location filename="../src/app/MainWindowSidebar.cpp" line="212"/>
+        <location filename="../src/app/MainWindowSidebar.cpp" line="220"/>
         <source>Search</source>
         <translation>Hledat</translation>
     </message>
@@ -905,12 +905,14 @@ Načíst z disku a zahodit změny v paměti?</translation>
     <message>
         <location filename="../src/app/MainWindowFileOpen.cpp" line="26"/>
         <location filename="../src/app/MainWindowFileOpen.cpp" line="69"/>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="55"/>
         <source>Open in External App</source>
         <translation>Otevřít v externí aplikaci</translation>
     </message>
     <message>
         <location filename="../src/app/MainWindowFileOpen.cpp" line="27"/>
         <location filename="../src/app/MainWindowProjectBrowserSidebar.cpp" line="519"/>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="56"/>
         <source>Failed to open %1 with the system default application.</source>
         <translation>%1 se nepodařilo otevřít ve výchozí systémové aplikaci.</translation>
     </message>
@@ -1164,12 +1166,12 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <translation>thconfig</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSidebar.cpp" line="331"/>
+        <location filename="../src/app/MainWindowSidebar.cpp" line="344"/>
         <source>Files</source>
         <translation>Soubory</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSidebar.cpp" line="205"/>
+        <location filename="../src/app/MainWindowSidebar.cpp" line="206"/>
         <source>Structure</source>
         <translation>Struktura</translation>
     </message>
@@ -1184,18 +1186,18 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <translation>nova-konfigurace.thconfig</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSidebar.cpp" line="219"/>
-        <location filename="../src/app/MainWindowSidebar.cpp" line="531"/>
+        <location filename="../src/app/MainWindowSidebar.cpp" line="227"/>
+        <location filename="../src/app/MainWindowSidebar.cpp" line="548"/>
         <source>Validation</source>
         <translation>Validace</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSidebar.cpp" line="226"/>
+        <location filename="../src/app/MainWindowSidebar.cpp" line="234"/>
         <source>Compiler</source>
         <translation>Kompilátor</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSidebar.cpp" line="239"/>
+        <location filename="../src/app/MainWindowSidebar.cpp" line="247"/>
         <source>Compile Project Config</source>
         <translation>Kompilovat konfiguraci projektu</translation>
     </message>
@@ -1204,7 +1206,7 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <translation type="vanished">Procházet soubory projektu, surveye, mapy a scrapy.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSidebar.cpp" line="332"/>
+        <location filename="../src/app/MainWindowSidebar.cpp" line="345"/>
         <source>Survey</source>
         <translation>Survey</translation>
     </message>
@@ -1247,12 +1249,12 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <translation>Zobrazuje se prvních %1 výsledků.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSidebar.cpp" line="679"/>
+        <location filename="../src/app/MainWindowSidebar.cpp" line="696"/>
         <source>Expand sidebar</source>
         <translation>Rozbalit postranní panel</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSidebar.cpp" line="679"/>
+        <location filename="../src/app/MainWindowSidebar.cpp" line="696"/>
         <source>Collapse sidebar</source>
         <translation>Sbalit postranní panel</translation>
     </message>
@@ -1772,12 +1774,12 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <translation>Nepodařilo se načíst `%1`.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSidebar.cpp" line="526"/>
+        <location filename="../src/app/MainWindowSidebar.cpp" line="543"/>
         <source>Validation: %1 problem(s), errors present</source>
         <translation>Validace: %1 problém(ů), obsahuje chyby</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSidebar.cpp" line="529"/>
+        <location filename="../src/app/MainWindowSidebar.cpp" line="546"/>
         <source>Validation: %1 warning(s)</source>
         <translation>Validace: %1 varování</translation>
     </message>
@@ -1944,6 +1946,69 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1087"/>
         <source>This fix will remove the source block shown above.</source>
         <translation>Tato oprava odstraní výše zobrazený zdrojový blok.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="30"/>
+        <source>Model</source>
+        <translation>Model</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="32"/>
+        <source>Map / Atlas</source>
+        <translation>Mapa / Atlas</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="34"/>
+        <source>Database</source>
+        <translation>Databáze</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="74"/>
+        <source>Open a project to browse outputs.</source>
+        <translation>Otevřete projekt pro procházení výstupů.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="109"/>
+        <location filename="../src/app/MainWindowSidebar.cpp" line="213"/>
+        <source>Outputs</source>
+        <translation>Výstupy</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="148"/>
+        <source>Model (%1)</source>
+        <translation>Model (%1)</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="149"/>
+        <source>Map / Atlas (%1)</source>
+        <translation>Mapa / Atlas (%1)</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="150"/>
+        <source>Database (%1)</source>
+        <translation>Databáze (%1)</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="157"/>
+        <source>No Therion output artifacts found.</source>
+        <translation>Nebyly nalezeny žádné výstupní artefakty Therionu.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="158"/>
+        <source>%1 output artifact(s) found.</source>
+        <translation>Nalezeno %1 výstupních artefaktů.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="176"/>
+        <source>Open Output</source>
+        <translation>Otevřít výstup</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="177"/>
+        <source>Output file no longer exists:
+%1</source>
+        <translation>Výstupní soubor už neexistuje:
+%1</translation>
     </message>
 </context>
 <context>
@@ -2678,6 +2743,11 @@ Line-point options: %1</translation>
         <location filename="../src/app/MainWindowProjectTemplate.cpp" line="136"/>
         <source>The selected project location does not exist.</source>
         <translation>Vybrané umístění projektu neexistuje.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectOutputsScanner.cpp" line="100"/>
+        <source>Open a project to browse outputs.</source>
+        <translation>Otevřete projekt pro procházení výstupů.</translation>
     </message>
 </context>
 <context>

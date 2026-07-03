@@ -1,0 +1,128 @@
+#include "ProjectOutputsScanner.h"
+
+#include "ProjectFileDiscovery.h"
+#include "../core/TherionFileTypes.h"
+
+#include <QDir>
+#include <QFutureWatcher>
+#include <QTimer>
+#include <QtConcurrent>
+
+#include <algorithm>
+#include <optional>
+
+namespace TherionStudio
+{
+namespace
+{
+std::optional<ProjectOutputsScanner::ArtifactKind> artifactKindForFile(const QFileInfo &info)
+{
+    if (!info.isFile()) {
+        return std::nullopt;
+    }
+
+    if (isTherionModelOutputFileName(info.fileName())) {
+        return ProjectOutputsScanner::ArtifactKind::Model;
+    }
+    if (isTherionMapAtlasOutputFileName(info.fileName())) {
+        return ProjectOutputsScanner::ArtifactKind::MapAtlas;
+    }
+    if (isTherionDatabaseOutputFileName(info.fileName())) {
+        return ProjectOutputsScanner::ArtifactKind::Database;
+    }
+    return std::nullopt;
+}
+
+ProjectOutputsScanner::Result performProjectOutputsScan(const QString &projectRootPath, quint64 generation)
+{
+    ProjectOutputsScanner::Result result;
+    result.generation = generation;
+    result.projectRootPath = ProjectFileDiscovery::canonicalOrAbsolutePath(projectRootPath);
+    if (result.projectRootPath.trimmed().isEmpty() || !QDir(result.projectRootPath).exists()) {
+        result.errorMessage = QObject::tr("Open a project to browse outputs.");
+        return result;
+    }
+
+    const QVector<ProjectDiscoveredFile> outputFiles =
+        ProjectFileDiscovery::collectFiles(result.projectRootPath, [](const QFileInfo &info) {
+            return artifactKindForFile(info).has_value();
+        });
+    result.artifacts.reserve(outputFiles.size());
+    for (const ProjectDiscoveredFile &file : outputFiles) {
+        const std::optional<ProjectOutputsScanner::ArtifactKind> kind = artifactKindForFile(QFileInfo(file.filePath));
+        if (!kind.has_value()) {
+            continue;
+        }
+        result.artifacts.append({
+            file.filePath,
+            file.relativePath,
+            *kind,
+        });
+    }
+    std::sort(result.artifacts.begin(),
+              result.artifacts.end(),
+              [](const ProjectOutputsScanner::Artifact &left, const ProjectOutputsScanner::Artifact &right) {
+                  if (left.kind != right.kind) {
+                      return static_cast<int>(left.kind) < static_cast<int>(right.kind);
+                  }
+                  return QString::compare(left.relativePath, right.relativePath, Qt::CaseInsensitive) < 0;
+              });
+    return result;
+}
+}
+
+ProjectOutputsScanner::ProjectOutputsScanner(QObject *parent)
+    : QObject(parent)
+    , debounceTimer_(new QTimer(this))
+    , scanWatcher_(new QFutureWatcher<Result>(this))
+{
+    debounceTimer_->setSingleShot(true);
+    debounceTimer_->setInterval(120);
+    connect(debounceTimer_, &QTimer::timeout, this, &ProjectOutputsScanner::startScan);
+    connect(scanWatcher_, &QFutureWatcher<Result>::finished, this, &ProjectOutputsScanner::handleScanFinished);
+}
+
+void ProjectOutputsScanner::requestScan(const QString &projectRootPath)
+{
+    pendingProjectRootPath_ = projectRootPath;
+    hasPendingRequest_ = true;
+    debounceTimer_->start();
+}
+
+void ProjectOutputsScanner::setDebounceIntervalMs(int intervalMs)
+{
+    debounceTimer_->setInterval(intervalMs);
+}
+
+void ProjectOutputsScanner::startScan()
+{
+    if (!hasPendingRequest_) {
+        return;
+    }
+
+    if (scanWatcher_->isRunning()) {
+        queuedScan_ = true;
+        return;
+    }
+
+    const QString projectRootPath = pendingProjectRootPath_;
+    hasPendingRequest_ = false;
+    const quint64 generation = ++generation_;
+    auto future = QtConcurrent::run([projectRootPath, generation]() {
+        return performProjectOutputsScan(projectRootPath, generation);
+    });
+    scanWatcher_->setFuture(future);
+}
+
+void ProjectOutputsScanner::handleScanFinished()
+{
+    const Result result = scanWatcher_->result();
+    emit scanFinished(result);
+
+    if (queuedScan_) {
+        queuedScan_ = false;
+        startScan();
+    }
+}
+
+} // namespace TherionStudio

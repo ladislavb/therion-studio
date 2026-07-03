@@ -1,5 +1,6 @@
 #include "ProjectSearchScanner.h"
 
+#include "ProjectFileDiscovery.h"
 #include "../core/DocumentFile.h"
 #include "../core/TherionFileTypes.h"
 
@@ -18,13 +19,6 @@ namespace
 constexpr int kMaximumProjectSearchMatches = 1000;
 constexpr qsizetype kMaximumSearchableFileBytes = 4 * 1024 * 1024;
 
-QString canonicalOrAbsolutePath(const QString &path)
-{
-    const QFileInfo info(path);
-    const QString canonicalPath = info.canonicalFilePath();
-    return canonicalPath.isEmpty() ? info.absoluteFilePath() : canonicalPath;
-}
-
 bool isSearchableTherionTextFile(const QString &filePath)
 {
     const QFileInfo info(filePath);
@@ -39,40 +33,6 @@ bool isSearchableTherionTextFile(const QString &filePath)
     const QString suffix = info.suffix().toLower();
     return suffix == QStringLiteral("th")
         || suffix == QStringLiteral("th2");
-}
-
-bool shouldSkipDirectory(const QFileInfo &info)
-{
-    const QString name = info.fileName();
-    return name == QStringLiteral(".git")
-        || name == QStringLiteral(".svn")
-        || name == QStringLiteral(".hg")
-        || name == QStringLiteral("CMakeFiles")
-        || name == QStringLiteral("build")
-        || name.startsWith(QStringLiteral("cmake-build"));
-}
-
-void collectSearchableFiles(const QString &directoryPath, QVector<QString> *filePaths)
-{
-    if (filePaths == nullptr) {
-        return;
-    }
-
-    const QFileInfo directoryInfo(directoryPath);
-    if (!directoryInfo.isDir() || shouldSkipDirectory(directoryInfo)) {
-        return;
-    }
-
-    const QFileInfoList entries = QDir(directoryPath).entryInfoList(
-        QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot,
-        QDir::DirsFirst | QDir::Name);
-    for (const QFileInfo &entry : entries) {
-        if (entry.isDir()) {
-            collectSearchableFiles(entry.absoluteFilePath(), filePaths);
-        } else if (isSearchableTherionTextFile(entry.absoluteFilePath())) {
-            filePaths->append(entry.absoluteFilePath());
-        }
-    }
 }
 
 QString readSearchableFileText(const QString &filePath)
@@ -166,10 +126,12 @@ ProjectSearchScanner::Result performProjectSearch(const QString &projectRootPath
     }
 
     QSet<QString> searchedPaths;
-    QVector<QString> filePaths;
-    collectSearchableFiles(result.projectRootPath, &filePaths);
-    for (const QString &candidatePath : filePaths) {
-        const QString filePath = canonicalOrAbsolutePath(candidatePath);
+    const QVector<ProjectDiscoveredFile> filePaths =
+        ProjectFileDiscovery::collectFiles(result.projectRootPath, [](const QFileInfo &info) {
+            return isSearchableTherionTextFile(info.absoluteFilePath());
+        });
+    for (const ProjectDiscoveredFile &candidate : filePaths) {
+        const QString filePath = candidate.filePath;
         searchedPaths.insert(filePath);
         ++result.searchedFileCount;
 
@@ -186,7 +148,7 @@ ProjectSearchScanner::Result performProjectSearch(const QString &projectRootPath
     for (auto it = inMemoryProjectContentsByPath.constBegin();
          it != inMemoryProjectContentsByPath.constEnd();
          ++it) {
-        const QString filePath = canonicalOrAbsolutePath(it.key());
+        const QString filePath = ProjectFileDiscovery::canonicalOrAbsolutePath(it.key());
         if (searchedPaths.contains(filePath) || !isSearchableTherionTextFile(filePath)) {
             continue;
         }

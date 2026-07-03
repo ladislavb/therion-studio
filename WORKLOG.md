@@ -23,6 +23,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
   exposes a guarded `SELECT` query editor above the result table, uses predefined centreline reports as query presets in
   the right sidebar, loads built-in preset SQL from `resources/sql_report_presets.json`, shows schema beside those presets,
   presents capped query results through a read-only table model, and exports the current result table as CSV.
+- A first `Outputs` project sidebar slice groups generated Therion exports by model, map/atlas, and database artifacts,
+  keeps duplicate filenames distinct through project-relative paths and canonical-path identity, opens `.lox` and `.sql`
+  internally where supported, sends `.3d`/`.pdf` outputs to the system default application, refreshes after Therion runs
+  finish, and shares project file-discovery traversal with project search instead of owning UI-side recursive scanning.
 - Reporting follow-ups should stay incremental: decide whether to add saved report presets, per-report filters, result
   summaries/charts, or a direct Therion `export database` action before expanding the SQL viewer into a broader analysis
   workspace.

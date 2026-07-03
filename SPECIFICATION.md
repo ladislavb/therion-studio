@@ -60,6 +60,7 @@ Required capabilities:
 - create a new project from a bundled template when no project exists or from `File -> New Project -> Project from Template...`
 - display project files and subfolders
 - recognize common Therion-related file types such as `.th`, `.th2`, `thconfig`, `*.thconfig`, and `thconfig.*`, plus compiled 3D `.lox` artifacts and Therion SQL database export `.sql` files
+- provide an `Outputs` project navigation surface for generated Therion export artifacts grouped by export kind
 - open files in editor tabs
 - opening a `.lox` file shall create a read-only 3D viewer tab with Reset, Fit, orthogonal-projection toggle, Top/Side view, rotate-left/rotate-right, automatic-rotation, and measurement controls, plus orbit, pan, zoom, arrow-key yaw/tilt navigation, precise camera-orientation, distance, and focal-length adjustment, and world-blue-axis rotation navigation; Fit shall frame the current 3D scene bounds using the active camera orientation and viewport aspect ratio
 - the 3D viewer shall let the user switch model coloring between altitude-based coloring and no model coloring
@@ -307,6 +308,11 @@ The rules below define the expected day-to-day interaction model. If a later req
 - The SQL report tab shall show query presets and imported schema in a right-side sidebar with separate `Presets` and `Schema` sections.
 - The SQL report tab shall allow custom queries only when they are a single read-only `SELECT` or `WITH` query, shall reject mutating statements, shall cap displayed result rows to keep the UI responsive, and shall present results through a read-only table model rather than constructing per-cell editable widgets.
 - The SQL report tab shall export the currently displayed result table as CSV on explicit user request.
+- The left activity rail shall provide an `Outputs` pane for generated Therion export artifacts grouped by export kind: model outputs (`.lox`, `.3d`), map/atlas outputs (`.pdf`), and database outputs (`.sql`).
+- The `Outputs` pane shall identify artifacts by canonical file path and shall not deduplicate by filename; files with the same name in different directories shall remain separate entries displayed with enough project-relative path context to distinguish them.
+- Project output discovery shall reuse shared project file-discovery traversal and skip rules rather than maintaining a separate ad hoc recursive scan in the UI.
+- The `Outputs` pane shall refresh after a Therion run finishes and after relevant project filesystem changes so newly exported artifacts become visible without reopening the project.
+- Activating an output artifact shall open supported artifacts with the appropriate internal viewer where available (`.lox` model viewer, `.sql` report viewer) and shall open unsupported generated artifacts such as `.3d` and `.pdf` with the system default application.
 - When an opened `.lox` file changes on disk, the 3D viewer shall reload the scene automatically where practical and shall preserve the current camera and inspector settings rather than refitting the scene unless the user explicitly invokes Fit or Reset.
 - The 3D viewer inspector shall expose a model-coloring control that allows switching between altitude-based coloring and no coloring. Altitude-based coloring shall be the default. The inspector shall expose a Scene Settings section after Layers with visibility toggles for the bounding box, the head-up display, and the title/statistics overlay, all enabled by default.
 - The 3D viewer inspector shall expose compass heading, camera-tilt, camera-distance, focal-length, and automatic-rotation speed controls, shall follow the active application color palette, and the 3D viewer toolbar shall expose one play/stop toggle that starts and stops rotation around the world Z axis. The focal-length control shall be disabled while orthographic projection is active because it only affects perspective projection.

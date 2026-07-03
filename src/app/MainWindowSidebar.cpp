@@ -150,6 +150,7 @@ void MainWindow::buildStructureSidebar()
     activityLayout->setSpacing(7);
 
     const QString structureIconName = QStringLiteral("network");
+    const QString outputsIconName = QStringLiteral("eye");
     const QString searchIconName = QStringLiteral("search");
     const QString validationIconName = QStringLiteral("spell-check");
     const QString consoleIconName = QStringLiteral("cog");
@@ -208,6 +209,13 @@ void MainWindow::buildStructureSidebar()
     });
     activityLayout->addWidget(sidebarStructureButton_);
 
+    sidebarOutputsButton_ = new QToolButton(activityBar);
+    configureActivityButton(sidebarOutputsButton_, outputsIconName, tr("Outputs"));
+    connect(sidebarOutputsButton_, &QToolButton::clicked, this, [handleActivityButtonClick]() {
+        handleActivityButtonClick(SidebarPane::Outputs);
+    });
+    activityLayout->addWidget(sidebarOutputsButton_);
+
     sidebarSearchButton_ = new QToolButton(activityBar);
     configureActivityButton(sidebarSearchButton_, searchIconName, tr("Search"));
     connect(sidebarSearchButton_, &QToolButton::clicked, this, [handleActivityButtonClick]() {
@@ -245,11 +253,13 @@ void MainWindow::buildStructureSidebar()
 
     const auto applyActivityRailTheme = [activityBar,
                                          structureButton = sidebarStructureButton_,
+                                         outputsButton = sidebarOutputsButton_,
                                          searchButton = sidebarSearchButton_,
                                          validationButton = sidebarValidationButton_,
                                          compilerButton = sidebarConsoleButton_,
                                          compileButton = sidebarCompileButton_,
                                          structureIconName,
+                                         outputsIconName,
                                          searchIconName,
                                          validationIconName,
                                          consoleIconName,
@@ -267,6 +277,9 @@ void MainWindow::buildStructureSidebar()
         const qreal devicePixelRatio = activityBar->devicePixelRatioF();
         if (structureButton != nullptr) {
             structureButton->setIcon(TherionStudio::themedLucideIcon(structureIconName, palette, extent, devicePixelRatio));
+        }
+        if (outputsButton != nullptr) {
+            outputsButton->setIcon(TherionStudio::themedLucideIcon(outputsIconName, palette, extent, devicePixelRatio));
         }
         if (searchButton != nullptr) {
             searchButton->setIcon(TherionStudio::themedLucideIcon(searchIconName, palette, extent, devicePixelRatio));
@@ -390,6 +403,7 @@ void MainWindow::buildStructureSidebar()
     structureViewStack_->setCurrentIndex(StructurePanelSurveyPage);
     surveyViewButton->setChecked(true);
 
+    buildOutputsSidebar();
     buildSearchSidebar();
     buildValidationSidebar();
 
@@ -497,6 +511,9 @@ void MainWindow::setSidebarPane(SidebarPane pane)
     }
     if (sidebarSearchButton_ != nullptr) {
         sidebarSearchButton_->setChecked(pane == SidebarPane::Search);
+    }
+    if (sidebarOutputsButton_ != nullptr) {
+        sidebarOutputsButton_->setChecked(pane == SidebarPane::Outputs);
     }
     if (sidebarValidationButton_ != nullptr) {
         sidebarValidationButton_->setChecked(pane == SidebarPane::Validation);

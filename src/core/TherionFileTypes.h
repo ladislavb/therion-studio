@@ -58,6 +58,50 @@ inline bool isTherionSqlExportFilePath(const QString &filePath)
     return isTherionSqlExportFileName(QFileInfo(filePath).fileName());
 }
 
+inline bool isTherionModelOutputFileName(const QString &fileName)
+{
+    const QString suffix = QFileInfo(fileName).suffix().toLower();
+    return suffix == QStringLiteral("lox")
+        || suffix == QStringLiteral("3d");
+}
+
+inline bool isTherionModelOutputFilePath(const QString &filePath)
+{
+    return isTherionModelOutputFileName(QFileInfo(filePath).fileName());
+}
+
+inline bool isTherionMapAtlasOutputFileName(const QString &fileName)
+{
+    return QFileInfo(fileName).suffix().toLower() == QStringLiteral("pdf");
+}
+
+inline bool isTherionMapAtlasOutputFilePath(const QString &filePath)
+{
+    return isTherionMapAtlasOutputFileName(QFileInfo(filePath).fileName());
+}
+
+inline bool isTherionDatabaseOutputFileName(const QString &fileName)
+{
+    return isTherionSqlExportFileName(fileName);
+}
+
+inline bool isTherionDatabaseOutputFilePath(const QString &filePath)
+{
+    return isTherionDatabaseOutputFileName(QFileInfo(filePath).fileName());
+}
+
+inline bool isTherionOutputArtifactFileName(const QString &fileName)
+{
+    return isTherionModelOutputFileName(fileName)
+        || isTherionMapAtlasOutputFileName(fileName)
+        || isTherionDatabaseOutputFileName(fileName);
+}
+
+inline bool isTherionOutputArtifactFilePath(const QString &filePath)
+{
+    return isTherionOutputArtifactFileName(QFileInfo(filePath).fileName());
+}
+
 inline TherionSourceDocumentType therionSourceDocumentTypeForFileName(const QString &fileName)
 {
     if (isTherionConfigFileName(fileName)) {
