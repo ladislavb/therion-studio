@@ -2,11 +2,19 @@
 
 #include "ThreeDViewerInspectorState.h"
 #include "ThreeDViewerInspectorWidget.h"
+#include "ThreeDViewerImageExportDialog.h"
 #include "ThreeDViewerLayerListModel.h"
 #include "ThreeDViewerViewportWidget.h"
 
+#include "../ExportFileName.h"
+
+#include <QDateTime>
+#include <QDir>
+#include <QFileDialog>
 #include <QFileInfo>
 #include <QFrame>
+#include <QImage>
+#include <QMessageBox>
 #include <QPointer>
 #include <QShortcut>
 #include <QSplitter>
@@ -228,6 +236,49 @@ bool ThreeDViewerTab::orthographicProjection() const
     return orthographicProjection_;
 }
 
+void ThreeDViewerTab::exportImage()
+{
+    if (viewport_ == nullptr) {
+        return;
+    }
+
+    ThreeDViewerImageExportDialog dialog(viewport_->viewportPixelSize(), this);
+    if (dialog.exec() != QDialog::Accepted) {
+        return;
+    }
+
+    const QString initialDirectory = !filePath_.isEmpty()
+        ? QFileInfo(filePath_).absolutePath()
+        : projectRootPath_;
+    const QString defaultName = defaultArtifactExportFileName(filePath_,
+                                                              QStringLiteral("therion-studio-3d"),
+                                                              QStringLiteral("png"),
+                                                              QDateTime::currentDateTime());
+    QString outputPath = QFileDialog::getSaveFileName(this,
+                                                      tr("Export 3D Image"),
+                                                      QDir(initialDirectory).filePath(defaultName),
+                                                      tr("PNG images (*.png);;All files (*)"));
+    if (outputPath.isEmpty()) {
+        return;
+    }
+    if (QFileInfo(outputPath).suffix().isEmpty()) {
+        outputPath += QStringLiteral(".png");
+    }
+
+    const QPointer<ThreeDViewerTab> guardedThis(this);
+    viewport_->grabImage(dialog.exportSize(), [guardedThis, outputPath](const QImage &image) {
+        if (guardedThis == nullptr) {
+            return;
+        }
+        if (image.isNull() || !image.save(outputPath, "PNG")) {
+            QMessageBox::warning(guardedThis,
+                                 guardedThis->tr("Export 3D Image"),
+                                 guardedThis->tr("Could not write %1.").arg(QDir::toNativeSeparators(outputPath)));
+            return;
+        }
+    });
+}
+
 void ThreeDViewerTab::showFindBar(bool)
 {
 }
@@ -306,6 +357,11 @@ void ThreeDViewerTab::buildUi()
             viewport_->setMeshColorMode(static_cast<ThreeDViewerMeshColorMode>(inspectorState_->meshColorMode()));
         }
     });
+    connect(inspectorState_, &ThreeDViewerInspectorState::backgroundModeChanged, this, [this] {
+        if (viewport_ != nullptr && inspectorState_ != nullptr) {
+            viewport_->setBackgroundMode(static_cast<ThreeDViewerBackgroundMode>(inspectorState_->backgroundMode()));
+        }
+    });
     connect(inspectorState_, &ThreeDViewerInspectorState::measurementModeChanged, this, [this] {
         if (viewport_ != nullptr && inspectorState_ != nullptr) {
             viewport_->setMeasurementMode(inspectorState_->measurementMode());
@@ -373,6 +429,7 @@ void ThreeDViewerTab::buildUi()
 
     if (viewport_ != nullptr && inspectorState_ != nullptr) {
         viewport_->setMeshColorMode(static_cast<ThreeDViewerMeshColorMode>(inspectorState_->meshColorMode()));
+        viewport_->setBackgroundMode(static_cast<ThreeDViewerBackgroundMode>(inspectorState_->backgroundMode()));
         viewport_->setMeasurementMode(inspectorState_->measurementMode());
         viewport_->setOrthographicProjection(orthographicProjection_);
         inspectorState_->setOrthographicProjection(orthographicProjection_);
@@ -420,6 +477,7 @@ void ThreeDViewerTab::loadSceneIntoView(bool fitToScene)
     }
     if (inspectorState_ != nullptr) {
         viewport_->setMeshColorMode(static_cast<ThreeDViewerMeshColorMode>(inspectorState_->meshColorMode()));
+        viewport_->setBackgroundMode(static_cast<ThreeDViewerBackgroundMode>(inspectorState_->backgroundMode()));
         viewport_->setMeasurementMode(inspectorState_->measurementMode());
         viewport_->setOrthographicProjection(orthographicProjection_);
         inspectorState_->setOrthographicProjection(orthographicProjection_);

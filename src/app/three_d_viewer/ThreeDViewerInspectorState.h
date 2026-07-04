@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../core/ThreeDViewerSceneModel.h"
+#include "ThreeDViewerBackgroundMode.h"
 #include "ThreeDViewerMeshColorMode.h"
 
 #include <QObject>
@@ -15,6 +16,7 @@ class ThreeDViewerInspectorState final : public QObject
 
     Q_PROPERTY(QString filePath READ filePath WRITE setFilePath NOTIFY filePathChanged)
     Q_PROPERTY(int meshColorMode READ meshColorMode WRITE setMeshColorMode NOTIFY meshColorModeChanged)
+    Q_PROPERTY(int backgroundMode READ backgroundMode WRITE setBackgroundMode NOTIFY backgroundModeChanged)
     Q_PROPERTY(bool measurementMode READ measurementMode WRITE setMeasurementMode NOTIFY measurementModeChanged)
     Q_PROPERTY(bool autoRotationEnabled READ autoRotationEnabled WRITE setAutoRotationEnabled NOTIFY autoRotationEnabledChanged)
     Q_PROPERTY(bool orthographicProjection READ orthographicProjection WRITE setOrthographicProjection NOTIFY orthographicProjectionChanged)
@@ -42,6 +44,9 @@ public:
 
     int meshColorMode() const;
     void setMeshColorMode(int meshColorMode);
+
+    int backgroundMode() const;
+    void setBackgroundMode(int backgroundMode);
 
     bool measurementMode() const;
     void setMeasurementMode(bool measurementMode);
@@ -89,6 +94,7 @@ public:
 signals:
     void filePathChanged();
     void meshColorModeChanged();
+    void backgroundModeChanged();
     void measurementModeChanged();
     void autoRotationEnabledChanged();
     void orthographicProjectionChanged();
@@ -105,6 +111,7 @@ signals:
 private:
     QString filePath_;
     ThreeDViewerMeshColorMode meshColorMode_ = ThreeDViewerMeshColorMode::Altitude;
+    ThreeDViewerBackgroundMode backgroundMode_ = ThreeDViewerBackgroundMode::Black;
     bool measurementMode_ = false;
     bool autoRotationEnabled_ = false;
     bool orthographicProjection_ = false;

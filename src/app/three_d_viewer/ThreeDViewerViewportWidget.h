@@ -2,12 +2,16 @@
 
 #include "../../core/ThreeDViewerSceneModel.h"
 #include "ThreeDViewerLayerListModel.h"
+#include "ThreeDViewerBackgroundMode.h"
 #include "ThreeDViewerMeshColorMode.h"
 #include "ThreeDViewerViewportController.h"
 
 #include <QQuickWidget>
 
 #include <array>
+#include <functional>
+
+class QImage;
 
 namespace TherionStudio
 {
@@ -25,6 +29,7 @@ public:
     void setLayerVisibility(const std::array<bool, 5> &layerVisibility);
     void setFeatureVisibility(const ThreeDViewerLayerListModel::FeatureVisibility &featureVisibility);
     void setMeshColorMode(ThreeDViewerMeshColorMode meshColorMode);
+    void setBackgroundMode(ThreeDViewerBackgroundMode backgroundMode);
     void setMeasurementMode(bool measurementMode);
     void setAutoRotationEnabled(bool autoRotationEnabled);
     void setAutoRotationSpeed(double autoRotationSpeed);
@@ -40,6 +45,8 @@ public:
     void rollLeft();
     void rollRight();
     void focusViewport(Qt::FocusReason reason = Qt::ShortcutFocusReason);
+    QSize viewportPixelSize() const;
+    void grabImage(const QSize &targetSize, std::function<void(const QImage &)> callback);
 
 signals:
     void cameraSettingsChanged(double facingDegrees, double tiltDegrees, double distanceMeters, double focalLengthMm);
@@ -54,6 +61,7 @@ private:
     std::array<bool, 5> layerVisibility_ = {true, true, true, true, true};
     ThreeDViewerLayerListModel::FeatureVisibility featureVisibility_;
     ThreeDViewerMeshColorMode meshColorMode_ = ThreeDViewerMeshColorMode::Altitude;
+    ThreeDViewerBackgroundMode backgroundMode_ = ThreeDViewerBackgroundMode::Black;
     bool measurementMode_ = false;
     bool orthographicProjection_ = false;
     bool showBoundingBox_ = true;

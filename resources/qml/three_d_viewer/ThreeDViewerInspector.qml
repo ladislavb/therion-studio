@@ -315,6 +315,28 @@ Rectangle {
                         }
                     }
 
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Label {
+                            Layout.preferredWidth: 120
+                            text: qsTr("Background")
+                            color: root.textColor
+                        }
+
+                        ComboBox {
+                            Layout.fillWidth: true
+                            model: [qsTr("Black"), qsTr("White")]
+                            currentIndex: inspectorState ? inspectorState.backgroundMode : 0
+                            onActivated: {
+                                if (inspectorState) {
+                                    inspectorState.backgroundMode = currentIndex
+                                }
+                            }
+                        }
+                    }
+
                     CheckBox {
                         text: qsTr("Show Bounding Box")
                         palette.text: root.textColor

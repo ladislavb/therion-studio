@@ -2,6 +2,7 @@
 
 #include "../../core/ThreeDViewerSceneModel.h"
 #include "ThreeDViewerLayerListModel.h"
+#include "ThreeDViewerBackgroundMode.h"
 #include "ThreeDViewerMeshColorMode.h"
 #include "ThreeDViewerViewportController.h"
 
@@ -34,6 +35,7 @@ public:
     void setLayerVisibility(const std::array<bool, 5> &layerVisibility);
     void setFeatureVisibility(const ThreeDViewerLayerListModel::FeatureVisibility &featureVisibility);
     void setMeshColorMode(ThreeDViewerMeshColorMode meshColorMode);
+    void setBackgroundMode(ThreeDViewerBackgroundMode backgroundMode);
     void setMeasurementMode(bool measurementMode);
     void setAutoRotationEnabled(bool autoRotationEnabled);
     void setAutoRotationSpeed(double autoRotationSpeedDegreesPerSecond);
@@ -70,6 +72,7 @@ private:
         std::array<bool, 5> layerVisibility = {true, true, true, true, true};
         ThreeDViewerLayerListModel::FeatureVisibility featureVisibility;
         ThreeDViewerMeshColorMode meshColorMode = ThreeDViewerMeshColorMode::Altitude;
+        ThreeDViewerBackgroundMode backgroundMode = ThreeDViewerBackgroundMode::Black;
         bool measurementMode = false;
         bool orthographicProjection = false;
         bool showBoundingBox = true;
@@ -98,6 +101,7 @@ private:
     std::array<bool, 5> layerVisibility_ = {true, true, true, true, true};
     ThreeDViewerLayerListModel::FeatureVisibility featureVisibility_;
     ThreeDViewerMeshColorMode meshColorMode_ = ThreeDViewerMeshColorMode::Altitude;
+    ThreeDViewerBackgroundMode backgroundMode_ = ThreeDViewerBackgroundMode::Black;
     bool measurementMode_ = false;
     bool orthographicProjection_ = false;
     bool showBoundingBox_ = true;

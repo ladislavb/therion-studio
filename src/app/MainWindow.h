@@ -324,6 +324,7 @@ private:
     void triggerThreeDViewerSideViewForActiveDocument();
     void triggerThreeDViewerRollLeftForActiveDocument();
     void triggerThreeDViewerRollRightForActiveDocument();
+    void triggerThreeDViewerExportImageForActiveDocument();
     void triggerSelectForActiveDocument();
     void triggerCompleteDraftForActiveDocument();
     void triggerInsertScrapForActiveDocument();
@@ -480,6 +481,7 @@ private:
     QToolButton *workspaceThreeDViewerSideViewButton_ = nullptr;
     QToolButton *workspaceThreeDViewerRollLeftButton_ = nullptr;
     QToolButton *workspaceThreeDViewerRollRightButton_ = nullptr;
+    QToolButton *workspaceThreeDViewerExportImageButton_ = nullptr;
     QToolButton *workspaceSelectButton_ = nullptr;
     QToolButton *workspaceCompleteDraftButton_ = nullptr;
     QToolButton *workspaceInsertScrapButton_ = nullptr;

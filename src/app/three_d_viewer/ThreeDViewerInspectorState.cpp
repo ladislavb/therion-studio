@@ -84,6 +84,24 @@ void ThreeDViewerInspectorState::setMeshColorMode(int meshColorMode)
     emit meshColorModeChanged();
 }
 
+int ThreeDViewerInspectorState::backgroundMode() const
+{
+    return int(backgroundMode_);
+}
+
+void ThreeDViewerInspectorState::setBackgroundMode(int backgroundMode)
+{
+    const auto newMode = backgroundMode == int(ThreeDViewerBackgroundMode::White)
+        ? ThreeDViewerBackgroundMode::White
+        : ThreeDViewerBackgroundMode::Black;
+    if (backgroundMode_ == newMode) {
+        return;
+    }
+
+    backgroundMode_ = newMode;
+    emit backgroundModeChanged();
+}
+
 bool ThreeDViewerInspectorState::measurementMode() const
 {
     return measurementMode_;

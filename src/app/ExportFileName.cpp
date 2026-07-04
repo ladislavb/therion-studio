@@ -67,4 +67,17 @@ QString defaultExportFileName(const QString &kind,
         .arg(cleanKind, projectName, timestampText, cleanExtension);
 }
 
+QString defaultArtifactExportFileName(const QString &artifactPath,
+                                      const QString &fallbackKind,
+                                      const QString &extension,
+                                      const QDateTime &timestamp)
+{
+    const QString trimmedPath = artifactPath.trimmed();
+    const QString baseName = trimmedPath.isEmpty() ? QString() : QFileInfo(trimmedPath).completeBaseName();
+    const QString cleanBaseName = sanitizedName(baseName.isEmpty() ? fallbackKind : baseName);
+    const QString timestampText = timestamp.toLocalTime().toString(QStringLiteral("yyyyMMdd-HHmmss"));
+    const QString cleanExtension = extension.startsWith(QLatin1Char('.')) ? extension.mid(1) : extension;
+    return QStringLiteral("%1-%2.%3").arg(cleanBaseName, timestampText, cleanExtension);
+}
+
 } // namespace TherionStudio

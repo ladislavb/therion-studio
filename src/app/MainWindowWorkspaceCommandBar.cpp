@@ -323,6 +323,7 @@ void MainWindow::initializeWorkspaceModeSwitcher()
     workspaceThreeDViewerSideViewButton_ = createWorkspaceIconButton(workspaceThreeDViewerGroup_, tr("Side View"), QStringLiteral("arrow-big-right"));
     workspaceThreeDViewerRollLeftButton_ = createWorkspaceIconButton(workspaceThreeDViewerGroup_, tr("Rotate Left"), QStringLiteral("rotate-cw"));
     workspaceThreeDViewerRollRightButton_ = createWorkspaceIconButton(workspaceThreeDViewerGroup_, tr("Rotate Right"), QStringLiteral("rotate-ccw"));
+    workspaceThreeDViewerExportImageButton_ = createWorkspaceIconButton(workspaceThreeDViewerGroup_, tr("Export 3D Image"), QStringLiteral("download"));
     viewerLayout->addWidget(workspaceThreeDViewerResetButton_);
     viewerLayout->addWidget(workspaceThreeDViewerFitButton_);
     viewerLayout->addWidget(createWorkspaceToolbarSeparator(workspaceThreeDViewerGroup_));
@@ -335,6 +336,8 @@ void MainWindow::initializeWorkspaceModeSwitcher()
     viewerLayout->addWidget(workspaceThreeDViewerAutoRotateButton_);
     viewerLayout->addWidget(createWorkspaceToolbarSeparator(workspaceThreeDViewerGroup_));
     viewerLayout->addWidget(workspaceThreeDViewerMeasureButton_);
+    viewerLayout->addWidget(createWorkspaceToolbarSeparator(workspaceThreeDViewerGroup_));
+    viewerLayout->addWidget(workspaceThreeDViewerExportImageButton_);
     hostLayout->addWidget(workspaceThreeDViewerGroup_);
     workspaceThreeDViewerGroup_->setVisible(false);
     workspaceMapToolsGroup_ = new QWidget(workspaceModeSwitcher_);
@@ -433,6 +436,7 @@ void MainWindow::initializeWorkspaceModeSwitcher()
     connect(workspaceThreeDViewerSideViewButton_, &QToolButton::clicked, this, &MainWindow::triggerThreeDViewerSideViewForActiveDocument);
     connect(workspaceThreeDViewerRollLeftButton_, &QToolButton::clicked, this, &MainWindow::triggerThreeDViewerRollLeftForActiveDocument);
     connect(workspaceThreeDViewerRollRightButton_, &QToolButton::clicked, this, &MainWindow::triggerThreeDViewerRollRightForActiveDocument);
+    connect(workspaceThreeDViewerExportImageButton_, &QToolButton::clicked, this, &MainWindow::triggerThreeDViewerExportImageForActiveDocument);
     connect(workspaceSelectButton_, &QToolButton::clicked, this, &MainWindow::triggerSelectForActiveDocument);
     connect(workspaceCompleteDraftButton_, &QToolButton::clicked, this, &MainWindow::triggerCompleteDraftForActiveDocument);
     connect(workspaceInsertScrapButton_, &QToolButton::clicked, this, &MainWindow::triggerInsertScrapForActiveDocument);
@@ -529,6 +533,7 @@ void MainWindow::refreshWorkspaceModeSwitcher()
         || workspaceThreeDViewerSideViewButton_ == nullptr
         || workspaceThreeDViewerRollLeftButton_ == nullptr
         || workspaceThreeDViewerRollRightButton_ == nullptr
+        || workspaceThreeDViewerExportImageButton_ == nullptr
         || workspaceMapToolsGroup_ == nullptr
         || workspaceSelectButton_ == nullptr
         || workspaceCompleteDraftButton_ == nullptr
@@ -593,6 +598,7 @@ void MainWindow::refreshWorkspaceModeSwitcher()
     workspaceThreeDViewerSideViewButton_->setEnabled(showThreeDViewerModes);
     workspaceThreeDViewerRollLeftButton_->setEnabled(showThreeDViewerModes);
     workspaceThreeDViewerRollRightButton_->setEnabled(showThreeDViewerModes);
+    workspaceThreeDViewerExportImageButton_->setEnabled(showThreeDViewerModes);
     {
         const QSignalBlocker measureBlocker(workspaceThreeDViewerMeasureButton_);
         workspaceThreeDViewerMeasureButton_->setChecked(showThreeDViewerModes
@@ -675,6 +681,7 @@ void MainWindow::refreshWorkspaceModeSwitcher()
     workspaceThreeDViewerSideViewButton_->setVisible(showThreeDViewerModes);
     workspaceThreeDViewerRollLeftButton_->setVisible(showThreeDViewerModes);
     workspaceThreeDViewerRollRightButton_->setVisible(showThreeDViewerModes);
+    workspaceThreeDViewerExportImageButton_->setVisible(showThreeDViewerModes);
     workspaceThreeDViewerFitButton_->setEnabled(showThreeDViewerModes);
     workspaceThreeDViewerResetButton_->setEnabled(showThreeDViewerModes);
     workspaceThreeDViewerMeasureButton_->setEnabled(showThreeDViewerModes);
@@ -684,6 +691,7 @@ void MainWindow::refreshWorkspaceModeSwitcher()
     workspaceThreeDViewerSideViewButton_->setEnabled(showThreeDViewerModes);
     workspaceThreeDViewerRollLeftButton_->setEnabled(showThreeDViewerModes);
     workspaceThreeDViewerRollRightButton_->setEnabled(showThreeDViewerModes);
+    workspaceThreeDViewerExportImageButton_->setEnabled(showThreeDViewerModes);
 
     workspaceModeSwitcherSyncInProgress_ = true;
     if (showMapModes) {
@@ -913,6 +921,13 @@ void MainWindow::triggerThreeDViewerRollRightForActiveDocument()
 {
     if (auto *viewerTab = currentThreeDViewerTab(); viewerTab != nullptr) {
         viewerTab->rollViewRight();
+    }
+}
+
+void MainWindow::triggerThreeDViewerExportImageForActiveDocument()
+{
+    if (auto *viewerTab = currentThreeDViewerTab(); viewerTab != nullptr) {
+        viewerTab->exportImage();
     }
 }
 

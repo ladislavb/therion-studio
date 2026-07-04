@@ -161,6 +161,11 @@
         <translation>Otočit doprava</translation>
     </message>
     <message>
+        <location filename="../src/app/MainWindowWorkspaceCommandBar.cpp" line="326"/>
+        <source>Export 3D Image</source>
+        <translation>Exportovat 3D obrázek</translation>
+    </message>
+    <message>
         <location filename="../src/app/MainWindowWorkspaceCommandBar.cpp" line="341"/>
         <source>Complete Draft</source>
         <translation>Dokončit návrh</translation>
@@ -7730,6 +7735,65 @@ subtype blocks</translation>
     </message>
 </context>
 <context>
+    <name>TherionStudio::ThreeDViewerImageExportDialog</name>
+    <message>
+        <location filename="../src/app/three_d_viewer/ThreeDViewerImageExportDialog.cpp" line="33"/>
+        <source>Export 3D Image</source>
+        <translation>Exportovat 3D obrázek</translation>
+    </message>
+    <message>
+        <location filename="../src/app/three_d_viewer/ThreeDViewerImageExportDialog.cpp" line="41"/>
+        <source>Current viewport (%1 x %2)</source>
+        <translation>Aktuální pohled (%1 x %2)</translation>
+    </message>
+    <message>
+        <location filename="../src/app/three_d_viewer/ThreeDViewerImageExportDialog.cpp" line="45"/>
+        <source>1920 px wide</source>
+        <translation>Šířka 1920 px</translation>
+    </message>
+    <message>
+        <location filename="../src/app/three_d_viewer/ThreeDViewerImageExportDialog.cpp" line="46"/>
+        <source>3840 px wide</source>
+        <translation>Šířka 3840 px</translation>
+    </message>
+    <message>
+        <location filename="../src/app/three_d_viewer/ThreeDViewerImageExportDialog.cpp" line="47"/>
+        <source>Custom</source>
+        <translation>Vlastní</translation>
+    </message>
+    <message>
+        <location filename="../src/app/three_d_viewer/ThreeDViewerImageExportDialog.cpp" line="48"/>
+        <source>Preset</source>
+        <translation>Předvolba</translation>
+    </message>
+    <message>
+        <location filename="../src/app/three_d_viewer/ThreeDViewerImageExportDialog.cpp" line="52"/>
+        <location filename="../src/app/three_d_viewer/ThreeDViewerImageExportDialog.cpp" line="58"/>
+        <source> px</source>
+        <translation> px</translation>
+    </message>
+    <message>
+        <location filename="../src/app/three_d_viewer/ThreeDViewerImageExportDialog.cpp" line="54"/>
+        <source>Width</source>
+        <translation>Šířka</translation>
+    </message>
+    <message>
+        <location filename="../src/app/three_d_viewer/ThreeDViewerImageExportDialog.cpp" line="60"/>
+        <source>Height</source>
+        <translation>Výška</translation>
+    </message>
+    <message>
+        <location filename="../src/app/three_d_viewer/ThreeDViewerImageExportDialog.cpp" line="62"/>
+        <source>Lock aspect ratio</source>
+        <translation>Zachovat poměr stran</translation>
+    </message>
+    <message>
+        <location filename="../src/app/three_d_viewer/ThreeDViewerImageExportDialog.cpp" line="66"/>
+        <source>The exported PNG uses the current 3D view, visible layers, overlays, and scene background.</source>
+        <translation>Exportovaný PNG použije aktuální 3D pohled, viditelné vrstvy, překryvné prvky a pozadí scény.</translation>
+    </message>
+</context>
+<context>
     <name>TherionStudio::ThreeDViewerLayerListModel</name>
     <message>
         <location filename="../src/app/three_d_viewer/ThreeDViewerLayerListModel.cpp" line="331"/>
@@ -7814,6 +7878,21 @@ subtype blocks</translation>
 </context>
 <context>
     <name>TherionStudio::ThreeDViewerTab</name>
+    <message>
+        <location filename="../src/app/three_d_viewer/ThreeDViewerTab.cpp" line="274"/>
+        <source>Export 3D Image</source>
+        <translation>Exportovat 3D obrázek</translation>
+    </message>
+    <message>
+        <location filename="../src/app/three_d_viewer/ThreeDViewerTab.cpp" line="277"/>
+        <source>PNG images (*.png);;All files (*)</source>
+        <translation>Obrázky PNG (*.png);;Všechny soubory (*)</translation>
+    </message>
+    <message>
+        <location filename="../src/app/three_d_viewer/ThreeDViewerTab.cpp" line="290"/>
+        <source>Could not write %1.</source>
+        <translation>Nepodařilo se zapsat %1.</translation>
+    </message>
     <message>
         <location filename="../src/app/three_d_viewer/ThreeDViewerTab.cpp" line="109"/>
         <source>The 3D viewer is read-only.</source>
@@ -8072,6 +8151,21 @@ subtype blocks</translation>
         <location filename="../resources/qml/three_d_viewer/ThreeDViewerInspector.qml" line="308"/>
         <source>None</source>
         <translation>Bez barvení</translation>
+    </message>
+    <message>
+        <location filename="../resources/qml/three_d_viewer/ThreeDViewerInspector.qml" line="319"/>
+        <source>Background</source>
+        <translation>Pozadí</translation>
+    </message>
+    <message>
+        <location filename="../resources/qml/three_d_viewer/ThreeDViewerInspector.qml" line="325"/>
+        <source>Black</source>
+        <translation>Černé</translation>
+    </message>
+    <message>
+        <location filename="../resources/qml/three_d_viewer/ThreeDViewerInspector.qml" line="325"/>
+        <source>White</source>
+        <translation>Bílé</translation>
     </message>
     <message>
         <location filename="../resources/qml/three_d_viewer/ThreeDViewerInspector.qml" line="319"/>

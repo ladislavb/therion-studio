@@ -41,6 +41,7 @@ public:
     bool autoRotationEnabled() const;
     void setOrthographicProjection(bool orthographicProjection);
     bool orthographicProjection() const;
+    void exportImage();
     void showFindBar(bool replaceMode = false);
     void hideFindBar();
     void goToLine(int lineNumber);

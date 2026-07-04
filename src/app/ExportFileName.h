@@ -13,4 +13,9 @@ QString defaultExportFileName(const QString &kind,
                               const QString &extension,
                               const QDateTime &timestamp);
 
+QString defaultArtifactExportFileName(const QString &artifactPath,
+                                      const QString &fallbackKind,
+                                      const QString &extension,
+                                      const QDateTime &timestamp);
+
 } // namespace TherionStudio

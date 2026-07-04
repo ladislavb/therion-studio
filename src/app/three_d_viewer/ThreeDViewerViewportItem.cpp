@@ -112,6 +112,46 @@ QColor altitudeColor(double normalized)
     return QColor::fromHsvF(static_cast<float>(hue), 1.0F, static_cast<float>(value), 0.95F);
 }
 
+bool lightBackground(ThreeDViewerBackgroundMode backgroundMode)
+{
+    return backgroundMode == ThreeDViewerBackgroundMode::White;
+}
+
+QColor viewportBackgroundColor(ThreeDViewerBackgroundMode backgroundMode)
+{
+    return lightBackground(backgroundMode) ? QColor(QStringLiteral("#ffffff")) : QColor(QStringLiteral("#000000"));
+}
+
+QColor primaryOverlayColor(ThreeDViewerBackgroundMode backgroundMode)
+{
+    return lightBackground(backgroundMode) ? QColor(QStringLiteral("#0f172a")) : QColor(QStringLiteral("#f8fafc"));
+}
+
+QColor secondaryOverlayColor(ThreeDViewerBackgroundMode backgroundMode)
+{
+    return lightBackground(backgroundMode) ? QColor(QStringLiteral("#334155")) : QColor(QStringLiteral("#cbd5e1"));
+}
+
+QColor controlOverlayLineColor(ThreeDViewerBackgroundMode backgroundMode)
+{
+    return lightBackground(backgroundMode) ? QColor(QStringLiteral("#2563eb")) : QColor(QStringLiteral("#7dd3fc"));
+}
+
+QColor controlOverlayAccentColor(ThreeDViewerBackgroundMode backgroundMode)
+{
+    return lightBackground(backgroundMode) ? QColor(QStringLiteral("#b45309")) : QColor(QStringLiteral("#fbbf24"));
+}
+
+QColor controlOverlayAccentFillColor(ThreeDViewerBackgroundMode backgroundMode)
+{
+    return lightBackground(backgroundMode) ? QColor(QStringLiteral("#c2410c")) : QColor(QStringLiteral("#fb923c"));
+}
+
+QColor labelShadowColor(ThreeDViewerBackgroundMode backgroundMode)
+{
+    return lightBackground(backgroundMode) ? QColor(255, 255, 255, 230) : QColor(0, 0, 0, 220);
+}
+
 ThreeDViewerVec3 boundsCenter(const ThreeDViewerBounds &bounds)
 {
     return {
@@ -184,13 +224,14 @@ void appendTextNodeWithShadow(QSGNode *root,
                               const QPointF &position,
                               const QColor &color,
                               const QFont &font,
+                              const QColor &shadowColor = QColor(0, 0, 0, 220),
                               const QPointF &shadowOffset = QPointF(1.0, 1.0))
 {
     appendTextNode(root,
                    window,
                    text,
                    position + shadowOffset,
-                   QColor(0, 0, 0, 220),
+                   shadowColor,
                    font);
     appendTextNode(root, window, text, position, color, font);
 }
@@ -295,7 +336,8 @@ void appendScaleBar(QSGNode *root,
                     const ThreeDViewerBounds &bounds,
                     const QPointF &origin,
                     int viewportWidth,
-                    int viewportHeight)
+                    int viewportHeight,
+                    ThreeDViewerBackgroundMode backgroundMode)
 {
     if (window == nullptr || !bounds.valid) {
         return;
@@ -323,22 +365,22 @@ void appendScaleBar(QSGNode *root,
 
     QVector<QPointF> barLine;
     barLine << barLeft << barRight;
-    appendGeometryNode(root, barLine, QSGGeometry::DrawLines, QColor(QStringLiteral("#1d4ed8")), 2.0);
+    appendGeometryNode(root, barLine, QSGGeometry::DrawLines, controlOverlayLineColor(backgroundMode), 2.8);
 
     QVector<QPointF> leftTick;
     leftTick << barTickTopLeft << barTickBottomLeft;
-    appendGeometryNode(root, leftTick, QSGGeometry::DrawLines, QColor(QStringLiteral("#60a5fa")), 1.0);
+    appendGeometryNode(root, leftTick, QSGGeometry::DrawLines, controlOverlayLineColor(backgroundMode), 1.8);
 
     QVector<QPointF> rightTick;
     rightTick << barTickTopRight << barTickBottomRight;
-    appendGeometryNode(root, rightTick, QSGGeometry::DrawLines, QColor(QStringLiteral("#60a5fa")), 1.0);
+    appendGeometryNode(root, rightTick, QSGGeometry::DrawLines, controlOverlayLineColor(backgroundMode), 1.8);
 
     const QString label = QLocale::system().toString(scaleLength, 'f', scaleLength < 10.0 ? 1 : 0) + QStringLiteral(" m");
     appendTextNode(root,
                    window,
                    label,
                    centeredTextOrigin(QFont(QStringLiteral("Menlo"), 10), label, QPointF(barLeft.x() + barPixels * 0.5, barLeft.y() - 10.0)),
-                   QColor(QStringLiteral("#38bdf8")),
+                   secondaryOverlayColor(backgroundMode),
                    QFont(QStringLiteral("Menlo"), 10));
 }
 
@@ -378,7 +420,8 @@ void appendCompassIndicator(QSGNode *root,
                             const ThreeDViewerCamera &camera,
                             int viewportWidth,
                             int viewportHeight,
-                            const QPointF &center)
+                            const QPointF &center,
+                            ThreeDViewerBackgroundMode backgroundMode)
 {
     if (window == nullptr || !bounds.valid) {
         return;
@@ -391,42 +434,43 @@ void appendCompassIndicator(QSGNode *root,
     const QPointF arrow(std::sin(headingRadians) * 26.0, -std::cos(headingRadians) * 26.0);
 
     const QVector<QPointF> disk = projectedCircle(center, 18.0, 24);
-    appendClosedPolyline(root, disk, QColor(QStringLiteral("#2563eb")), 1.0);
+    appendClosedPolyline(root, disk, controlOverlayLineColor(backgroundMode), 1.8);
 
     QVector<QPointF> crossHorizontal;
     crossHorizontal << QPointF(center.x() - 18.0, center.y())
                     << QPointF(center.x() + 18.0, center.y());
-    appendGeometryNode(root, crossHorizontal, QSGGeometry::DrawLines, QColor(QStringLiteral("#2563eb")), 1.0);
+    appendGeometryNode(root, crossHorizontal, QSGGeometry::DrawLines, controlOverlayLineColor(backgroundMode), 1.4);
 
     QVector<QPointF> crossVertical;
     crossVertical << QPointF(center.x(), center.y() - 18.0)
                   << QPointF(center.x(), center.y() + 18.0);
-    appendGeometryNode(root, crossVertical, QSGGeometry::DrawLines, QColor(QStringLiteral("#2563eb")), 1.0);
+    appendGeometryNode(root, crossVertical, QSGGeometry::DrawLines, controlOverlayLineColor(backgroundMode), 1.4);
 
     const QPointF tip = center + arrow;
     QVector<QPointF> shaft;
     shaft << center << tip;
-    appendGeometryNode(root, shaft, QSGGeometry::DrawLines, QColor(QStringLiteral("#f59e0b")), 2.4);
+    appendGeometryNode(root, shaft, QSGGeometry::DrawLines, controlOverlayAccentColor(backgroundMode), 3.0);
 
     appendTextNode(root,
                    window,
                    QStringLiteral("N"),
                    centeredTextOrigin(QFont(QStringLiteral("Menlo"), 12, QFont::Bold), QStringLiteral("N"), QPointF(center.x(), center.y() - 28.0)),
-                   QColor(QStringLiteral("#f8fafc")),
+                   primaryOverlayColor(backgroundMode),
                    QFont(QStringLiteral("Menlo"), 12, QFont::Bold));
     const QString headingText = QLocale::system().toString(cameraHeadingDegrees(camera), 'f', 0) + QStringLiteral("°");
     appendTextNode(root,
                    window,
                    headingText,
                    centeredTextOrigin(QFont(QStringLiteral("Menlo"), 9), headingText, QPointF(center.x(), center.y() + 30.0)),
-                   QColor(QStringLiteral("#67e8f9")),
+                   secondaryOverlayColor(backgroundMode),
                    QFont(QStringLiteral("Menlo"), 9));
 }
 
 void appendViewAngleIndicator(QSGNode *root,
                               QQuickWindow *window,
                               const ThreeDViewerCamera &camera,
-                              const QPointF &center)
+                              const QPointF &center,
+                              ThreeDViewerBackgroundMode backgroundMode)
 {
     if (window == nullptr) {
         return;
@@ -434,17 +478,17 @@ void appendViewAngleIndicator(QSGNode *root,
 
     const double signedViewAngle = std::clamp(cameraInclinationDegrees(camera), -90.0, 90.0);
     const QVector<QPointF> arc = projectedArc(center, 18.0, -90.0, 90.0, 18);
-    appendGeometryNode(root, arc, QSGGeometry::DrawLineStrip, QColor(QStringLiteral("#2563eb")), 1.8);
+    appendGeometryNode(root, arc, QSGGeometry::DrawLineStrip, controlOverlayLineColor(backgroundMode), 2.2);
 
     QVector<QPointF> closure;
     closure << QPointF(center.x(), center.y() - 18.0)
             << QPointF(center.x(), center.y() + 18.0);
-    appendGeometryNode(root, closure, QSGGeometry::DrawLines, QColor(QStringLiteral("#2563eb")), 1.0);
+    appendGeometryNode(root, closure, QSGGeometry::DrawLines, controlOverlayLineColor(backgroundMode), 1.4);
 
     QVector<QPointF> axis;
     axis << QPointF(center.x(), center.y())
          << QPointF(center.x() + 18.0, center.y());
-    appendGeometryNode(root, axis, QSGGeometry::DrawLines, QColor(QStringLiteral("#2563eb")), 1.0);
+    appendGeometryNode(root, axis, QSGGeometry::DrawLines, controlOverlayLineColor(backgroundMode), 1.4);
 
     const double radians = -signedViewAngle * kPi / 180.0;
     const double needleLength = 26.0;
@@ -452,7 +496,7 @@ void appendViewAngleIndicator(QSGNode *root,
                       center.y() + std::sin(radians) * needleLength);
     QVector<QPointF> indicator;
     indicator << center << tip;
-    appendGeometryNode(root, indicator, QSGGeometry::DrawLines, QColor(QStringLiteral("#f59e0b")), 2.4);
+    appendGeometryNode(root, indicator, QSGGeometry::DrawLines, controlOverlayAccentColor(backgroundMode), 3.0);
 
     const QPointF headLeft(-std::sin(radians) * 0.14 * needleLength, std::cos(radians) * 0.14 * needleLength);
     const QPointF headRight(std::sin(radians) * 0.14 * needleLength, -std::cos(radians) * 0.14 * needleLength);
@@ -460,20 +504,21 @@ void appendViewAngleIndicator(QSGNode *root,
     head << tip
          << tip + headLeft
          << tip + headRight;
-    appendGeometryNode(root, head, QSGGeometry::DrawTriangles, QColor(QStringLiteral("#f97316")), 1.0);
+    appendGeometryNode(root, head, QSGGeometry::DrawTriangles, controlOverlayAccentFillColor(backgroundMode), 1.0);
 
     appendTextNode(root,
                    window,
                    QLocale::system().toString(signedViewAngle, 'f', 0) + QStringLiteral("°"),
                    centeredTextOrigin(QFont(QStringLiteral("Menlo"), 9), QLocale::system().toString(signedViewAngle, 'f', 0) + QStringLiteral("°"), QPointF(center.x(), center.y() + 30.0)),
-                   QColor(QStringLiteral("#67e8f9")),
+                   secondaryOverlayColor(backgroundMode),
                    QFont(QStringLiteral("Menlo"), 9));
 }
 
 void appendAltitudeLegend(QSGNode *root,
                           QQuickWindow *window,
                           const ThreeDViewerBounds &bounds,
-                          const QPointF &origin)
+                          const QPointF &origin,
+                          ThreeDViewerBackgroundMode backgroundMode)
 {
     if (window == nullptr || !bounds.valid) {
         return;
@@ -489,14 +534,14 @@ void appendAltitudeLegend(QSGNode *root,
     }
     QVector<QPointF> legendBorder;
     legendBorder << legendRect.topLeft() << legendRect.topRight() << legendRect.bottomRight() << legendRect.bottomLeft();
-    appendClosedPolyline(root, legendBorder, QColor(QStringLiteral("#e2e8f0")), 1.0);
+    appendClosedPolyline(root, legendBorder, secondaryOverlayColor(backgroundMode), 1.0);
 
     const QFont titleFont(QStringLiteral("Menlo"), 9, QFont::Bold);
     appendTextNode(root,
                    window,
                    QCoreApplication::translate("TherionStudio::ThreeDViewerViewportRenderer", "Altitude"),
                    QPointF(legendRect.left() - 2.0, legendRect.top() - 18.0),
-                   QColor(QStringLiteral("#38bdf8")),
+                   primaryOverlayColor(backgroundMode),
                    titleFont);
 
     const QFont labelFont(QStringLiteral("Menlo"), 8);
@@ -525,7 +570,7 @@ void appendAltitudeLegend(QSGNode *root,
                        window,
                        label,
                        position,
-                       QColor(QStringLiteral("#cbd5e1")),
+                       secondaryOverlayColor(backgroundMode),
                        labelFont);
     }
 }
@@ -567,7 +612,8 @@ void appendSceneStatisticsOverlay(QSGNode *root,
                                   QQuickWindow *window,
                                   const ThreeDViewerSceneModel &sceneModel,
                                   int viewportWidth,
-                                  int viewportHeight)
+                                  int viewportHeight,
+                                  ThreeDViewerBackgroundMode backgroundMode)
 {
     Q_UNUSED(viewportWidth);
     Q_UNUSED(viewportHeight);
@@ -582,8 +628,8 @@ void appendSceneStatisticsOverlay(QSGNode *root,
         : statistics.sceneTitle;
     const QFont titleFont(QStringLiteral("Menlo"), 11, QFont::Bold);
     const QFont bodyFont(QStringLiteral("Menlo"), 10);
-    const QColor accentColor(QStringLiteral("#38bdf8"));
-    const QColor bodyColor(QStringLiteral("#cbd5e1"));
+    const QColor accentColor = primaryOverlayColor(backgroundMode);
+    const QColor bodyColor = secondaryOverlayColor(backgroundMode);
     const qreal left = 20.0;
     const qreal top = 20.0;
     qreal currentY = top;
@@ -1060,10 +1106,11 @@ QColor depthColor(double depth, const ThreeDViewerBounds &bounds)
 
 QColor sceneColorForMode(ThreeDViewerMeshColorMode mode,
                          double depth,
-                         const ThreeDViewerBounds &bounds)
+                         const ThreeDViewerBounds &bounds,
+                         ThreeDViewerBackgroundMode backgroundMode)
 {
     if (mode == ThreeDViewerMeshColorMode::None) {
-        return QColor(226, 232, 240, 225);
+        return lightBackground(backgroundMode) ? QColor(51, 65, 85, 225) : QColor(226, 232, 240, 225);
     }
     return depthColor(depth, bounds);
 }
@@ -1074,7 +1121,8 @@ QColor shadedMeshVertexColor(ThreeDViewerMeshColorMode mode,
                              const ThreeDViewerVec3 &cameraPosition,
                              const ThreeDViewerVec3 &lightDirection,
                              const ThreeDViewerVec3 &fillLightDirection,
-                             const ThreeDViewerBounds &bounds)
+                             const ThreeDViewerBounds &bounds,
+                             ThreeDViewerBackgroundMode backgroundMode)
 {
     const ThreeDViewerVec3 viewDirection = normalizedOrFallback(subtract(cameraPosition, vertex), {0.0, 0.0, 1.0});
     const double diffuse = std::pow(std::clamp(std::abs(dot(normal, lightDirection)), 0.0, 1.0), 1.35);
@@ -1082,7 +1130,7 @@ QColor shadedMeshVertexColor(ThreeDViewerMeshColorMode mode,
     const double rim = std::pow(1.0 - std::clamp(std::abs(dot(normal, viewDirection)), 0.0, 1.0), 2.0);
     const double shade = std::clamp(0.42 + diffuse * 0.58 + fill * 0.08 + rim * 0.16, 0.38, 1.24);
     const int alpha = mode == ThreeDViewerMeshColorMode::None ? 225 : 205;
-    return scaledColor(sceneColorForMode(mode, vertex.z, bounds), shade, alpha);
+    return scaledColor(sceneColorForMode(mode, vertex.z, bounds, backgroundMode), shade, alpha);
 }
 
 QSGGeometryNode *createMeshNode(const QVector<MeshTriangleRender> &triangles)
@@ -1206,6 +1254,18 @@ void ThreeDViewerViewportItem::setMeshColorMode(ThreeDViewerMeshColorMode meshCo
     {
         QMutexLocker locker(&mutex_);
         meshColorMode_ = meshColorMode;
+    }
+    scheduleUpdate();
+}
+
+void ThreeDViewerViewportItem::setBackgroundMode(ThreeDViewerBackgroundMode backgroundMode)
+{
+    {
+        QMutexLocker locker(&mutex_);
+        if (backgroundMode_ == backgroundMode) {
+            return;
+        }
+        backgroundMode_ = backgroundMode;
     }
     scheduleUpdate();
 }
@@ -1464,11 +1524,14 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
     auto *root = new QSGNode();
 
     if (current.sceneModel.isEmpty()) {
+        appendSolidRect(root,
+                        QRectF(0.0, 0.0, std::max<qreal>(1.0, width()), std::max<qreal>(1.0, height())),
+                        viewportBackgroundColor(current.backgroundMode));
         appendTextNode(root,
                        window(),
                        QCoreApplication::translate("TherionStudio::ThreeDViewerViewportRenderer", "No 3D data loaded."),
                        QPointF(24.0, 24.0),
-                       QColor(QStringLiteral("#4b5563")),
+                       secondaryOverlayColor(current.backgroundMode),
                        QFont(QStringLiteral("Menlo"), 12));
         return root;
     }
@@ -1478,6 +1541,9 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
     const ThreeDViewerCamera &camera = current.camera;
     const ThreeDViewerBounds bounds = current.sceneModel.bounds();
     QSGNode *meshNode = nullptr;
+    appendSolidRect(root,
+                    QRectF(0.0, 0.0, double(viewportWidth), double(viewportHeight)),
+                    viewportBackgroundColor(current.backgroundMode));
 
     if (current.layerVisibility.at(kSurfacesLayer)) {
         const QColor surfaceColor = QColor(QStringLiteral("#7c3aed"));
@@ -1587,9 +1653,9 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
                 const ThreeDViewerVec3 n2 = normalizedOrFallback(vertexNormals.at(int(triangle[2])), faceNormal);
                 triangles.push_back(MeshTriangleRender{
                     {p0.screenPosition, p1.screenPosition, p2.screenPosition},
-                    {shadedMeshVertexColor(current.meshColorMode, v0, n0, cameraPosition, lightDirection, fillLightDirection, bounds),
-                     shadedMeshVertexColor(current.meshColorMode, v1, n1, cameraPosition, lightDirection, fillLightDirection, bounds),
-                     shadedMeshVertexColor(current.meshColorMode, v2, n2, cameraPosition, lightDirection, fillLightDirection, bounds)},
+                    {shadedMeshVertexColor(current.meshColorMode, v0, n0, cameraPosition, lightDirection, fillLightDirection, bounds, current.backgroundMode),
+                     shadedMeshVertexColor(current.meshColorMode, v1, n1, cameraPosition, lightDirection, fillLightDirection, bounds, current.backgroundMode),
+                     shadedMeshVertexColor(current.meshColorMode, v2, n2, cameraPosition, lightDirection, fillLightDirection, bounds, current.backgroundMode)},
                     (dot(subtract(v0, cameraPosition), camera.forwardVector())
                      + dot(subtract(v1, cameraPosition), camera.forwardVector())
                      + dot(subtract(v2, cameraPosition), camera.forwardVector())) / 3.0,
@@ -1647,7 +1713,7 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
             }
 
             const double averageDepth = (fromStation->position.z + toStation->position.z) * 0.5;
-            const QColor baseColor = sceneColorForMode(current.meshColorMode, averageDepth, bounds);
+            const QColor baseColor = sceneColorForMode(current.meshColorMode, averageDepth, bounds, current.backgroundMode);
             const QColor lineColor = shot.hidden ? scaledColor(baseColor, 0.45, 170)
                                                  : shot.surface ? scaledColor(baseColor, 0.85, 240)
                                                                 : scaledColor(baseColor, 0.78, 235);
@@ -1787,8 +1853,9 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
                                      window(),
                                      label,
                                      labelPosition,
-                                     QColor(QStringLiteral("#f8fafc")),
-                                     labelFont);
+                                     primaryOverlayColor(current.backgroundMode),
+                                     labelFont,
+                                     labelShadowColor(current.backgroundMode));
         }
     }
 
@@ -1829,21 +1896,22 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
     if (current.showHud) {
         const bool showAltitudeLegend = current.meshColorMode == ThreeDViewerMeshColorMode::Altitude;
         if (showAltitudeLegend) {
-            appendAltitudeLegend(root, window(), bounds, altitudeOrigin);
+            appendAltitudeLegend(root, window(), bounds, altitudeOrigin, current.backgroundMode);
         }
         const double hudRowY = altitudeOrigin.y() + 240.0;
-        appendCompassIndicator(root, window(), bounds, camera, viewportWidth, viewportHeight, QPointF(36.0, hudRowY));
-        appendViewAngleIndicator(root, window(), camera, QPointF(98.0, hudRowY));
+        appendCompassIndicator(root, window(), bounds, camera, viewportWidth, viewportHeight, QPointF(36.0, hudRowY), current.backgroundMode);
+        appendViewAngleIndicator(root, window(), camera, QPointF(98.0, hudRowY), current.backgroundMode);
         appendScaleBar(root,
                        window(),
                        camera,
                        bounds,
                        QPointF(160.0, hudRowY - 20.0),
                        viewportWidth,
-                       viewportHeight);
+                       viewportHeight,
+                       current.backgroundMode);
     }
     if (current.showInfo) {
-        appendSceneStatisticsOverlay(root, window(), current.sceneModel, viewportWidth, viewportHeight);
+        appendSceneStatisticsOverlay(root, window(), current.sceneModel, viewportWidth, viewportHeight, current.backgroundMode);
     }
 
     const QFont cardTitleFont(QStringLiteral("Menlo"), 11, QFont::Bold);
@@ -2029,6 +2097,7 @@ ThreeDViewerViewportItem::Snapshot ThreeDViewerViewportItem::snapshot() const
     current.layerVisibility = layerVisibility_;
     current.featureVisibility = featureVisibility_;
     current.meshColorMode = meshColorMode_;
+    current.backgroundMode = backgroundMode_;
     current.measurementMode = measurementMode_;
     current.orthographicProjection = orthographicProjection_;
     current.showBoundingBox = showBoundingBox_;

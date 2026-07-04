@@ -12,6 +12,7 @@ class ThreeDViewerInspectorStateTest : public QObject
 private slots:
     void tracksFilePathAndSceneMetrics();
     void tracksMeshColorMode();
+    void tracksBackgroundMode();
     void tracksMeasurementMode();
     void tracksSceneOverlayVisibility();
     void tracksAutoRotationSettings();
@@ -63,6 +64,24 @@ void ThreeDViewerInspectorStateTest::tracksMeshColorMode()
 
     QCOMPARE(state.meshColorMode(), int(ThreeDViewerMeshColorMode::None));
     QCOMPARE(spy.count(), 1);
+}
+
+void ThreeDViewerInspectorStateTest::tracksBackgroundMode()
+{
+    ThreeDViewerInspectorState state;
+    QSignalSpy spy(&state, &ThreeDViewerInspectorState::backgroundModeChanged);
+
+    QCOMPARE(state.backgroundMode(), int(ThreeDViewerBackgroundMode::Black));
+
+    state.setBackgroundMode(int(ThreeDViewerBackgroundMode::White));
+
+    QCOMPARE(state.backgroundMode(), int(ThreeDViewerBackgroundMode::White));
+    QCOMPARE(spy.count(), 1);
+
+    state.setBackgroundMode(99);
+
+    QCOMPARE(state.backgroundMode(), int(ThreeDViewerBackgroundMode::Black));
+    QCOMPARE(spy.count(), 2);
 }
 
 void ThreeDViewerInspectorStateTest::tracksMeasurementMode()

@@ -261,6 +261,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ### 3D Viewer
 
 - Follow `plans/3D_VIEWER_PLAN.md` for remaining work.
+- Current stabilization slice adds PNG image export from the current 3D viewport, explicit export resolution presets,
+  and black/white scene background selection.
 - Next implementation slice should add or identify a real Therion-exported `.lox` fixture with terrain surface chunks,
   or add debug/log load/render statistics before renderer refactoring.
 - Keep the viewer read-only and keep `.lox` loading/model/statistics in core.

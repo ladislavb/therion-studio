@@ -286,6 +286,9 @@ set(THERION_APP_SOURCES
     ${THERION_INSPECTOR_PANEL_SOURCES}
     src/app/three_d_viewer/ThreeDViewerTab.cpp
     src/app/three_d_viewer/ThreeDViewerTab.h
+    src/app/three_d_viewer/ThreeDViewerBackgroundMode.h
+    src/app/three_d_viewer/ThreeDViewerImageExportDialog.cpp
+    src/app/three_d_viewer/ThreeDViewerImageExportDialog.h
     src/app/three_d_viewer/ThreeDViewerInspectorState.cpp
     src/app/three_d_viewer/ThreeDViewerInspectorState.h
     src/app/three_d_viewer/ThreeDViewerMeshColorMode.h
@@ -1146,11 +1149,17 @@ qt_add_executable(ThreeDViewerQTests
     tests/ThreeDViewerProjectionTest.cpp
     tests/ThreeDViewerLayerListModelTest.cpp
     tests/ThreeDViewerInspectorStateTest.cpp
+    tests/ThreeDViewerImageExportDialogTest.cpp
     tests/ThreeDViewerInspectorWidgetTest.cpp
     tests/ThreeDViewerViewportWidgetTest.cpp
     tests/ThreeDViewerViewportControllerTest.cpp
+    src/app/ExportFileName.cpp
+    src/app/ExportFileName.h
     src/app/three_d_viewer/ThreeDViewerTab.cpp
     src/app/three_d_viewer/ThreeDViewerTab.h
+    src/app/three_d_viewer/ThreeDViewerBackgroundMode.h
+    src/app/three_d_viewer/ThreeDViewerImageExportDialog.cpp
+    src/app/three_d_viewer/ThreeDViewerImageExportDialog.h
     src/app/three_d_viewer/ThreeDViewerLayerListModel.cpp
     src/app/three_d_viewer/ThreeDViewerLayerListModel.h
     src/app/three_d_viewer/ThreeDViewerInspectorState.cpp

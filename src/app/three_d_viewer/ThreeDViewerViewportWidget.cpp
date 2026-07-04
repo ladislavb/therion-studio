@@ -5,9 +5,14 @@
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQmlError>
+#include <QImage>
 #include <QQuickItem>
+#include <QQuickItemGrabResult>
+#include <QSharedPointer>
 #include <QDebug>
 #include <QUrl>
+
+#include <cmath>
 
 namespace TherionStudio
 {
@@ -66,6 +71,13 @@ void ThreeDViewerViewportWidget::setFeatureVisibility(const ThreeDViewerLayerLis
 void ThreeDViewerViewportWidget::setMeshColorMode(ThreeDViewerMeshColorMode meshColorMode)
 {
     meshColorMode_ = meshColorMode;
+    syncRootItem();
+}
+
+void ThreeDViewerViewportWidget::setBackgroundMode(ThreeDViewerBackgroundMode backgroundMode)
+{
+    backgroundMode_ = backgroundMode;
+    setClearColor(backgroundMode_ == ThreeDViewerBackgroundMode::White ? Qt::white : Qt::black);
     syncRootItem();
 }
 
@@ -195,6 +207,33 @@ void ThreeDViewerViewportWidget::focusViewport(Qt::FocusReason reason)
     }
 }
 
+QSize ThreeDViewerViewportWidget::viewportPixelSize() const
+{
+    const qreal ratio = devicePixelRatioF();
+    return QSize(std::max(1, int(std::round(width() * ratio))),
+                 std::max(1, int(std::round(height() * ratio))));
+}
+
+void ThreeDViewerViewportWidget::grabImage(const QSize &targetSize, std::function<void(const QImage &)> callback)
+{
+    auto *item = rootObject();
+    if (item == nullptr || callback == nullptr || targetSize.width() <= 0 || targetSize.height() <= 0) {
+        if (callback != nullptr) {
+            callback(QImage());
+        }
+        return;
+    }
+
+    const QSharedPointer<QQuickItemGrabResult> result = item->grabToImage(targetSize);
+    if (result.isNull()) {
+        callback(QImage());
+        return;
+    }
+    connect(result.data(), &QQuickItemGrabResult::ready, this, [result, callback = std::move(callback)]() mutable {
+        callback(result->image());
+    });
+}
+
 void ThreeDViewerViewportWidget::syncRootItem()
 {
     if (status() != QQuickWidget::Ready) {
@@ -220,6 +259,7 @@ void ThreeDViewerViewportWidget::syncRootItem()
         item->setLayerVisibility(layerVisibility_);
         item->setFeatureVisibility(featureVisibility_);
         item->setMeshColorMode(meshColorMode_);
+        item->setBackgroundMode(backgroundMode_);
         item->setMeasurementMode(measurementMode_);
         item->setOrthographicProjection(orthographicProjection_);
         item->setSceneOverlayVisibility(showBoundingBox_, showHud_, showInfo_);
