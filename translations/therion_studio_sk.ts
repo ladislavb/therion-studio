@@ -77,6 +77,11 @@
     </message>
     <message>
         <location filename="../src/app/MainWindowWorkspaceCommandBar.cpp" line="277"/>
+        <source>Export CSV</source>
+        <translation>Exportovať CSV</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowWorkspaceCommandBar.cpp" line="277"/>
         <source>Undo</source>
         <translation>Späť</translation>
     </message>

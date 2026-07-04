@@ -24,7 +24,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
   the right sidebar, loads built-in preset SQL from `resources/sql_report_presets.json`, shows schema beside those presets,
   includes explorer and surveyor counts plus total depth in the overview preset, keeps the built-in preset set focused on
   11 production-ready reports, presents capped query results through a read-only table model, and exports the current
-  result table as CSV.
+  result table as CSV from a SQL-specific toolbar download action with a project-specific timestamped default filename.
 - A first `Outputs` project sidebar slice groups generated Therion exports by model, map/atlas, and database artifacts,
   keeps duplicate filenames distinct through project-relative paths and canonical-path identity, opens `.lox` and `.sql`
   internally where supported, sends `.pdf` outputs to the system default application, shows compact filenames while adding
@@ -64,7 +64,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   converts only the affected path token to portable `/` separators while previewing the full source line after the
   replacement.
 - Validation results can now be exported as a single Markdown report from the Validation panel, including the current
-  summary, grouped findings, source snippets, and safe-fix previews for sharing or documentation.
+  summary, grouped findings, source snippets, safe-fix previews, and a project-specific timestamped default filename for
+  sharing or documentation.
 - Project-level validation findings now render first under a `Project` group and selection shows their detail without
   trying to open the project folder as a source file.
 - Draft release notes for `2026.7.1` are now available in `docs/releases/2026.7.1.md` with the SQL report viewer covered

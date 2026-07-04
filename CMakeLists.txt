@@ -239,6 +239,8 @@ set(THERION_APP_SOURCES
     src/app/MainWindowStructureNameOverridesService.h
     src/app/MainWindowValidationFixApplyService.cpp
     src/app/MainWindowValidationFixApplyService.h
+    src/app/ExportFileName.cpp
+    src/app/ExportFileName.h
     src/app/ProjectSourceSnapshot.cpp
     src/app/ProjectSourceSnapshot.h
     src/app/ProjectSourceProjectionCache.cpp
@@ -734,6 +736,7 @@ set(THERION_STUDIO_RESOURCE_FILES
     resources/icons/lucide/cog.svg
     resources/icons/lucide/compass.svg
     resources/icons/lucide/copy.svg
+    resources/icons/lucide/download.svg
     resources/icons/lucide/external-link.svg
     resources/icons/lucide/grip-vertical.svg
     resources/icons/lucide/eye.svg

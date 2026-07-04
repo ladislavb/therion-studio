@@ -1,8 +1,10 @@
 #include "TherionSqlReportTab.h"
 
+#include "../ExportFileName.h"
 #include "../text_editor/InspectorPanel.h"
 
 #include <QAbstractTableModel>
+#include <QDateTime>
 #include <QAbstractItemView>
 #include <QDir>
 #include <QElapsedTimer>
@@ -234,9 +236,6 @@ void TherionSqlReportTab::buildUi()
     queryButtonLayout->addStretch(1);
     runCustomSqlButton_ = new QPushButton(tr("Run SELECT"), workArea);
     queryButtonLayout->addWidget(runCustomSqlButton_);
-    exportCsvButton_ = new QPushButton(tr("Export CSV"), workArea);
-    exportCsvButton_->setEnabled(false);
-    queryButtonLayout->addWidget(exportCsvButton_);
     workLayout->addLayout(queryButtonLayout);
 
     resultModel_ = new SqlReportTableModel(this);
@@ -283,9 +282,6 @@ void TherionSqlReportTab::buildUi()
     });
     connect(runCustomSqlButton_, &QPushButton::clicked, this, [this]() {
         runCustomQuery();
-    });
-    connect(exportCsvButton_, &QPushButton::clicked, this, [this]() {
-        exportCurrentTableCsv();
     });
 }
 
@@ -366,12 +362,18 @@ void TherionSqlReportTab::showTable(const TherionSqlReportTable &table)
     currentTable_ = table;
     resultModel_->setTable(table);
     resultTable_->resizeColumnsToContents();
-    exportCsvButton_->setEnabled(!table.columns.isEmpty());
+    emit statusChanged();
 }
 
 void TherionSqlReportTab::showError(const QString &message)
 {
     statusLabel_->setText(message);
+    emit statusChanged();
+}
+
+bool TherionSqlReportTab::canExportCsv() const
+{
+    return !currentTable_.columns.isEmpty();
 }
 
 void TherionSqlReportTab::exportCurrentTableCsv()
@@ -383,9 +385,14 @@ void TherionSqlReportTab::exportCurrentTableCsv()
     const QString initialDirectory = !database_.filePath().isEmpty()
         ? QFileInfo(database_.filePath()).absolutePath()
         : projectRootPath_;
+    const QString defaultName = defaultExportFileName(QStringLiteral("report"),
+                                                      projectRootPath_,
+                                                      database_.filePath(),
+                                                      QStringLiteral("csv"),
+                                                      QDateTime::currentDateTime());
     const QString outputPath = QFileDialog::getSaveFileName(this,
                                                             tr("Export CSV"),
-                                                            QDir(initialDirectory).filePath(QStringLiteral("therion-report.csv")),
+                                                            QDir(initialDirectory).filePath(defaultName),
                                                             tr("CSV files (*.csv);;All files (*)"));
     if (outputPath.isEmpty()) {
         return;

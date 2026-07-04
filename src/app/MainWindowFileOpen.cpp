@@ -200,6 +200,7 @@ TherionStudio::TherionSqlReportTab *MainWindow::openTherionSqlReportTab(const QS
     connect(tab, &TherionStudio::TherionSqlReportTab::statusChanged, this, [this, tab]() {
         if (currentDocumentWidget() == tab) {
             refreshDocumentStatusWidgets();
+            refreshWorkspaceModeSwitcher();
         }
     });
 

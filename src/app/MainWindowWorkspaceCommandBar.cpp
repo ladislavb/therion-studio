@@ -3,6 +3,7 @@
 #include "LucideIconFactory.h"
 #include "MainWindowDocumentHelpers.h"
 #include "WorkspaceCommandBarStyle.h"
+#include "reports/TherionSqlReportTab.h"
 #include "three_d_viewer/ThreeDViewerTab.h"
 #include "text_editor/TextEditorTab.h"
 #include "text_editor/map_editor/MapEditorTab.h"
@@ -273,6 +274,8 @@ void MainWindow::initializeWorkspaceModeSwitcher()
         newDocumentMenu->popup(button->mapToGlobal(QPoint(0, button->height())));
     });
     workspaceSaveButton_ = createWorkspaceIconButton(workspaceModeSwitcher_, tr("Save"), QStringLiteral("save"));
+    workspaceExportCsvButton_ =
+        createWorkspaceIconButton(workspaceModeSwitcher_, tr("Export CSV"), QStringLiteral("download"));
     workspaceEditSeparator_ = createWorkspaceToolbarSeparator(workspaceModeSwitcher_);
     workspaceUndoButton_ = createWorkspaceIconButton(workspaceModeSwitcher_, tr("Undo"), QStringLiteral("undo-2"));
     workspaceRedoButton_ = createWorkspaceIconButton(workspaceModeSwitcher_, tr("Redo"), QStringLiteral("redo-2"));
@@ -280,6 +283,7 @@ void MainWindow::initializeWorkspaceModeSwitcher()
         createWorkspaceIconButton(workspaceModeSwitcher_, tr("Compile Current Config"), QStringLiteral("play"));
     hostLayout->addWidget(workspaceNewDocumentButton_);
     hostLayout->addWidget(workspaceSaveButton_);
+    hostLayout->addWidget(workspaceExportCsvButton_);
     hostLayout->addWidget(workspaceEditSeparator_);
     hostLayout->addWidget(workspaceUndoButton_);
     hostLayout->addWidget(workspaceRedoButton_);
@@ -394,6 +398,12 @@ void MainWindow::initializeWorkspaceModeSwitcher()
     hostLayout->addWidget(workspaceTextModeSwitcher_);
 
     connect(workspaceSaveButton_, &QToolButton::clicked, this, &MainWindow::saveActiveDocument);
+    connect(workspaceExportCsvButton_, &QToolButton::clicked, this, [this]() {
+        if (auto *reportTab = qobject_cast<TherionStudio::TherionSqlReportTab *>(currentDocumentWidget());
+            reportTab != nullptr) {
+            reportTab->exportCurrentTableCsv();
+        }
+    });
     connect(workspaceUndoButton_, &QToolButton::clicked, this, &MainWindow::triggerUndoForActiveDocument);
     connect(workspaceRedoButton_, &QToolButton::clicked, this, &MainWindow::triggerRedoForActiveDocument);
     connect(workspaceCompileCurrentConfigButton_, &QToolButton::clicked, this, &MainWindow::triggerCompileCurrentConfigForActiveDocument);
@@ -500,6 +510,7 @@ void MainWindow::refreshWorkspaceModeSwitcher()
         || workspaceRawModeButton_ == nullptr
         || workspaceMapPaneWindowButton_ == nullptr
         || workspaceSaveButton_ == nullptr
+        || workspaceExportCsvButton_ == nullptr
         || workspaceUndoButton_ == nullptr
         || workspaceRedoButton_ == nullptr
         || workspaceCompileCurrentConfigButton_ == nullptr
@@ -540,10 +551,12 @@ void MainWindow::refreshWorkspaceModeSwitcher()
     auto *mapTab = qobject_cast<TherionStudio::MapEditorTab *>(tabWidget);
     auto *textTab = qobject_cast<TherionStudio::TextEditorTab *>(tabWidget);
     auto *viewerTab = qobject_cast<TherionStudio::ThreeDViewerTab *>(tabWidget);
+    auto *reportTab = qobject_cast<TherionStudio::TherionSqlReportTab *>(tabWidget);
     const bool showMapModes = mapTab != nullptr;
     const bool showTextModes = textTab != nullptr;
     const bool showThreeDViewerModes = viewerTab != nullptr;
-    const bool showEditorActions = !showThreeDViewerModes;
+    const bool showSqlReportActions = reportTab != nullptr;
+    const bool showEditorActions = !showThreeDViewerModes && !showSqlReportActions;
     const bool showCompileCurrentConfig = showTextModes && !currentDocumentTherionConfigPath().isEmpty();
     const bool mapPaneDetached = mapTab != nullptr && mapTab->isMapPaneDetached();
     const bool embeddedMapSurfaceActive = mapTab != nullptr
@@ -604,6 +617,10 @@ void MainWindow::refreshWorkspaceModeSwitcher()
     workspaceMapToolsGroup_->setVisible(showEditorActions && showMapTools);
     workspaceSaveButton_->setVisible(showEditorActions);
     workspaceSaveButton_->setEnabled(showEditorActions && tabWidget != nullptr);
+    workspaceExportCsvButton_->setVisible(showSqlReportActions);
+    workspaceExportCsvButton_->setEnabled(showSqlReportActions
+                                          && reportTab != nullptr
+                                          && reportTab->canExportCsv());
     const bool canUndo = documentCanUndoForWidget(tabWidget);
     const bool canRedo = documentCanRedoForWidget(tabWidget);
     workspaceUndoButton_->setVisible(showEditorActions);

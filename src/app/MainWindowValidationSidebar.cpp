@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 
+#include "ExportFileName.h"
 #include "MainWindowValidationFixApplyService.h"
 #include "ValidationResultsMarkdownExporter.h"
 #include "../editor/ValidationSeverityStyle.h"
@@ -1319,10 +1320,17 @@ void MainWindow::exportValidationResultsMarkdown()
         defaultDirectory = QDir::homePath();
     }
 
+    const QDateTime generatedAt = QDateTime::currentDateTime();
+    const QString defaultName =
+        TherionStudio::defaultExportFileName(QStringLiteral("validation"),
+                                             validationExportProjectRootPath_,
+                                             validationDocumentPath_,
+                                             QStringLiteral("md"),
+                                             generatedAt);
     QString selectedPath = QFileDialog::getSaveFileName(
         this,
         tr("Export Validation Results"),
-        QDir(defaultDirectory).filePath(QStringLiteral("validation-results.md")),
+        QDir(defaultDirectory).filePath(defaultName),
         tr("Markdown files (*.md);;All files (*)"));
     if (selectedPath.isEmpty()) {
         return;
@@ -1334,7 +1342,7 @@ void MainWindow::exportValidationResultsMarkdown()
     TherionStudio::ValidationResultsMarkdownExporter::Options options;
     options.projectRootPath = validationExportProjectRootPath_;
     options.scopeLabel = validationExportScopeLabel_;
-    options.generatedAt = QDateTime::currentDateTime();
+    options.generatedAt = generatedAt;
     options.searchedFileCount = validationExportSearchedFileCount_;
     options.limitReached = validationExportLimitReached_;
     const QString markdown =

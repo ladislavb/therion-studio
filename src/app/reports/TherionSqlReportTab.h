@@ -33,6 +33,8 @@ public:
     void goToLine(int lineNumber);
     void setProjectRootPath(const QString &projectRootPath);
     void showFindBar(bool replaceMode);
+    bool canExportCsv() const;
+    void exportCurrentTableCsv();
 
 signals:
     void titleChanged();
@@ -46,7 +48,6 @@ private:
     void runCustomQuery();
     void showTable(const TherionSqlReportTable &table);
     void showError(const QString &message);
-    void exportCurrentTableCsv();
     QString currentPresetQuery() const;
 
     TherionSqlReportDatabase database_;
@@ -61,7 +62,6 @@ private:
     QPlainTextEdit *schemaText_ = nullptr;
     QPlainTextEdit *customSqlEdit_ = nullptr;
     QPushButton *runCustomSqlButton_ = nullptr;
-    QPushButton *exportCsvButton_ = nullptr;
     InspectorPanel *sidebarPanel_ = nullptr;
 };
 

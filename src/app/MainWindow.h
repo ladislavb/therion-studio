@@ -463,6 +463,7 @@ private:
     QWidget *workspaceMapToolsGroup_ = nullptr;
     QToolButton *workspaceNewDocumentButton_ = nullptr;
     QToolButton *workspaceSaveButton_ = nullptr;
+    QToolButton *workspaceExportCsvButton_ = nullptr;
     QToolButton *workspaceUndoButton_ = nullptr;
     QToolButton *workspaceRedoButton_ = nullptr;
     QToolButton *workspaceCompileCurrentConfigButton_ = nullptr;
