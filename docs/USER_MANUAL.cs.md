@@ -171,7 +171,7 @@ Kliknutím řádek pouze vyberete ve stromu. Dvojklikem na zdrojový řádek, ne
 
 Pohledy `Survey` a `Mapa` si při otevřeném stejném projektu pamatují svůj stav rozbalení/sbalení odděleně.
 
-Index používá vybranou `Cílovou konfiguraci`, pokud ukazuje do otevřeného projektu. Bez explicitního configu zkusí kořenový `thconfig`; pokud neexistuje a v kořeni je právě jeden pojmenovaný config (`*.thconfig` nebo `thconfig.*`), použije se ten. Pokud je možných configů víc, vyberte požadovanou `Cílovou konfiguraci` v panelu `Kompilátor`.
+Index používá vybranou `Cílovou konfiguraci`, pokud ukazuje do otevřeného projektu. Bez explicitního configu použije první kořenový config v pořadí `thconfig`, `thconfig.thconfig`, `main.thconfig`, `index.thconfig` a `<nazev_projektu>.thconfig`, kde `<nazev_projektu>` je název otevřené projektové složky. Pokud žádný z nich neexistuje a v kořeni je právě jeden pojmenovaný config (`*.thconfig` nebo `thconfig.*`), použije se ten. Pokud je možných configů víc, vyberte požadovanou `Cílovou konfiguraci` v panelu `Kompilátor`.
 
 Mapy a scrapy referencované uvnitř `map ... endmap` se zobrazí pod danou mapou, pokud je reference jednoznačná. Nerozřešené nebo nejednoznačné reference se zobrazí jako varování a otevřou příslušný zdrojový řádek. Autoritativní validaci a exportní logiku stále provádí Therion kompilátor.
 

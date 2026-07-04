@@ -138,6 +138,42 @@ void TherionRunnerConfigResolverTest::resolvesThconfigWork()
                                                        QString(),
                                                        QString());
     QVERIFY(ambiguousConfig.isEmpty());
+
+    const QString lowPriorityConfigPath = QDir(workingDirectory).filePath(QStringLiteral("thconfig.thconfig"));
+    QVERIFY2(writeTextFile(lowPriorityConfigPath, QStringLiteral("source low.th\n")),
+             "thconfig.thconfig fixture could not be written.");
+
+    const QString indexConfigPath = QDir(workingDirectory).filePath(QStringLiteral("index.thconfig"));
+    QVERIFY2(writeTextFile(indexConfigPath, QStringLiteral("source index.th\n")),
+             "index.thconfig fixture could not be written.");
+
+    const QString mainConfigPath = QDir(workingDirectory).filePath(QStringLiteral("main.thconfig"));
+    QVERIFY2(writeTextFile(mainConfigPath, QStringLiteral("source main.th\n")),
+             "main.thconfig fixture could not be written.");
+
+    const QString preferredConfig =
+        TherionRunnerConfigResolver::resolveConfigPath({},
+                                                       workingDirectory,
+                                                       QString(),
+                                                       QString());
+    QCOMPARE(canonicalOrAbsolutePath(preferredConfig), canonicalOrAbsolutePath(lowPriorityConfigPath));
+
+    QDir projectNamedRoot(tempDir.path());
+    QVERIFY2(projectNamedRoot.mkpath(QStringLiteral("named")), "Project-named config directory could not be created.");
+    const QString projectNamedDirectory = projectNamedRoot.filePath(QStringLiteral("named"));
+    const QString projectNamedConfigPath = QDir(projectNamedDirectory).filePath(QStringLiteral("named.thconfig"));
+    const QString otherConfigPath = QDir(projectNamedDirectory).filePath(QStringLiteral("other.thconfig"));
+    QVERIFY2(writeTextFile(projectNamedConfigPath, QStringLiteral("source named.th\n")),
+             "Project-named config fixture could not be written.");
+    QVERIFY2(writeTextFile(otherConfigPath, QStringLiteral("source other.th\n")),
+             "Other config fixture could not be written.");
+
+    const QString resolvedProjectNamedConfig =
+        TherionRunnerConfigResolver::resolveConfigPath({},
+                                                       projectNamedDirectory,
+                                                       QString(),
+                                                       QString());
+    QCOMPARE(canonicalOrAbsolutePath(resolvedProjectNamedConfig), canonicalOrAbsolutePath(projectNamedConfigPath));
 }
 }
 

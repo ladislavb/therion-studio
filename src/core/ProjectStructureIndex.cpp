@@ -1387,12 +1387,13 @@ RootConfigResolution rootConfigFiles(const QVector<QString> &filePaths,
                                      const QString &preferredConfigPath)
 {
     const QString normalizedProjectRoot = normalizedFilePathKey(projectRootPath);
+    const QString projectName = QFileInfo(projectRootPath).fileName();
     const QString normalizedPreferredConfigPath = resolvePreferredProjectConfigPath(preferredConfigPath, projectRootPath);
     if (!normalizedPreferredConfigPath.isEmpty()) {
         return RootConfigResolution{{normalizedPreferredConfigPath}, normalizedPreferredConfigPath, QString()};
     }
 
-    QVector<QString> defaultConfigFiles;
+    QVector<QString> preferredConfigFiles;
     QVector<QString> namedConfigFiles;
 
     for (const QString &filePath : filePaths) {
@@ -1405,15 +1406,22 @@ RootConfigResolution rootConfigFiles(const QVector<QString> &filePaths,
             continue;
         }
 
-        if (fileInfo.fileName().compare(QStringLiteral("thconfig"), Qt::CaseInsensitive) == 0) {
-            defaultConfigFiles.append(filePath);
+        if (isPreferredRootTherionConfigFileName(fileInfo.fileName(), projectName)) {
+            preferredConfigFiles.append(filePath);
         } else {
             namedConfigFiles.append(filePath);
         }
     }
 
-    if (!defaultConfigFiles.isEmpty()) {
-        return RootConfigResolution{defaultConfigFiles, normalizedFilePathKey(defaultConfigFiles.first()), QString()};
+    if (!preferredConfigFiles.isEmpty()) {
+        std::sort(preferredConfigFiles.begin(),
+                  preferredConfigFiles.end(),
+                  [projectName](const QString &left, const QString &right) {
+                      return preferredRootTherionConfigFilePriority(QFileInfo(left).fileName(), projectName)
+                          < preferredRootTherionConfigFilePriority(QFileInfo(right).fileName(), projectName);
+                  });
+        const QString selectedConfigPath = normalizedFilePathKey(preferredConfigFiles.first());
+        return RootConfigResolution{{selectedConfigPath}, selectedConfigPath, QString()};
     }
     if (namedConfigFiles.size() == 1) {
         return RootConfigResolution{namedConfigFiles, normalizedFilePathKey(namedConfigFiles.first()), QString()};

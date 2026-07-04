@@ -28,21 +28,26 @@ QString resolveDefaultConfigPath(const QString &baseDirectory)
         return QString();
     }
 
-    const QFileInfo defaultConfigInfo(directory.absoluteFilePath(QStringLiteral("thconfig")));
-    if (defaultConfigInfo.isFile()) {
-        return canonicalOrAbsoluteFilePath(defaultConfigInfo);
-    }
-
     QFileInfoList configInfos = directory.entryInfoList(therionConfigNameFilters(),
                                                         QDir::Files,
                                                         QDir::Name | QDir::IgnoreCase);
-    configInfos.erase(std::remove_if(configInfos.begin(),
-                                     configInfos.end(),
-                                     [](const QFileInfo &fileInfo) {
-                                         return fileInfo.fileName().compare(QStringLiteral("thconfig"),
-                                                                            Qt::CaseInsensitive) == 0;
-                                     }),
-                      configInfos.end());
+    const QString projectName = QFileInfo(directory.absolutePath()).fileName();
+    QFileInfoList preferredConfigInfos;
+    for (const QFileInfo &configInfo : configInfos) {
+        if (isPreferredRootTherionConfigFileName(configInfo.fileName(), projectName)) {
+            preferredConfigInfos.append(configInfo);
+        }
+    }
+
+    if (!preferredConfigInfos.isEmpty()) {
+        std::sort(preferredConfigInfos.begin(),
+                  preferredConfigInfos.end(),
+                  [projectName](const QFileInfo &left, const QFileInfo &right) {
+                      return preferredRootTherionConfigFilePriority(left.fileName(), projectName)
+                          < preferredRootTherionConfigFilePriority(right.fileName(), projectName);
+                  });
+        return canonicalOrAbsoluteFilePath(preferredConfigInfos.first());
+    }
 
     return configInfos.size() == 1 ? canonicalOrAbsoluteFilePath(configInfos.first()) : QString();
 }

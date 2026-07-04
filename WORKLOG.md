@@ -66,8 +66,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Validation results can now be exported as a single Markdown report from the Validation panel, including the current
   summary, grouped findings, source snippets, and safe-fix previews for sharing or documentation.
 - Draft release notes for `2026.7.1` are now available in `docs/releases/2026.7.1.md` with the SQL report viewer covered
-  as one feature block and the Improvements/Bug Fixes sections condensed for release readability; final release prep
-  should still confirm version/build metadata, packaging outputs, and a short manual smoke pass before tagging.
+  as one feature block, the Improvements/Bug Fixes sections condensed for release readability, and the default CMake
+  application version bumped to `2026.7.1`; project config inference now prefers `thconfig`, `thconfig.thconfig`,
+  `main.thconfig`, `index.thconfig`, then `<project_name>.thconfig` before falling back to a single unambiguous named
+  config. Final release prep should still confirm packaging outputs and a short manual smoke pass before tagging.
 - Reporting follow-ups should stay incremental: decide whether to add saved report presets, per-report filters, result
   summaries/charts, or a direct Therion `export database` action before expanding the SQL viewer into a broader analysis
   workspace.

@@ -1272,6 +1272,30 @@ int runProjectIndexRootConfigDisambiguationTest()
         return 1;
     }
 
+    const QString projectNamedConfigPath = projectDir.filePath(QFileInfo(projectDir.path()).fileName()
+                                                               + QStringLiteral(".thconfig"));
+    if (!expect(writeTextFile(projectNamedConfigPath,
+                              QStringLiteral("source beta.th\n")),
+                "The project-named thconfig file could not be written.")) {
+        return 1;
+    }
+
+    const ProjectIndexSnapshot projectNamedSnapshot = ProjectStructureIndex::scanProjectIndex(projectDir.path(),
+                                                                                              &errorMessage);
+    if (!expect(errorMessage.isEmpty(), errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    if (!expect(normalizedPathForComparison(projectNamedSnapshot.rootConfigPath)
+                    == normalizedPathForComparison(projectNamedConfigPath),
+                "The project-named thconfig should disambiguate root config files when no higher-priority config exists.")) {
+        return 1;
+    }
+    if (!expect(projectNamedSnapshot.entries.size() == 1
+                    && projectNamedSnapshot.entries.first().name == QStringLiteral("beta"),
+                "The project-named thconfig file should select the expected source graph.")) {
+        return 1;
+    }
+
     if (!expect(writeTextFile(projectDir.filePath(QStringLiteral("thconfig")),
                               QStringLiteral("source alpha.th\n")),
                 "The default root thconfig file could not be written.")) {
@@ -1291,6 +1315,38 @@ int runProjectIndexRootConfigDisambiguationTest()
     if (!expect(defaultSnapshot.entries.size() == 1
                     && defaultSnapshot.entries.first().name == QStringLiteral("alpha"),
                 "A root thconfig file should be the default project graph when no preferred config is set.")) {
+        return 1;
+    }
+
+    if (!expect(writeTextFile(projectDir.filePath(QStringLiteral("index.thconfig")),
+                              QStringLiteral("source beta.th\n")),
+                "The index.thconfig file could not be written.")) {
+        return 1;
+    }
+    if (!expect(writeTextFile(projectDir.filePath(QStringLiteral("thconfig.thconfig")),
+                              QStringLiteral("source alpha.th\n")),
+                "The thconfig.thconfig file could not be written.")) {
+        return 1;
+    }
+    if (!expect(writeTextFile(projectDir.filePath(QStringLiteral("main.thconfig")),
+                              QStringLiteral("source beta.th\n")),
+                "The main.thconfig file could not be written.")) {
+        return 1;
+    }
+
+    const ProjectIndexSnapshot preferredNameSnapshot = ProjectStructureIndex::scanProjectIndex(projectDir.path(),
+                                                                                               &errorMessage);
+    if (!expect(errorMessage.isEmpty(), errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    if (!expect(normalizedPathForComparison(preferredNameSnapshot.rootConfigPath)
+                    == normalizedPathForComparison(projectDir.filePath(QStringLiteral("thconfig"))),
+                "thconfig should win the default project config priority order.")) {
+        return 1;
+    }
+    if (!expect(preferredNameSnapshot.entries.size() == 1
+                    && preferredNameSnapshot.entries.first().name == QStringLiteral("alpha"),
+                "The prioritized thconfig file should select the expected source graph.")) {
         return 1;
     }
 

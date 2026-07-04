@@ -153,4 +153,35 @@ inline QStringList therionConfigNameFilters()
         QStringLiteral("*.thconfig"),
     };
 }
+
+inline int preferredRootTherionConfigFilePriority(const QString &fileName,
+                                                  const QString &projectName = QString())
+{
+    const QString normalized = fileName.trimmed().toLower();
+    if (normalized == QStringLiteral("thconfig")) {
+        return 0;
+    }
+    if (normalized == QStringLiteral("thconfig.thconfig")) {
+        return 1;
+    }
+    if (normalized == QStringLiteral("main.thconfig")) {
+        return 2;
+    }
+    if (normalized == QStringLiteral("index.thconfig")) {
+        return 3;
+    }
+    const QString normalizedProjectName = projectName.trimmed().toLower();
+    if (!normalizedProjectName.isEmpty()
+        && normalized == normalizedProjectName + QStringLiteral(".thconfig")) {
+        return 4;
+    }
+
+    return -1;
+}
+
+inline bool isPreferredRootTherionConfigFileName(const QString &fileName,
+                                                const QString &projectName = QString())
+{
+    return preferredRootTherionConfigFilePriority(fileName, projectName) >= 0;
+}
 }

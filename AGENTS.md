@@ -81,6 +81,7 @@ These instructions apply to the whole repository.
 
 ## Proposal Review Discipline
 
+- If the user explicitly asks to review or describe the intended solution before making changes, treat that as a hard stop on edits and implementation for the current turn. Do not modify files, run formatters, apply patches, or execute build/test commands intended to validate a not-yet-approved implementation. First explain the proposed approach, risks, tradeoffs, verification strategy, and the smallest safe implementation slice; wait for explicit approval such as `ok`, `souhlas`, or `udělej to` before editing.
 - Do not implement user-proposed designs mechanically when they introduce architectural debt, performance risk, UX regression, security exposure, portability problems, or testability loss.
 - Before implementing a non-trivial user proposal, evaluate it against:
   - best practices for modern C++/Qt and the existing repository architecture

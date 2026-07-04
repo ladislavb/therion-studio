@@ -196,7 +196,7 @@ Select a row to inspect it in the tree. Double-click a source row, or select it 
 
 Within each parent, rows are grouped as surveys, maps, then scraps, and each group is sorted alphabetically by the displayed name. Warning rows appear after the project objects they relate to.
 
-The index uses the selected `Target Config` when it points inside the opened project. Without an explicit target config, Therion Studio tries the root `thconfig`; if that does not exist and exactly one named root config exists (`*.thconfig` or `thconfig.*`), that file is used. If several config files are possible, choose the intended `Target Config` in the `Compiler` pane.
+The index uses the selected `Target Config` when it points inside the opened project. Without an explicit target config, Therion Studio uses the first root config found in this priority order: `thconfig`, `thconfig.thconfig`, `main.thconfig`, `index.thconfig`, then `<project_name>.thconfig` where `<project_name>` is the opened project folder name. If none of those exists and exactly one named root config exists (`*.thconfig` or `thconfig.*`), that file is used. If several config files are possible, choose the intended `Target Config` in the `Compiler` pane.
 
 In the `Survey` view, maps and scraps remain under the survey namespace where they are defined, even when another map references them as part of map composition. In the `Map` view, maps and scraps are shown under the maps that reference them. Unresolved or ambiguous map composition references appear as warning rows that navigate to the source line. The Therion compiler remains the authoritative validator for export behavior.
 
