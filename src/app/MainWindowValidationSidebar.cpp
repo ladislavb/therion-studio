@@ -49,6 +49,7 @@ enum ValidationResultRole
     ValidationIsFindingRole,
     ValidationDiagnosticIndexRole,
     ValidationSeverityRankRole,
+    ValidationIsProjectFindingRole,
 };
 
 bool diagnosticProjectValidationLoggingEnabled()
@@ -282,6 +283,30 @@ bool validationFixRemovesSource(const TherionStudio::TherionSourceDiagnostic &di
     return diagnostic.hasFix
         && diagnostic.fix.length > 0
         && diagnostic.fix.replacementText.isEmpty();
+}
+
+QString severityLabel(TherionStudio::TherionSourceDiagnosticSeverity severity);
+
+bool validationDiagnosticIsProjectLevel(const TherionStudio::TherionSourceDiagnostic &diagnostic)
+{
+    return diagnostic.code == QStringLiteral("project-index-unavailable");
+}
+
+QString validationFindingLabel(const TherionStudio::TherionSourceDiagnostic &diagnostic,
+                               const QString &fixSuffix)
+{
+    if (validationDiagnosticIsProjectLevel(diagnostic)) {
+        return QCoreApplication::translate("TherionStudio::MainWindow", "%1: %2%3")
+            .arg(severityLabel(diagnostic.severity))
+            .arg(diagnostic.title)
+            .arg(fixSuffix);
+    }
+
+    return QCoreApplication::translate("TherionStudio::MainWindow", "Line %1: %2: %3%4")
+        .arg(diagnostic.lineNumber)
+        .arg(severityLabel(diagnostic.severity))
+        .arg(diagnostic.title)
+        .arg(fixSuffix);
 }
 
 QModelIndex validationFindingIndex(QStandardItemModel *model, const QModelIndex &index)
@@ -961,9 +986,14 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
     QHash<QString, QStandardItem *> fileItemsByPath;
     QHash<QString, QVector<TherionStudio::ProjectValidationScanner::Finding>> findingsByPath;
     QVector<QString> orderedFilePaths;
+    QVector<TherionStudio::ProjectValidationScanner::Finding> projectFindings;
     QElapsedTimer modelTimer;
     modelTimer.start();
     for (const TherionStudio::ProjectValidationScanner::Finding &finding : result.findings) {
+        if (validationDiagnosticIsProjectLevel(finding.diagnostic)) {
+            projectFindings.append(finding);
+            continue;
+        }
         if (!findingsByPath.contains(finding.filePath)) {
             orderedFilePaths.append(finding.filePath);
         }
@@ -971,6 +1001,58 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
     }
 
     QModelIndex restoredFinding;
+    QStandardItem *projectItem = nullptr;
+    auto appendFindingItem = [&](QStandardItem *parentItem,
+                                 const TherionStudio::ProjectValidationScanner::Finding &finding,
+                                 bool isProjectFinding) {
+        if (parentItem == nullptr) {
+            return;
+        }
+
+        const int diagnosticIndex = validationDiagnostics_.size();
+        validationDiagnostics_.append(finding.diagnostic);
+        validationDiagnosticFilePaths_.append(finding.filePath);
+
+        const QString fixSuffix = finding.diagnostic.hasFix ? tr(" (safe fix available)") : QString();
+        auto *findingItem = new QStandardItem(validationFindingLabel(finding.diagnostic, fixSuffix));
+        findingItem->setEditable(false);
+        applyValidationSeverityStyle(findingItem, finding.diagnostic.severity);
+        updateValidationFileSeverityStyle(parentItem, finding.diagnostic.severity);
+        findingItem->setToolTip(finding.diagnostic.message);
+        findingItem->setData(finding.filePath, ValidationFilePathRole);
+        findingItem->setData(qMax(1, finding.diagnostic.lineNumber), ValidationLineNumberRole);
+        findingItem->setData(qMax(1, finding.diagnostic.columnNumber), ValidationColumnNumberRole);
+        findingItem->setData(true, ValidationIsFindingRole);
+        findingItem->setData(diagnosticIndex, ValidationDiagnosticIndexRole);
+        findingItem->setData(isProjectFinding, ValidationIsProjectFindingRole);
+        parentItem->appendRow(findingItem);
+        if (!restoredFinding.isValid()
+            && normalizedValidationPath(finding.filePath) == selectedFilePath
+            && qMax(1, finding.diagnostic.lineNumber) == selectedLineNumber
+            && qMax(1, finding.diagnostic.columnNumber) == selectedColumnNumber
+            && finding.diagnostic.code == selectedDiagnosticCode) {
+            restoredFinding = findingItem->index();
+        }
+    };
+
+    if (!projectFindings.isEmpty()) {
+        std::stable_sort(projectFindings.begin(),
+                         projectFindings.end(),
+                         [](const TherionStudio::ProjectValidationScanner::Finding &left,
+                            const TherionStudio::ProjectValidationScanner::Finding &right) {
+                             return validationDiagnosticLess(left.diagnostic, right.diagnostic);
+                         });
+        projectItem = new QStandardItem(tr("Project"));
+        projectItem->setEditable(false);
+        projectItem->setData(projectRootPath_, ValidationFilePathRole);
+        projectItem->setData(false, ValidationIsFindingRole);
+        projectItem->setData(true, ValidationIsProjectFindingRole);
+        validationResultsModel_->appendRow(projectItem);
+        for (const TherionStudio::ProjectValidationScanner::Finding &finding : std::as_const(projectFindings)) {
+            appendFindingItem(projectItem, finding, true);
+        }
+    }
+
     for (const QString &filePath : std::as_const(orderedFilePaths)) {
         QVector<TherionStudio::ProjectValidationScanner::Finding> fileFindings =
             findingsByPath.value(filePath);
@@ -988,38 +1070,12 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
                 fileItem->setEditable(false);
                 fileItem->setData(finding.filePath, ValidationFilePathRole);
                 fileItem->setData(false, ValidationIsFindingRole);
+                fileItem->setData(false, ValidationIsProjectFindingRole);
                 validationResultsModel_->appendRow(fileItem);
                 fileItemsByPath.insert(finding.filePath, fileItem);
             }
 
-            const int diagnosticIndex = validationDiagnostics_.size();
-            validationDiagnostics_.append(finding.diagnostic);
-            validationDiagnosticFilePaths_.append(finding.filePath);
-
-            const QString fixSuffix = finding.diagnostic.hasFix ? tr(" (safe fix available)") : QString();
-            const QString label = tr("Line %1: %2: %3%4")
-                                      .arg(finding.diagnostic.lineNumber)
-                                      .arg(severityLabel(finding.diagnostic.severity))
-                                      .arg(finding.diagnostic.title)
-                                      .arg(fixSuffix);
-            auto *findingItem = new QStandardItem(label);
-            findingItem->setEditable(false);
-            applyValidationSeverityStyle(findingItem, finding.diagnostic.severity);
-            updateValidationFileSeverityStyle(fileItem, finding.diagnostic.severity);
-            findingItem->setToolTip(finding.diagnostic.message);
-            findingItem->setData(finding.filePath, ValidationFilePathRole);
-            findingItem->setData(qMax(1, finding.diagnostic.lineNumber), ValidationLineNumberRole);
-            findingItem->setData(qMax(1, finding.diagnostic.columnNumber), ValidationColumnNumberRole);
-            findingItem->setData(true, ValidationIsFindingRole);
-            findingItem->setData(diagnosticIndex, ValidationDiagnosticIndexRole);
-            fileItem->appendRow(findingItem);
-            if (!restoredFinding.isValid()
-                && normalizedValidationPath(finding.filePath) == selectedFilePath
-                && qMax(1, finding.diagnostic.lineNumber) == selectedLineNumber
-                && qMax(1, finding.diagnostic.columnNumber) == selectedColumnNumber
-                && finding.diagnostic.code == selectedDiagnosticCode) {
-                restoredFinding = findingItem->index();
-            }
+            appendFindingItem(fileItem, finding, false);
         }
     }
     modelRebuildMs = modelTimer.elapsed();
@@ -1113,16 +1169,21 @@ void MainWindow::handleValidationSelectionChanged(const QModelIndex &current, co
 
     const TherionStudio::TherionSourceDiagnostic &diagnostic = validationDiagnostics_.at(diagnosticIndex);
     const bool removesSource = validationFixRemovesSource(diagnostic);
+    const bool isProjectFinding = validationDiagnosticIsProjectLevel(diagnostic);
     if (validationDetailTitleLabel_ != nullptr) {
-        validationDetailTitleLabel_->setText(tr("Line %1: %2").arg(diagnostic.lineNumber).arg(diagnostic.title));
+        validationDetailTitleLabel_->setText(isProjectFinding
+                                                 ? diagnostic.title
+                                                 : tr("Line %1: %2").arg(diagnostic.lineNumber).arg(diagnostic.title));
     }
     if (validationDetailMessageLabel_ != nullptr) {
         validationDetailMessageLabel_->setText(diagnostic.message);
     }
     if (validationCurrentSourceLabel_ != nullptr) {
-        validationCurrentSourceLabel_->setText(removesSource
-                                                   ? tr("Source block to remove")
-                                                   : tr("Current source line"));
+        validationCurrentSourceLabel_->setText(isProjectFinding
+                                                   ? tr("Project context")
+                                                   : (removesSource
+                                                          ? tr("Source block to remove")
+                                                          : tr("Current source line")));
     }
     if (validationCurrentSourceEdit_ != nullptr) {
         validationCurrentSourceEdit_->setPlainText(diagnostic.currentText);
@@ -1165,6 +1226,10 @@ void MainWindow::openValidationResult(const QModelIndex &index)
     const QString filePath = findingIndex.data(ValidationFilePathRole).toString();
     if (validationResultsTree_ != nullptr && validationResultsTree_->currentIndex() != findingIndex) {
         validationResultsTree_->setCurrentIndex(findingIndex);
+    }
+
+    if (findingIndex.data(ValidationIsProjectFindingRole).toBool()) {
+        return;
     }
 
     if (!filePath.isEmpty()) {

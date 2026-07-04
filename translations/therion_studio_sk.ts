@@ -754,7 +754,7 @@ Načítať z disku a zahodiť zmeny v pamäti?</translation>
     </message>
     <message>
         <location filename="../src/app/MainWindowMapBackground.cpp" line="265"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="498"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="523"/>
         <source>%1 (%2)</source>
         <translation>%1 (%2)</translation>
     </message>
@@ -1817,7 +1817,7 @@ Ak je súbor otvorený, najprv sa zavrie.</translation>
         <translation>Prázdny projekt vytvorený</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="355"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="380"/>
         <source>Validate source files and review problems.</source>
         <translation>Validovať zdrojové súbory a skontrolovať problémy.</translation>
     </message>
@@ -1826,44 +1826,44 @@ Ak je súbor otvorený, najprv sa zavrie.</translation>
         <translation type="vanished">Validácia projektu beží pre projektové súbory automaticky. Pomocou Validovať projekt obnovíte otvorený projekt.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="610"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="635"/>
         <source>Automatic project validation is enabled. Use Validate Project to refresh now.</source>
         <translation>Automatická validácia projektu je zapnutá. Pomocou Validovať projekt ju môžete spustiť hneď.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="613"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="638"/>
         <source>Automatic project validation is disabled. Use Validate Project to run it manually.</source>
         <translation>Automatická validácia projektu je vypnutá. Pomocou Validovať projekt ju spustite ručne.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="363"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="388"/>
         <source>Validate Project</source>
         <translation>Validovať projekt</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="369"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="394"/>
         <source>Export Markdown...</source>
         <translation>Exportovať Markdown...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="382"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="460"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="586"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="740"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="904"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="407"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="485"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="611"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="765"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="929"/>
         <source>Problems</source>
         <translation>Problémy</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="404"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1090"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="429"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1146"/>
         <source>Select a validation finding.</source>
         <translation>Vyberte nález validácie.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="412"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1096"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1125"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="437"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1152"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1186"/>
         <source>Current source line</source>
         <translation>Aktuálny zdrojový riadok</translation>
     </message>
@@ -1872,124 +1872,133 @@ Ak je súbor otvorený, najprv sa zavrie.</translation>
         <translation type="vanished">Navrhnutý zdrojový riadok</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="418"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1099"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1133"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="443"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1155"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1194"/>
         <source>Automatic fix preview</source>
         <translation>Náhľad automatickej opravy</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="427"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1109"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1148"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="452"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1165"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1209"/>
         <source>Apply Fix</source>
         <translation>Použiť opravu</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="487"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="512"/>
         <source>No validation problems found in %1.</source>
         <translation>V %1 sa nenašli žiadne validačné problémy.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="518"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="999"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="543"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1016"/>
         <source> (safe fix available)</source>
         <translation> (bezpečná oprava k dispozícii)</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="519"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1000"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="544"/>
         <source>Line %1: %2: %3%4</source>
         <translation>Riadok %1: %2: %3%4</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="539"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="564"/>
         <source>%1 validation problem(s) found in %2.</source>
         <translation>V %2 nájdených %1 validačných problémov.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="595"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="650"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="620"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="675"/>
         <source>Open a project before validating.</source>
         <translation>Pred validáciou otvorte projekt.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="699"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="745"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="724"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="770"/>
         <source>Validating project...</source>
         <translation>Validuje sa projekt...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="908"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="933"/>
         <source>Project validation</source>
         <translation>Validácia projektu</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="946"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="971"/>
         <source>No validation problems found in %1 searched file(s).</source>
         <translation>V %1 prehľadaných súboroch sa nenašli žiadne validačné problémy.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1033"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1045"/>
+        <source>Project</source>
+        <translation>Projekt</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1089"/>
         <source>%1 validation problem(s) found in %2 searched file(s).</source>
         <translation>V %2 prehľadaných súboroch nájdených %1 validačných problémov.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1038"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1094"/>
         <source>Showing the first %1 problem(s).</source>
         <translation>Zobrazuje sa prvých %1 problémov.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1117"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1176"/>
         <source>Line %1: %2</source>
         <translation>Riadok %1: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1124"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1183"/>
+        <source>Project context</source>
+        <translation>Kontext projektu</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1185"/>
         <source>Source block to remove</source>
         <translation>Zdrojový blok na odstránenie</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1132"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1193"/>
         <source>Automatic fix</source>
         <translation>Automatická oprava</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1137"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1198"/>
         <source>No automatic fix is available for this finding.</source>
         <translation>Pre tento nález nie je k dispozícii automatická oprava.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1139"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1200"/>
         <source>This fix will remove the source block shown above.</source>
         <translation>Táto oprava odstráni vyššie zobrazený zdrojový blok.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1243"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1258"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1280"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1287"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1308"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1323"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1345"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1352"/>
         <source>Export Validation Results</source>
         <translation>Export výsledkov validácie</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1244"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1309"/>
         <source>No validation results are available to export.</source>
         <translation>Nie sú k dispozícii žiadne výsledky validácie na export.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1260"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1325"/>
         <source>Markdown files (*.md);;All files (*)</source>
         <translation>Súbory Markdown (*.md);;Všetky súbory (*)</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1281"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1288"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1346"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1353"/>
         <source>Could not write %1.</source>
         <translation>Nepodarilo sa zapísať %1.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1294"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1359"/>
         <source>Validation results exported to %1.</source>
         <translation>Výsledky validácie boli exportované do %1.</translation>
     </message>
@@ -2578,7 +2587,7 @@ Line-point options: %1</translation>
         <translation>Hodnota `%2` pre voľbu `%1` nie je povolená. Povolené hodnoty: %3.</translation>
     </message>
     <message>
-        <location filename="../src/core/ProjectStructureIndex.cpp" line="2148"/>
+        <location filename="../src/core/ProjectStructureIndex.cpp" line="2155"/>
         <source>Unassigned Objects</source>
         <translation>Nepriradené objekty</translation>
     </message>
@@ -2794,6 +2803,10 @@ Line-point options: %1</translation>
         <location filename="../src/app/ProjectOutputsScanner.cpp" line="74"/>
         <source>Open a project to browse outputs.</source>
         <translation>Otvorte projekt na prehliadanie výstupov.</translation>
+    </message>
+    <message>
+        <source>Line %1: %2: %3%4</source>
+        <translation type="obsolete">Riadok %1: %2: %3%4</translation>
     </message>
 </context>
 <context>
@@ -3588,20 +3601,30 @@ Line-point options: %1</translation>
 <context>
     <name>TherionStudio::MainWindow</name>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="232"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="233"/>
         <source>Error</source>
         <translation>Chyba</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="234"/>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="236"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="235"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="237"/>
         <source>Warning</source>
         <translation>Varovanie</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="247"/>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="248"/>
         <source>Untitled document</source>
         <translation>Nepomenovaný dokument</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="299"/>
+        <source>%1: %2%3</source>
+        <translation>%1: %2%3</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="305"/>
+        <source>Line %1: %2: %3%4</source>
+        <translation>Riadok %1: %2: %3%4</translation>
     </message>
 </context>
 <context>
@@ -6361,12 +6384,12 @@ subtype blocks</translation>
 <context>
     <name>TherionStudio::ProjectStructureIndex</name>
     <message>
-        <location filename="../src/core/ProjectStructureIndex.cpp" line="1455"/>
+        <location filename="../src/core/ProjectStructureIndex.cpp" line="1462"/>
         <source>The selected project folder does not exist.</source>
         <translation>Vybraný priečinok projektu neexistuje.</translation>
     </message>
     <message>
-        <location filename="../src/core/ProjectStructureIndex.cpp" line="1429"/>
+        <location filename="../src/core/ProjectStructureIndex.cpp" line="1436"/>
         <source>Multiple Therion config files were found in the project root. Select a project target config in the Compiler pane to build the structure graph.</source>
         <translation>V koreni projektu bolo nájdených viac súborov .thconfig. Vyberte cieľový konfiguračný súbor projektu v paneli Kompilátor, aby bolo možné zostaviť graf štruktúry.</translation>
     </message>

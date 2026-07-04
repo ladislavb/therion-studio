@@ -65,6 +65,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   replacement.
 - Validation results can now be exported as a single Markdown report from the Validation panel, including the current
   summary, grouped findings, source snippets, and safe-fix previews for sharing or documentation.
+- Project-level validation findings now render first under a `Project` group and selection shows their detail without
+  trying to open the project folder as a source file.
 - Draft release notes for `2026.7.1` are now available in `docs/releases/2026.7.1.md` with the SQL report viewer covered
   as one feature block, the Improvements/Bug Fixes sections condensed for release readability, and the default CMake
   application version bumped to `2026.7.1`; project config inference now prefers `thconfig`, `thconfig.thconfig`,
