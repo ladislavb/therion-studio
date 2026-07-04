@@ -23,6 +23,7 @@ private slots:
     void arrowKeysNavigateWhenWindowFocusIsOutsideCanvas();
     void viewPresetReturnsFocusForArrowNavigation();
     void toolbarViewPresetReturnsFocusForArrowNavigation();
+    void grabImageReturnsRequestedPixelSize();
 };
 
 void ThreeDViewerViewportWidgetTest::loadsTheQmlViewportSurface()
@@ -163,6 +164,24 @@ void ThreeDViewerViewportWidgetTest::toolbarViewPresetReturnsFocusForArrowNaviga
     QTest::keyClick(viewport, Qt::Key_Left);
 
     QTRY_VERIFY(spy.count() > 0);
+}
+
+void ThreeDViewerViewportWidgetTest::grabImageReturnsRequestedPixelSize()
+{
+    ThreeDViewerViewportWidget widget;
+    widget.resize(320, 180);
+    widget.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&widget));
+    QTRY_COMPARE(widget.status(), QQuickWidget::Ready);
+
+    QImage grabbedImage;
+    widget.grabImage(QSize(640, 360), [&grabbedImage](const QImage &image) {
+        grabbedImage = image;
+    });
+
+    QTRY_VERIFY(!grabbedImage.isNull());
+    QCOMPARE(grabbedImage.size(), QSize(640, 360));
+    QCOMPARE(grabbedImage.devicePixelRatio(), 1.0);
 }
 
 int runThreeDViewerViewportWidgetTest(int argc, char **argv)

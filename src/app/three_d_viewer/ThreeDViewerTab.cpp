@@ -270,7 +270,12 @@ void ThreeDViewerTab::exportImage()
         if (guardedThis == nullptr) {
             return;
         }
-        if (image.isNull() || !image.save(outputPath, "PNG")) {
+        QImage outputImage = image;
+        outputImage.setDevicePixelRatio(1.0);
+        if (!outputImage.isNull()) {
+            outputImage = outputImage.convertToFormat(QImage::Format_RGB888);
+        }
+        if (outputImage.isNull() || !outputImage.save(outputPath, "PNG")) {
             QMessageBox::warning(guardedThis,
                                  guardedThis->tr("Export 3D Image"),
                                  guardedThis->tr("Could not write %1.").arg(QDir::toNativeSeparators(outputPath)));

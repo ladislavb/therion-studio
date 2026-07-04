@@ -45,6 +45,7 @@ public:
     void setCameraTiltDegrees(double degrees);
     void setCameraDistanceMeters(double distanceMeters);
     void setCameraFocalLengthMm(double focalLengthMm);
+    void setExportRenderScale(qreal scale);
     void fitToScene();
     void resetView();
     void setViewPreset(ThreeDViewerViewPreset preset);
@@ -88,6 +89,7 @@ private:
         bool autoRotationDeclutterLocked = false;
         QSet<quint32> autoRotationStationIds;
         QSet<quint32> autoRotationLabelIds;
+        qreal exportRenderScale = 1.0;
         ThreeDViewerCamera camera;
     };
 
@@ -123,6 +125,7 @@ private:
     bool hasMeasurementStartStation_ = false;
     quint32 measurementEndStationId_ = 0;
     bool hasMeasurementEndStation_ = false;
+    qreal exportRenderScale_ = 1.0;
 };
 
 } // namespace TherionStudio

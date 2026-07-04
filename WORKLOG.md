@@ -76,6 +76,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Project file create/rename/delete and external project file changes now invalidate shared project scan caches, refresh
   Structure, Validation, Outputs, and map-object projections, clear stale Compiler `Target Config` paths, and pass the
   resolved target config into project validation so Compiler, Structure, and Validation use the same project graph.
+- 3D viewer PNG export now renders text overlays at the requested export resolution instead of scaling low-resolution
+  canvas text textures, keeping labels, HUD, legends, and station labels sharper in 4K exports while preserving the
+  same overlay layout as the interactive 3D viewer; saved PNG files are normalized to DPR 1.0 opaque RGB images so
+  external viewers do not have to handle unnecessary alpha/retina metadata.
 - Reporting follow-ups should stay incremental: decide whether to add saved report presets, per-report filters, result
   summaries/charts, or a direct Therion `export database` action before expanding the SQL viewer into a broader analysis
   workspace.

@@ -180,7 +180,8 @@ void appendTextNode(QSGNode *root,
                     const QString &text,
                     const QPointF &position,
                     const QColor &color,
-                    const QFont &font)
+                    const QFont &font,
+                    qreal textureScale = 1.0)
 {
     if (window == nullptr || text.isEmpty()) {
         return;
@@ -189,14 +190,14 @@ void appendTextNode(QSGNode *root,
     const QFontMetricsF metrics(font);
     const qreal width = std::ceil(std::max<qreal>(1.0, metrics.horizontalAdvance(text)));
     const qreal height = std::ceil(std::max<qreal>(1.0, metrics.height()));
-    const qreal devicePixelRatio = window->effectiveDevicePixelRatio();
-    QImage image(QSize(static_cast<int>(std::ceil(width * devicePixelRatio)),
-                       static_cast<int>(std::ceil(height * devicePixelRatio))),
+    const qreal texturePixelRatio = window->effectiveDevicePixelRatio() * std::max<qreal>(1.0, textureScale);
+    QImage image(QSize(static_cast<int>(std::ceil(width * texturePixelRatio)),
+                       static_cast<int>(std::ceil(height * texturePixelRatio))),
                  QImage::Format_ARGB32_Premultiplied);
     if (image.isNull()) {
         return;
     }
-    image.setDevicePixelRatio(devicePixelRatio);
+    image.setDevicePixelRatio(texturePixelRatio);
     image.fill(Qt::transparent);
 
     QPainter painter(&image);
@@ -225,15 +226,17 @@ void appendTextNodeWithShadow(QSGNode *root,
                               const QColor &color,
                               const QFont &font,
                               const QColor &shadowColor = QColor(0, 0, 0, 220),
-                              const QPointF &shadowOffset = QPointF(1.0, 1.0))
+                              const QPointF &shadowOffset = QPointF(1.0, 1.0),
+                              qreal textureScale = 1.0)
 {
     appendTextNode(root,
                    window,
                    text,
                    position + shadowOffset,
                    shadowColor,
-                   font);
-    appendTextNode(root, window, text, position, color, font);
+                   font,
+                   textureScale);
+    appendTextNode(root, window, text, position, color, font, textureScale);
 }
 
 QRectF textBoundsAt(const QString &text, const QFont &font, const QPointF &position)
@@ -337,7 +340,8 @@ void appendScaleBar(QSGNode *root,
                     const QPointF &origin,
                     int viewportWidth,
                     int viewportHeight,
-                    ThreeDViewerBackgroundMode backgroundMode)
+                    ThreeDViewerBackgroundMode backgroundMode,
+                    qreal textureScale)
 {
     if (window == nullptr || !bounds.valid) {
         return;
@@ -381,7 +385,8 @@ void appendScaleBar(QSGNode *root,
                    label,
                    centeredTextOrigin(QFont(QStringLiteral("Menlo"), 10), label, QPointF(barLeft.x() + barPixels * 0.5, barLeft.y() - 10.0)),
                    secondaryOverlayColor(backgroundMode),
-                   QFont(QStringLiteral("Menlo"), 10));
+                   QFont(QStringLiteral("Menlo"), 10),
+                   textureScale);
 }
 
 double radiansToDegrees(double radians)
@@ -421,7 +426,8 @@ void appendCompassIndicator(QSGNode *root,
                             int viewportWidth,
                             int viewportHeight,
                             const QPointF &center,
-                            ThreeDViewerBackgroundMode backgroundMode)
+                            ThreeDViewerBackgroundMode backgroundMode,
+                            qreal textureScale)
 {
     if (window == nullptr || !bounds.valid) {
         return;
@@ -456,21 +462,24 @@ void appendCompassIndicator(QSGNode *root,
                    QStringLiteral("N"),
                    centeredTextOrigin(QFont(QStringLiteral("Menlo"), 12, QFont::Bold), QStringLiteral("N"), QPointF(center.x(), center.y() - 28.0)),
                    primaryOverlayColor(backgroundMode),
-                   QFont(QStringLiteral("Menlo"), 12, QFont::Bold));
+                   QFont(QStringLiteral("Menlo"), 12, QFont::Bold),
+                   textureScale);
     const QString headingText = QLocale::system().toString(cameraHeadingDegrees(camera), 'f', 0) + QStringLiteral("°");
     appendTextNode(root,
                    window,
                    headingText,
                    centeredTextOrigin(QFont(QStringLiteral("Menlo"), 9), headingText, QPointF(center.x(), center.y() + 30.0)),
                    secondaryOverlayColor(backgroundMode),
-                   QFont(QStringLiteral("Menlo"), 9));
+                   QFont(QStringLiteral("Menlo"), 9),
+                   textureScale);
 }
 
 void appendViewAngleIndicator(QSGNode *root,
                               QQuickWindow *window,
                               const ThreeDViewerCamera &camera,
                               const QPointF &center,
-                              ThreeDViewerBackgroundMode backgroundMode)
+                              ThreeDViewerBackgroundMode backgroundMode,
+                              qreal textureScale)
 {
     if (window == nullptr) {
         return;
@@ -506,19 +515,22 @@ void appendViewAngleIndicator(QSGNode *root,
          << tip + headRight;
     appendGeometryNode(root, head, QSGGeometry::DrawTriangles, controlOverlayAccentFillColor(backgroundMode), 1.0);
 
+    const QString angleText = QLocale::system().toString(signedViewAngle, 'f', 0) + QStringLiteral("°");
     appendTextNode(root,
                    window,
-                   QLocale::system().toString(signedViewAngle, 'f', 0) + QStringLiteral("°"),
-                   centeredTextOrigin(QFont(QStringLiteral("Menlo"), 9), QLocale::system().toString(signedViewAngle, 'f', 0) + QStringLiteral("°"), QPointF(center.x(), center.y() + 30.0)),
+                   angleText,
+                   centeredTextOrigin(QFont(QStringLiteral("Menlo"), 9), angleText, QPointF(center.x(), center.y() + 30.0)),
                    secondaryOverlayColor(backgroundMode),
-                   QFont(QStringLiteral("Menlo"), 9));
+                   QFont(QStringLiteral("Menlo"), 9),
+                   textureScale);
 }
 
 void appendAltitudeLegend(QSGNode *root,
                           QQuickWindow *window,
                           const ThreeDViewerBounds &bounds,
                           const QPointF &origin,
-                          ThreeDViewerBackgroundMode backgroundMode)
+                          ThreeDViewerBackgroundMode backgroundMode,
+                          qreal textureScale)
 {
     if (window == nullptr || !bounds.valid) {
         return;
@@ -542,7 +554,8 @@ void appendAltitudeLegend(QSGNode *root,
                    QCoreApplication::translate("TherionStudio::ThreeDViewerViewportRenderer", "Altitude"),
                    QPointF(legendRect.left() - 2.0, legendRect.top() - 18.0),
                    primaryOverlayColor(backgroundMode),
-                   titleFont);
+                   titleFont,
+                   textureScale);
 
     const QFont labelFont(QStringLiteral("Menlo"), 8);
     const double minimum = bounds.minimum.z;
@@ -571,7 +584,8 @@ void appendAltitudeLegend(QSGNode *root,
                        label,
                        position,
                        secondaryOverlayColor(backgroundMode),
-                       labelFont);
+                       labelFont,
+                       textureScale);
     }
 }
 
@@ -580,7 +594,8 @@ qreal appendTextCard(QSGNode *root,
                      const QString &title,
                      const QString &body,
                      const QPointF &position,
-                     qreal width);
+                     qreal width,
+                     qreal textureScale);
 
 QString formatMeters(double value)
 {
@@ -613,7 +628,8 @@ void appendSceneStatisticsOverlay(QSGNode *root,
                                   const ThreeDViewerSceneModel &sceneModel,
                                   int viewportWidth,
                                   int viewportHeight,
-                                  ThreeDViewerBackgroundMode backgroundMode)
+                                  ThreeDViewerBackgroundMode backgroundMode,
+                                  qreal textureScale)
 {
     Q_UNUSED(viewportWidth);
     Q_UNUSED(viewportHeight);
@@ -639,7 +655,8 @@ void appendSceneStatisticsOverlay(QSGNode *root,
                    title,
                    QPointF(left, currentY),
                    accentColor,
-                   titleFont);
+                   titleFont,
+                   textureScale);
     currentY += 22.0;
 
     appendTextNode(root,
@@ -649,7 +666,8 @@ void appendSceneStatisticsOverlay(QSGNode *root,
                        + formatMeters(statistics.caveLengthMeters),
                    QPointF(left, currentY),
                    bodyColor,
-                   bodyFont);
+                   bodyFont,
+                   textureScale);
     currentY += 18.0;
 
     appendTextNode(root,
@@ -659,7 +677,8 @@ void appendSceneStatisticsOverlay(QSGNode *root,
                        + formatMeters(statistics.caveDepthMeters),
                    QPointF(left, currentY),
                    bodyColor,
-                   bodyFont);
+                   bodyFont,
+                   textureScale);
 }
 
 qreal appendTextCard(QSGNode *root,
@@ -667,7 +686,8 @@ qreal appendTextCard(QSGNode *root,
                      const QString &title,
                      const QString &body,
                      const QPointF &position,
-                     qreal width)
+                     qreal width,
+                     qreal textureScale)
 {
     if (window == nullptr || title.isEmpty() || body.isEmpty()) {
         return 0.0;
@@ -700,7 +720,8 @@ qreal appendTextCard(QSGNode *root,
                    title,
                    cardRect.topLeft() + QPointF(paddingLeft, paddingTop),
                    QColor(QStringLiteral("#f8fafc")),
-                   titleFont);
+                   titleFont,
+                   textureScale);
 
     qreal bodyY = paddingTop + titleMetrics.height() + titleGap;
     const qreal textX = cardRect.left() + paddingLeft;
@@ -715,7 +736,8 @@ qreal appendTextCard(QSGNode *root,
                        line,
                        QPointF(textX, cardRect.top() + bodyY),
                        QColor(QStringLiteral("#e2e8f0")),
-                       bodyFont);
+                       bodyFont,
+                       textureScale);
         bodyY += bodyLineHeight;
     }
 
@@ -1386,6 +1408,19 @@ void ThreeDViewerViewportItem::setCameraFocalLengthMm(double focalLengthMm)
     controller_.setFocalLengthMm(focalLengthMm);
 }
 
+void ThreeDViewerViewportItem::setExportRenderScale(qreal scale)
+{
+    const qreal normalizedScale = std::max<qreal>(1.0, scale);
+    {
+        QMutexLocker locker(&mutex_);
+        if (qFuzzyCompare(exportRenderScale_, normalizedScale)) {
+            return;
+        }
+        exportRenderScale_ = normalizedScale;
+    }
+    scheduleUpdate();
+}
+
 void ThreeDViewerViewportItem::hoverMoveEvent(QHoverEvent *event)
 {
     if (event == nullptr) {
@@ -1532,7 +1567,8 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
                        QCoreApplication::translate("TherionStudio::ThreeDViewerViewportRenderer", "No 3D data loaded."),
                        QPointF(24.0, 24.0),
                        secondaryOverlayColor(current.backgroundMode),
-                       QFont(QStringLiteral("Menlo"), 12));
+                       QFont(QStringLiteral("Menlo"), 12),
+                       current.exportRenderScale);
         return root;
     }
 
@@ -1855,7 +1891,9 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
                                      labelPosition,
                                      primaryOverlayColor(current.backgroundMode),
                                      labelFont,
-                                     labelShadowColor(current.backgroundMode));
+                                     labelShadowColor(current.backgroundMode),
+                                     QPointF(1.0, 1.0),
+                                     current.exportRenderScale);
         }
     }
 
@@ -1896,11 +1934,11 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
     if (current.showHud) {
         const bool showAltitudeLegend = current.meshColorMode == ThreeDViewerMeshColorMode::Altitude;
         if (showAltitudeLegend) {
-            appendAltitudeLegend(root, window(), bounds, altitudeOrigin, current.backgroundMode);
+            appendAltitudeLegend(root, window(), bounds, altitudeOrigin, current.backgroundMode, current.exportRenderScale);
         }
         const double hudRowY = altitudeOrigin.y() + 240.0;
-        appendCompassIndicator(root, window(), bounds, camera, viewportWidth, viewportHeight, QPointF(36.0, hudRowY), current.backgroundMode);
-        appendViewAngleIndicator(root, window(), camera, QPointF(98.0, hudRowY), current.backgroundMode);
+        appendCompassIndicator(root, window(), bounds, camera, viewportWidth, viewportHeight, QPointF(36.0, hudRowY), current.backgroundMode, current.exportRenderScale);
+        appendViewAngleIndicator(root, window(), camera, QPointF(98.0, hudRowY), current.backgroundMode, current.exportRenderScale);
         appendScaleBar(root,
                        window(),
                        camera,
@@ -1908,10 +1946,11 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
                        QPointF(160.0, hudRowY - 20.0),
                        viewportWidth,
                        viewportHeight,
-                       current.backgroundMode);
+                       current.backgroundMode,
+                       current.exportRenderScale);
     }
     if (current.showInfo) {
-        appendSceneStatisticsOverlay(root, window(), current.sceneModel, viewportWidth, viewportHeight, current.backgroundMode);
+        appendSceneStatisticsOverlay(root, window(), current.sceneModel, viewportWidth, viewportHeight, current.backgroundMode, current.exportRenderScale);
     }
 
     const QFont cardTitleFont(QStringLiteral("Menlo"), 11, QFont::Bold);
@@ -1967,7 +2006,8 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
                        stationTitle,
                        stationBody,
                        QPointF(hoverX, hoverY),
-                       stationCardWidth);
+                       stationCardWidth,
+                       current.exportRenderScale);
     }
 
     if (current.measurementMode) {
@@ -1977,21 +2017,24 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
                                         measurementTitle,
                                         measurementBody,
                                         QPointF(cardX, nextCardY),
-                                        measurementCardWidth) + 12.0;
+                                        measurementCardWidth,
+                                        current.exportRenderScale) + 12.0;
         } else if (measurementStartStation != nullptr) {
             nextCardY += appendTextCard(root,
                                         window(),
                                         measurementTitle,
                                         measurementBody,
                                         QPointF(cardX, nextCardY),
-                                        measurementCardWidth) + 12.0;
+                                        measurementCardWidth,
+                                        current.exportRenderScale) + 12.0;
         } else {
             nextCardY += appendTextCard(root,
                                         window(),
                                         measurementTitle,
                                         measurementBody,
                                         QPointF(cardX, nextCardY),
-                                        measurementCardWidth) + 12.0;
+                                        measurementCardWidth,
+                                        current.exportRenderScale) + 12.0;
         }
     }
 
@@ -2113,6 +2156,7 @@ ThreeDViewerViewportItem::Snapshot ThreeDViewerViewportItem::snapshot() const
     current.autoRotationDeclutterLocked = autoRotationDeclutterLocked_;
     current.autoRotationStationIds = autoRotationStationIds_;
     current.autoRotationLabelIds = autoRotationLabelIds_;
+    current.exportRenderScale = exportRenderScale_;
     current.camera = cameraSnapshot_;
     return current;
 }

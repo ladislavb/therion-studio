@@ -6,6 +6,7 @@
 #include <QQmlEngine>
 #include <QQmlError>
 #include <QImage>
+#include <QPointer>
 #include <QQuickItem>
 #include <QQuickItemGrabResult>
 #include <QSharedPointer>
@@ -224,12 +225,26 @@ void ThreeDViewerViewportWidget::grabImage(const QSize &targetSize, std::functio
         return;
     }
 
+    const QPointer<ThreeDViewerViewportItem> viewportItem(rootViewportItem());
+    if (viewportItem != nullptr) {
+        const QSize currentPixelSize = viewportPixelSize();
+        const qreal scaleX = qreal(targetSize.width()) / qreal(std::max(1, currentPixelSize.width()));
+        const qreal scaleY = qreal(targetSize.height()) / qreal(std::max(1, currentPixelSize.height()));
+        viewportItem->setExportRenderScale(std::max<qreal>(1.0, std::max(scaleX, scaleY)));
+    }
+
     const QSharedPointer<QQuickItemGrabResult> result = item->grabToImage(targetSize);
     if (result.isNull()) {
+        if (viewportItem != nullptr) {
+            viewportItem->setExportRenderScale(1.0);
+        }
         callback(QImage());
         return;
     }
-    connect(result.data(), &QQuickItemGrabResult::ready, this, [result, callback = std::move(callback)]() mutable {
+    connect(result.data(), &QQuickItemGrabResult::ready, this, [result, callback = std::move(callback), viewportItem]() mutable {
+        if (viewportItem != nullptr) {
+            viewportItem->setExportRenderScale(1.0);
+        }
         callback(result->image());
     });
 }
