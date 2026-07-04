@@ -201,6 +201,54 @@ int runMissingConfigValidationTest()
 
     return 0;
 }
+
+int runMissingProjectTargetFallsBackToDefaultConfigTest()
+{
+    QTemporaryDir projectDir;
+    if (!expect(projectDir.isValid(), "Project temp directory setup failed.")) {
+        return 1;
+    }
+
+    const QString defaultConfigPath = QDir(projectDir.path()).absoluteFilePath(QStringLiteral("thconfig"));
+    QFile defaultConfigFile(defaultConfigPath);
+    if (!defaultConfigFile.open(QIODevice::WriteOnly)) {
+        std::cerr << "Failed to create default thconfig test file.\n";
+        return 1;
+    }
+    defaultConfigFile.write("# default\n");
+    defaultConfigFile.close();
+
+    MainWindowTherionRunnerController::RuntimeInput input;
+    input.projectRootPath = projectDir.path();
+    input.executableText = QString();
+    input.workingDirectoryOverrideText = QString();
+    input.argumentsText = QString();
+    input.runTargetMode = QStringLiteral("project");
+    input.targetConfigPathText = QStringLiteral("removed.thconfig");
+    input.currentDocumentPath = QString();
+
+    const auto state = MainWindowTherionRunnerController::computeRuntimeState(input);
+    const QString canonicalDefaultConfigPath = QFileInfo(defaultConfigPath).canonicalFilePath();
+
+    if (!expect(state.resolvedTargetConfigPath.isEmpty(),
+                "Missing project target config should not resolve as an explicit target.")) {
+        return 1;
+    }
+    if (!expect(state.resolvedConfigPath == canonicalDefaultConfigPath,
+                "Missing project target config should fall back to the default project config.")) {
+        return 1;
+    }
+    if (!expect(state.runArguments == QStringList{canonicalDefaultConfigPath},
+                "Run arguments should use the fallback default project config.")) {
+        return 1;
+    }
+    if (!expect(state.canRun,
+                "Runner should remain available when a stale target falls back to a default config.")) {
+        return 1;
+    }
+
+    return 0;
+}
 }
 
 int main()
@@ -215,6 +263,9 @@ int main()
         return 1;
     }
     if (runMissingConfigValidationTest() != 0) {
+        return 1;
+    }
+    if (runMissingProjectTargetFallsBackToDefaultConfigTest() != 0) {
         return 1;
     }
 

@@ -717,6 +717,7 @@ void MainWindow::requestProjectValidation(TherionStudio::ProjectValidationContro
     TherionStudio::ProjectValidationController::Request request;
     request.trigger = trigger;
     request.projectRootPath = projectRootPath_;
+    request.preferredConfigPath = resolvedTherionTargetConfigPath();
     request.validationCatalog = TherionStudio::validationCatalogFromCommandCatalog(commandCatalogStore_.catalogObject());
     request.inMemoryProjectContentsByPath = inMemoryProjectContentsByPath;
     pendingProjectValidationRevealPanel_ = revealPanel;

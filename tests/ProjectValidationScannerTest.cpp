@@ -1160,6 +1160,60 @@ int runProjectIndexUnavailableDiagnosticTest()
     return 0;
 }
 
+int runPreferredConfigSuppressesProjectIndexUnavailableDiagnosticTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Temporary project directory creation failed.")) {
+        return 1;
+    }
+
+    QDir projectDir(tempDir.path());
+    const QString alphaConfigPath = projectDir.filePath(QStringLiteral("alpha.thconfig"));
+    const QString betaConfigPath = projectDir.filePath(QStringLiteral("beta.thconfig"));
+    if (!expect(writeTextFile(alphaConfigPath,
+                              QStringLiteral("source alpha.th\n")),
+                "First preferred-config fixture could not be written.")) {
+        return 1;
+    }
+    if (!expect(writeTextFile(betaConfigPath,
+                              QStringLiteral("source beta.th\n")),
+                "Second preferred-config fixture could not be written.")) {
+        return 1;
+    }
+    if (!expect(writeTextFile(projectDir.filePath(QStringLiteral("alpha.th")),
+                              QStringLiteral("survey alpha\n"
+                                             "endsurvey\n")),
+                "First preferred-config source fixture could not be written.")) {
+        return 1;
+    }
+    if (!expect(writeTextFile(projectDir.filePath(QStringLiteral("beta.th")),
+                              QStringLiteral("survey beta\n"
+                                             "endsurvey\n")),
+                "Second preferred-config source fixture could not be written.")) {
+        return 1;
+    }
+
+    ProjectValidationScanner scanner;
+    scanner.setDebounceIntervalMs(0);
+    scanner.requestScan(tempDir.path(), betaConfigPath, contextualDocumentTypeCatalog(), {});
+
+    const ValidationWaitResult waitResult = waitForValidation(scanner);
+    if (!expect(waitResult.received, "Preferred-config validation did not emit validationFinished before timeout.")) {
+        return 1;
+    }
+    if (!expect(waitResult.result.errorMessage.isEmpty(), "Preferred-config validation should not report a scanner error.")) {
+        return 1;
+    }
+    if (!expect(!containsFinding(waitResult.result,
+                                 tempDir.path(),
+                                 QStringLiteral("project-index-unavailable")),
+                "Project validation should use the preferred config instead of reporting ambiguous root configs.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 int runDocumentTypeContextProjectionTest()
 {
     QTemporaryDir tempDir;
@@ -1580,6 +1634,9 @@ int main(int argc, char **argv)
         return 1;
     }
     if (runProjectIndexUnavailableDiagnosticTest() != 0) {
+        return 1;
+    }
+    if (runPreferredConfigSuppressesProjectIndexUnavailableDiagnosticTest() != 0) {
         return 1;
     }
     if (runDocumentTypeContextProjectionTest() != 0) {

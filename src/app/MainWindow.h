@@ -209,9 +209,10 @@ private:
     QWidget *documentWidgetForFilePath(const QString &filePath) const;
     void rebuildProjectFileWatcher();
     void clearProjectFileWatcher();
+    void invalidateProjectScanCache();
+    void handleProjectFileSystemMutation(const QString &changedPath, const QString &previousPath = QString());
     void handleProjectDirectoryChanged(const QString &directoryPath);
     void handleProjectFileChanged(const QString &filePath);
-    void requestProjectValidationForFileSystemChange(const QString &changedPath);
     void registerDocumentFileWatcher(const QString &filePath);
     void unregisterDocumentFileWatcherIfUnused(const QString &filePath);
     void handleWatchedDocumentFileChanged(const QString &filePath);
@@ -251,6 +252,7 @@ private:
     QString resolvedTherionTargetConfigPath() const;
     QString resolvedTherionConfigPath() const;
     void resetProjectTherionRunContext();
+    bool clearMissingTherionTargetConfig();
     void refreshTherionConfigDisplay();
     void refreshTherionRunTargetControls();
     void rememberSidebarWidth();

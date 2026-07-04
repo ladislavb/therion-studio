@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 
+#include "ProjectScanCacheService.h"
 #include "../core/TherionFileTypes.h"
 
 #include <QDir>
@@ -190,8 +191,7 @@ void MainWindow::handleProjectDirectoryChanged(const QString &directoryPath)
     projectFileWatcherSignatures_.insert(normalizedPath, currentSignature);
 
     rebuildProjectFileWatcher();
-    requestProjectOutputsRefresh();
-    requestProjectValidationForFileSystemChange(directoryPath);
+    handleProjectFileSystemMutation(directoryPath);
 }
 
 void MainWindow::handleProjectFileChanged(const QString &filePath)
@@ -214,16 +214,33 @@ void MainWindow::handleProjectFileChanged(const QString &filePath)
         projectFileWatcher_->addPath(normalizedPath);
     }
 
-    requestProjectOutputsRefresh();
-    requestProjectValidationForFileSystemChange(filePath);
+    handleProjectFileSystemMutation(filePath);
 }
 
-void MainWindow::requestProjectValidationForFileSystemChange(const QString &changedPath)
+void MainWindow::invalidateProjectScanCache()
 {
-    if (!isDocumentPathInsideOpenProject(changedPath)) {
+    if (projectScanCacheService_ == nullptr) {
         return;
     }
 
+    projectScanCacheService_->clearProjectSourceSnapshot();
+    projectScanCacheService_->clearProjectIndexSnapshot();
+}
+
+void MainWindow::handleProjectFileSystemMutation(const QString &changedPath, const QString &previousPath)
+{
+    const bool changedInsideProject = isDocumentPathInsideOpenProject(changedPath);
+    const bool previousInsideProject = !previousPath.isEmpty() && isDocumentPathInsideOpenProject(previousPath);
+    if (!changedInsideProject && !previousInsideProject) {
+        return;
+    }
+
+    invalidateProjectScanCache();
+    clearMissingTherionTargetConfig();
+    refreshTherionConfigDisplay();
+    rebuildStructureSidebar();
+    rebuildMapObjectsTree();
+    requestProjectOutputsRefresh();
     requestProjectValidation(TherionStudio::ProjectValidationController::Trigger::ProjectFilesChanged,
                              false);
 }

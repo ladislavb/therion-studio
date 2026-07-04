@@ -61,6 +61,10 @@ public:
     void requestScan(const QString &projectRootPath,
                      const TherionSourceValidationCatalog &validationCatalog,
                      const QHash<QString, QString> &inMemoryProjectContentsByPath);
+    void requestScan(const QString &projectRootPath,
+                     const QString &preferredConfigPath,
+                     const TherionSourceValidationCatalog &validationCatalog,
+                     const QHash<QString, QString> &inMemoryProjectContentsByPath);
     void setDebounceIntervalMs(int intervalMs);
 
 signals:
@@ -75,6 +79,7 @@ private:
     struct Request
     {
         QString projectRootPath;
+        QString preferredConfigPath;
         TherionSourceValidationCatalog validationCatalog;
         QHash<QString, QString> inMemoryProjectContentsByPath;
         quint64 requestSerial = 0;

@@ -72,6 +72,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   application version bumped to `2026.7.1`; project config inference now prefers `thconfig`, `thconfig.thconfig`,
   `main.thconfig`, `index.thconfig`, then `<project_name>.thconfig` before falling back to a single unambiguous named
   config. Final release prep should still confirm packaging outputs and a short manual smoke pass before tagging.
+- Project file create/rename/delete and external project file changes now invalidate shared project scan caches, refresh
+  Structure, Validation, Outputs, and map-object projections, clear stale Compiler `Target Config` paths, and pass the
+  resolved target config into project validation so Compiler, Structure, and Validation use the same project graph.
 - Reporting follow-ups should stay incremental: decide whether to add saved report presets, per-report filters, result
   summaries/charts, or a direct Therion `export database` action before expanding the SQL viewer into a broader analysis
   workspace.

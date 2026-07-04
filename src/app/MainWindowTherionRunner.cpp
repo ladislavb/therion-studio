@@ -343,6 +343,40 @@ void MainWindow::resetProjectTherionRunContext()
     activeTherionRunConfigPath_.clear();
 }
 
+bool MainWindow::clearMissingTherionTargetConfig()
+{
+    if (therionTargetConfigEdit_ == nullptr) {
+        return false;
+    }
+
+    const QString targetConfigText = therionTargetConfigEdit_->text().trimmed();
+    if (targetConfigText.isEmpty()) {
+        return false;
+    }
+
+    const QString currentDocumentPath =
+        currentDocumentWidget() != nullptr ? documentPathForWidget(currentDocumentWidget()) : QString();
+    TherionStudio::MainWindowTherionRunnerController::RuntimeInput input;
+    input.projectRootPath = projectRootPath_;
+    input.executableText = therionExecutableInput();
+    input.workingDirectoryOverrideText = therionWorkingDirectoryEdit_ != nullptr ? therionWorkingDirectoryEdit_->text() : QString();
+    input.argumentsText = therionArgumentsEdit_ != nullptr ? therionArgumentsEdit_->text() : QString();
+    input.runTargetMode = therionRunTargetCombo_ != nullptr ? therionRunTargetCombo_->currentData().toString() : QString();
+    input.targetConfigPathText = targetConfigText;
+    input.currentDocumentPath = currentDocumentPath;
+
+    if (!TherionStudio::MainWindowTherionRunnerController::computeRuntimeState(input).resolvedTargetConfigPath.isEmpty()) {
+        return false;
+    }
+
+    const QSignalBlocker blocker(therionTargetConfigEdit_);
+    therionTargetConfigEdit_->clear();
+    if (sessionStore_ != nullptr) {
+        sessionStore_->setTherionTargetConfigPath(QString());
+    }
+    return true;
+}
+
 QString MainWindow::resolvedTherionConfigPath() const
 {
     const QString currentDocumentPath =

@@ -432,10 +432,9 @@ void MainWindow::handleProjectTreeContextMenuRequested(const QPoint &position)
         return true;
     };
 
-    auto refreshAfterProjectFileMutation = [this](const QString &focusPath) {
+    auto refreshAfterProjectFileMutation = [this](const QString &focusPath, const QString &previousPath = QString()) {
         refreshProjectBrowserView(focusPath, true);
-        rebuildStructureSidebar();
-        rebuildMapObjectsTree();
+        handleProjectFileSystemMutation(focusPath, previousPath);
     };
 
     auto createFileAction = [this, creationDirectory, &menu, &refreshAfterProjectFileMutation](const QString &label,
@@ -579,7 +578,7 @@ void MainWindow::handleProjectTreeContextMenuRequested(const QPoint &position)
 
             statusBar()->showMessage(tr("Renamed to %1").arg(QDir::toNativeSeparators(renamedPath)), 3000);
             appendConsoleLine(tr("Renamed %1 -> %2").arg(itemPath, renamedPath));
-            refreshAfterProjectFileMutation(renamedPath);
+            refreshAfterProjectFileMutation(renamedPath, itemPath);
         });
 
         menu.addAction(tr("Delete"), this, [this, itemPath, &refreshAfterProjectFileMutation]() {
@@ -604,7 +603,7 @@ void MainWindow::handleProjectTreeContextMenuRequested(const QPoint &position)
 
             statusBar()->showMessage(tr("Deleted %1").arg(QDir::toNativeSeparators(itemPath)), 3000);
             appendConsoleLine(tr("Deleted %1").arg(itemPath));
-            refreshAfterProjectFileMutation(QFileInfo(itemPath).absolutePath());
+            refreshAfterProjectFileMutation(QFileInfo(itemPath).absolutePath(), itemPath);
         });
     } else if (hasItem && itemInfo.isDir()) {
         menu.addAction(tr("Rename Folder"), this, [this, itemPath, &warnOpenTabs, &refreshAfterProjectFileMutation]() {
@@ -644,7 +643,7 @@ void MainWindow::handleProjectTreeContextMenuRequested(const QPoint &position)
 
             statusBar()->showMessage(tr("Renamed folder to %1").arg(QDir::toNativeSeparators(renamedPath)), 3000);
             appendConsoleLine(tr("Renamed folder %1 -> %2").arg(itemPath, renamedPath));
-            refreshAfterProjectFileMutation(renamedPath);
+            refreshAfterProjectFileMutation(renamedPath, itemPath);
         });
 
         menu.addAction(tr("Delete Folder"), this, [this, itemPath, &warnOpenTabs, &refreshAfterProjectFileMutation]() {
@@ -670,7 +669,7 @@ void MainWindow::handleProjectTreeContextMenuRequested(const QPoint &position)
 
             statusBar()->showMessage(tr("Deleted folder %1").arg(QDir::toNativeSeparators(itemPath)), 3000);
             appendConsoleLine(tr("Deleted folder %1").arg(itemPath));
-            refreshAfterProjectFileMutation(QFileInfo(itemPath).absolutePath());
+            refreshAfterProjectFileMutation(QFileInfo(itemPath).absolutePath(), itemPath);
         });
     }
 

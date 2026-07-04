@@ -30,6 +30,7 @@ void ProjectValidationController::requestValidation(const Request &request)
     pendingTrigger_ = request.trigger;
     pendingRequestSerial_ = ++latestRequestedSerial_;
     scanner_->requestScan(request.projectRootPath,
+                          request.preferredConfigPath,
                           request.validationCatalog,
                           request.inMemoryProjectContentsByPath);
 }

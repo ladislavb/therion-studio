@@ -531,6 +531,7 @@ void appendFindingsForDocument(ProjectValidationScanner::Result *result,
 }
 
 ProjectValidationScanner::Result performProjectValidation(const QString &projectRootPath,
+                                                          const QString &preferredConfigPath,
                                                           const TherionSourceValidationCatalog &validationCatalog,
                                                           const QHash<QString, QString> &inMemoryProjectContentsByPath,
                                                           quint64 generation,
@@ -609,7 +610,7 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
         collectTimer.start();
         bool sourceSnapshotCacheHit = false;
         projectSourceSnapshot = scanCacheService.projectSourceSnapshot(result.projectRootPath,
-                                                                       {},
+                                                                       preferredConfigPath,
                                                                        inMemoryProjectContentsByPath,
                                                                        kDefaultMaximumProjectSourceTextBytes,
                                                                        &sourceSnapshotCacheHit);
@@ -735,7 +736,16 @@ void ProjectValidationScanner::requestScan(const QString &projectRootPath,
                                            const TherionSourceValidationCatalog &validationCatalog,
                                            const QHash<QString, QString> &inMemoryProjectContentsByPath)
 {
+    requestScan(projectRootPath, QString(), validationCatalog, inMemoryProjectContentsByPath);
+}
+
+void ProjectValidationScanner::requestScan(const QString &projectRootPath,
+                                           const QString &preferredConfigPath,
+                                           const TherionSourceValidationCatalog &validationCatalog,
+                                           const QHash<QString, QString> &inMemoryProjectContentsByPath)
+{
     pendingRequest_.projectRootPath = projectRootPath;
+    pendingRequest_.preferredConfigPath = preferredConfigPath;
     pendingRequest_.validationCatalog = validationCatalog;
     pendingRequest_.inMemoryProjectContentsByPath = inMemoryProjectContentsByPath;
     pendingRequest_.requestSerial = ++requestSerial_;
@@ -791,6 +801,7 @@ void ProjectValidationScanner::startScan()
                                      latestRequestedSerial,
                                      catalogSignature]() {
         return performProjectValidation(request.projectRootPath,
+                                        request.preferredConfigPath,
                                         request.validationCatalog,
                                         request.inMemoryProjectContentsByPath,
                                         generation,

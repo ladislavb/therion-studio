@@ -29,6 +29,7 @@ public:
     {
         Trigger trigger = Trigger::ManualRefresh;
         QString projectRootPath;
+        QString preferredConfigPath;
         TherionSourceValidationCatalog validationCatalog;
         QHash<QString, QString> inMemoryProjectContentsByPath;
     };
