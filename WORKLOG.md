@@ -59,10 +59,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
   start with non-layout Therion-looking words do not open nested blocks; parent-context layout commands before `endcode`
   report the active `code` block as unclosed, and closing directives validate against the parent block context so
   `endcode` no longer triggers unexpected-context warnings inside `layout`.
-- Project source-reference resolution now treats leading `./` paths and Windows-style backslash separators as equivalent
-  to normal forward-slash relative paths, while validation warns on backslash path tokens and offers an `Apply Fix` that
-  converts only the affected path token to portable `/` separators while previewing the full source line after the
-  replacement.
+- Project source-reference resolution now treats quoted paths, leading `./` paths, and Windows-style backslash separators
+  as equivalent to normal forward-slash relative paths, while validation warns on backslash path tokens and offers an
+  `Apply Fix` that converts only the affected path token to portable `/` separators while previewing the full source line
+  after the replacement.
 - Validation results can now be exported as a single Markdown report from the Validation panel, including the current
   summary, grouped findings, source snippets, safe-fix previews, and a project-specific timestamped default filename for
   sharing or documentation.

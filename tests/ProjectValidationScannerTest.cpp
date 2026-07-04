@@ -486,6 +486,12 @@ int runSourceReferencePathNormalizationTest()
         return 1;
     }
     if (!expect(resolveTherionSourceReferencePath(sourceFile,
+                                                  QStringLiteral("\"./date/G0_99/grind_intrare_0.th\""))
+                    == expectedPath,
+                "Source-reference resolver should resolve quoted ./-prefixed paths without treating quotes as path characters.")) {
+        return 1;
+    }
+    if (!expect(resolveTherionSourceReferencePath(sourceFile,
                                                   QStringLiteral("date/G0_99/grind_intrare_0.th"))
                     == expectedPath,
                 "Source-reference resolver should keep normal relative path resolution unchanged.")) {

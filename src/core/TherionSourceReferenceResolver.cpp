@@ -31,6 +31,13 @@ QString canonicalOrAbsoluteFilePath(const QString &path)
 QString normalizedTherionSourceReferencePath(QString referencePath)
 {
     referencePath = referencePath.trimmed();
+    if (referencePath.size() >= 2) {
+        const QChar first = referencePath.front();
+        const QChar last = referencePath.back();
+        if ((first == QLatin1Char('"') || first == QLatin1Char('\'')) && last == first) {
+            referencePath = referencePath.mid(1, referencePath.size() - 2);
+        }
+    }
     referencePath.replace(QLatin1Char('\\'), QLatin1Char('/'));
     return QDir::cleanPath(referencePath);
 }
