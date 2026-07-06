@@ -1382,7 +1382,9 @@ qt_add_executable(BlockEditorToolboxControllerTest
     src/app/text_editor/block_editor/BlockEditorSourceText.cpp
     src/app/text_editor/block_editor/BlockEditorSourceText.h
     src/app/text_editor/block_editor/BlockEditorToolboxController.cpp
-    src/app/text_editor/block_editor/BlockEditorToolboxController.h)
+    src/app/text_editor/block_editor/BlockEditorToolboxController.h
+    src/app/text_editor/TextEditorSourceSnapshotContext.cpp
+    src/app/text_editor/TextEditorSourceSnapshotContext.h)
 
 target_link_libraries(BlockEditorToolboxControllerTest PRIVATE therion_core Qt6::Widgets Qt6::Svg)
 

@@ -112,6 +112,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   parsing.
 - Blocks document outline data-body scanning now reuses `TherionSourceLogicalDocument::commandAtPhysicalLine()` for
   physical-row lookup, with regression coverage that comments inside a `data` body do not truncate the tracked range.
+- Blocks toolbox auto-scope lookup now uses the shared logical source snapshot and a revision-keyed cache instead of
+  reparsing physical lines, and regression coverage keeps the resolved insertion context anchored to the selected
+  command's parent block.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.
