@@ -13,11 +13,13 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ### 2026.7.2 Planning
 
-- Start the `2026.7.2` cycle with incremental follow-ups to features introduced in `2026.7.1`; keep SQL reporting
-  improvements scoped to saved presets, filtering, summaries/charts, or direct database-export workflows rather than
-  rewriting the report viewer.
-- SQL report custom presets are the first planned slice: users should be able to save the current query, rename saved
-  presets, delete them, and keep those presets in per-user application settings without modifying Therion `.sql` exports.
+- Treat Unified Source DOM completion as the primary `2026.7.2` release theme. Use
+  `plans/UNIFIED_SOURCE_DOM_PLAN.md` as the ordered migration backlog and keep each implementation commit to one
+  Raw/Blocks/Map/Structure/Validation/transaction slice.
+- Keep SQL reporting improvements scoped to incremental follow-ups such as saved presets, filtering, summaries/charts, or
+  direct database-export workflows after the active DOM slice is not at risk.
+- Keep LiDAR/point-cloud processing as design/backlog work until the DOM migration has a stable Map/TH2 projection
+  boundary; do not start heavy point-cloud implementation during the DOM completion push.
 
 ### 2026.7.1 Stabilization Notes
 
@@ -102,6 +104,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   rows after a data body do not get reparsed as standalone raw lines.
 - Blocks details selection loading now reads selected logical commands from a source snapshot when populating read-only
   fields and option rows for continued commands.
+- Blocks logical-line consumers now share a DOM-aware parsed-line helper that prefers cached
+  `TherionSourceLogicalDocument` commands and source-document physical lines before falling back to legacy synthetic-line
+  parsing.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.

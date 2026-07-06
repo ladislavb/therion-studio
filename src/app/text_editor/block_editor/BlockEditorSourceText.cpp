@@ -1,6 +1,8 @@
 #include "BlockEditorSourceText.h"
 
 #include "../../../core/TherionDocumentEditor.h"
+#include "../../../core/TherionSourceDocument.h"
+#include "../../../core/TherionSourceLogicalDocument.h"
 #include "../../../core/TherionSourceText.h"
 
 #include <QtGlobal>
@@ -126,6 +128,29 @@ bool blockEditorResolveLogicalLineAtLine(const QStringList &lines,
     }
 
     return false;
+}
+
+TherionParsedLine blockEditorParsedLineForLogicalLine(const BlockEditorLogicalLine &logicalLine,
+                                                      const TherionSourceDocument *sourceDocument,
+                                                      const TherionSourceLogicalDocument *logicalDocument)
+{
+    if (logicalDocument != nullptr) {
+        const TherionSourceLogicalCommand *logicalCommand =
+            logicalDocument->commandAtPhysicalLine(logicalLine.startLine);
+        if (logicalCommand != nullptr && logicalCommand->startLineNumber == logicalLine.startLine) {
+            return logicalCommand->parsed;
+        }
+    }
+
+    if (sourceDocument != nullptr) {
+        if (const TherionSourceDocumentLine *sourceLine =
+                sourceDocument->lineAtLineNumber(logicalLine.startLine);
+            sourceLine != nullptr) {
+            return sourceLine->sourceLine.parsed;
+        }
+    }
+
+    return TherionDocumentParser::parseLine(logicalLine.text, logicalLine.startLine);
 }
 
 bool blockEditorSourceLineRangeReplacementEdit(const QString &contents,

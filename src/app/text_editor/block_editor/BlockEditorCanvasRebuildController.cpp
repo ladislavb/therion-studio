@@ -98,6 +98,8 @@ void BlockEditorCanvasRebuildController::rebuildBlocksCanvasFromText()
     sourceMetadata.revisionId = sourceContext.editor != nullptr && sourceContext.editor->document() != nullptr
         ? sourceContext.editor->document()->revision()
         : 0;
+    const TherionSourceDocument &sourceDocument =
+        sourceSnapshotCache.sourceDocument(sourceText, sourceMetadata);
     const TherionSourceLogicalDocument &logicalDocument =
         sourceSnapshotCache.logicalDocument(sourceText, sourceMetadata);
     QHash<int, const TherionSourceLogicalCommand *> logicalCommandsByStartLine;
@@ -188,7 +190,7 @@ void BlockEditorCanvasRebuildController::rebuildBlocksCanvasFromText()
             logicalCommandsByStartLine.value(logicalLine.startLine, nullptr);
         const TherionParsedLine parsedLine = logicalCommand != nullptr
             ? logicalCommand->parsed
-            : TherionDocumentParser::parseLine(logicalLine.text, logicalLine.startLine);
+            : blockEditorParsedLineForLogicalLine(logicalLine, &sourceDocument, &logicalDocument);
         if (isFullLineComment(parsedLine)) {
             BlockCanvasItem *parentItem = nullptr;
             if (!stack.isEmpty()) {

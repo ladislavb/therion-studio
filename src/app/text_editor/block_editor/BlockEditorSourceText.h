@@ -6,6 +6,9 @@
 
 namespace TherionStudio
 {
+struct TherionParsedLine;
+class TherionSourceDocument;
+class TherionSourceLogicalDocument;
 struct TherionSourceTextEdit;
 
 struct BlockEditorLogicalLine
@@ -22,6 +25,9 @@ QVector<BlockEditorLogicalLine> blockEditorBuildLogicalLines(const QStringList &
 bool blockEditorResolveLogicalLineAtLine(const QStringList &lines,
                                          int lineNumber,
                                          BlockEditorLogicalLine *logicalLine);
+TherionParsedLine blockEditorParsedLineForLogicalLine(const BlockEditorLogicalLine &logicalLine,
+                                                      const TherionSourceDocument *sourceDocument,
+                                                      const TherionSourceLogicalDocument *logicalDocument);
 bool blockEditorSourceLineRangeReplacementEdit(const QString &contents,
                                                int startLine,
                                                int endLine,

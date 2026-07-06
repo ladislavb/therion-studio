@@ -65,115 +65,396 @@ This plan tracks the long-running migration toward one shared, lossless Therion 
 
 Prefer small consumer migrations that replace one local scan or lookup with `TherionSourceDocument` / `TherionSourceLogicalDocument` APIs while preserving existing behavior and tests. Avoid broad Map scene or source-rewrite migrations until Windows map-input feedback confirms the current release-stabilization fix.
 
-## Remaining Slices
+## 2026.7.2 DOM Completion Definition
 
-### Slice 2A - Shared Projection Cache Discipline
+The `2026.7.2` DOM migration is complete when the application has one authoritative source projection path for `.th`,
+`.th2`, and `thconfig` documents, and editor/UI features consume that projection instead of owning duplicate parser
+fragments. The low-level `TherionDocumentParser` may remain as a core implementation detail and for synthetic snippets,
+but UI, project, validation, and map consumers should not rebuild independent full-document parse views.
 
-Goal: stop reparsing full documents for cursor movement, context help, completion, structure refresh, and unrelated inspector/UI updates.
+Completion criteria:
 
-- Expand `TherionSourceSnapshotCache` into Structure/Validation only after stale-projection behavior is covered.
-- Keep cache ownership outside widgets; UI shells should request snapshots by document revision or explicit text input through a narrow collaborator.
-- Add invalidation tests for text edits, undo/redo, document reload, source type changes, and catalog refresh.
-- Do not add long-lived widget-owned caches without a revision key and explicit source type/catalog key.
-- Next slices:
-  - Add a narrow app/text-editor source snapshot access context that wraps document text, source type, revision, encoding, and catalog key.
-  - Move one remaining Raw helper that still reparses by cursor position to `TherionSourceLogicalDocument::tokenAtOffset()`.
-  - Add a regression that moving the cursor repeatedly does not rebuild snapshots when the document revision is unchanged.
+- Raw, Blocks, Map, Structure, Validation, Project Search, and Compiler-facing navigation consume
+  `TherionSourceDocument`, `TherionSourceLogicalDocument`, or focused projections derived from them.
+- `MapEditorTab::parsedLinesForCurrentDocument()` is removed or reduced to a temporary compatibility adapter with no
+  remaining production caller outside the TH2 projection boundary.
+- `parseTokenLines()` is not used by production Map scene refresh or object/reference discovery once
+  `Th2GeometryProjection` has equivalent coverage.
+- Source mutations use `TextEditorSourceTransactionController`, `applySourceTextChangeWithSnapshot`, or a documented
+  successor transaction service with undo label, expected revision, dirty-state update, projection invalidation, and
+  selection/cursor restoration behavior.
+- Legacy direct `parseLine`, `tokenizeLine`, `splitTextLines`, and line-ending heuristics are limited to core DOM
+  construction, pure synthetic snippets, SQL/help/report non-Therion parsing, or tests that deliberately exercise legacy
+  compatibility.
+- Tests cover continuation lines, comments, blank lines, block bodies, raw `code ... endcode` bodies, TH2 point/line/area
+  geometry, backgrounds, CRLF documents, undo/redo for source-changing actions, and project-index namespace/reference
+  semantics.
 
-### Slice 2B - Logical Cursor Mapping Consumers
+Non-goals for `2026.7.2`:
 
-Goal: make cursor-position consumers use shared logical offset lookup instead of rebuilding line/column scans.
+- Do not rewrite the full parser grammar.
+- Do not change Therion syntax behavior or namespace semantics as part of the migration.
+- Do not add broad new product features while this is the active release theme.
+- Do not delete compatibility APIs until their final production caller is migrated and regression coverage exists.
 
-- Start with Raw editor because it has lower selection/geometry risk than Map and already owns a source snapshot cache.
-- Replace one cursor-token lookup path with `TherionSourceLogicalDocument::tokenAtOffset()` while preserving existing completion/context-help behavior.
-- Keep tests focused on quoted tokens, option tokens, comments, continuation rows, and end-of-line positions.
-- After Raw, migrate a single Blocks or Structure cursor/navigation helper if it can use the same API without source mutation changes.
+## Migration Operating Rules For Smaller Models
 
-### Slice 4 - Blocks Consumer Migration
+Use this section as the implementation contract for model runs with limited context.
 
-Goal: make Blocks cards and details read command/source structure from the logical document.
+- Work one slice per commit. Do not combine Raw, Blocks, Map, Structure, and transaction migrations in one change.
+- Before editing, inspect current callers with `rg` and name the exact legacy call site being migrated.
+- Prefer adding a narrow DOM helper over copying parser logic into another consumer.
+- Add or update the nearest focused test before treating a migrated caller as done.
+- Preserve behavior first. If the DOM exposes a slightly different interpretation, add coverage and make the difference
+  explicit before switching the caller.
+- Keep source-changing Map and background workflows behind explicit before/after source-text snapshots until the
+  replacement transaction path has undo/redo and round-trip coverage.
+- Update this plan or `WORKLOG.md` after each migrated slice so the remaining queue stays current.
+- Run at minimum `python3 scripts/check_structure_constraints.py`, `git diff --check`, and the nearest affected test target
+  before proposing a commit.
 
-- Replace local command/option scans in Blocks details, option args, and move planning with logical command ranges where source fidelity matters.
-- Keep block move/rewrite behavior source-preserving and one undo transaction per user-visible action.
-- Add regressions for nested blocks, fixed root commands, data bodies, comments, continuation rows, and move undo/redo.
-- Next slices:
-  - Replace one Blocks details `parseLine(logicalLine.text, logicalLine.startLine)` call with an existing logical command or a new focused logical-command helper.
-  - Add logical-document support for the exact missing operation only if it removes repeated parsing in at least one consumer.
-  - Keep data-block dialog rewrites separate from read-only projection migration.
+## Detailed Migration Queue
 
-### Slice 5 - Map/TH2 Projection Migration
+### M0 - Finish Current Blocks Parsed-Line Slice
 
-Goal: reduce TH2 map parser drift by making Map scene objects consume shared command and option ranges.
+Goal: close the already-started Blocks parsed-line helper migration before opening a new area.
 
-- Migrate Map object discovery, option parsing, area/line reference resolution, and Smart Area insert planning to shared logical commands in small vertical slices.
-- Keep geometry-specific parsing in map-focused types, but remove duplicated generic command/option token rules.
-- Add round-trip and undo/redo coverage for line/area/point edits, background metadata, object delete/move, and inspector quick-field writes.
-- Read-only inspector/reference and selection-refresh migrations are now underway and should continue only while they can
-  stay separate from source rewrite planning.
-- Do not migrate scene rebuild or source rewrite planners before a tested TH2 geometry projection contract exists.
-- Next slices:
-  - Extract a small reusable Map logical-source access context so controller contexts do not each grow their own
-    `logicalCommandsForCurrentDocument` callback.
-  - Convert another focused non-mutating Map consumer to logical commands only if it can stay independent of before/after
-    rewrite snapshots.
-  - Introduce a `Th2GeometryProjection` only after the shared logical input has covered the remaining read-only
-    object/reference/option lookups and geometry projection boundaries are clear.
-  - Keep `MapEditorTab::parsedLinesForCurrentDocument()` as a compatibility adapter until geometry projection has its own tests.
+Files:
 
-### Slice 6 - Transaction Ownership Closure
+- `src/app/text_editor/block_editor/BlockEditorSourceText.*`
+- `src/app/text_editor/block_editor/BlockEditorCanvasRebuildController.cpp`
+- `src/app/text_editor/block_editor/BlockEditorSelectionDetailsController.cpp`
+- `tests/BlockEditorCanvasRebuildControllerTest.cpp`
 
-Goal: make source mutation semantics uniform across Raw, Blocks, Map, inspector, validation fixes, and background workflows.
+Steps:
 
-- Route remaining user-visible source mutations through `TextEditorSourceTransactionController` or an equivalent narrow successor.
-- Require each source transaction to carry an undo label, expected revision when available, dirty-state behavior, projection invalidation policy, and selection/cursor restoration policy.
-- Keep structure guardrails preventing direct map-editor source mutation bypasses.
-- Next slices:
-  - Audit `TherionDocumentEditor.cpp` rewrite planners and group them by read-only planning vs. source mutation.
-  - Move one non-map text-editor rewrite caller to revision-aware transaction results if it is not already covered.
-  - Defer map background metadata writes until background-specific round-trip coverage and Windows map-input feedback are both stable.
+1. Keep `blockEditorParsedLineForLogicalLine()` as the shared helper for Blocks logical-line consumers.
+2. Ensure it prefers `TherionSourceLogicalDocument` for logical commands, `TherionSourceDocument` for physical full-line
+   comments and blank/source-role lines, then legacy parsing only as fallback.
+3. Confirm no accidental dependency on a nonexistent `TherionSourceSnapshotCache::logicalDocument(sourceDocument)` API.
+4. Keep the regression that checks both a physical full-line comment and a continued `team` command.
 
-### Slice 7 - Structure, Project Index, And Diagnostics
+Verification:
 
-Goal: feed orientation and validation surfaces from cached DOM snapshots instead of independent reparsing.
+- `cmake --build build-release --target BlockEditorCanvasRebuildControllerTest`
+- `ctest --test-dir build-release -R BlockEditorCanvasRebuildControllerTest --output-on-failure`
+- `cmake --build build-release --target TextEditorCaretInteractionTest`
+- `ctest --test-dir build-release -R TextEditorCaretInteractionTest --output-on-failure`
 
-- Reuse cached logical documents for Structure, project indexing, namespace/reference resolution, search, and validation.
-- Follow `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md` for concrete scan/cache slice order; do not duplicate its
-  detailed Structure/Validation optimization queue here.
-- Keep Therion namespace semantics exactly as documented in `docs/THERION_COMPATIBILITY.md`.
-- Make live diagnostics debounced, cancellable, revision-keyed, and centralized in the Validation panel.
-- Next slices:
-  - Add shared project-index snapshot timing/reuse before attempting full incremental project-index dependency tracking.
-  - Add a regression for qualified reference order (`object@child.parent`) before changing namespace/reference consumers.
-  - Keep UI-side Structure refresh changes separate from core project-index projection changes.
+Stop condition:
 
-### Slice 8 - Legacy Removal Gates
+- Stop if Blocks details starts changing user-visible option rows or source rewrite behavior. That belongs to later
+  Blocks slices.
 
-Goal: delete duplicate parsing/rewrite code only after coverage and consumers have moved.
+### M1 - Inventory And Guardrails
 
-- Track remaining editor-local tokenizers, option parsers, line splitters, numeric classifiers, and source-range heuristics.
-- Remove one legacy path at a time after a migrated consumer has regression coverage.
-- Keep unknown valid directives, comments, formatting, encodings, and line endings round-trip safe.
-- Do not delete `parseTokenLines` compatibility users until Map geometry and legacy tests have replacement coverage.
-- Keep direct `parseLine` calls for synthetic command snippets, user-entered token fields, and tests where a full document snapshot would add no source fidelity.
+Goal: produce a current, reviewed list of remaining legacy call sites and classify which are allowed to remain.
 
-## Recommended Next Slice Queue
+Suggested commands:
 
-If the current priority is large-project validation and repeated project scanning, follow
-`plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md` first, starting with project source request keys and source snapshot
-collection.
+- `rg -n "TherionDocumentParser::parseLine|parseTokenLines|tokenizeLine|splitTextLines|detectedLineEnding" src tests`
+- `rg -n "parsedLinesForCurrentDocument|TherionTokenLine|replaceTextForCommand|rewrite|SourceText" src/app src/core`
 
-1. Raw cursor-token consumer: use `TherionSourceLogicalDocument::tokenAtOffset()` in one existing Raw completion/context-help path and preserve quoted/comment/continuation behavior.
-2. Blocks read-only detail consumer: replace one local `parseLine(logicalLine.text, logicalLine.startLine)` call with a logical-command range helper.
-3. Map logical-source context cleanup: extract the repeated `logicalCommandsForCurrentDocument` controller callback shape
-   before adding more Map DOM consumers.
-4. ProjectStructureIndex cache cleanup: remove one repeated logical-document lookup or local rescan inside an existing cached project-index pass.
-5. TH2 projection design slice: define the smallest `Th2GeometryProjection` input/output contract before moving scene rendering.
+Steps:
+
+1. Create a short table in this plan or a companion file under `plans/` listing each production call site.
+2. Classify each call site as `core DOM construction`, `synthetic snippet`, `read-only consumer`, `rewrite planner`,
+   `TH2 geometry compatibility`, or `non-Therion parsing`.
+3. Mark `read-only consumer` entries as migration candidates.
+4. Mark `rewrite planner` entries as transaction/round-trip candidates.
+5. Mark `TH2 geometry compatibility` entries as blocked by `Th2GeometryProjection`.
+
+Verification:
+
+- No code behavior change is required.
+- `python3 scripts/check_structure_constraints.py`
+
+Stop condition:
+
+- Do not start migrating callers in the same slice; keep the inventory reviewable.
+
+### M2 - Shared Snapshot Access Context
+
+Goal: make text-editor consumers request source/logical snapshots through one narrow context instead of each owning local
+cache wiring.
+
+Candidate files:
+
+- `src/app/text_editor/TextEditorTab*`
+- `src/app/text_editor/raw_editor/*`
+- `src/app/text_editor/block_editor/*`
+
+Steps:
+
+1. Introduce a small text-editor source snapshot access type only if it replaces at least two duplicated local cache
+   constructions.
+2. Include text, source type, revision, encoding if available, and optional catalog key.
+3. Keep ownership outside individual widgets where practical.
+4. Migrate one existing Raw or Blocks consumer to the access type.
+5. Add a regression or diagnostic that unchanged document revisions reuse the same cached projection where possible.
+
+Verification:
+
+- Nearest Raw/Blocks QTest target.
+- `python3 scripts/check_structure_constraints.py`
+
+Stop condition:
+
+- Stop if the access type becomes a service locator with unrelated callbacks. Keep it source-projection-specific.
+
+### M3 - Raw Cursor And Help Consumers
+
+Goal: finish Raw read-only cursor consumers by using logical offset lookup.
+
+Candidate files:
+
+- `src/app/text_editor/raw_editor/RawEditorCompletionContextAnalyzer.cpp`
+- `src/app/text_editor/raw_editor/RawEditorCompletionController.cpp`
+- `src/app/text_editor/TextEditorContextHelpController.cpp`
+- `src/editor/TherionSyntaxHighlighter.cpp`
+
+Steps:
+
+1. Pick one remaining Raw helper that maps cursor position to a token or command by local line scanning.
+2. Replace it with `TherionSourceLogicalDocument::tokenAtOffset()` or `commandAtOffset()`.
+3. Preserve behavior for quoted strings, option tokens, comments, continuation rows, and end-of-line cursor positions.
+4. Add focused coverage in `TextEditorRawEditorQTests` or the existing nearest Raw test.
+5. Repeat in later commits until Raw has no production full-document reparse for cursor movement, help lookup, completion,
+   validation tooltip, or syntax-highlighting diagnostics.
+
+Verification:
+
+- `cmake --build build-release --target TextEditorRawEditorQTests`
+- `ctest --test-dir build-release -R TextEditorRawEditorQTests --output-on-failure`
+
+Stop condition:
+
+- Do not change completion ranking, catalog metadata, or visible UI text in the same slice.
+
+### M4 - Blocks Read-Only Consumers
+
+Goal: make Blocks details, outline, toolbox, and read-only option presentation consume logical commands/ranges.
+
+Candidate files:
+
+- `src/app/text_editor/block_editor/BlockEditorSelectionDetailsController.cpp`
+- `src/app/text_editor/block_editor/BlockEditorOptionArgsController.cpp`
+- `src/app/text_editor/block_editor/BlockEditorDocumentOutlineBuilder.cpp`
+- `src/app/text_editor/block_editor/BlockEditorLineBuildService.cpp`
+- `src/app/text_editor/block_editor/BlockEditorToolboxDetailsController.cpp`
+
+Steps:
+
+1. Migrate one remaining `parseLine(logicalLine.text, logicalLine.startLine)` or `tokenizeLine(...)` call at a time.
+2. Use `TherionSourceLogicalCommand::parsed`, token ranges, option ranges, or a new focused logical helper.
+3. Add a helper to `TherionSourceLogicalDocument` only when one operation is needed by more than one Blocks consumer or
+   removes repeated source-shape logic.
+4. Add regressions for nested blocks, fixed root commands, data bodies, comments, and continued commands.
+5. Keep source-changing Blocks operations separate unless the slice is explicitly a transaction slice.
+
+Verification:
+
+- `BlockEditorCanvasRebuildControllerTest`
+- `TextEditorCaretInteractionTest`
+- Any added Blocks-specific test target
+
+Stop condition:
+
+- Stop if a read-only migration requires changing block move/delete source rewrites. Split that into M8.
+
+### M5 - Project, Structure, Search, And Validation Cache Closure
+
+Goal: make project-level consumers share DOM-backed source snapshots without duplicate filesystem/source parsing.
+
+Candidate files:
+
+- `src/app/ProjectValidationScanner.cpp`
+- `src/app/ProjectSourceProjectionCache.*`
+- `src/core/ProjectStructureIndex.cpp`
+- `src/app/ProjectSearchScanner.cpp`
+- `src/app/ProjectScanCacheService.*`
+
+Steps:
+
+1. Follow `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md` for cache-specific order.
+2. Migrate `ProjectSearchScanner` from raw `text.split('\n')` only if source ranges and line numbers remain identical.
+3. Remove one repeated logical-document lookup or local rescan inside `ProjectStructureIndex` per slice.
+4. Add or update diagnostics/tests for cache hit/miss counters when repeated validation/search/structure requests use the
+   same content.
+5. Preserve namespace semantics from `docs/THERION_COMPATIBILITY.md`, especially `object@child.parent` order.
+
+Verification:
+
+- `TherionCoreQTests` for structure/index changes.
+- Project validation/scanner tests for cache behavior.
+- `python3 scripts/check_structure_constraints.py`
+
+Stop condition:
+
+- Stop if a change requires incremental dependency tracking across files. That is a separate architecture slice.
+
+### M6 - TH2 Projection Contract
+
+Goal: define the smallest typed DOM-backed projection for Map scene/object consumers before replacing
+`parseTokenLines()` in production Map paths.
+
+New type direction:
+
+- Prefer names like `Th2GeometryProjection`, `Th2GeometryCommand`, `Th2PointObject`, `Th2LineObject`, `Th2AreaObject`,
+  and `Th2BackgroundObject` under a focused core or map-editor projection boundary.
+- The projection should take `TherionSourceDocument` / `TherionSourceLogicalDocument` input and expose typed TH2 objects
+  with source ranges and stable identities.
+
+Minimum projection data:
+
+- Command kind: point, line, area, scrap, map, background-related metadata.
+- Physical/logical source line range and absolute source range.
+- Object id, type, subtype, options, comments/source preservation references.
+- For line geometry: point rows, control-point markers, smooth/subtype flags, and original row ranges.
+- For area geometry: border references and line ids.
+- For backgrounds: image path token range, XTherion/Mapiah metadata lines, transform metadata, and original line ranges.
+
+Steps:
+
+1. Add projection tests first using representative TH2 snippets with comments, blank lines, CRLF, continued options, point
+   objects, line blocks, area blocks, scrap blocks, and background metadata.
+2. Build projection from logical commands and source line roles. Do not parse the full document through
+   `parseTokenLines()` inside the new projection.
+3. Keep geometry-specific parsing local to the projection, but reuse shared token/option rules.
+4. Do not connect it to `MapEditorTab` until tests establish source ranges and object identity behavior.
+
+Verification:
+
+- New or existing core/map projection test target.
+- Round-trip checks that projection reads without rewriting source.
+
+Stop condition:
+
+- Stop if projection design starts mutating source or adding UI dependencies. It must stay read-only.
+
+### M7 - Map Read-Only Projection Consumers
+
+Goal: replace Map read-only object discovery/reference lookups with `Th2GeometryProjection`.
+
+Candidate files:
+
+- `src/app/text_editor/map_editor/MapEditorSceneRefreshController.cpp`
+- `src/app/text_editor/map_editor/MapEditorSourceReferenceResolver.cpp`
+- `src/app/text_editor/map_editor/MapEditorAreaReferenceResolver.cpp`
+- `src/app/text_editor/map_editor/MapEditorObjectDetailsLogic.cpp`
+- `src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp`
+
+Steps:
+
+1. Add a `MapEditorTab` projection access context parallel to the existing logical-source context.
+2. Migrate one read-only consumer at a time: selected object details, area-reference lookup, background layer listing, or
+   scene object discovery.
+3. Keep `MapEditorTab::parsedLinesForCurrentDocument()` as a compatibility adapter until all read-only production callers
+   are gone.
+4. Preserve current selection, hover, inspector, and partial-refresh behavior.
+5. Add tests for each migrated object type before removing the old path.
+
+Verification:
+
+- Map editor object/details tests.
+- Map scene refresh or partial-refresh regression tests.
+- Manual smoke: open representative `.th2`, select point/line/area/background, verify inspector and canvas.
+
+Stop condition:
+
+- Do not migrate source rewrites, move planners, line split, or background metadata writes in this slice.
+
+### M8 - Transaction And Rewrite Planner Migration
+
+Goal: make source-changing workflows consume DOM/projection source ranges while preserving undo/redo and formatting.
+
+Candidate files:
+
+- `src/core/TherionDocumentEditor.cpp`
+- `src/app/text_editor/TextEditorSourceTransactionController.*`
+- `src/app/text_editor/map_editor/MapEditorObjectDeletePlanner.cpp`
+- `src/app/text_editor/map_editor/MapEditorObjectMovePlanner.cpp`
+- `src/app/text_editor/map_editor/MapEditorLineSplitPlanner.cpp`
+- `src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp`
+
+Steps:
+
+1. Audit each rewrite planner and split it into read-only planning and source mutation if needed.
+2. For one planner at a time, replace local source-range inference with DOM/projection source ranges.
+3. Keep explicit before/after source text input for planning until the transaction service owns revision checks.
+4. Route the final mutation through the existing transaction controller/helper.
+5. Add undo/redo and round-trip tests for each migrated workflow.
+
+Priority order:
+
+1. Non-map text-editor rewrites with low geometry risk.
+2. Blocks move/delete/data-dialog rewrites.
+3. Map object delete/move quick-field rewrites.
+4. Line split and area-border reference rewrites.
+5. Background metadata writes.
+
+Verification:
+
+- Existing planner tests plus new undo/redo or source transaction tests.
+- CRLF and comment-preservation regressions for changed planners.
+
+Stop condition:
+
+- Stop if a planner cannot preserve source formatting from existing tests. Add projection/source-range support first.
+
+### M9 - Legacy Removal
+
+Goal: remove or quarantine duplicate parser paths after migrated consumers and tests are in place.
+
+Steps:
+
+1. Run the inventory command from M1.
+2. Remove one production legacy caller at a time.
+3. If a direct parser call remains, add a short comment only when it is intentionally allowed as `core DOM construction`,
+   `synthetic snippet`, `non-Therion parsing`, or compatibility test coverage.
+4. Add a structure constraint or test if a forbidden legacy path is likely to reappear.
+5. Update this plan with the final allowed legacy list.
+
+Verification:
+
+- Affected test targets.
+- `python3 scripts/check_structure_constraints.py`
+- `git diff --check`
+
+Stop condition:
+
+- Do not remove public compatibility APIs while tests or production code still need them.
+
+## Recommended 2026.7.2 Commit Order
+
+1. Finish M0 and commit the current Blocks parsed-line helper slice.
+2. M1 inventory and guardrails.
+3. M2 shared snapshot access context.
+4. M3 Raw cursor/help completion closure.
+5. M4 Blocks read-only closure.
+6. M5 Project/Structure/Search/Validation cache closure.
+7. M6 TH2 projection contract with tests.
+8. M7 Map read-only projection consumers.
+9. M8 transaction/rewrite planner migration, one workflow per commit.
+10. M9 legacy removal gates and final allowed legacy list.
 
 ## Verification Gates
 
-- Parser/projection coverage for each migrated consumer.
-- Round-trip coverage for source-sensitive edits.
-- Source-range coverage for diagnostics and mutations.
-- Undo/redo coverage for user-visible source changes.
-- Affected editor regression coverage for Raw, Blocks, Map, Structure, Validation, and compiler-facing workflows.
-- Performance-sensitive migrations should include at least one test or diagnostic that proves repeated cursor/selection events reuse revision-keyed snapshots rather than reparsing unchanged text.
+Every migrated slice:
+
+- Nearest focused automated tests.
+- `python3 scripts/check_structure_constraints.py`.
+- `git diff --check`.
+
+Before declaring DOM migration complete:
+
+- Full available local test pass for core, text editor, map editor, validation, project structure, and 3D-unrelated targets
+  affected by shared source changes.
+- Manual smoke pass with representative `.th`, `thconfig`, and `.th2` projects:
+  - Raw editing, completion, help, validation tooltips.
+  - Blocks cards/details on nested blocks, data bodies, continued commands, comments.
+  - Map scene load, selection, inspector edits, object create/delete/move, line split, area references, backgrounds.
+  - Structure tree and project validation on a multi-file project.
+  - Compiler diagnostics link navigation.
+- Release notes and user manual updates only if user-visible behavior changes. Pure architecture migration needs `WORKLOG.md`
+  and this plan, but not end-user documentation.

@@ -91,17 +91,15 @@ bool BlockEditorSelectionDetailsController::loadSelectionDetails(const QString &
             TherionSourceDocumentMetadata sourceMetadata;
             sourceMetadata.revisionId = revisionId;
             TherionSourceSnapshotCache sourceSnapshotCache;
+            const TherionSourceDocument &sourceDocument =
+                sourceSnapshotCache.sourceDocument(sourceText, sourceMetadata);
             const TherionSourceLogicalDocument &logicalDocument =
                 sourceSnapshotCache.logicalDocument(sourceText, sourceMetadata);
-            if (const TherionSourceLogicalCommand *logicalCommand =
-                    logicalDocument.commandAtPhysicalLine(logicalLine.startLine);
-                logicalCommand != nullptr && logicalCommand->startLineNumber == logicalLine.startLine) {
-                parsedLine = logicalCommand->parsed;
-            }
+            parsedLine = blockEditorParsedLineForLogicalLine(logicalLine, &sourceDocument, &logicalDocument);
         }
     }
     if (parsedLine.lineNumber <= 0) {
-        parsedLine = TherionDocumentParser::parseLine(logicalLine.text, logicalLine.startLine);
+        parsedLine = blockEditorParsedLineForLogicalLine(logicalLine, nullptr, nullptr);
     }
     const bool commentOnlyLine = normalizedKind == QStringLiteral("comment") && isFullLineComment(parsedLine);
     const bool unrecognizedLineKind = isUnrecognizedKind(normalizedKind);

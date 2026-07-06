@@ -2,7 +2,9 @@
 #include "../src/app/text_editor/block_editor/BlockEditorCanvasItem.h"
 #include "../src/app/text_editor/block_editor/BlockEditorCanvasRebuildController.h"
 #include "../src/app/text_editor/block_editor/BlockEditorDirectiveRules.h"
+#include "../src/app/text_editor/block_editor/BlockEditorSourceText.h"
 #include "../src/core/TherionDocumentParser.h"
+#include "../src/core/TherionSourceSnapshotCache.h"
 
 #include <QApplication>
 #include <QGraphicsLineItem>
@@ -96,8 +98,7 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
 
     const TextEditorCommandMetadata metadata = commandMetadata();
-    QPlainTextEdit editor;
-    editor.setPlainText(QStringLiteral(
+    const QString sourceText = QStringLiteral(
         "encoding utf-8\n"
         "#\n"
         "survey test\n"
@@ -111,7 +112,38 @@ int main(int argc, char *argv[])
         "  team \\\n"
         "    Alice\n"
         "endcentreline\n"
-        "endsurvey\n"));
+        "endsurvey\n");
+    QPlainTextEdit editor;
+    editor.setPlainText(sourceText);
+
+    const QStringList sourceLines = blockEditorNormalizedSourceLines(sourceText);
+    const QVector<BlockEditorLogicalLine> sourceLogicalLines = blockEditorBuildLogicalLines(sourceLines);
+    TherionSourceSnapshotCache sourceSnapshotCache;
+    TherionSourceDocumentMetadata sourceMetadata;
+    const TherionSourceDocument &sourceDocument =
+        sourceSnapshotCache.sourceDocument(sourceText, sourceMetadata);
+    const TherionSourceLogicalDocument &logicalDocument =
+        sourceSnapshotCache.logicalDocument(sourceText, sourceMetadata);
+
+    auto logicalLineAt = [&sourceLogicalLines](int startLine) {
+        for (const BlockEditorLogicalLine &logicalLine : sourceLogicalLines) {
+            if (logicalLine.startLine == startLine) {
+                return logicalLine;
+            }
+        }
+        return BlockEditorLogicalLine();
+    };
+
+    bool ok = true;
+    const TherionParsedLine commentParsedLine =
+        blockEditorParsedLineForLogicalLine(logicalLineAt(2), &sourceDocument, &logicalDocument);
+    ok &= expect(isFullLineComment(commentParsedLine),
+                 "Block editor logical parsing should preserve physical full-line comments from the source DOM.");
+    const TherionParsedLine teamParsedLine =
+        blockEditorParsedLineForLogicalLine(logicalLineAt(11), &sourceDocument, &logicalDocument);
+    ok &= expect(teamParsedLine.directive == QStringLiteral("team")
+                     && teamParsedLine.tokens == QStringList({QStringLiteral("team"), QStringLiteral("Alice")}),
+                 "Block editor logical parsing should prefer DOM-parsed continuation commands.");
 
     QGraphicsScene scene;
     QGraphicsLineItem *movePreviewLine = nullptr;
@@ -145,7 +177,6 @@ int main(int argc, char *argv[])
 
     BlockEditorCanvasRebuildController(context).rebuildBlocksCanvasFromText();
 
-    bool ok = true;
     bool foundEmptyComment = false;
     bool foundData = false;
     bool foundTeam = false;
