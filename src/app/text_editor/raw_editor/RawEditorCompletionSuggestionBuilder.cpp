@@ -15,7 +15,7 @@
 #include "../../../core/TherionCommandSyntax.h"
 #include "../../../core/TherionFileTypes.h"
 #include "../../../core/TherionSourceLogicalDocument.h"
-#include "../../../core/TherionSourceSnapshotCache.h"
+#include "../TextEditorSourceSnapshotContext.h"
 
 #include <algorithm>
 #include <utility>
@@ -66,32 +66,6 @@ QString catalogDocumentTypeTokenForFilePath(const QString &filePath)
         TherionStudio::therionSourceDocumentTypeForFilePath(filePath));
 }
 
-TherionStudio::TherionSourceDocumentMetadata sourceDocumentMetadataForEditor(const QPlainTextEdit *editor)
-{
-    TherionStudio::TherionSourceDocumentMetadata metadata;
-    metadata.revisionId = editor != nullptr && editor->document() != nullptr
-        ? editor->document()->revision()
-        : 0;
-    return metadata;
-}
-
-template <typename Handler>
-auto withLogicalDocumentForEditor(const QPlainTextEdit *editor,
-                                  TherionStudio::TherionSourceSnapshotCache *sourceSnapshotCache,
-                                  Handler handler)
-{
-    const QString sourceText = editor == nullptr ? QString() : editor->toPlainText();
-    const TherionStudio::TherionSourceDocumentMetadata metadata = sourceDocumentMetadataForEditor(editor);
-    if (sourceSnapshotCache != nullptr) {
-        return handler(sourceSnapshotCache->logicalDocument(sourceText, metadata));
-    }
-
-    TherionStudio::TherionSourceSnapshotCache localSourceSnapshotCache;
-    const TherionStudio::TherionSourceLogicalDocument logicalDocument =
-        localSourceSnapshotCache.logicalDocument(sourceText, metadata);
-    return handler(logicalDocument);
-}
-
 TherionStudio::RawEditorCompletionTokenContext cursorTokenContextForEditor(
     const QPlainTextEdit *editor,
     TherionStudio::TherionSourceSnapshotCache *sourceSnapshotCache)
@@ -108,12 +82,13 @@ TherionStudio::RawEditorCompletionTokenContext cursorTokenContextForEditor(
     }
 
     const int cursorOffset = cursor.position();
-    return withLogicalDocumentForEditor(editor,
-                                        sourceSnapshotCache,
-                                        [cursorOffset](const TherionStudio::TherionSourceLogicalDocument &logicalDocument) {
-                                            return TherionStudio::rawEditorCompletionTokenContextAtOffset(logicalDocument,
-                                                                                                         cursorOffset);
-                                        });
+    const TherionStudio::TextEditorSourceSnapshotContext snapshotContext =
+        TherionStudio::TextEditorSourceSnapshotContext::fromEditor(editor);
+    return snapshotContext.withLogicalDocument(sourceSnapshotCache,
+                                               [cursorOffset](const TherionStudio::TherionSourceLogicalDocument &logicalDocument) {
+                                                   return TherionStudio::rawEditorCompletionTokenContextAtOffset(logicalDocument,
+                                                                                                                cursorOffset);
+                                               });
 }
 
 bool commandAllowedForDocumentType(const TherionStudio::TextEditorCommandMetadata &metadata,

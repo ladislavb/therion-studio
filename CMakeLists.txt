@@ -483,6 +483,8 @@ set(THERION_TEXT_EDITOR_SHARED_SOURCES
     src/app/text_editor/TextEditorDocumentPersistenceStateService.h
     src/app/text_editor/TextEditorDocumentWorkflowController.cpp
     src/app/text_editor/TextEditorDocumentWorkflowController.h
+    src/app/text_editor/TextEditorSourceSnapshotContext.cpp
+    src/app/text_editor/TextEditorSourceSnapshotContext.h
     src/app/text_editor/TextEditorTabInteractionController.cpp
     src/app/text_editor/TextEditorTabInteractionController.h
     src/app/text_editor/TextEditorEncodingController.cpp
