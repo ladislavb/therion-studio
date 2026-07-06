@@ -110,6 +110,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Blocks logical-line consumers now share a DOM-aware parsed-line helper that prefers cached
   `TherionSourceLogicalDocument` commands and source-document physical lines before falling back to legacy synthetic-line
   parsing.
+- Blocks document outline data-body scanning now reuses `TherionSourceLogicalDocument::commandAtPhysicalLine()` for
+  physical-row lookup, with regression coverage that comments inside a `data` body do not truncate the tracked range.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.

@@ -57,6 +57,7 @@ void BlockEditorDocumentOutlineBuilderTest::dataEntryConsumesExtendRows()
         "  extend right\n"
         "  2.26 2.33 48.11 48.42 3.040\n"
         "  extend left\n"
+        "  # ignore this comment inside the data body\n"
         "  2.36 2.43 154.75 12.26 1.516\n"
         "  team surveyor\n"
         "endcenterline\n"
@@ -69,13 +70,13 @@ void BlockEditorDocumentOutlineBuilderTest::dataEntryConsumesExtendRows()
     const BlockEditorDocumentEntry dataEntry = outline.entries.at(*dataEntryIndex);
     QCOMPARE(dataEntry.kind, QStringLiteral("data"));
     QCOMPARE(dataEntry.startLine, 5);
-    QCOMPARE(dataEntry.endLine, 9);
+    QCOMPARE(dataEntry.endLine, 10);
 
     for (const BlockEditorDocumentEntry &entry : outline.entries) {
         QVERIFY(entry.kind != QStringLiteral("extend"));
     }
 
-    const auto teamEntryIndex = outline.entryIndexByStartLine.constFind(10);
+    const auto teamEntryIndex = outline.entryIndexByStartLine.constFind(11);
     QVERIFY(teamEntryIndex != outline.entryIndexByStartLine.constEnd());
     QCOMPARE(outline.entries.at(*teamEntryIndex).kind, QStringLiteral("team"));
 }
