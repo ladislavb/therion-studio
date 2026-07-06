@@ -111,7 +111,6 @@ void RawEditorCompletionPopupController::triggerCompletionPopup()
             const QTextCursor cursor = context_.editor->textCursor();
             const QTextBlock block = cursor.block();
             if (block.isValid()) {
-                const int lineNumber = block.blockNumber() + 1;
                 const int cursorOffset = cursor.position();
                 const TherionStudio::TextEditorSourceSnapshotContext snapshotContext =
                     TherionStudio::TextEditorSourceSnapshotContext::fromEditor(
@@ -121,7 +120,13 @@ void RawEditorCompletionPopupController::triggerCompletionPopup()
                 const TherionSourceLogicalDocument *logicalDocument = context_.sourceSnapshotCache != nullptr
                     ? &snapshotContext.logicalDocument(*context_.sourceSnapshotCache)
                     : &snapshotContext.logicalDocument(fallbackSourceSnapshotCache);
-                const TherionSourceLogicalCommand *logicalCommand = logicalDocument->commandAtPhysicalLine(lineNumber);
+                const TherionSourceLogicalCommand *logicalCommand = logicalDocument->commandAtOffset(cursorOffset);
+                if (logicalCommand == nullptr && cursorOffset > 0) {
+                    const TherionSourceLogicalCommand *previousCommand = logicalDocument->commandAtOffset(cursorOffset - 1);
+                    if (previousCommand != nullptr && previousCommand->endOffset == cursorOffset) {
+                        logicalCommand = previousCommand;
+                    }
+                }
                 if (logicalCommand == nullptr) {
                     return;
                 }
