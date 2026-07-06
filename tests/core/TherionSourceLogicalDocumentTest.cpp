@@ -229,6 +229,12 @@ void TherionSourceLogicalDocumentTest::findsLogicalCommandsAndTokensByAbsoluteOf
     QCOMPARE(quotedTitle->text, QStringLiteral("Cave"));
     QVERIFY(quotedTitle->type == TherionTokenType::QuotedString);
 
+    const int titleEndOffset = titleOffset + QStringLiteral("\"Cave\"").size();
+    QVERIFY(document.tokenAtOffset(titleEndOffset) == nullptr);
+    const TherionSourceLogicalTokenRange *boundaryToken = document.tokenAtOffset(titleEndOffset - 1);
+    QVERIFY(boundaryToken != nullptr);
+    QCOMPARE(boundaryToken->text, QStringLiteral("Cave"));
+
     const int lineEndingOffset = contents.indexOf(QLatin1Char('\n'));
     QVERIFY(document.tokenAtOffset(lineEndingOffset) == nullptr);
     QVERIFY(document.commandAtOffset(-1) == nullptr);
