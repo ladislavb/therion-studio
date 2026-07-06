@@ -281,6 +281,8 @@ set(THERION_APP_SOURCES
     src/app/TherionRunnerStartSuccessPresenter.h
     src/app/reports/TherionSqlReportDatabase.cpp
     src/app/reports/TherionSqlReportDatabase.h
+    src/app/reports/TherionSqlReportPresetStore.cpp
+    src/app/reports/TherionSqlReportPresetStore.h
     src/app/reports/TherionSqlReportTab.cpp
     src/app/reports/TherionSqlReportTab.h
     ${THERION_INSPECTOR_PANEL_SOURCES}

@@ -1,7 +1,9 @@
 #include "../src/app/reports/TherionSqlReportDatabase.h"
+#include "../src/app/reports/TherionSqlReportPresetStore.h"
 
 #include <QDir>
 #include <QFile>
+#include <QSettings>
 #include <QTemporaryDir>
 #include <QtTest/QtTest>
 
@@ -19,6 +21,7 @@ private slots:
     void loadsPredefinedReportsFromResource();
     void importsTherionSqlExportAndRunsReports();
     void rejectsCustomMutationQuery();
+    void storesCustomPresetsInSettings();
 };
 
 QString minimalTherionSqlExport()
@@ -140,6 +143,40 @@ void TherionSqlReportDatabaseTest::rejectsCustomMutationQuery()
     QVERIFY(table.columns.isEmpty());
     QVERIFY(table.rows.isEmpty());
     QVERIFY(!errorMessage.isEmpty());
+}
+
+void TherionSqlReportDatabaseTest::storesCustomPresetsInSettings()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    const QString settingsPath = QDir(tempDir.path()).filePath(QStringLiteral("settings.ini"));
+
+    QSettings settings(settingsPath, QSettings::IniFormat);
+    TherionSqlReportPresetStore store(settings);
+
+    QVector<TherionSqlReportDefinition> presets;
+    presets.append(TherionSqlReportDefinition{
+        QStringLiteral("custom-1"),
+        QStringLiteral("My report"),
+        QStringLiteral("select NAME from SURVEY")
+    });
+    presets.append(TherionSqlReportDefinition{
+        QString(),
+        QStringLiteral("Ignored"),
+        QStringLiteral("select * from STATION")
+    });
+    store.saveCustomPresets(presets);
+    settings.sync();
+
+    QSettings reloadedSettings(settingsPath, QSettings::IniFormat);
+    TherionSqlReportPresetStore reloadedStore(reloadedSettings);
+    const QVector<TherionSqlReportDefinition> reloaded = reloadedStore.loadCustomPresets();
+
+    QCOMPARE(reloaded.size(), 1);
+    QCOMPARE(reloaded.first().id, QStringLiteral("custom-1"));
+    QCOMPARE(reloaded.first().title, QStringLiteral("My report"));
+    QCOMPARE(reloaded.first().query, QStringLiteral("select NAME from SURVEY"));
+    QVERIFY(!TherionSqlReportPresetStore::createPresetId().isEmpty());
 }
 }
 

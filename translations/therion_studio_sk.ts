@@ -7706,6 +7706,31 @@ subtype blocks</translation>
         <translation>Presety</translation>
     </message>
     <message>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="264"/>
+        <source>Built-in</source>
+        <translation>Vstavané</translation>
+    </message>
+    <message>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="273"/>
+        <source>Custom</source>
+        <translation>Vlastné</translation>
+    </message>
+    <message>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="280"/>
+        <source>Save Preset</source>
+        <translation>Uložiť preset</translation>
+    </message>
+    <message>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="281"/>
+        <source>Rename</source>
+        <translation>Premenovať</translation>
+    </message>
+    <message>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="282"/>
+        <source>Delete</source>
+        <translation>Odstrániť</translation>
+    </message>
+    <message>
         <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="338"/>
         <source>No Therion SQL export is open.</source>
         <translation>Nie je otvorený žiadny SQL export Therionu.</translation>
@@ -7732,6 +7757,80 @@ subtype blocks</translation>
         <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="413"/>
         <source>Exported CSV to %1.</source>
         <translation>CSV exportované do %1.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="381"/>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="389"/>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="397"/>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="405"/>
+        <source>Save SQL Preset</source>
+        <translation>Uložiť SQL preset</translation>
+    </message>
+    <message>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="381"/>
+        <source>Enter a SELECT query before saving a preset.</source>
+        <translation>Pred uložením presetu zadajte dotaz SELECT.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="387"/>
+        <source>Custom preset</source>
+        <translation>Vlastný preset</translation>
+    </message>
+    <message>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="391"/>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="443"/>
+        <source>Preset name:</source>
+        <translation>Názov presetu:</translation>
+    </message>
+    <message>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="401"/>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="453"/>
+        <source>Preset name cannot be empty.</source>
+        <translation>Názov presetu nesmie byť prázdny.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="409"/>
+        <source>Replace custom preset "%1"?</source>
+        <translation>Nahradiť vlastný preset „%1“?</translation>
+    </message>
+    <message>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="418"/>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="427"/>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="438"/>
+        <source>Saved custom SQL preset "%1".</source>
+        <translation>Vlastný SQL preset „%1“ uložený.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="440"/>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="453"/>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="459"/>
+        <source>Rename SQL Preset</source>
+        <translation>Premenovať SQL preset</translation>
+    </message>
+    <message>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="461"/>
+        <source>A custom preset named "%1" already exists.</source>
+        <translation>Vlastný preset s názvom „%1“ už existuje.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="471"/>
+        <source>Renamed custom SQL preset to "%1".</source>
+        <translation>Vlastný SQL preset premenovaný na „%1“.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="482"/>
+        <source>Delete SQL Preset</source>
+        <translation>Odstrániť SQL preset</translation>
+    </message>
+    <message>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="483"/>
+        <source>Delete custom preset "%1"?</source>
+        <translation>Odstrániť vlastný preset „%1“?</translation>
+    </message>
+    <message>
+        <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="497"/>
+        <source>Deleted custom SQL preset "%1".</source>
+        <translation>Vlastný SQL preset „%1“ odstránený.</translation>
     </message>
 </context>
 <context>

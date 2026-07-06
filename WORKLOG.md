@@ -4,14 +4,22 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Current Focus
 
-1. `2026.7.1` development planning and first implementation slices after `v2026.6.9`.
+1. `2026.7.2` development planning and first implementation slices after `2026.7.1`.
 2. Unified Source DOM consumer migration in small, tested slices.
 3. Project source snapshot and validation/cache reuse work for repeated project scans.
 4. Plan-driven follow-ups for map partial refresh, GUI cleanup, SVG backgrounds, reporting, and 3D viewer refinement.
 
 ## Active Work
 
-### 2026.7.1 Planning
+### 2026.7.2 Planning
+
+- Start the `2026.7.2` cycle with incremental follow-ups to features introduced in `2026.7.1`; keep SQL reporting
+  improvements scoped to saved presets, filtering, summaries/charts, or direct database-export workflows rather than
+  rewriting the report viewer.
+- SQL report custom presets are the first planned slice: users should be able to save the current query, rename saved
+  presets, delete them, and keep those presets in per-user application settings without modifying Therion `.sql` exports.
+
+### 2026.7.1 Stabilization Notes
 
 - Start the post-`v2026.6.9` cycle with architecture-aligned slices that reduce duplicate parsing, repeated project
   scanning, and source-transaction drift without broad parser or map-rendering rewrites.

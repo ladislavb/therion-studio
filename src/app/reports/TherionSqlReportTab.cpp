@@ -14,11 +14,14 @@
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QHeaderView>
+#include <QInputDialog>
 #include <QLabel>
+#include <QLineEdit>
 #include <QListWidget>
 #include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QPushButton>
+#include <QSignalBlocker>
 #include <QSplitter>
 #include <QTableView>
 #include <QTextStream>
@@ -29,6 +32,7 @@ namespace TherionStudio
 namespace
 {
 constexpr int kReportQueryRole = Qt::UserRole + 910;
+constexpr int kReportIdRole = Qt::UserRole + 911;
 constexpr int kInspectorMinWidth = 320;
 constexpr int kInspectorMaxWidth = 460;
 constexpr int kQueryRowLimit = 1000;
@@ -119,8 +123,10 @@ private:
 
 TherionSqlReportTab::TherionSqlReportTab(QWidget *parent)
     : QWidget(parent)
+    , customPresetStore_(customPresetSettings_)
 {
     reports_ = TherionSqlReportDatabase::predefinedReports();
+    customReports_ = customPresetStore_.loadCustomPresets();
     buildUi();
     populateReports();
 }
@@ -139,8 +145,8 @@ bool TherionSqlReportTab::loadFile(const QString &path, QString *errorMessage)
                               .arg(result.importedStatementCount)
                               .arg(QDir::toNativeSeparators(database_.filePath())));
     refreshSchemaView();
-    if (reportList_ != nullptr && reportList_->count() > 0) {
-        reportList_->setCurrentRow(0);
+    if (builtInReportList_ != nullptr && builtInReportList_->count() > 0) {
+        builtInReportList_->setCurrentRow(0);
         applySelectedPreset();
     }
     emit titleChanged();
@@ -258,9 +264,32 @@ void TherionSqlReportTab::buildUi()
     sidebarPanel_->setMaximumWidth(kInspectorMaxWidth);
     auto *presetsPage = sidebarPanel_->addPlainTab(tr("Presets"));
     auto *presetsLayout = qobject_cast<QVBoxLayout *>(presetsPage->layout());
-    reportList_ = new QListWidget(presetsPage);
     if (presetsLayout != nullptr) {
-        presetsLayout->addWidget(reportList_, 1);
+        QVBoxLayout *builtInLayout = nullptr;
+        QFrame *builtInSection = InspectorPanel::createSection(presetsPage, tr("Built-in"), &builtInLayout);
+        builtInReportList_ = new QListWidget(builtInSection);
+        if (builtInLayout != nullptr) {
+            builtInLayout->addWidget(builtInReportList_, 1);
+        }
+        presetsLayout->addWidget(builtInSection, 3);
+
+        QVBoxLayout *customLayout = nullptr;
+        QFrame *customSection = InspectorPanel::createSection(presetsPage, tr("Custom"), &customLayout);
+        customReportList_ = new QListWidget(customSection);
+        if (customLayout != nullptr) {
+            customLayout->addWidget(customReportList_, 1);
+
+            auto *customButtonLayout = new QHBoxLayout;
+            customButtonLayout->setContentsMargins(0, 0, 0, 0);
+            savePresetButton_ = new QPushButton(tr("Save Preset"), customSection);
+            renamePresetButton_ = new QPushButton(tr("Rename"), customSection);
+            deletePresetButton_ = new QPushButton(tr("Delete"), customSection);
+            customButtonLayout->addWidget(savePresetButton_);
+            customButtonLayout->addWidget(renamePresetButton_);
+            customButtonLayout->addWidget(deletePresetButton_);
+            customLayout->addLayout(customButtonLayout);
+        }
+        presetsLayout->addWidget(customSection, 2);
     }
 
     auto *schemaPage = sidebarPanel_->addPlainTab(tr("Schema"));
@@ -277,21 +306,72 @@ void TherionSqlReportTab::buildUi()
     splitter->setCollapsible(1, true);
     splitter->setSizes({980, 380});
 
-    connect(reportList_, &QListWidget::currentRowChanged, this, [this](int) {
+    connect(builtInReportList_, &QListWidget::currentItemChanged, this, [this](QListWidgetItem *current) {
+        if (current != nullptr && customReportList_ != nullptr) {
+            QSignalBlocker blocker(customReportList_);
+            Q_UNUSED(blocker);
+            customReportList_->clearSelection();
+            customReportList_->setCurrentItem(nullptr);
+        }
         applySelectedPreset();
+        updateCustomPresetButtons();
+    });
+    connect(customReportList_, &QListWidget::currentItemChanged, this, [this](QListWidgetItem *current) {
+        if (current != nullptr && builtInReportList_ != nullptr) {
+            QSignalBlocker blocker(builtInReportList_);
+            Q_UNUSED(blocker);
+            builtInReportList_->clearSelection();
+            builtInReportList_->setCurrentItem(nullptr);
+        }
+        applySelectedPreset();
+        updateCustomPresetButtons();
     });
     connect(runCustomSqlButton_, &QPushButton::clicked, this, [this]() {
         runCustomQuery();
     });
+    connect(customSqlEdit_, &QPlainTextEdit::textChanged, this, &TherionSqlReportTab::updateCustomPresetButtons);
+    connect(savePresetButton_, &QPushButton::clicked, this, &TherionSqlReportTab::saveCurrentQueryAsPreset);
+    connect(renamePresetButton_, &QPushButton::clicked, this, &TherionSqlReportTab::renameSelectedCustomPreset);
+    connect(deletePresetButton_, &QPushButton::clicked, this, &TherionSqlReportTab::deleteSelectedCustomPreset);
+    updateCustomPresetButtons();
 }
 
 void TherionSqlReportTab::populateReports()
 {
-    reportList_->clear();
+    populateBuiltInReports();
+    populateCustomReports();
+}
+
+void TherionSqlReportTab::populateBuiltInReports()
+{
+    builtInReportList_->clear();
     for (const TherionSqlReportDefinition &report : reports_) {
-        auto *item = new QListWidgetItem(report.title, reportList_);
+        auto *item = new QListWidgetItem(report.title, builtInReportList_);
+        item->setData(kReportIdRole, report.id);
         item->setData(kReportQueryRole, report.query);
     }
+}
+
+void TherionSqlReportTab::populateCustomReports(const QString &selectedId)
+{
+    if (customReportList_ == nullptr) {
+        return;
+    }
+
+    customReportList_->clear();
+    int selectedRow = -1;
+    for (const TherionSqlReportDefinition &report : customReports_) {
+        auto *item = new QListWidgetItem(report.title, customReportList_);
+        item->setData(kReportIdRole, report.id);
+        item->setData(kReportQueryRole, report.query);
+        if (!selectedId.isEmpty() && report.id == selectedId) {
+            selectedRow = customReportList_->count() - 1;
+        }
+    }
+    if (selectedRow >= 0) {
+        customReportList_->setCurrentRow(selectedRow);
+    }
+    updateCustomPresetButtons();
 }
 
 void TherionSqlReportTab::refreshSchemaView()
@@ -310,7 +390,10 @@ void TherionSqlReportTab::refreshSchemaView()
 
 QString TherionSqlReportTab::currentPresetQuery() const
 {
-    QListWidgetItem *item = reportList_ != nullptr ? reportList_->currentItem() : nullptr;
+    QListWidgetItem *item = customReportList_ != nullptr ? customReportList_->currentItem() : nullptr;
+    if (item == nullptr) {
+        item = builtInReportList_ != nullptr ? builtInReportList_->currentItem() : nullptr;
+    }
     return item != nullptr ? item->data(kReportQueryRole).toString() : QString();
 }
 
@@ -355,6 +438,173 @@ void TherionSqlReportTab::runCustomQuery()
                                     .arg(table.rows.size())
                                     .arg(table.columns.size())
                                     .arg(elapsedMs));
+}
+
+void TherionSqlReportTab::saveCurrentQueryAsPreset()
+{
+    const QString query = customSqlEdit_ != nullptr ? customSqlEdit_->toPlainText().trimmed() : QString();
+    if (query.isEmpty()) {
+        QMessageBox::information(this, tr("Save SQL Preset"), tr("Enter a SELECT query before saving a preset."));
+        return;
+    }
+
+    TherionSqlReportDefinition *selectedPreset = selectedCustomPreset();
+    const QString selectedId = selectedPreset != nullptr ? selectedPreset->id : QString();
+    const QString initialName = selectedPreset != nullptr ? selectedPreset->title : tr("Custom preset");
+    bool accepted = false;
+    const QString title = QInputDialog::getText(this,
+                                                tr("Save SQL Preset"),
+                                                tr("Preset name:"),
+                                                QLineEdit::Normal,
+                                                initialName,
+                                                &accepted)
+                              .trimmed();
+    if (!accepted) {
+        return;
+    }
+    if (title.isEmpty()) {
+        QMessageBox::warning(this, tr("Save SQL Preset"), tr("Preset name cannot be empty."));
+        return;
+    }
+
+    const int duplicateIndex = customPresetIndexByTitle(title, selectedId);
+    if (duplicateIndex >= 0) {
+        const int answer = QMessageBox::question(this,
+                                                 tr("Save SQL Preset"),
+                                                 tr("Replace custom preset \"%1\"?").arg(title));
+        if (answer != QMessageBox::Yes) {
+            return;
+        }
+        customReports_[duplicateIndex].query = query;
+        customPresetStore_.saveCustomPresets(customReports_);
+        populateCustomReports(customReports_.at(duplicateIndex).id);
+        statusLabel_->setText(tr("Saved custom SQL preset \"%1\".").arg(title));
+        return;
+    }
+
+    if (selectedPreset != nullptr) {
+        selectedPreset->title = title;
+        selectedPreset->query = query;
+        customPresetStore_.saveCustomPresets(customReports_);
+        populateCustomReports(selectedId);
+        statusLabel_->setText(tr("Saved custom SQL preset \"%1\".").arg(title));
+        return;
+    }
+
+    TherionSqlReportDefinition preset;
+    preset.id = TherionSqlReportPresetStore::createPresetId();
+    preset.title = title;
+    preset.query = query;
+    customReports_.append(preset);
+    customPresetStore_.saveCustomPresets(customReports_);
+    populateCustomReports(preset.id);
+    statusLabel_->setText(tr("Saved custom SQL preset \"%1\".").arg(title));
+}
+
+void TherionSqlReportTab::renameSelectedCustomPreset()
+{
+    TherionSqlReportDefinition *preset = selectedCustomPreset();
+    if (preset == nullptr) {
+        return;
+    }
+
+    bool accepted = false;
+    const QString title = QInputDialog::getText(this,
+                                                tr("Rename SQL Preset"),
+                                                tr("Preset name:"),
+                                                QLineEdit::Normal,
+                                                preset->title,
+                                                &accepted)
+                              .trimmed();
+    if (!accepted) {
+        return;
+    }
+    if (title.isEmpty()) {
+        QMessageBox::warning(this, tr("Rename SQL Preset"), tr("Preset name cannot be empty."));
+        return;
+    }
+    if (customPresetIndexByTitle(title, preset->id) >= 0) {
+        QMessageBox::warning(this,
+                             tr("Rename SQL Preset"),
+                             tr("A custom preset named \"%1\" already exists.").arg(title));
+        return;
+    }
+
+    const QString presetId = preset->id;
+    preset->title = title;
+    customPresetStore_.saveCustomPresets(customReports_);
+    populateCustomReports(presetId);
+    statusLabel_->setText(tr("Renamed custom SQL preset to \"%1\".").arg(title));
+}
+
+void TherionSqlReportTab::deleteSelectedCustomPreset()
+{
+    const TherionSqlReportDefinition *preset = selectedCustomPreset();
+    if (preset == nullptr) {
+        return;
+    }
+
+    const QString title = preset->title;
+    const int answer = QMessageBox::question(this,
+                                             tr("Delete SQL Preset"),
+                                             tr("Delete custom preset \"%1\"?").arg(title));
+    if (answer != QMessageBox::Yes) {
+        return;
+    }
+
+    const int index = customPresetIndexById(preset->id);
+    if (index < 0) {
+        return;
+    }
+    customReports_.removeAt(index);
+    customPresetStore_.saveCustomPresets(customReports_);
+    populateCustomReports();
+    statusLabel_->setText(tr("Deleted custom SQL preset \"%1\".").arg(title));
+}
+
+void TherionSqlReportTab::updateCustomPresetButtons()
+{
+    const bool hasCustomSelection = selectedCustomPreset() != nullptr;
+    if (savePresetButton_ != nullptr) {
+        savePresetButton_->setEnabled(customSqlEdit_ != nullptr && !customSqlEdit_->toPlainText().trimmed().isEmpty());
+    }
+    if (renamePresetButton_ != nullptr) {
+        renamePresetButton_->setEnabled(hasCustomSelection);
+    }
+    if (deletePresetButton_ != nullptr) {
+        deletePresetButton_->setEnabled(hasCustomSelection);
+    }
+}
+
+int TherionSqlReportTab::customPresetIndexById(const QString &id) const
+{
+    for (int i = 0; i < customReports_.size(); ++i) {
+        if (customReports_.at(i).id == id) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int TherionSqlReportTab::customPresetIndexByTitle(const QString &title, const QString &ignoredId) const
+{
+    for (int i = 0; i < customReports_.size(); ++i) {
+        const TherionSqlReportDefinition &preset = customReports_.at(i);
+        if (preset.id != ignoredId && preset.title.compare(title, Qt::CaseInsensitive) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+TherionSqlReportDefinition *TherionSqlReportTab::selectedCustomPreset()
+{
+    if (customReportList_ == nullptr || customReportList_->currentItem() == nullptr) {
+        return nullptr;
+    }
+    const QString id = customReportList_->currentItem()->data(kReportIdRole).toString();
+    const int index = customPresetIndexById(id);
+    return index >= 0 ? &customReports_[index] : nullptr;
 }
 
 void TherionSqlReportTab::showTable(const TherionSqlReportTable &table)
