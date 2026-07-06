@@ -13,11 +13,6 @@ struct RawEditorCompletionTokenContext
     bool cursorInsideToken = false;
 };
 
-[[nodiscard]] RawEditorCompletionTokenContext rawEditorCompletionTokenContextAtPosition(
-    const TherionSourceLogicalDocument &logicalDocument,
-    int lineNumber,
-    int columnNumber);
-
 [[nodiscard]] RawEditorCompletionTokenContext rawEditorCompletionTokenContextAtOffset(
     const TherionSourceLogicalDocument &logicalDocument,
     int cursorOffset);
