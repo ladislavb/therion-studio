@@ -115,6 +115,14 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Blocks toolbox auto-scope lookup now uses the shared logical source snapshot and a revision-keyed cache instead of
   reparsing physical lines, and regression coverage keeps the resolved insertion context anchored to the selected
   command's parent block.
+- Blocks selection-details data-header readings-order chips now reuse already parsed logical tokens instead of
+  retokenizing the joined readings-order string, preserving the same UI behavior with less local parsing.
+- Blocks option-argument editors now reuse the shared command-option editor parser instead of tokenizing the value cell
+  locally, so arity-aware splitting stays aligned with the rest of the command-editing stack.
+- Blocks data-block dialog now builds one shared `TherionSourceDocument` snapshot for its scope and row scans instead of
+  reparsing each row with `parseLine(...)`, keeping repeated row classification aligned with the shared DOM snapshot.
+- Blocks delete executor now uses the same shared `TherionSourceDocument` snapshot for `data` scope scans and body-range
+  detection instead of reparsing each scanned line independently.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.

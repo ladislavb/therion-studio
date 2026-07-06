@@ -30,6 +30,7 @@
 
 #include "../../../core/TherionCommandSyntax.h"
 #include "../../../core/TherionDocumentParser.h"
+#include "../../../core/TherionSourceDocument.h"
 
 #include <algorithm>
 #include <functional>
@@ -300,7 +301,16 @@ std::optional<BlockEditorDataBlockDialogResult> BlockEditorDataBlockDialog::conf
         return std::nullopt;
     }
 
-    const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(lineNumber - 1), lineNumber);
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(lines.join(QLatin1Char('\n')));
+    const auto parsedLineForLine = [&sourceDocument](int currentLine) -> TherionParsedLine {
+        if (const TherionSourceDocumentLine *sourceLine = sourceDocument.lineAtLineNumber(currentLine);
+            sourceLine != nullptr) {
+            return sourceLine->sourceLine.parsed;
+        }
+        return TherionParsedLine{};
+    };
+
+    const TherionParsedLine parsedLine = parsedLineForLine(lineNumber);
     if (parsedLine.tokens.isEmpty()) {
         return std::nullopt;
     }
@@ -315,7 +325,7 @@ std::optional<BlockEditorDataBlockDialogResult> BlockEditorDataBlockDialog::conf
     int dataScopeStartLine = -1;
     int dataScopeDepth = 0;
     for (int currentLine = lineNumber; currentLine >= 1; --currentLine) {
-        const TherionParsedLine currentParsedLine = TherionDocumentParser::parseLine(lines.at(currentLine - 1), currentLine);
+        const TherionParsedLine currentParsedLine = parsedLineForLine(currentLine);
         const QString directive = normalizeDirective(currentParsedLine.directive);
         if (directive == dataScopeClosing) {
             ++dataScopeDepth;
@@ -398,7 +408,7 @@ std::optional<BlockEditorDataBlockDialogResult> BlockEditorDataBlockDialog::conf
     bool schemaMismatchDetected = false;
     for (int currentLine = lineNumber + 1; currentLine <= dataBodyLastLine; ++currentLine) {
         const QString rowLine = lines.at(currentLine - 1);
-        const TherionParsedLine parsedRow = TherionDocumentParser::parseLine(rowLine, currentLine);
+        const TherionParsedLine parsedRow = parsedLineForLine(currentLine);
         QString rowText = parsedRow.commentStart >= 0 ? rowLine.left(parsedRow.commentStart) : rowLine;
         if (rowText.startsWith(rowIndent)) {
             rowText = rowText.mid(rowIndent.size());

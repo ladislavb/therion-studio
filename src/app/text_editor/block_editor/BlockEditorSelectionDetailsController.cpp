@@ -571,7 +571,7 @@ bool BlockEditorSelectionDetailsController::loadSelectionDetails(const QString &
         }
         context_.setReadingsTagEditor(tr("Type token and press Enter/Space"),
                                                  readingSuggestions,
-                                                 TherionDocumentParser::tokenizeLine(components.readingsOrder));
+                                                 parsedLine.tokens.mid(2));
         if (context_.idEdit != nullptr) {
             context_.idEdit->setEnabled(true);
             context_.idEdit->setPlaceholderText(tr("required"));

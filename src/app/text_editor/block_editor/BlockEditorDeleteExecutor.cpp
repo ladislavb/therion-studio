@@ -11,6 +11,7 @@
 #include <utility>
 
 #include "../../../core/TherionDocumentParser.h"
+#include "../../../core/TherionSourceDocument.h"
 
 namespace
 {
@@ -45,12 +46,21 @@ bool BlockEditorDeleteExecutor::deleteCommandAtLine(int lineNumber)
         return false;
     }
 
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(lines.join(QLatin1Char('\n')));
+    const auto parsedLineForLine = [&sourceDocument](int currentLine) -> TherionParsedLine {
+        if (const TherionSourceDocumentLine *sourceLine = sourceDocument.lineAtLineNumber(currentLine);
+            sourceLine != nullptr) {
+            return sourceLine->sourceLine.parsed;
+        }
+        return TherionParsedLine{};
+    };
+
     BlockEditorLogicalLine logicalLine;
     if (!blockEditorResolveLogicalLineAtLine(lines, lineNumber, &logicalLine)) {
         return false;
     }
 
-    const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(logicalLine.text, logicalLine.startLine);
+    const TherionParsedLine parsedLine = parsedLineForLine(logicalLine.startLine);
     const QString directive = normalizeDirective(parsedLine.directive);
     if (directive.isEmpty() && isFullLineComment(parsedLine)) {
         const QMessageBox::StandardButton answer = QMessageBox::question(
@@ -109,7 +119,7 @@ bool BlockEditorDeleteExecutor::deleteCommandAtLine(int lineNumber)
         int dataScopeStartLine = -1;
         int dataScopeDepth = 0;
         for (int currentLine = logicalLine.startLine; currentLine >= 1; --currentLine) {
-            const TherionParsedLine currentParsedLine = TherionDocumentParser::parseLine(lines.at(currentLine - 1), currentLine);
+            const TherionParsedLine currentParsedLine = parsedLineForLine(currentLine);
             const QString currentDirective = normalizeDirective(currentParsedLine.directive);
             if (currentDirective == dataScopeClosing) {
                 ++dataScopeDepth;
@@ -141,7 +151,7 @@ bool BlockEditorDeleteExecutor::deleteCommandAtLine(int lineNumber)
 
         int dataBodyLastLine = dataScopeEndLine - 1;
         for (int currentLine = logicalLine.endLine + 1; currentLine <= dataScopeEndLine - 1; ++currentLine) {
-            const TherionParsedLine currentParsedLine = TherionDocumentParser::parseLine(lines.at(currentLine - 1), currentLine);
+            const TherionParsedLine currentParsedLine = parsedLineForLine(currentLine);
             const QString currentDirective = normalizeDirective(currentParsedLine.directive);
             if (currentDirective.isEmpty() || currentDirective == QStringLiteral("extend")) {
                 continue;
