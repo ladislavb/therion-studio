@@ -250,8 +250,17 @@ QString RawEditorCompletionContextAnalyzer::currentCompletionCommand() const
         TherionStudio::TextEditorSourceSnapshotContext::fromEditor(context_.editor);
     return snapshotContext.withLogicalDocument(context_.sourceSnapshotCache,
                                                [this, &block](const TherionSourceLogicalDocument &logicalDocument) {
+                                                   const int cursorOffset = context_.editor->textCursor().position();
                                                    const TherionSourceLogicalCommand *command =
-                                                       logicalDocument.commandAtPhysicalLine(block.blockNumber() + 1);
+                                                       logicalDocument.commandAtOffset(cursorOffset);
+                                                   if (command == nullptr && cursorOffset > 0) {
+                                                       const TherionSourceLogicalCommand *previousCommand =
+                                                           logicalDocument.commandAtOffset(cursorOffset - 1);
+                                                       if (previousCommand != nullptr
+                                                           && previousCommand->endOffset == cursorOffset) {
+                                                           command = previousCommand;
+                                                       }
+                                                   }
                                                    if (command == nullptr || command->parsed.tokens.isEmpty()) {
                                                        return QString();
                                                    }

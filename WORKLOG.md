@@ -100,6 +100,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Raw completion prefix detection now uses shared logical token ranges for parsed cursor tokens while preserving the
   existing completion-character filtering for path and partial-token behavior; keep this covered in
   `TextEditorRawEditorQTests`.
+- Raw context help command selection and the completion-popup required-argument fallback now resolve commands through
+  logical offsets instead of physical-line rescans, and the synthetic input-path insertion helper now uses a shared
+  logical document for its command check.
 - Blocks canvas data-body scanning now uses shared logical commands when deciding where data rows end, so continuation
   rows after a data body do not get reparsed as standalone raw lines.
 - Blocks details selection loading now reads selected logical commands from a source snapshot when populating read-only

@@ -1,6 +1,7 @@
 #include "RawEditorCompletionInsertionController.h"
 
 #include "../../../core/TherionDocumentParser.h"
+#include "../../../core/TherionSourceLogicalDocument.h"
 
 #include <QPlainTextEdit>
 #include <QTextBlock>
@@ -91,8 +92,9 @@ CompletionReplacementRange inputPathReplacementRange(const QString &blockText, i
 
 bool isInputCommandLine(const QString &blockText)
 {
-    const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(blockText);
-    return parsedLine.directive == QStringLiteral("input");
+    const TherionSourceLogicalDocument logicalDocument = TherionSourceLogicalDocument::fromText(blockText);
+    const TherionSourceLogicalCommand *command = logicalDocument.commandAtOffset(0);
+    return command != nullptr && command->parsed.directive == QStringLiteral("input");
 }
 }
 

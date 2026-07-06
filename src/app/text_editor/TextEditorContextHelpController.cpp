@@ -287,7 +287,14 @@ QStringList TextEditorContextHelpController::helpCandidateTokens() const
     }
 
     const TherionSourceLogicalDocument &logicalDocument = logicalDocumentForEditor();
-    const TherionSourceLogicalCommand *command = logicalDocument.commandAtPhysicalLine(block.blockNumber() + 1);
+    const int cursorOffset = cursor.position();
+    const TherionSourceLogicalCommand *command = logicalDocument.commandAtOffset(cursorOffset);
+    if (command == nullptr && cursorOffset > 0) {
+        const TherionSourceLogicalCommand *previousCommand = logicalDocument.commandAtOffset(cursorOffset - 1);
+        if (previousCommand != nullptr && previousCommand->endOffset == cursorOffset) {
+            command = previousCommand;
+        }
+    }
     if (command != nullptr && !command->parsed.directive.isEmpty() && command->parsed.directive != directToken.toLower()) {
         appendUniqueCaseInsensitive(candidates, command->parsed.directive);
         if (context_.normalizedDirectiveToken && context_.openingDirectiveForClosingToken) {

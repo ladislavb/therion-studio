@@ -235,6 +235,10 @@ void TherionSourceLogicalDocumentTest::findsLogicalCommandsAndTokensByAbsoluteOf
     QVERIFY(boundaryToken != nullptr);
     QCOMPARE(boundaryToken->text, QStringLiteral("Cave"));
 
+    const TherionSourceLogicalCommand *boundaryCommand = document.commandAtOffset(titleEndOffset);
+    QVERIFY(boundaryCommand != nullptr);
+    QCOMPARE(boundaryCommand->normalizedDirective, QStringLiteral("survey"));
+
     const int lineEndingOffset = contents.indexOf(QLatin1Char('\n'));
     QVERIFY(document.tokenAtOffset(lineEndingOffset) == nullptr);
     QVERIFY(document.commandAtOffset(-1) == nullptr);
