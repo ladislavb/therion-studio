@@ -120,7 +120,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Blocks option-argument editors now reuse the shared command-option editor parser instead of tokenizing the value cell
   locally, so arity-aware splitting stays aligned with the rest of the command-editing stack.
 - Blocks data-block dialog now builds one shared `TherionSourceDocument` snapshot for its scope and row scans instead of
-  reparsing each row with `parseLine(...)`, keeping repeated row classification aligned with the shared DOM snapshot.
+  reparsing each row with `parseLine(...)`, and its data-header field parsing now reuses parsed tokens instead of
+  tokenizing the joined column string again.
 - Blocks delete executor now uses the same shared `TherionSourceDocument` snapshot for `data` scope scans and body-range
   detection instead of reparsing each scanned line independently.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
