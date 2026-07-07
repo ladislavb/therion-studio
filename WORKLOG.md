@@ -124,6 +124,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   tokenizing the joined column string again.
 - Blocks delete executor now uses the same shared `TherionSourceDocument` snapshot for `data` scope scans and body-range
   detection instead of reparsing each scanned line independently.
+- Blocks line-build service now reuses a single `TherionSourceDocument` snapshot for logical-line parsing instead of
+  reparsing the selected line directly.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.
