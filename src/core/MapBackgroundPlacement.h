@@ -43,6 +43,12 @@ struct XviStationPlacementEntry
     QPointF position;
 };
 
+struct XviBackgroundInsertionPlacement
+{
+    QPointF basePosition;
+    QString rootStationName;
+};
+
 QRectF resolveRasterModelRect(const QSizeF &imageModelSize,
                               const RasterPlacementMetadata &metadata,
                               const AreaAdjustMetadata &areaAdjust);
@@ -54,4 +60,8 @@ XviPlacementResult resolveXviModelOffset(const QPointF &gridOrigin,
 XviPlacementResult resolveXviModelOffset(const QPointF &gridOrigin,
                                          const QVector<XviStationPlacementEntry> &stationEntries,
                                          const XviPlacementMetadata &metadata);
+
+XviBackgroundInsertionPlacement resolvePocketTopoXviInsertionPlacement(
+    const QVector<XviStationPlacementEntry> &stationEntries,
+    const QString &documentText);
 }

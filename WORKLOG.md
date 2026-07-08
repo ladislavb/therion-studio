@@ -132,6 +132,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   parsing each physical line independently.
 - Map object-details standalone row helpers now build one shared `TherionSourceDocument` snapshot for the row scan
   instead of parsing each standalone row independently.
+- PocketTopo XVI insertion placement now uses a shared core source snapshot helper instead of parsing the raw text
+  line by line inside the map editor.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.

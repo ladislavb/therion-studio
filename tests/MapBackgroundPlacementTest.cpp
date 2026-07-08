@@ -348,6 +348,54 @@ int runXviRootStationPlacementKeepsPocketTopoPlacedCoordinatesTest()
 
     return 0;
 }
+
+int runPocketTopoXviInsertionPlacementUsesFirstMatchingStationTest()
+{
+    const QString documentText = QStringLiteral(
+        "point 1247.24 3460.31 station 5.1\n"
+        "point 999.0 888.0 station 9.9\n");
+
+    QVector<XviStationPlacementEntry> stationEntries{
+        XviStationPlacementEntry{QStringLiteral("5.1"), QPointF(862.52, 3307.56)},
+        XviStationPlacementEntry{QStringLiteral("9.9"), QPointF(120.0, 200.0)},
+    };
+
+    const XviBackgroundInsertionPlacement placement =
+        resolvePocketTopoXviInsertionPlacement(stationEntries, documentText);
+    if (!expect(nearlyEqual(placement.basePosition.x(), 1247.24)
+                    && nearlyEqual(placement.basePosition.y(), 3460.31),
+                "Expected PocketTopo placement to use the point coordinates from the first matching station row.")) {
+        return 1;
+    }
+    if (!expect(placement.rootStationName == QStringLiteral("5.1"),
+                "Expected PocketTopo placement to keep the matched station name.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int runPocketTopoXviInsertionPlacementFallsBackToFirstStationTest()
+{
+    QVector<XviStationPlacementEntry> stationEntries{
+        XviStationPlacementEntry{QStringLiteral("5.1"), QPointF(862.52, 3307.56)},
+        XviStationPlacementEntry{QStringLiteral("9.9"), QPointF(120.0, 200.0)},
+    };
+
+    const XviBackgroundInsertionPlacement placement =
+        resolvePocketTopoXviInsertionPlacement(stationEntries, QStringLiteral("survey demo\nendsurvey\n"));
+    if (!expect(nearlyEqual(placement.basePosition.x(), 0.0)
+                    && nearlyEqual(placement.basePosition.y(), 0.0),
+                "Expected PocketTopo placement fallback to use the origin base position.")) {
+        return 1;
+    }
+    if (!expect(placement.rootStationName == QStringLiteral("5.1"),
+                "Expected PocketTopo placement fallback to choose the first station entry name.")) {
+        return 1;
+    }
+
+    return 0;
+}
 }
 
 int main()
@@ -383,6 +431,12 @@ int main()
         return rc;
     }
     if (const int rc = runXviRootStationPlacementKeepsPocketTopoPlacedCoordinatesTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runPocketTopoXviInsertionPlacementUsesFirstMatchingStationTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runPocketTopoXviInsertionPlacementFallsBackToFirstStationTest(); rc != 0) {
         return rc;
     }
 

@@ -1,5 +1,10 @@
 #include "MapBackgroundPlacement.h"
 
+#include "TherionCommandLineModel.h"
+#include "TherionDocumentParser.h"
+#include "TherionSourceDocument.h"
+#include "TherionTokenRules.h"
+
 #include <QtMath>
 
 namespace TherionStudio
@@ -79,6 +84,98 @@ const XviStationPlacementEntry *resolveXviRootStationEntry(const QVector<XviStat
     }
     return unqualifiedMatch;
 }
+
+QString pointTypeTokenFromParsedLine(const TherionParsedLine &parsedLine)
+{
+    if (parsedLine.directive != QStringLiteral("point")) {
+        return QString();
+    }
+
+    int numericCoordinateTokens = 0;
+    for (int index = 1; index < parsedLine.tokens.size(); ++index) {
+        const QString token = parsedLine.tokens.at(index).trimmed();
+        if (token.isEmpty()) {
+            continue;
+        }
+        if (TherionTokenRules::tokenStartsOption(token)) {
+            break;
+        }
+        if (TherionTokenRules::isNumericToken(token)) {
+            ++numericCoordinateTokens;
+            continue;
+        }
+        if (numericCoordinateTokens < 2) {
+            continue;
+        }
+        return token.toLower();
+    }
+
+    return QString();
+}
+
+QString stationNameFromPointLine(const TherionParsedLine &parsedLine)
+{
+    const QString optionName = commandOptionValue(parsedLine.tokens, QStringLiteral("-name")).trimmed();
+    if (!optionName.isEmpty()) {
+        return optionName;
+    }
+
+    if (pointTypeTokenFromParsedLine(parsedLine) != QStringLiteral("station")) {
+        return QString();
+    }
+
+    bool sawStationType = false;
+    for (int index = 1; index < parsedLine.tokens.size(); ++index) {
+        const QString token = parsedLine.tokens.at(index).trimmed();
+        if (token.isEmpty()) {
+            continue;
+        }
+        if (TherionTokenRules::tokenStartsOption(token)) {
+            break;
+        }
+        if (!sawStationType) {
+            if (token.toLower() == QStringLiteral("station")) {
+                sawStationType = true;
+            }
+            continue;
+        }
+        return token;
+    }
+    return QString();
+}
+
+std::optional<QPointF> pointPositionFromParsedLine(const TherionParsedLine &parsedLine)
+{
+    if (parsedLine.directive != QStringLiteral("point")) {
+        return std::nullopt;
+    }
+
+    QVector<qreal> coordinates;
+    coordinates.reserve(2);
+    for (int index = 1; index < parsedLine.tokens.size(); ++index) {
+        const QString token = parsedLine.tokens.at(index).trimmed();
+        if (token.isEmpty()) {
+            continue;
+        }
+        if (TherionTokenRules::tokenStartsOption(token)) {
+            break;
+        }
+        if (!TherionTokenRules::isNumericToken(token)) {
+            continue;
+        }
+        bool ok = false;
+        const qreal value = token.toDouble(&ok);
+        if (!ok) {
+            continue;
+        }
+        coordinates.append(value);
+        if (coordinates.size() == 2) {
+            return QPointF(coordinates.at(0), coordinates.at(1));
+        }
+    }
+
+    return std::nullopt;
+}
 }
 
 QRectF resolveRasterModelRect(const QSizeF &imageModelSize,
@@ -137,5 +234,41 @@ XviPlacementResult resolveXviModelOffset(const QPointF &gridOrigin,
 
     result.modelOffset = basePosition - gridOrigin;
     return result;
+}
+
+XviBackgroundInsertionPlacement resolvePocketTopoXviInsertionPlacement(
+    const QVector<XviStationPlacementEntry> &stationEntries,
+    const QString &documentText)
+{
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(documentText);
+    for (const TherionSourceDocumentLine &sourceLine : sourceDocument.lines()) {
+        const TherionParsedLine &parsedLine = sourceLine.sourceLine.parsed;
+        if (pointTypeTokenFromParsedLine(parsedLine) != QStringLiteral("station")) {
+            continue;
+        }
+
+        const QString stationName = stationNameFromPointLine(parsedLine);
+        if (stationName.trimmed().isEmpty()) {
+            continue;
+        }
+
+        const XviStationPlacementEntry *xviStation = resolveXviRootStationEntry(stationEntries, stationName);
+        if (xviStation == nullptr) {
+            continue;
+        }
+
+        const std::optional<QPointF> position = pointPositionFromParsedLine(parsedLine);
+        if (!position.has_value()) {
+            continue;
+        }
+
+        return XviBackgroundInsertionPlacement{position.value(), xviStation->name};
+    }
+
+    if (!stationEntries.isEmpty()) {
+        return XviBackgroundInsertionPlacement{QPointF(0.0, 0.0), stationEntries.constFirst().name};
+    }
+
+    return XviBackgroundInsertionPlacement{QPointF(0.0, 0.0), QString()};
 }
 }
