@@ -6,7 +6,6 @@
 #include "BlockEditorDirectiveRules.h"
 #include "BlockEditorSourceText.h"
 
-#include "../../../core/TherionDocumentParser.h"
 #include "../../../core/TherionSourceLogicalDocument.h"
 #include "../../../core/TherionSourceSnapshotCache.h"
 
@@ -165,7 +164,9 @@ void BlockEditorCanvasRebuildController::rebuildBlocksCanvasFromText()
             }
             const TherionParsedLine scanParsedLine = scanLogicalCommand != nullptr
                 ? scanLogicalCommand->parsed
-                : TherionDocumentParser::parseLine(lines.at(scanLine - 1), scanLine);
+                : (sourceDocument.lineAtLineNumber(scanLine) != nullptr
+                       ? sourceDocument.lineAtLineNumber(scanLine)->sourceLine.parsed
+                       : TherionParsedLine{});
             const QString scanDirective = normalizeDirective(scanParsedLine.directive);
             if (scanDirective.isEmpty() || scanDirective == QStringLiteral("extend")) {
                 continue;

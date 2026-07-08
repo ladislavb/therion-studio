@@ -2,6 +2,7 @@
 
 #include "../../../core/TherionCommandSyntax.h"
 #include "../../../core/TherionDocumentParser.h"
+#include "../../../core/TherionSourceDocument.h"
 #include "../../../core/TherionSourceText.h"
 #include "../../../core/TherionTokenRules.h"
 
@@ -124,14 +125,19 @@ bool linePointRowDirectiveMatches(const TherionParsedLine &parsedLine, const QSt
 
 bool linePointRowIsSegmentSubtype(const QString &row)
 {
-    return linePointRowDirectiveMatches(TherionDocumentParser::parseLine(row), QStringLiteral("subtype"));
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(row);
+    const TherionSourceDocumentLine *sourceLine = sourceDocument.lineAtLineNumber(1);
+    return sourceLine != nullptr
+        && linePointRowDirectiveMatches(sourceLine->sourceLine.parsed, QStringLiteral("subtype"));
 }
 
 bool linePointRowIsAltitudeAuto(const QString &row)
 {
-    const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(row);
-    return linePointRowDirectiveMatches(parsedLine, QStringLiteral("altitude"))
-        && parsedLine.tokens.value(1).trimmed() == QStringLiteral(".");
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(row);
+    const TherionSourceDocumentLine *sourceLine = sourceDocument.lineAtLineNumber(1);
+    return sourceLine != nullptr
+        && linePointRowDirectiveMatches(sourceLine->sourceLine.parsed, QStringLiteral("altitude"))
+        && sourceLine->sourceLine.parsed.tokens.value(1).trimmed() == QStringLiteral(".");
 }
 
 QSet<QString> parseOrientationAllowedTypesFromText(const QString &text)
@@ -521,6 +527,11 @@ std::optional<qreal> linePointNumericOptionForSourceVertex(const QString &docume
     return std::nullopt;
 }
 
+TherionSourceDocument linePointStandaloneRowsDocument(const QStringList &rows)
+{
+    return TherionSourceDocument::fromText(rows.join(QLatin1Char('\n')));
+}
+
 std::optional<qreal> linePointOrientationForSourceVertex(const QString &documentText,
                                                          int lineNumber,
                                                          int sourceVertexIndex)
@@ -555,9 +566,14 @@ std::optional<qreal> linePointLeftSizeForSourceVertex(const QString &documentTex
 
 QString linePointSegmentSubtypeFromStandaloneRows(const QStringList &rows)
 {
+    const TherionSourceDocument sourceDocument = linePointStandaloneRowsDocument(rows);
     QString subtype;
-    for (const QString &row : rows) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(row);
+    for (int rowIndex = 0; rowIndex < rows.size(); ++rowIndex) {
+        const TherionSourceDocumentLine *sourceLine = sourceDocument.lineAtLineNumber(rowIndex + 1);
+        if (sourceLine == nullptr) {
+            continue;
+        }
+        const TherionParsedLine &parsedLine = sourceLine->sourceLine.parsed;
         if (linePointRowDirectiveMatches(parsedLine, QStringLiteral("subtype"))
             && parsedLine.tokens.size() > 1) {
             subtype = parsedLine.tokens.value(1).trimmed();
@@ -568,8 +584,14 @@ QString linePointSegmentSubtypeFromStandaloneRows(const QStringList &rows)
 
 bool linePointAltitudeAutoFromStandaloneRows(const QStringList &rows)
 {
-    for (const QString &row : rows) {
-        if (linePointRowIsAltitudeAuto(row)) {
+    const TherionSourceDocument sourceDocument = linePointStandaloneRowsDocument(rows);
+    for (int rowIndex = 0; rowIndex < rows.size(); ++rowIndex) {
+        const TherionSourceDocumentLine *sourceLine = sourceDocument.lineAtLineNumber(rowIndex + 1);
+        if (sourceLine == nullptr) {
+            continue;
+        }
+        if (linePointRowDirectiveMatches(sourceLine->sourceLine.parsed, QStringLiteral("altitude"))
+            && sourceLine->sourceLine.parsed.tokens.value(1).trimmed() == QStringLiteral(".")) {
             return true;
         }
     }
@@ -578,8 +600,13 @@ bool linePointAltitudeAutoFromStandaloneRows(const QStringList &rows)
 
 bool linePointRowsShouldHighlightVertexMetadata(const QStringList &rows)
 {
-    for (const QString &row : rows) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(row);
+    const TherionSourceDocument sourceDocument = linePointStandaloneRowsDocument(rows);
+    for (int rowIndex = 0; rowIndex < rows.size(); ++rowIndex) {
+        const TherionSourceDocumentLine *sourceLine = sourceDocument.lineAtLineNumber(rowIndex + 1);
+        if (sourceLine == nullptr) {
+            continue;
+        }
+        const TherionParsedLine &parsedLine = sourceLine->sourceLine.parsed;
         if (linePointRowDirectiveMatches(parsedLine, QStringLiteral("altitude"))
             || linePointRowDirectiveMatches(parsedLine, QStringLiteral("subtype"))) {
             return true;
@@ -592,14 +619,22 @@ QStringList linePointRowsWithoutStructuredStandaloneOptions(const QStringList &r
                                                             bool manageSegmentSubtype,
                                                             bool manageAltitudeAuto)
 {
+    const TherionSourceDocument sourceDocument = linePointStandaloneRowsDocument(rows);
     QStringList filteredRows;
     filteredRows.reserve(rows.size());
-    for (const QString &row : rows) {
-        if ((manageSegmentSubtype && linePointRowIsSegmentSubtype(row))
-            || (manageAltitudeAuto && linePointRowIsAltitudeAuto(row))) {
+    for (int rowIndex = 0; rowIndex < rows.size(); ++rowIndex) {
+        const TherionSourceDocumentLine *sourceLine = sourceDocument.lineAtLineNumber(rowIndex + 1);
+        const TherionParsedLine parsedLine = sourceLine != nullptr
+            ? sourceLine->sourceLine.parsed
+            : TherionParsedLine{};
+        if ((manageSegmentSubtype && linePointRowDirectiveMatches(parsedLine, QStringLiteral("subtype"))
+             && parsedLine.tokens.size() > 1)
+            || (manageAltitudeAuto
+                && linePointRowDirectiveMatches(parsedLine, QStringLiteral("altitude"))
+                && parsedLine.tokens.value(1).trimmed() == QStringLiteral("."))) {
             continue;
         }
-        filteredRows.append(row);
+        filteredRows.append(rows.at(rowIndex));
     }
     return filteredRows;
 }

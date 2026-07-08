@@ -126,6 +126,12 @@ Active planning only. Completed history belongs in archive files. Stable archite
   detection instead of reparsing each scanned line independently.
 - Blocks line-build service now reuses a single `TherionSourceDocument` snapshot for logical-line parsing instead of
   reparsing the selected line directly.
+- Blocks canvas rebuild now uses the shared source snapshot for the final `data` body scan fallback instead of
+  reparsing physical lines directly when the logical projection does not cover a scanned row.
+- Blocks encoding-root normalization now uses a shared `TherionSourceDocument` snapshot for the line scan instead of
+  parsing each physical line independently.
+- Map object-details standalone row helpers now build one shared `TherionSourceDocument` snapshot for the row scan
+  instead of parsing each standalone row independently.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.
