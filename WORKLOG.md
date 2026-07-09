@@ -144,6 +144,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   feature conversion.
 - Map area-reference read-only lookups now have `Th2GeometryProjection` resolver overloads; object details and inspector
   delete-block indicators prefer the projection path with logical-command fallback.
+- Map area-border selection highlighting now prefers the `Th2GeometryProjection` area-reference path with logical-command
+  fallback, keeping area selection visual behavior on the shared TH2 projection.
 - Map point-selection source-line navigation now has a `Th2GeometryProjection` lookup path with parsed-line fallback, keeping
   vertex column navigation on the legacy parser until the projection carries coordinate token spans.
 - Map selection object-kind detection now has a `Th2GeometryProjection` lookup path for point/line/area/scrap source
