@@ -142,6 +142,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Map object-details line feature lookups now receive the revision-cached `Th2GeometryProjection` through
   `MapEditorLogicalSourceContext` and use it to resolve selected line objects before falling back to logical-command
   feature conversion.
+- Map area-reference read-only lookups now have `Th2GeometryProjection` resolver overloads; object details and inspector
+  delete-block indicators prefer the projection path with logical-command fallback.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.

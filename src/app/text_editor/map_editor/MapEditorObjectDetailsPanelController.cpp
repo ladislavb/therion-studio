@@ -91,11 +91,21 @@ std::optional<MapGeometryFeature> lineFeatureForLine(const MapEditorLogicalSourc
     return lineFeatureForLineNumber(commands, lineNumber);
 }
 
-QVector<MapEditorAreaReference> areaReferencesForBorderLine(const QVector<TherionSourceLogicalCommand> &commands,
+QVector<MapEditorAreaReference> areaReferencesForBorderLine(const MapEditorLogicalSourceContext &logicalSource,
+                                                            const QVector<TherionSourceLogicalCommand> &commands,
                                                             int lineNumber)
 {
     if (lineNumber <= 0) {
         return {};
+    }
+
+    if (logicalSource.geometryProjectionForCurrentDocument) {
+        const Th2GeometryProjection projection = logicalSource.geometryProjectionForCurrentDocument();
+        if (const QVector<MapEditorAreaReference> references =
+                mapEditorAreaReferencesForBorderLine(projection, lineNumber);
+            !references.isEmpty()) {
+            return references;
+        }
     }
 
     return mapEditorAreaReferencesForBorderLine(commands, lineNumber);
@@ -819,7 +829,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
     if (context_.textEditor != nullptr
         && effectiveLineNumber > 0
         && effectiveKind == QStringLiteral("line")) {
-        areaReferences = areaReferencesForBorderLine(logicalCommands, effectiveLineNumber);
+        areaReferences = areaReferencesForBorderLine(context_.logicalSource, logicalCommands, effectiveLineNumber);
     }
     const bool deleteBlockedByAreaReference = !areaReferences.isEmpty();
     context_.deleteButton->setEnabled(effectiveLineNumber > 0 && !deleteBlockedByAreaReference);

@@ -24,6 +24,7 @@
 #include <QTreeView>
 
 #include <functional>
+#include <optional>
 #include <utility>
 
 namespace TherionStudio
@@ -153,6 +154,10 @@ void MapEditorInspectorObjectController::rebuildInspectorObjectsTree()
     const QVector<TherionSourceLogicalCommand> logicalCommands = context_.logicalSource.logicalCommandsForCurrentDocument
         ? context_.logicalSource.logicalCommandsForCurrentDocument()
         : QVector<TherionSourceLogicalCommand>();
+    std::optional<Th2GeometryProjection> geometryProjection;
+    if (context_.logicalSource.geometryProjectionForCurrentDocument) {
+        geometryProjection = context_.logicalSource.geometryProjectionForCurrentDocument();
+    }
     const QVector<ProjectStructureEntry> entries = ProjectStructureIndex::scanTh2Objects(th2Path, parsedLines);
     if (entries.isEmpty()) {
         auto *placeholderItem = new QStandardItem(tr("No TH2 scraps, points, lines, or areas were found in the current document"));
@@ -222,8 +227,13 @@ void MapEditorInspectorObjectController::rebuildInspectorObjectsTree()
         deleteItem->setData(entry.lineNumber, kInspectorSourceLineRole);
         deleteItem->setData(entry.category, kInspectorObjectCategoryRole);
         if (entry.lineNumber > 0) {
-            const QVector<MapEditorAreaReference> areaReferences =
-                mapEditorAreaReferencesForBorderLine(logicalCommands, entry.lineNumber);
+            QVector<MapEditorAreaReference> areaReferences;
+            if (geometryProjection.has_value()) {
+                areaReferences = mapEditorAreaReferencesForBorderLine(geometryProjection.value(), entry.lineNumber);
+            }
+            if (areaReferences.isEmpty()) {
+                areaReferences = mapEditorAreaReferencesForBorderLine(logicalCommands, entry.lineNumber);
+            }
             const bool deleteBlockedByAreaReference = !areaReferences.isEmpty();
             deleteItem->setIcon(inspectorActionIcon(QStringLiteral("trash-2")));
             deleteItem->setData(deleteBlockedByAreaReference, kInspectorObjectDeleteBlockedRole);
