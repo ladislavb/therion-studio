@@ -237,6 +237,42 @@ int runCursorGeometryLookupUsesLogicalCommandsTest()
     return 0;
 }
 
+int runSourceVertexReferenceLookupUsesLogicalCommandsTest()
+{
+    const QString text = QStringLiteral(
+        "scrap s1\n"
+        "line wall -id wall-1\n"
+        "  0 0\n"
+        "  10 0\n"
+        "  smooth off\n"
+        "  20 0\n"
+        "endline\n"
+        "endscrap\n");
+
+    TherionSourceDocumentMetadata metadata;
+    metadata.sourceType = TherionSourceDocumentType::TherionMap;
+    const TherionSourceLogicalDocument logicalDocument =
+        TherionSourceLogicalDocument::fromText(text, metadata);
+
+    const QVector<TherionParsedLine> parsedLines = TherionDocumentParser::parseTokenLines(text);
+    const std::optional<SourceVertexTextReference> parsedReference =
+        sourceVertexTextReferenceForSelection(parsedLines, 2, QStringLiteral("line"), 2);
+    const std::optional<SourceVertexTextReference> logicalReference =
+        sourceVertexTextReferenceForSelection(logicalDocument.commands(), 2, QStringLiteral("line"), 2);
+
+    if (!expect(parsedReference.has_value() && logicalReference.has_value(),
+                "Expected logical-command vertex lookup to find the selected source vertex.")) {
+        return 1;
+    }
+    return expect(logicalReference->lineNumber == parsedReference->lineNumber
+                      && logicalReference->sourceVertexIndex == parsedReference->sourceVertexIndex
+                      && logicalReference->xStartColumn == parsedReference->xStartColumn
+                      && logicalReference->yStartColumn == parsedReference->yStartColumn,
+                  "Expected logical-command vertex lookup to preserve text reference columns.")
+        ? 0
+        : 1;
+}
+
 int runScrapObjectLinesLookupUsesLogicalCommandsTest()
 {
     const QString text = QStringLiteral(
@@ -286,6 +322,9 @@ int main()
         return rc;
     }
     if (const int rc = runCursorGeometryLookupUsesLogicalCommandsTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runSourceVertexReferenceLookupUsesLogicalCommandsTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runScrapObjectLinesLookupUsesLogicalCommandsTest(); rc != 0) {

@@ -57,6 +57,11 @@ std::optional<SourceVertexTextReference> sourceVertexTextReferenceForSelection(c
                                                                                int featureLineNumber,
                                                                                const QString &geometryKind,
                                                                                int sourceVertexIndex);
+std::optional<SourceVertexTextReference> sourceVertexTextReferenceForSelection(
+    const QVector<TherionSourceLogicalCommand> &commands,
+    int featureLineNumber,
+    const QString &geometryKind,
+    int sourceVertexIndex);
 std::optional<QSet<int>> scrapObjectLinesForCursor(const QVector<TherionParsedLine> &parsedLines,
                                                    int cursorLine);
 std::optional<QSet<int>> scrapObjectLinesForCursor(const QVector<TherionSourceLogicalCommand> &commands,

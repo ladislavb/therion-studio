@@ -229,6 +229,16 @@ QString metadataForSourceLine(const QVector<TherionParsedLine> &parsedLines, int
         .arg(scrapContextMetadataSuffix(scrapContext));
 }
 
+QString metadataForSourceLine(const QVector<TherionSourceLogicalCommand> &commands, int lineNumber)
+{
+    const std::optional<InspectorScrapContext> scrapContext = inspectorScrapContextForSourceLine(commands,
+                                                                                                  lineNumber);
+    return QCoreApplication::translate("TherionStudio::MapEditorObjectDetailsPanelController",
+                                       "Source line %1%2")
+        .arg(lineNumber)
+        .arg(scrapContextMetadataSuffix(scrapContext));
+}
+
 void moveSelectionControlToContainer(QWidget *control, QWidget *container, bool forceReappend = false)
 {
     if (control == nullptr || container == nullptr) {
@@ -618,10 +628,15 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
             context_.scrapProjectionLabel->setVisible(projectionFieldVisible);
             context_.quickTypeLabel->setVisible(typeFieldsVisible);
             context_.quickSubtypeLabel->setVisible(typeFieldsVisible);
-            const QVector<TherionParsedLine> parsedLines = context_.parsedLinesForCurrentDocument
-                ? context_.parsedLinesForCurrentDocument()
-                : QVector<TherionParsedLine>();
-            const QVector<InspectorScrapContext> scrapContexts = inspectorScrapContexts(parsedLines);
+            const QVector<TherionSourceLogicalCommand> logicalCommands =
+                context_.logicalSource.logicalCommandsForCurrentDocument
+                    ? context_.logicalSource.logicalCommandsForCurrentDocument()
+                    : QVector<TherionSourceLogicalCommand>();
+            const QVector<InspectorScrapContext> scrapContexts = !logicalCommands.isEmpty()
+                ? inspectorScrapContexts(logicalCommands)
+                : inspectorScrapContexts(context_.parsedLinesForCurrentDocument
+                      ? context_.parsedLinesForCurrentDocument()
+                      : QVector<TherionParsedLine>());
             const bool targetScrapVisible = commandKind != QStringLiteral("scrap") && !scrapContexts.isEmpty();
             context_.metadataLabel->setVisible(commandKind != QStringLiteral("scrap") && !targetScrapVisible);
             context_.metadataLabel->setText(metadataForPendingInsert(targetScrapContext));
@@ -817,13 +832,15 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
     context_.vertexTitleLabel->setText(effectiveKind == QStringLiteral("line")
                                            ? tr("Line Point")
                                            : tr("Options"));
-    const QVector<TherionParsedLine> parsedLines = context_.parsedLinesForCurrentDocument
-        ? context_.parsedLinesForCurrentDocument()
-        : QVector<TherionParsedLine>();
     const QVector<TherionSourceLogicalCommand> logicalCommands = context_.logicalSource.logicalCommandsForCurrentDocument
         ? context_.logicalSource.logicalCommandsForCurrentDocument()
         : QVector<TherionSourceLogicalCommand>();
-    context_.metadataLabel->setText(metadataForSourceLine(parsedLines, effectiveLineNumber));
+    context_.metadataLabel->setText(!logicalCommands.isEmpty()
+                                        ? metadataForSourceLine(logicalCommands, effectiveLineNumber)
+                                        : metadataForSourceLine(context_.parsedLinesForCurrentDocument
+                                              ? context_.parsedLinesForCurrentDocument()
+                                              : QVector<TherionParsedLine>(),
+                                          effectiveLineNumber));
     context_.metadataLabel->setStyleSheet(metadataLabelStyleSheet(false));
     QVector<MapEditorAreaReference> areaReferences;
     if (context_.textEditor != nullptr

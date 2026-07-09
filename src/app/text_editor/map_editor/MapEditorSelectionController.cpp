@@ -885,12 +885,21 @@ void MapEditorSelectionController::handleMapSceneSelectionChanged()
                 context_.textEditor->goToLine(selectedLineNumber);
             }
         } else if (selectedSourceVertexIndex >= 0) {
-            const QVector<TherionParsedLine> parsedLines = context_.parsedLinesForCurrentDocument();
-            const std::optional<SourceVertexTextReference> sourceReference =
-                sourceVertexTextReferenceForSelection(parsedLines,
-                                                      selectedLineNumber,
-                                                      selectedGeometryKind,
-                                                      selectedSourceVertexIndex);
+            std::optional<SourceVertexTextReference> sourceReference;
+            if (context_.logicalSource.logicalCommandsForCurrentDocument) {
+                const QVector<TherionSourceLogicalCommand> commands =
+                    context_.logicalSource.logicalCommandsForCurrentDocument();
+                sourceReference = sourceVertexTextReferenceForSelection(commands,
+                                                                        selectedLineNumber,
+                                                                        selectedGeometryKind,
+                                                                        selectedSourceVertexIndex);
+            }
+            if (!sourceReference.has_value()) {
+                sourceReference = sourceVertexTextReferenceForSelection(context_.parsedLinesForCurrentDocument(),
+                                                                        selectedLineNumber,
+                                                                        selectedGeometryKind,
+                                                                        selectedSourceVertexIndex);
+            }
             if (sourceReference.has_value()) {
                 if (context_.textEditor->currentLineNumber() != sourceReference->lineNumber
                     || context_.textEditor->currentColumnNumber() != sourceReference->xStartColumn) {

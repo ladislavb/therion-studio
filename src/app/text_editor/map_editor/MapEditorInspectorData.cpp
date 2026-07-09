@@ -26,6 +26,16 @@ namespace TherionStudio
 {
 namespace
 {
+QVector<TherionParsedLine> parsedLinesForLogicalCommands(const QVector<TherionSourceLogicalCommand> &commands)
+{
+    QVector<TherionParsedLine> parsedLines;
+    parsedLines.reserve(commands.size());
+    for (const TherionSourceLogicalCommand &command : commands) {
+        parsedLines.append(command.parsed);
+    }
+    return parsedLines;
+}
+
 QPixmap renderInspectorLucidePixmap(const QString &iconName, const QColor &color, int extent)
 {
     QFile file(QStringLiteral(":/resources/icons/lucide/%1.svg").arg(iconName));
@@ -499,6 +509,13 @@ std::optional<InspectorScrapContext> inspectorScrapContextForSourceLine(const QV
     return std::nullopt;
 }
 
+std::optional<InspectorScrapContext> inspectorScrapContextForSourceLine(
+    const QVector<TherionSourceLogicalCommand> &commands,
+    int lineNumber)
+{
+    return inspectorScrapContextForSourceLine(parsedLinesForLogicalCommands(commands), lineNumber);
+}
+
 InspectorScrapContext inspectorDraftInsertionScrapContext(const QVector<TherionParsedLine> &parsedLines)
 {
     QVector<InspectorScrapContext> scrapStack;
@@ -529,6 +546,11 @@ InspectorScrapContext inspectorDraftInsertionScrapContext(const QVector<TherionP
     return createdContext;
 }
 
+InspectorScrapContext inspectorDraftInsertionScrapContext(const QVector<TherionSourceLogicalCommand> &commands)
+{
+    return inspectorDraftInsertionScrapContext(parsedLinesForLogicalCommands(commands));
+}
+
 QVector<InspectorScrapContext> inspectorScrapContexts(const QVector<TherionParsedLine> &parsedLines)
 {
     QVector<InspectorScrapContext> contexts;
@@ -546,6 +568,11 @@ QVector<InspectorScrapContext> inspectorScrapContexts(const QVector<TherionParse
         contexts.append(context);
     }
     return contexts;
+}
+
+QVector<InspectorScrapContext> inspectorScrapContexts(const QVector<TherionSourceLogicalCommand> &commands)
+{
+    return inspectorScrapContexts(parsedLinesForLogicalCommands(commands));
 }
 
 struct InspectorCatalogCommandEntry

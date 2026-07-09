@@ -162,6 +162,12 @@ Active planning only. Completed history belongs in archive files. Stable archite
   preserving the parsed-line geometry path only as a fallback.
 - Map cursor-to-selection geometry and scrap-line lookup now use logical-command resolver overloads before falling back
   to the parsed-line compatibility snapshot.
+- Map selection context-menu object-kind fallback now uses the TH2 geometry projection before falling back to parsed
+  lines.
+- Map Object Details scrap metadata and pending-insert scrap choices now use logical-command inspector helpers before
+  falling back to parsed lines.
+- Map selected-vertex source navigation now resolves source text references from logical commands before falling back to
+  parsed lines.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.
