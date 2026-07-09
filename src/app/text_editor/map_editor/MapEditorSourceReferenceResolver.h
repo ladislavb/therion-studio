@@ -57,4 +57,6 @@ std::optional<QSet<int>> scrapObjectLinesForCursor(const QVector<TherionParsedLi
                                                    int cursorLine);
 std::optional<int> sourcePointLineNumberForSelection(const QVector<TherionParsedLine> &parsedLines,
                                                      const QPointF &sourcePoint);
+std::optional<int> sourcePointLineNumberForSelection(const Th2GeometryProjection &projection,
+                                                     const QPointF &sourcePoint);
 }

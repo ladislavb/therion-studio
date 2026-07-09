@@ -144,6 +144,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   feature conversion.
 - Map area-reference read-only lookups now have `Th2GeometryProjection` resolver overloads; object details and inspector
   delete-block indicators prefer the projection path with logical-command fallback.
+- Map point-selection source-line navigation now has a `Th2GeometryProjection` lookup path with parsed-line fallback, keeping
+  vertex column navigation on the legacy parser until the projection carries coordinate token spans.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.

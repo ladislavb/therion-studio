@@ -645,4 +645,29 @@ std::optional<int> sourcePointLineNumberForSelection(const QVector<TherionParsed
 
     return std::nullopt;
 }
+
+std::optional<int> sourcePointLineNumberForSelection(const Th2GeometryProjection &projection,
+                                                     const QPointF &sourcePoint)
+{
+    int bestLineNumber = 0;
+    qreal bestDistance = std::numeric_limits<qreal>::max();
+    for (const Th2PointObject &point : projection.points()) {
+        if (!point.hasPosition || point.command.sourceRange.startLineNumber <= 0) {
+            continue;
+        }
+
+        const QPointF delta = point.position - sourcePoint;
+        const qreal distance = std::hypot(delta.x(), delta.y());
+        if (distance < bestDistance) {
+            bestDistance = distance;
+            bestLineNumber = point.command.sourceRange.startLineNumber;
+        }
+    }
+
+    if (bestLineNumber > 0 && bestDistance <= 0.5) {
+        return bestLineNumber;
+    }
+
+    return std::nullopt;
+}
 }

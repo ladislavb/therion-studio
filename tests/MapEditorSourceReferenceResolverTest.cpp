@@ -1,5 +1,6 @@
 #include "../src/app/text_editor/map_editor/MapEditorSourceReferenceResolver.h"
 #include "../src/core/Th2GeometryProjection.h"
+#include "../src/core/TherionDocumentParser.h"
 #include "../src/core/TherionSourceDocument.h"
 #include "../src/core/TherionSourceLogicalDocument.h"
 
@@ -130,6 +131,37 @@ int runLineFeatureLookupUsesTh2ProjectionTest()
         ? 0
         : 1;
 }
+
+int runPointSelectionLineLookupUsesTh2ProjectionTest()
+{
+    const QString text = QStringLiteral(
+        "# header\n"
+        "scrap s1 -projection plan\n"
+        "point 1 2 station -name a1\n"
+        "point 10 20 label -text \"A\"\n"
+        "endscrap\n");
+
+    TherionSourceDocumentMetadata metadata;
+    metadata.sourceType = TherionSourceDocumentType::TherionMap;
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(text, metadata);
+    const TherionSourceLogicalDocument logicalDocument =
+        TherionSourceLogicalDocument::fromSourceDocument(sourceDocument);
+    const Th2GeometryProjection projection =
+        Th2GeometryProjection::fromDocuments(sourceDocument, logicalDocument);
+
+    const std::optional<int> textLine =
+        sourcePointLineNumberForSelection(TherionDocumentParser::parseTokenLines(text), QPointF(10.0, 20.0));
+    const std::optional<int> projectedLine =
+        sourcePointLineNumberForSelection(projection, QPointF(10.0, 20.0));
+    if (!expect(textLine.has_value() && projectedLine.has_value(),
+                "Expected projection-backed point selection lookup to find a point line.")) {
+        return 1;
+    }
+    return expect(projectedLine.value() == textLine.value() && projectedLine.value() == 4,
+                  "Expected projection-backed point selection lookup to preserve source line number.")
+        ? 0
+        : 1;
+}
 }
 
 int main()
@@ -141,6 +173,9 @@ int main()
         return rc;
     }
     if (const int rc = runLineFeatureLookupUsesTh2ProjectionTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runPointSelectionLineLookupUsesTh2ProjectionTest(); rc != 0) {
         return rc;
     }
     return 0;

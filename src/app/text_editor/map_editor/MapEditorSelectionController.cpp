@@ -789,9 +789,15 @@ void MapEditorSelectionController::handleMapSceneSelectionChanged()
     if (selectedLineNumber > 0 && context_.textEditor != nullptr) {
         const QScopedValueRollback<bool> syncGuard((*context_.textNavigationInProgress), true);
         if (selectedPointSource.has_value()) {
-            const QVector<TherionParsedLine> parsedLines = context_.parsedLinesForCurrentDocument();
-            const std::optional<int> pointLineNumber =
-                sourcePointLineNumberForSelection(parsedLines, selectedPointSource.value());
+            std::optional<int> pointLineNumber;
+            if (context_.logicalSource.geometryProjectionForCurrentDocument) {
+                const Th2GeometryProjection projection = context_.logicalSource.geometryProjectionForCurrentDocument();
+                pointLineNumber = sourcePointLineNumberForSelection(projection, selectedPointSource.value());
+            }
+            if (!pointLineNumber.has_value()) {
+                const QVector<TherionParsedLine> parsedLines = context_.parsedLinesForCurrentDocument();
+                pointLineNumber = sourcePointLineNumberForSelection(parsedLines, selectedPointSource.value());
+            }
             if (pointLineNumber.has_value()) {
                 selectedSourceLineNumber = pointLineNumber.value();
                 context_.textEditor->goToLineColumn(pointLineNumber.value(), 1);
