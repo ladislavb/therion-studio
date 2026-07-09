@@ -68,6 +68,7 @@ MapEditorSceneRefreshContext MapEditorTab::sceneRefreshContext()
         .fitBackgroundRequested = &fitBackgroundRequested_,
         .lineVertexSelectionRestoreGeneration = &lineVertexSelectionRestoreGeneration_,
         .orientationApplicabilityByCommand = &orientationApplicabilityByCommand_,
+        .logicalSource = logicalSourceContext(),
         .documentText = [self]() {
             return self != nullptr && self->textEditor_ != nullptr ? self->textEditor_->text() : QString();
         },

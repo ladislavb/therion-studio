@@ -233,7 +233,14 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
         : TherionDocumentParser::parseTokenLines(context_.documentText());
     const qint64 parseMs = logTiming ? stageTimer.restart() : 0;
     const QVector<MapSceneEntry> entries = collectMapSceneEntries(parsedLines);
-    QVector<MapGeometryFeature> geometryFeatures = collectGeometryFeatures(parsedLines);
+    QVector<MapGeometryFeature> geometryFeatures;
+    if (context_.logicalSource.geometryProjectionForCurrentDocument
+        && context_.logicalSource.logicalCommandsForCurrentDocument) {
+        geometryFeatures = collectGeometryFeatures(context_.logicalSource.geometryProjectionForCurrentDocument(),
+                                                   context_.logicalSource.logicalCommandsForCurrentDocument());
+    } else {
+        geometryFeatures = collectGeometryFeatures(parsedLines);
+    }
     QHash<int, TherionParsedLine> parsedLinesByLineNumber;
     for (const TherionParsedLine &parsedLine : parsedLines) {
         parsedLinesByLineNumber.insert(parsedLine.lineNumber, parsedLine);

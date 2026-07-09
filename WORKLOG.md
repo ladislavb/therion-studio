@@ -152,6 +152,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   lines, preserving the parsed-line fallback for compatibility.
 - Map geometry feature collection now has a tested `Th2GeometryProjection` compatibility adapter that preserves current
   `MapGeometryFeature` output without switching scene refresh rendering yet.
+- Map scene refresh now prefers the `Th2GeometryProjection` geometry-feature adapter for editable map geometry and keeps
+  the legacy parsed-line path as a fallback when no logical source context is available.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.
