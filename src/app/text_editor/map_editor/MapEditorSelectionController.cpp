@@ -470,6 +470,23 @@ QString objectKindForSourceLine(const QVector<TherionParsedLine> &parsedLines, i
     return QString();
 }
 
+QString objectKindForSourceLine(const MapEditorSelectionContext &context, int lineNumber)
+{
+    if (lineNumber <= 0) {
+        return QString();
+    }
+
+    if (context.logicalSource.geometryProjectionForCurrentDocument) {
+        const Th2GeometryProjection projection = context.logicalSource.geometryProjectionForCurrentDocument();
+        if (const QString projectedKind = mapObjectKindForSourceLine(projection, lineNumber);
+            !projectedKind.isEmpty()) {
+            return projectedKind;
+        }
+    }
+
+    return objectKindForSourceLine(context.parsedLinesForCurrentDocument(), lineNumber);
+}
+
 void setSelectedObjectStateForSourceLine(const MapEditorSelectionContext &context,
                                          int lineNumber,
                                          QGraphicsItem *item = nullptr)
@@ -479,7 +496,7 @@ void setSelectedObjectStateForSourceLine(const MapEditorSelectionContext &contex
         return;
     }
 
-    QString kind = objectKindForSourceLine(context.parsedLinesForCurrentDocument(), lineNumber);
+    QString kind = objectKindForSourceLine(context, lineNumber);
     if (kind.isEmpty()) {
         if (dynamic_cast<MapEditablePointItem *>(item) != nullptr) {
             kind = QStringLiteral("point");
@@ -760,8 +777,7 @@ void MapEditorSelectionController::handleMapSceneSelectionChanged()
         && selectedSourceVertexIndex < 0
         && usePendingClickSelection
         && context_.scene != nullptr) {
-        const QString sourceLineKind = objectKindForSourceLine(context_.parsedLinesForCurrentDocument(),
-                                                               selectedLineNumber);
+        const QString sourceLineKind = objectKindForSourceLine(context_, selectedLineNumber);
         const int subtype = primarySelectedItem->data(kMapSceneSelectionSubtypeRole).toInt();
         const bool pathLikeLineSelection = sourceLineKind == QStringLiteral("line")
             && dynamic_cast<MapEditableGeometryVertexItem *>(primarySelectedItem) == nullptr
@@ -854,8 +870,7 @@ void MapEditorSelectionController::handleMapSceneSelectionChanged()
             }
         }
     } else if (selectedLineNumber > 0 && context_.textEditor != nullptr) {
-        (*context_.selectedObjectKind) = objectKindForSourceLine(context_.parsedLinesForCurrentDocument(),
-                                                                 selectedLineNumber);
+        (*context_.selectedObjectKind) = objectKindForSourceLine(context_, selectedLineNumber);
         if ((*context_.selectedObjectKind).isEmpty()) {
             (*context_.selectedObjectKind) = QStringLiteral("object");
         }

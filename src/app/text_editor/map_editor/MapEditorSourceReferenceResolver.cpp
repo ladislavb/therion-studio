@@ -474,6 +474,33 @@ CursorGeometrySelection cursorGeometrySelectionForTextCursor(const QVector<Theri
     return selection;
 }
 
+QString mapObjectKindForSourceLine(const Th2GeometryProjection &projection, int lineNumber)
+{
+    if (lineNumber <= 0) {
+        return QString();
+    }
+
+    const Th2GeometryObjectRef objectRef = projection.objectRefAtLineNumber(lineNumber);
+    if (!objectRef.isValid()) {
+        return QString();
+    }
+
+    switch (objectRef.kind) {
+    case Th2GeometryObjectKind::Point:
+        return QStringLiteral("point");
+    case Th2GeometryObjectKind::Line:
+        return QStringLiteral("line");
+    case Th2GeometryObjectKind::Area:
+        return QStringLiteral("area");
+    case Th2GeometryObjectKind::Scrap:
+        return QStringLiteral("scrap");
+    case Th2GeometryObjectKind::Map:
+    case Th2GeometryObjectKind::Background:
+        break;
+    }
+    return QString();
+}
+
 std::optional<SourceVertexTextReference> sourceVertexTextReferenceForSelection(const QVector<TherionParsedLine> &parsedLines,
                                                                                int featureLineNumber,
                                                                                const QString &geometryKind,

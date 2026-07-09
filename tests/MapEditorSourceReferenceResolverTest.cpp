@@ -162,6 +162,46 @@ int runPointSelectionLineLookupUsesTh2ProjectionTest()
         ? 0
         : 1;
 }
+
+int runObjectKindLookupUsesTh2ProjectionTest()
+{
+    const QString text = QStringLiteral(
+        "scrap s1 -projection plan\n"
+        "point 1 2 station -name a1\n"
+        "line wall -id wall-1\n"
+        "  0 0\n"
+        "  10 0\n"
+        "endline\n"
+        "area water -id a1\n"
+        "  wall-1\n"
+        "endarea\n"
+        "endscrap\n");
+
+    TherionSourceDocumentMetadata metadata;
+    metadata.sourceType = TherionSourceDocumentType::TherionMap;
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(text, metadata);
+    const TherionSourceLogicalDocument logicalDocument =
+        TherionSourceLogicalDocument::fromSourceDocument(sourceDocument);
+    const Th2GeometryProjection projection =
+        Th2GeometryProjection::fromDocuments(sourceDocument, logicalDocument);
+
+    if (!expect(mapObjectKindForSourceLine(projection, 1) == QStringLiteral("scrap"),
+                "Expected projection-backed object kind lookup to classify scrap lines.")) {
+        return 1;
+    }
+    if (!expect(mapObjectKindForSourceLine(projection, 2) == QStringLiteral("point"),
+                "Expected projection-backed object kind lookup to classify point lines.")) {
+        return 1;
+    }
+    if (!expect(mapObjectKindForSourceLine(projection, 4) == QStringLiteral("line"),
+                "Expected projection-backed object kind lookup to classify interior line rows as line objects.")) {
+        return 1;
+    }
+    return expect(mapObjectKindForSourceLine(projection, 8) == QStringLiteral("area"),
+                  "Expected projection-backed object kind lookup to classify area body rows as area objects.")
+        ? 0
+        : 1;
+}
 }
 
 int main()
@@ -176,6 +216,9 @@ int main()
         return rc;
     }
     if (const int rc = runPointSelectionLineLookupUsesTh2ProjectionTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runObjectKindLookupUsesTh2ProjectionTest(); rc != 0) {
         return rc;
     }
     return 0;

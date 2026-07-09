@@ -49,6 +49,7 @@ QStringList coordinateRowsForLineVertices(const QVector<MapGeometryFeature::TH2L
 CursorGeometrySelection cursorGeometrySelectionForTextCursor(const QVector<TherionParsedLine> &parsedLines,
                                                              int cursorLine,
                                                              int cursorColumn);
+QString mapObjectKindForSourceLine(const Th2GeometryProjection &projection, int lineNumber);
 std::optional<SourceVertexTextReference> sourceVertexTextReferenceForSelection(const QVector<TherionParsedLine> &parsedLines,
                                                                                int featureLineNumber,
                                                                                const QString &geometryKind,
