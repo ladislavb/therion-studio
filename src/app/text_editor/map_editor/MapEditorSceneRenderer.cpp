@@ -21,6 +21,8 @@
 
 #include "../../../core/TherionDocumentParser.h"
 #include "../../../core/TherionCommandLineModel.h"
+#include "../../../core/Th2GeometryProjection.h"
+#include "../../../core/TherionSourceLogicalDocument.h"
 #include "../../../core/TherionTokenRules.h"
 
 #include <algorithm>
@@ -3398,6 +3400,58 @@ QVector<MapGeometryFeature> collectGeometryFeatures(const QVector<TherionParsedL
     flushCurrentFeature();
     resolvePendingReferencedAreas();
 
+    return features;
+}
+
+QVector<MapGeometryFeature> collectGeometryFeatures(const Th2GeometryProjection &projection,
+                                                    const QVector<TherionSourceLogicalCommand> &commands)
+{
+    QVector<TherionParsedLine> parsedLines;
+    parsedLines.reserve(commands.size());
+    for (const TherionSourceLogicalCommand &command : commands) {
+        parsedLines.append(command.parsed);
+    }
+
+    QHash<int, QVector<MapGeometryFeature>> featuresByLine;
+    for (const MapGeometryFeature &feature : collectGeometryFeatures(parsedLines)) {
+        featuresByLine[feature.lineNumber].append(feature);
+    }
+
+    struct ProjectedFeatureRef
+    {
+        int lineNumber = 0;
+        MapGeometryFeature::Kind kind = MapGeometryFeature::Kind::Point;
+    };
+
+    QVector<ProjectedFeatureRef> projectedRefs;
+    projectedRefs.reserve(projection.points().size() + projection.lines().size() + projection.areas().size());
+    for (const Th2PointObject &point : projection.points()) {
+        projectedRefs.append({point.command.sourceRange.startLineNumber, MapGeometryFeature::Kind::Point});
+    }
+    for (const Th2LineObject &line : projection.lines()) {
+        projectedRefs.append({line.command.sourceRange.startLineNumber, MapGeometryFeature::Kind::Line});
+    }
+    for (const Th2AreaObject &area : projection.areas()) {
+        projectedRefs.append({area.command.sourceRange.startLineNumber, MapGeometryFeature::Kind::Area});
+    }
+    std::sort(projectedRefs.begin(), projectedRefs.end(), [](const ProjectedFeatureRef &a, const ProjectedFeatureRef &b) {
+        return a.lineNumber < b.lineNumber;
+    });
+
+    QVector<MapGeometryFeature> features;
+    features.reserve(projectedRefs.size());
+    for (const ProjectedFeatureRef &ref : std::as_const(projectedRefs)) {
+        if (ref.lineNumber <= 0) {
+            continue;
+        }
+        const QVector<MapGeometryFeature> candidates = featuresByLine.value(ref.lineNumber);
+        for (const MapGeometryFeature &candidate : candidates) {
+            if (candidate.kind == ref.kind) {
+                features.append(candidate);
+                break;
+            }
+        }
+    }
     return features;
 }
 

@@ -150,6 +150,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   vertex column navigation on the legacy parser until the projection carries coordinate token spans.
 - Map selection object-kind detection now has a `Th2GeometryProjection` lookup path for point/line/area/scrap source
   lines, preserving the parsed-line fallback for compatibility.
+- Map geometry feature collection now has a tested `Th2GeometryProjection` compatibility adapter that preserves current
+  `MapGeometryFeature` output without switching scene refresh rendering yet.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.

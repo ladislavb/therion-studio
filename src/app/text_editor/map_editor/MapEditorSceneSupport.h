@@ -24,6 +24,9 @@ class QWidget;
 
 namespace TherionStudio
 {
+class Th2GeometryProjection;
+struct TherionSourceLogicalCommand;
+
 constexpr int kMapItemRole = Qt::UserRole + 120;
 constexpr int kMapItemGeometryValue = 1;
 constexpr int kMapSceneLineNumberRole = Qt::UserRole + 121;
@@ -250,6 +253,8 @@ CoordinateTransform coordinateTransformFromScrapScale(const QStringList &tokens)
 QPointF mapGeometryPointToPreview(const QPointF &point, const QRectF &sourceBounds, const QRectF &targetBounds);
 QPointF mapGeometryPreviewToSource(const QPointF &point, const QRectF &sourceBounds, const QRectF &targetBounds);
 QVector<MapGeometryFeature> collectGeometryFeatures(const QVector<TherionParsedLine> &parsedLines);
+QVector<MapGeometryFeature> collectGeometryFeatures(const Th2GeometryProjection &projection,
+                                                    const QVector<TherionSourceLogicalCommand> &commands);
 bool insertLineVertexByDeCasteljau(QVector<MapGeometryFeature::TH2LineVertex> *lineVertices,
                                    int segmentStartIndex,
                                    qreal t,
