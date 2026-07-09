@@ -160,6 +160,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   `ProjectStructureIndex::scanTh2Objects()` and only falls back to parsed lines when no logical source context is present.
 - Smart Area preview now builds candidate geometry from the TH2 projection adapter when logical commands are available,
   preserving the parsed-line geometry path only as a fallback.
+- Map cursor-to-selection geometry and scrap-line lookup now use logical-command resolver overloads before falling back
+  to the parsed-line compatibility snapshot.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.

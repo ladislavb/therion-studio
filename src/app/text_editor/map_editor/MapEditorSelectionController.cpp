@@ -1025,9 +1025,17 @@ void MapEditorSelectionController::syncMapSelectionFromTextCursor(int lineNumber
         (*context_.suppressedAutoReselectLineNumbers).clear();
     }
 
-    const QVector<TherionParsedLine> parsedLines = context_.parsedLinesForCurrentDocument();
-    if (const std::optional<QSet<int>> scrapLines = scrapObjectLinesForCursor(parsedLines, lineNumber);
-        scrapLines.has_value()) {
+    const QVector<TherionSourceLogicalCommand> logicalCommands = context_.logicalSource.logicalCommandsForCurrentDocument
+        ? context_.logicalSource.logicalCommandsForCurrentDocument()
+        : QVector<TherionSourceLogicalCommand>();
+    const bool hasLogicalCommands = !logicalCommands.isEmpty();
+    const QVector<TherionParsedLine> parsedLines = hasLogicalCommands
+        ? QVector<TherionParsedLine>()
+        : context_.parsedLinesForCurrentDocument();
+    const std::optional<QSet<int>> scrapLines = hasLogicalCommands
+        ? scrapObjectLinesForCursor(logicalCommands, lineNumber)
+        : scrapObjectLinesForCursor(parsedLines, lineNumber);
+    if (scrapLines.has_value()) {
         setSelectedObjectStateForSourceLine(context_, lineNumber);
         if (!scrapLines->isEmpty()) {
             selectMapLines(scrapLines.value());
@@ -1040,9 +1048,9 @@ void MapEditorSelectionController::syncMapSelectionFromTextCursor(int lineNumber
         return;
     }
 
-    const CursorGeometrySelection cursorSelection = cursorGeometrySelectionForTextCursor(parsedLines,
-                                                                                         lineNumber,
-                                                                                         columnNumber);
+    const CursorGeometrySelection cursorSelection = hasLogicalCommands
+        ? cursorGeometrySelectionForTextCursor(logicalCommands, lineNumber, columnNumber)
+        : cursorGeometrySelectionForTextCursor(parsedLines, lineNumber, columnNumber);
     if (cursorSelection.featureLineNumber <= 0) {
         selectMapLine(lineNumber);
         return;

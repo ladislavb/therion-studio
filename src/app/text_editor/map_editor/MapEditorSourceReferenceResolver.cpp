@@ -11,6 +11,19 @@
 
 namespace TherionStudio
 {
+namespace
+{
+QVector<TherionParsedLine> parsedLinesForLogicalCommands(const QVector<TherionSourceLogicalCommand> &commands)
+{
+    QVector<TherionParsedLine> parsedLines;
+    parsedLines.reserve(commands.size());
+    for (const TherionSourceLogicalCommand &command : commands) {
+        parsedLines.append(command.parsed);
+    }
+    return parsedLines;
+}
+}
+
 std::optional<MapGeometryFeature> lineFeatureForLineNumber(const QString &documentText, int lineNumber)
 {
     return lineFeatureForLineNumber(TherionDocumentParser::parseTokenLines(documentText), lineNumber);
@@ -69,11 +82,7 @@ std::optional<MapGeometryFeature> geometryFeatureForLineNumber(const QVector<The
         return std::nullopt;
     }
 
-    QVector<TherionParsedLine> parsedLines;
-    parsedLines.reserve(commands.size());
-    for (const TherionSourceLogicalCommand &command : commands) {
-        parsedLines.append(command.parsed);
-    }
+    const QVector<TherionParsedLine> parsedLines = parsedLinesForLogicalCommands(commands);
     const QVector<MapGeometryFeature> features = collectGeometryFeatures(parsedLines);
     for (const MapGeometryFeature &feature : features) {
         if (feature.kind == expectedKind && feature.lineNumber == lineNumber) {
@@ -474,6 +483,13 @@ CursorGeometrySelection cursorGeometrySelectionForTextCursor(const QVector<Theri
     return selection;
 }
 
+CursorGeometrySelection cursorGeometrySelectionForTextCursor(const QVector<TherionSourceLogicalCommand> &commands,
+                                                             int cursorLine,
+                                                             int cursorColumn)
+{
+    return cursorGeometrySelectionForTextCursor(parsedLinesForLogicalCommands(commands), cursorLine, cursorColumn);
+}
+
 QString mapObjectKindForSourceLine(const Th2GeometryProjection &projection, int lineNumber)
 {
     if (lineNumber <= 0) {
@@ -640,6 +656,12 @@ std::optional<QSet<int>> scrapObjectLinesForCursor(const QVector<TherionParsedLi
     }
 
     return std::nullopt;
+}
+
+std::optional<QSet<int>> scrapObjectLinesForCursor(const QVector<TherionSourceLogicalCommand> &commands,
+                                                   int cursorLine)
+{
+    return scrapObjectLinesForCursor(parsedLinesForLogicalCommands(commands), cursorLine);
 }
 
 std::optional<int> sourcePointLineNumberForSelection(const QVector<TherionParsedLine> &parsedLines,
