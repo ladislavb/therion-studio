@@ -420,7 +420,10 @@ bool MapEditorTab::previewSmartAreaAt(const QPointF &scenePosition)
     }
 
     const QPointF sourcePoint = sourcePointFromScenePosition(scenePosition);
-    const QVector<MapGeometryFeature> features = collectGeometryFeatures(parsedLinesForCurrentDocument());
+    const QVector<TherionSourceLogicalCommand> logicalCommands = logicalCommandsForCurrentDocument();
+    const QVector<MapGeometryFeature> features = !logicalCommands.isEmpty()
+        ? collectGeometryFeatures(geometryProjectionForCurrentDocument(), logicalCommands)
+        : collectGeometryFeatures(parsedLinesForCurrentDocument());
     const QVector<MapEditorSmartAreaCandidate> candidates = mapEditorSmartAreaCandidatesAt(features, sourcePoint);
     if (candidates.isEmpty()) {
         if (interactiveDrawState_.previewPath_ != nullptr) {

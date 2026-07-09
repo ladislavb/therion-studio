@@ -150,7 +150,6 @@ void MapEditorInspectorObjectController::rebuildInspectorObjectsTree()
         return;
     }
 
-    const QVector<TherionParsedLine> parsedLines = context_.parsedLinesForCurrentDocument();
     const QVector<TherionSourceLogicalCommand> logicalCommands = context_.logicalSource.logicalCommandsForCurrentDocument
         ? context_.logicalSource.logicalCommandsForCurrentDocument()
         : QVector<TherionSourceLogicalCommand>();
@@ -158,7 +157,13 @@ void MapEditorInspectorObjectController::rebuildInspectorObjectsTree()
     if (context_.logicalSource.geometryProjectionForCurrentDocument) {
         geometryProjection = context_.logicalSource.geometryProjectionForCurrentDocument();
     }
-    const QVector<ProjectStructureEntry> entries = ProjectStructureIndex::scanTh2Objects(th2Path, parsedLines);
+    const bool hasLogicalCommands = !logicalCommands.isEmpty();
+    const QVector<TherionParsedLine> parsedLines = hasLogicalCommands
+        ? QVector<TherionParsedLine>()
+        : context_.parsedLinesForCurrentDocument();
+    const QVector<ProjectStructureEntry> entries = hasLogicalCommands
+        ? ProjectStructureIndex::scanTh2Objects(th2Path, logicalCommands)
+        : ProjectStructureIndex::scanTh2Objects(th2Path, parsedLines);
     if (entries.isEmpty()) {
         auto *placeholderItem = new QStandardItem(tr("No TH2 scraps, points, lines, or areas were found in the current document"));
         placeholderItem->setEditable(false);
@@ -167,9 +172,17 @@ void MapEditorInspectorObjectController::rebuildInspectorObjectsTree()
     }
 
     QHash<int, TherionParsedLine> parsedLinesByLineNumber;
-    for (const TherionParsedLine &parsedLine : parsedLines) {
-        if (parsedLine.lineNumber > 0) {
-            parsedLinesByLineNumber.insert(parsedLine.lineNumber, parsedLine);
+    if (hasLogicalCommands) {
+        for (const TherionSourceLogicalCommand &command : logicalCommands) {
+            if (command.startLineNumber > 0) {
+                parsedLinesByLineNumber.insert(command.startLineNumber, command.parsed);
+            }
+        }
+    } else {
+        for (const TherionParsedLine &parsedLine : parsedLines) {
+            if (parsedLine.lineNumber > 0) {
+                parsedLinesByLineNumber.insert(parsedLine.lineNumber, parsedLine);
+            }
         }
     }
 

@@ -154,6 +154,12 @@ Active planning only. Completed history belongs in archive files. Stable archite
   `MapGeometryFeature` output without switching scene refresh rendering yet.
 - Map scene refresh now prefers the `Th2GeometryProjection` geometry-feature adapter for editable map geometry and keeps
   the legacy parsed-line path as a fallback when no logical source context is available.
+- Map selection line-feature lookup now prefers `Th2GeometryProjection` plus logical commands for path-like click
+  selection and cursor-owner anchor restoration, falling back to parsed lines only without logical source context.
+- Map Objects inspector object discovery now consumes `TherionSourceLogicalDocument` commands through
+  `ProjectStructureIndex::scanTh2Objects()` and only falls back to parsed lines when no logical source context is present.
+- Smart Area preview now builds candidate geometry from the TH2 projection adapter when logical commands are available,
+  preserving the parsed-line geometry path only as a fallback.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.

@@ -487,6 +487,30 @@ QString objectKindForSourceLine(const MapEditorSelectionContext &context, int li
     return objectKindForSourceLine(context.parsedLinesForCurrentDocument(), lineNumber);
 }
 
+std::optional<MapGeometryFeature> lineFeatureForSourceLine(const MapEditorSelectionContext &context, int lineNumber)
+{
+    if (lineNumber <= 0) {
+        return std::nullopt;
+    }
+
+    if (context.logicalSource.logicalCommandsForCurrentDocument) {
+        const QVector<TherionSourceLogicalCommand> commands = context.logicalSource.logicalCommandsForCurrentDocument();
+        if (context.logicalSource.geometryProjectionForCurrentDocument) {
+            if (const std::optional<MapGeometryFeature> projectedFeature =
+                    lineFeatureForLineNumber(context.logicalSource.geometryProjectionForCurrentDocument(), commands, lineNumber);
+                projectedFeature.has_value()) {
+                return projectedFeature;
+            }
+        }
+        if (const std::optional<MapGeometryFeature> logicalFeature = lineFeatureForLineNumber(commands, lineNumber);
+            logicalFeature.has_value()) {
+            return logicalFeature;
+        }
+    }
+
+    return lineFeatureForLineNumber(context.parsedLinesForCurrentDocument(), lineNumber);
+}
+
 void setSelectedObjectStateForSourceLine(const MapEditorSelectionContext &context,
                                          int lineNumber,
                                          QGraphicsItem *item = nullptr)
@@ -826,9 +850,7 @@ void MapEditorSelectionController::handleMapSceneSelectionChanged()
             && dynamic_cast<MapEditablePointItem *>(primarySelectedItem) == nullptr
             && subtype != kMapSceneSelectionSubtypeLineControlConnector;
         if (pathLikeLineSelection) {
-            const QVector<TherionParsedLine> parsedLines = context_.parsedLinesForCurrentDocument();
-            const std::optional<MapGeometryFeature> lineFeature = lineFeatureForLineNumber(parsedLines,
-                                                                                           selectedLineNumber);
+            const std::optional<MapGeometryFeature> lineFeature = lineFeatureForSourceLine(context_, selectedLineNumber);
             if (lineFeature.has_value()) {
                 const QPointF clickedSourcePoint =
                     context_.sourcePointFromScenePosition((*context_.pendingClickScenePosition));
@@ -1053,8 +1075,8 @@ void MapEditorSelectionController::syncMapSelectionFromTextCursor(int lineNumber
     MapEditableGeometryVertexItem *targetItem = nullptr;
     if (lineGeometry) {
         int ownerSourceVertexIndex = -1;
-        if (const std::optional<MapGeometryFeature> lineFeature = lineFeatureForLineNumber(parsedLines,
-                                                                                            cursorSelection.featureLineNumber);
+        if (const std::optional<MapGeometryFeature> lineFeature = lineFeatureForSourceLine(context_,
+                                                                                           cursorSelection.featureLineNumber);
             lineFeature.has_value()) {
             const int ownerVertexOrder = lineVertexOwnerIndexForSourceVertex(lineFeature.value(), sourceVertexIndex);
             if (ownerVertexOrder >= 0 && ownerVertexOrder < lineFeature->lineVertices.size()) {
