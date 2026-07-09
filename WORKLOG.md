@@ -134,6 +134,11 @@ Active planning only. Completed history belongs in archive files. Stable archite
   instead of parsing each standalone row independently.
 - PocketTopo XVI insertion placement now uses a shared core source snapshot helper instead of parsing the raw text
   line by line inside the map editor.
+- DOM M6 is starting with a read-only `Th2GeometryProjection` core contract for `.th2` point/line/area/scrap/map and
+  background metadata objects; keep UI consumers on existing paths until projection tests establish range and identity
+  behavior for each migrated object type.
+- `Th2GeometryProjection` also exposes stable object keys and source-line lookup helpers so the first M7 map read-only
+  consumer can migrate without adding new local object-search code.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.

@@ -86,6 +86,8 @@ set(THERION_CORE_SOURCES
     src/core/TherionXviParser.cpp
     src/core/TherionXviParser.h
     src/core/TherionFileTypes.h
+    src/core/Th2GeometryProjection.cpp
+    src/core/Th2GeometryProjection.h
     src/core/ThreeDViewerCamera.cpp
     src/core/ThreeDViewerCamera.h
     src/core/ThreeDViewerLoxLoader.cpp
@@ -1035,6 +1037,7 @@ therion_add_core_qtest_runner(TherionCoreQTests
     tests/core/CoreQTestMain.cpp
     tests/CommandCatalogStoreTest.cpp
     tests/PocketTopoImportTest.cpp
+    tests/core/Th2GeometryProjectionTest.cpp
     tests/core/ThreeDViewerCameraTest.cpp
     tests/core/TherionFileTypesTest.cpp
     tests/core/ThreeDViewerLoxLoaderTest.cpp
