@@ -1,6 +1,7 @@
 #include "MapEditorSourceReferenceResolver.h"
 
 #include "MapEditorSceneInternals.h"
+#include "../../../core/Th2GeometryProjection.h"
 #include "../../../core/TherionDocumentParser.h"
 #include "../../../core/TherionSourceLogicalDocument.h"
 #include "../../../core/TherionTokenRules.h"
@@ -42,6 +43,22 @@ std::optional<MapGeometryFeature> lineFeatureForLineNumber(const QVector<Therion
         return feature;
     }
     return std::nullopt;
+}
+
+std::optional<MapGeometryFeature> lineFeatureForLineNumber(const Th2GeometryProjection &projection,
+                                                           const QVector<TherionSourceLogicalCommand> &commands,
+                                                           int lineNumber)
+{
+    if (lineNumber <= 0) {
+        return std::nullopt;
+    }
+
+    const Th2LineObject *lineObject = projection.lineAtLineNumber(lineNumber);
+    if (lineObject == nullptr || !lineObject->command.sourceRange.isValid()) {
+        return std::nullopt;
+    }
+
+    return lineFeatureForLineNumber(commands, lineObject->command.sourceRange.startLineNumber);
 }
 
 std::optional<MapGeometryFeature> geometryFeatureForLineNumber(const QVector<TherionSourceLogicalCommand> &commands,

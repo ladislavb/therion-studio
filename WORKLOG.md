@@ -139,6 +139,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   behavior for each migrated object type.
 - `Th2GeometryProjection` also exposes stable object keys and source-line lookup helpers so the first M7 map read-only
   consumer can migrate without adding new local object-search code.
+- Map object-details line feature lookups now receive the revision-cached `Th2GeometryProjection` through
+  `MapEditorLogicalSourceContext` and use it to resolve selected line objects before falling back to logical-command
+  feature conversion.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.

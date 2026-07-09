@@ -8,6 +8,7 @@
 
 #include "../../../core/TherionBackgroundMetadata.h"
 #include "../../../core/TherionDocumentParser.h"
+#include "../../../core/TherionSourceDocument.h"
 #include "../../../core/TherionSourceLogicalDocument.h"
 #include "../../../platform/DiagnosticLogging.h"
 
@@ -65,6 +66,9 @@ MapEditorLogicalSourceContext MapEditorTab::logicalSourceContext() const
         .logicalCommandsForCurrentDocument = [this]() {
             return logicalCommandsForCurrentDocument();
         },
+        .geometryProjectionForCurrentDocument = [this]() {
+            return geometryProjectionForCurrentDocument();
+        },
     };
 }
 
@@ -88,6 +92,33 @@ QVector<TherionSourceLogicalCommand> MapEditorTab::logicalCommandsForCurrentDocu
     cachedLogicalCommandsRevision_ = currentRevision;
     cachedLogicalCommandsValid_ = true;
     return cachedLogicalCommands_;
+}
+
+Th2GeometryProjection MapEditorTab::geometryProjectionForCurrentDocument() const
+{
+    if (textEditor_ == nullptr) {
+        return {};
+    }
+
+    const int currentRevision = textEditor_->documentRevision();
+    if (cachedGeometryProjectionValid_ && cachedGeometryProjectionRevision_ == currentRevision) {
+        return cachedGeometryProjection_;
+    }
+
+    TherionSourceDocumentMetadata metadata;
+    metadata.sourceType = TherionSourceDocumentType::TherionMap;
+    metadata.revisionId = currentRevision;
+    const TherionSourceDocument sourceDocument =
+        TherionSourceDocument::fromText(textEditor_->text(), metadata);
+    const TherionSourceLogicalDocument logicalDocument =
+        TherionSourceLogicalDocument::fromSourceDocument(sourceDocument);
+    cachedLogicalCommands_ = logicalDocument.commands();
+    cachedLogicalCommandsRevision_ = currentRevision;
+    cachedLogicalCommandsValid_ = true;
+    cachedGeometryProjection_ = Th2GeometryProjection::fromDocuments(sourceDocument, logicalDocument);
+    cachedGeometryProjectionRevision_ = currentRevision;
+    cachedGeometryProjectionValid_ = true;
+    return cachedGeometryProjection_;
 }
 
 std::optional<MapEditorInteractiveLineControlHandleRef> MapEditorTab::interactiveLineControlAt(

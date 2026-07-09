@@ -26,6 +26,7 @@
 #include "MapEditorSmartAreaPlanner.h"
 #include "MapEditorUndoArbitrationService.h"
 #include "../../../core/CommandCatalogStore.h"
+#include "../../../core/Th2GeometryProjection.h"
 #include "../../../core/TherionDocumentEditor.h"
 #include "../../../core/TherionDocumentParser.h"
 #include "../../../core/TherionSourceLogicalDocument.h"
@@ -505,6 +506,7 @@ private:
     QVector<TherionParsedLine> parsedLinesForCurrentDocument() const;
     MapEditorLogicalSourceContext logicalSourceContext() const;
     QVector<TherionSourceLogicalCommand> logicalCommandsForCurrentDocument() const;
+    Th2GeometryProjection geometryProjectionForCurrentDocument() const;
     QRectF mapSourceBoundsForCurrentDocument() const;
     std::optional<QRectF> initialAreaAdjustRectForDraftInsertion() const;
     QRectF sourceBoundsForInteractiveDraft() const;
@@ -823,6 +825,9 @@ private:
     mutable bool cachedLogicalCommandsValid_ = false;
     mutable int cachedLogicalCommandsRevision_ = -1;
     mutable QVector<TherionSourceLogicalCommand> cachedLogicalCommands_;
+    mutable bool cachedGeometryProjectionValid_ = false;
+    mutable int cachedGeometryProjectionRevision_ = -1;
+    mutable Th2GeometryProjection cachedGeometryProjection_;
     bool mapPanActive_ = false;
     bool mapPanMoved_ = false;
     bool mapSpacePanKeyDown_ = false;
