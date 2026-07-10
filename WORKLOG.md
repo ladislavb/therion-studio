@@ -218,6 +218,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   `TherionSourceDocument`.
 - Physical source-line insertion edit planning now uses `TherionSourceDocument` parsed projection for line endings and
   insert offsets.
+- Legacy physical source-line insertion mutation now uses the same `TherionSourceDocument` parsed projection path as the
+  edit planner.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.

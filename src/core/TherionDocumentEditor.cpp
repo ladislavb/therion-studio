@@ -161,8 +161,9 @@ bool insertPhysicalSourceLines(QString *contents,
         return true;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(*contents);
-    if (insertionLineIndex < 0 || insertionLineIndex > sourceDocument.lines.size()) {
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(*contents);
+    const TherionParsedSourceDocument &parsedDocument = sourceDocument.parsedDocument();
+    if (insertionLineIndex < 0 || insertionLineIndex > parsedDocument.lines.size()) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "Insertion source range could not be resolved.");
         }
@@ -170,11 +171,11 @@ bool insertPhysicalSourceLines(QString *contents,
     }
 
     QString lineEnding;
-    if (insertionLineIndex > 0 && insertionLineIndex - 1 < sourceDocument.lines.size()) {
-        lineEnding = sourceDocument.lines.at(insertionLineIndex - 1).lineEnding;
+    if (insertionLineIndex > 0 && insertionLineIndex - 1 < parsedDocument.lines.size()) {
+        lineEnding = parsedDocument.lines.at(insertionLineIndex - 1).lineEnding;
     }
-    if (lineEnding.isEmpty() && insertionLineIndex < sourceDocument.lines.size()) {
-        lineEnding = sourceDocument.lines.at(insertionLineIndex).lineEnding;
+    if (lineEnding.isEmpty() && insertionLineIndex < parsedDocument.lines.size()) {
+        lineEnding = parsedDocument.lines.at(insertionLineIndex).lineEnding;
     }
     if (lineEnding.isEmpty()) {
         lineEnding = TherionSourceText::detectedLineEnding(*contents);
@@ -186,8 +187,8 @@ bool insertPhysicalSourceLines(QString *contents,
         insertedText += lineEnding;
     }
 
-    const int insertOffset = insertionLineIndex < sourceDocument.lines.size()
-        ? sourceDocument.lines.at(insertionLineIndex).startOffset
+    const int insertOffset = insertionLineIndex < parsedDocument.lines.size()
+        ? parsedDocument.lines.at(insertionLineIndex).startOffset
         : contents->size();
     contents->insert(insertOffset, insertedText);
     return true;
