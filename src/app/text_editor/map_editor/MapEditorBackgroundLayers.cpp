@@ -3214,8 +3214,11 @@ QRectF MapEditorTab::xtherionAutoAreaAdjustRect() const
     }
 
     if (textEditor_ != nullptr) {
-        const QVector<TherionSourceLogicalCommand> logicalCommands = logicalCommandsForCurrentDocument();
-        const QVector<MapGeometryFeature> features = !logicalCommands.isEmpty()
+        const MapEditorLogicalSourceContext logicalSource = logicalSourceContext();
+        const QVector<TherionSourceLogicalCommand> logicalCommands = logicalSource.logicalCommandsForCurrentDocument
+            ? logicalSource.logicalCommandsForCurrentDocument()
+            : QVector<TherionSourceLogicalCommand>();
+        const QVector<MapGeometryFeature> features = logicalSource.logicalCommandsForCurrentDocument
             ? collectGeometryFeatures(geometryProjectionForCurrentDocument(), logicalCommands)
             : collectGeometryFeatures(parsedLinesForCurrentDocument());
         if (!features.isEmpty()) {

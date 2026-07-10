@@ -157,11 +157,11 @@ void MapEditorInspectorObjectController::rebuildInspectorObjectsTree()
     if (context_.logicalSource.geometryProjectionForCurrentDocument) {
         geometryProjection = context_.logicalSource.geometryProjectionForCurrentDocument();
     }
-    const bool hasLogicalCommands = !logicalCommands.isEmpty();
-    const QVector<TherionParsedLine> parsedLines = hasLogicalCommands
+    const bool hasLogicalSource = context_.logicalSource.logicalCommandsForCurrentDocument != nullptr;
+    const QVector<TherionParsedLine> parsedLines = hasLogicalSource
         ? QVector<TherionParsedLine>()
         : context_.parsedLinesForCurrentDocument();
-    const QVector<ProjectStructureEntry> entries = hasLogicalCommands
+    const QVector<ProjectStructureEntry> entries = hasLogicalSource
         ? ProjectStructureIndex::scanTh2Objects(th2Path, logicalCommands)
         : ProjectStructureIndex::scanTh2Objects(th2Path, parsedLines);
     if (entries.isEmpty()) {
@@ -172,7 +172,7 @@ void MapEditorInspectorObjectController::rebuildInspectorObjectsTree()
     }
 
     QHash<int, TherionParsedLine> parsedLinesByLineNumber;
-    if (hasLogicalCommands) {
+    if (hasLogicalSource) {
         for (const TherionSourceLogicalCommand &command : logicalCommands) {
             if (command.startLineNumber > 0) {
                 parsedLinesByLineNumber.insert(command.startLineNumber, command.parsed);

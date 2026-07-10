@@ -234,6 +234,7 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
         context_.logicalSource.logicalCommandsForCurrentDocument
             ? context_.logicalSource.logicalCommandsForCurrentDocument()
             : QVector<TherionSourceLogicalCommand>();
+    const bool hasLogicalSource = context_.logicalSource.logicalCommandsForCurrentDocument != nullptr;
     std::optional<QVector<TherionParsedLine>> parsedLines;
     auto parsedLinesForRefresh = [&]() -> const QVector<TherionParsedLine> & {
         if (!parsedLines.has_value()) {
@@ -244,12 +245,12 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
         return parsedLines.value();
     };
     const qint64 parseMs = logTiming ? stageTimer.restart() : 0;
-    const QVector<MapSceneEntry> entries = !logicalCommands.isEmpty()
+    const QVector<MapSceneEntry> entries = hasLogicalSource
         ? collectMapSceneEntries(logicalCommands)
         : collectMapSceneEntries(parsedLinesForRefresh());
     QVector<MapGeometryFeature> geometryFeatures;
     if (context_.logicalSource.geometryProjectionForCurrentDocument
-        && !logicalCommands.isEmpty()) {
+        && hasLogicalSource) {
         const Th2GeometryProjection geometryProjection =
             context_.logicalSource.geometryProjectionForCurrentDocument();
         geometryFeatures = collectGeometryFeatures(geometryProjection, logicalCommands);
@@ -257,7 +258,7 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
         geometryFeatures = collectGeometryFeatures(parsedLinesForRefresh());
     }
     QHash<int, TherionParsedLine> parsedLinesByLineNumber;
-    if (!logicalCommands.isEmpty()) {
+    if (hasLogicalSource) {
         for (const TherionSourceLogicalCommand &command : logicalCommands) {
             parsedLinesByLineNumber.insert(command.parsed.lineNumber, command.parsed);
         }
@@ -312,7 +313,7 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
         context_.selectMapLine(fallbackSceneRefreshSelectionLine(
                                    context_,
                                    logicalCommands,
-                                   logicalCommands.isEmpty() ? parsedLinesForRefresh() : QVector<TherionParsedLine>{}),
+                                   hasLogicalSource ? QVector<TherionParsedLine>{} : parsedLinesForRefresh()),
                                !preserveViewport);
     }
     const qint64 selectionMs = logTiming ? stageTimer.restart() : 0;

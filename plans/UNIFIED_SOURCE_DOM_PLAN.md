@@ -41,22 +41,23 @@ This plan tracks the long-running migration toward one shared, lossless Therion 
 - `ProjectStructureIndex` uses `TherionSourceSnapshotCache` and `TherionSourceLogicalDocument` for several file, namespace, survey, scrap, map, and reference passes.
 - Raw editor completion, cursor token context, required-argument tooltips, context help, validation tooltips, and syntax-highlighter validation underlines use revision-keyed source snapshots in focused paths.
 - Blocks canvas rebuild and document outline building already use `TherionSourceSnapshotCache` / `TherionSourceLogicalDocument` for broad command projection.
-- Map inspector/object-details, area-reference, selection-restore, line-extension start, and partial-refresh feature
-  resolution paths use shared logical commands in focused read-only areas, while geometry/object projection and rewrite
-  planning still keep token-line compatibility boundaries.
+- Map inspector/object-details, area-reference, selection-restore, line-extension start, scene refresh, Smart Area preview,
+  background auto-adjust, object discovery, and selection navigation use shared logical commands or the TH2 geometry
+  projection for production DOM-backed read-only paths, while source-rewrite planning still keeps explicit token-line
+  compatibility boundaries.
 
 ### Remaining Local Parsing And Lookup Hotspots
 
 - `TherionDocumentEditor.cpp` still contains many rewrite planners that split lines, parse rows, infer insertion offsets, and preserve line endings locally. These are high-risk because they own source mutation semantics.
 - `MapEditorTab::parsedLinesForCurrentDocument()` still caches `TherionDocumentParser::parseTokenLines()` as a TH2
-  token-line compatibility projection used by scene refresh, structure/object discovery, rewrite planners, background
-  metadata workflows, and geometry compatibility tests.
-- `MapEditorSceneRefreshController`, `MapEditorObjectDetailsLogic`, `MapEditorObjectDeletePlanner`,
-  `MapEditorObjectMovePlanner`, `MapEditorLineSplitPlanner`, `MapEditorSourceReferenceResolver`,
-  `MapEditorAreaReferenceResolver`, and `MapEditorBackgroundLayers` still contain direct `parseLine`, `parseTokenLines`,
-  `splitTextLines`, or `detectedLineEnding` calls. Recent Map migrations have removed several UI-side full-text reparses,
-  but rewrite planners intentionally remain on explicit before/after source text snapshots until transaction-specific
-  coverage exists.
+  compatibility adapter for contexts without DOM callbacks, rewrite planners, background metadata write workflows, and
+  geometry compatibility tests.
+- `MapEditorObjectDetailsLogic`, `MapEditorObjectDeletePlanner`, `MapEditorObjectMovePlanner`,
+  `MapEditorLineSplitPlanner`, `MapEditorSourceReferenceResolver`, `MapEditorAreaReferenceResolver`, and
+  `MapEditorBackgroundLayers` still contain direct `parseLine`, `parseTokenLines`, `splitTextLines`, or
+  `detectedLineEnding` calls. Production DOM-backed read-only Map consumers no longer use these paths as their primary
+  source, but rewrite planners intentionally remain on explicit before/after source text snapshots until
+  transaction-specific coverage exists.
 - Blocks details, delete, data-block, toolbox, line-build, and option-argument helpers still contain small local `parseLine` / `tokenizeLine` calls where the logical document does not yet expose the exact needed operation.
 - Map geometry tests and map geometry feature parsing still exercise token-line compatibility inputs; this is useful guardrail coverage but also marks the migration boundary for a future TH2 projection.
 - `TherionBackgroundMetadata` and map background workflows preserve XTherion/Mapiah metadata through local line edits. They should move only after map background round-trip coverage is explicit.
@@ -336,6 +337,9 @@ Stop condition:
 
 Goal: replace Map read-only object discovery/reference lookups with `Th2GeometryProjection`.
 
+Status: closed for production DOM-backed read-only paths. Remaining parsed-line references in Map are compatibility
+fallbacks for contexts without DOM callbacks, focused compatibility tests, or source-rewrite planners that move to M8.
+
 Candidate files:
 
 - `src/app/text_editor/map_editor/MapEditorSceneRefreshController.cpp`
@@ -346,13 +350,14 @@ Candidate files:
 
 Steps:
 
-1. Add a `MapEditorTab` projection access context parallel to the existing logical-source context.
-2. Migrate one read-only consumer at a time: selected object details, area-reference lookup, background layer listing, or
-   scene object discovery.
-3. Keep `MapEditorTab::parsedLinesForCurrentDocument()` as a compatibility adapter until all read-only production callers
-   are gone.
-4. Preserve current selection, hover, inspector, and partial-refresh behavior.
-5. Add tests for each migrated object type before removing the old path.
+1. Done: add a `MapEditorTab` projection/logical-source access context parallel to parsed-line compatibility callbacks.
+2. Done: migrate selected object details, area-reference lookup, object discovery, selection navigation, scene refresh,
+   Smart Area preview, background auto-adjust bounds, and context-menu metadata to DOM-backed logical/projection paths.
+3. Done: keep `MapEditorTab::parsedLinesForCurrentDocument()` only as a compatibility adapter for contexts without DOM
+   callbacks and for later M8 rewrite planner work.
+4. Done: preserve current selection, hover, inspector, and partial-refresh behavior through focused map tests.
+5. Deferred to M8/M9: remove compatibility APIs only after rewrite planners and compatibility tests have replacement
+   coverage.
 
 Verification:
 

@@ -482,6 +482,7 @@ QString objectKindForSourceLine(const MapEditorSelectionContext &context, int li
             !projectedKind.isEmpty()) {
             return projectedKind;
         }
+        return QString();
     }
 
     return objectKindForSourceLine(context.parsedLinesForCurrentDocument(), lineNumber);
@@ -506,6 +507,7 @@ std::optional<MapGeometryFeature> lineFeatureForSourceLine(const MapEditorSelect
             logicalFeature.has_value()) {
             return logicalFeature;
         }
+        return std::nullopt;
     }
 
     return lineFeatureForLineNumber(context.parsedLinesForCurrentDocument(), lineNumber);
@@ -873,8 +875,7 @@ void MapEditorSelectionController::handleMapSceneSelectionChanged()
             if (context_.logicalSource.geometryProjectionForCurrentDocument) {
                 const Th2GeometryProjection projection = context_.logicalSource.geometryProjectionForCurrentDocument();
                 pointLineNumber = sourcePointLineNumberForSelection(projection, selectedPointSource.value());
-            }
-            if (!pointLineNumber.has_value()) {
+            } else {
                 const QVector<TherionParsedLine> parsedLines = context_.parsedLinesForCurrentDocument();
                 pointLineNumber = sourcePointLineNumberForSelection(parsedLines, selectedPointSource.value());
             }
@@ -893,8 +894,7 @@ void MapEditorSelectionController::handleMapSceneSelectionChanged()
                                                                         selectedLineNumber,
                                                                         selectedGeometryKind,
                                                                         selectedSourceVertexIndex);
-            }
-            if (!sourceReference.has_value()) {
+            } else {
                 sourceReference = sourceVertexTextReferenceForSelection(context_.parsedLinesForCurrentDocument(),
                                                                         selectedLineNumber,
                                                                         selectedGeometryKind,
@@ -1034,14 +1034,14 @@ void MapEditorSelectionController::syncMapSelectionFromTextCursor(int lineNumber
         (*context_.suppressedAutoReselectLineNumbers).clear();
     }
 
-    const QVector<TherionSourceLogicalCommand> logicalCommands = context_.logicalSource.logicalCommandsForCurrentDocument
+    const bool hasLogicalSource = context_.logicalSource.logicalCommandsForCurrentDocument != nullptr;
+    const QVector<TherionSourceLogicalCommand> logicalCommands = hasLogicalSource
         ? context_.logicalSource.logicalCommandsForCurrentDocument()
         : QVector<TherionSourceLogicalCommand>();
-    const bool hasLogicalCommands = !logicalCommands.isEmpty();
-    const QVector<TherionParsedLine> parsedLines = hasLogicalCommands
+    const QVector<TherionParsedLine> parsedLines = hasLogicalSource
         ? QVector<TherionParsedLine>()
         : context_.parsedLinesForCurrentDocument();
-    const std::optional<QSet<int>> scrapLines = hasLogicalCommands
+    const std::optional<QSet<int>> scrapLines = hasLogicalSource
         ? scrapObjectLinesForCursor(logicalCommands, lineNumber)
         : scrapObjectLinesForCursor(parsedLines, lineNumber);
     if (scrapLines.has_value()) {
@@ -1057,7 +1057,7 @@ void MapEditorSelectionController::syncMapSelectionFromTextCursor(int lineNumber
         return;
     }
 
-    const CursorGeometrySelection cursorSelection = hasLogicalCommands
+    const CursorGeometrySelection cursorSelection = hasLogicalSource
         ? cursorGeometrySelectionForTextCursor(logicalCommands, lineNumber, columnNumber)
         : cursorGeometrySelectionForTextCursor(parsedLines, lineNumber, columnNumber);
     if (cursorSelection.featureLineNumber <= 0) {

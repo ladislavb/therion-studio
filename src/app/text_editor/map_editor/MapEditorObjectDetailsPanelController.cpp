@@ -632,7 +632,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
                 context_.logicalSource.logicalCommandsForCurrentDocument
                     ? context_.logicalSource.logicalCommandsForCurrentDocument()
                     : QVector<TherionSourceLogicalCommand>();
-            const QVector<InspectorScrapContext> scrapContexts = !logicalCommands.isEmpty()
+            const QVector<InspectorScrapContext> scrapContexts = context_.logicalSource.logicalCommandsForCurrentDocument
                 ? inspectorScrapContexts(logicalCommands)
                 : inspectorScrapContexts(context_.parsedLinesForCurrentDocument
                       ? context_.parsedLinesForCurrentDocument()
@@ -835,7 +835,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
     const QVector<TherionSourceLogicalCommand> logicalCommands = context_.logicalSource.logicalCommandsForCurrentDocument
         ? context_.logicalSource.logicalCommandsForCurrentDocument()
         : QVector<TherionSourceLogicalCommand>();
-    context_.metadataLabel->setText(!logicalCommands.isEmpty()
+    context_.metadataLabel->setText(context_.logicalSource.logicalCommandsForCurrentDocument
                                         ? metadataForSourceLine(logicalCommands, effectiveLineNumber)
                                         : metadataForSourceLine(context_.parsedLinesForCurrentDocument
                                               ? context_.parsedLinesForCurrentDocument()

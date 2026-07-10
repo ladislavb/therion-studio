@@ -174,6 +174,17 @@ Active planning only. Completed history belongs in archive files. Stable archite
   fallback selection, creating the parsed-line compatibility snapshot only when the logical source is unavailable.
 - Map viewport context-menu metadata now uses the TH2 geometry projection for missing object-kind lookup instead of
   building the parsed-line compatibility snapshot during right-click selection preparation.
+- Map selection object-kind, line-feature, selected point/source-vertex navigation, and cursor-to-selection lookup now
+  use the DOM logical/projection path whenever the production callbacks are available, keeping parsed-line lookup only as
+  a compatibility fallback for contexts without DOM access.
+- Map object-details pending scrap metadata, object tree discovery, and background auto-adjust bounds now also treat
+  available DOM callbacks as authoritative, so empty logical/projection results no longer trigger a production parsed-line
+  compatibility scan.
+- Smart Area preview and full map scene refresh now make the same distinction: parsed-line compatibility remains only for
+  contexts without DOM callbacks, not for valid empty DOM projections.
+- DOM M7 map read-only projection migration is closed for production DOM-backed contexts; remaining map parsed-line
+  references are compatibility adapters for contexts without DOM callbacks, focused legacy tests, or M8 source-rewrite
+  planners.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.
@@ -198,8 +209,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   keeping partial-refresh regression coverage aligned with the shared logical-source path.
 - Map partial-refresh regression coverage now verifies that vertex index entries point to live scene items for the
   refreshed line after one-line item replacement.
-- Next implementation slice: pause DOM migration and switch to the next `2026.7.1` performance/UX item, or start a
-  dedicated TH2 geometry projection design slice before touching rewrite planners.
+- Next implementation slice: start M8 transaction/rewrite planner migration, beginning with the lowest-risk source
+  rewrite path that already has focused undo/redo or round-trip coverage.
 - Keep Therion namespace/reference changes behind `docs/THERION_COMPATIBILITY.md` coverage, especially
   `object@child.parent` qualified-reference order.
 - Keep source transaction ownership work incremental: one caller or workflow per commit, with explicit result handling,
