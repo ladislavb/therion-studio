@@ -3094,6 +3094,29 @@ int runRewriteMapObjectQuickFieldsTest()
         return 1;
     }
 
+    const QString secondLineTextContents = QStringLiteral("scrap s1\r\n"
+                                                         "line label # keep\r\n"
+                                                         "endline\r\n"
+                                                         "endscrap\r\n");
+    QVector<TherionSourceTextEdit> secondLineTextEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::mapObjectTextOptionRewriteEdits(secondLineTextContents,
+                                                                       2,
+                                                                       QStringLiteral("Side passage"),
+                                                                       &secondLineTextEdits,
+                                                                       &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int secondLineTextStartOffset = secondLineTextContents.indexOf(QStringLiteral("line label # keep"));
+    if (!expect(secondLineTextEdits.size() == 1
+                    && secondLineTextEdits.at(0).startOffset == secondLineTextStartOffset
+                    && secondLineTextEdits.at(0).length == QStringLiteral("line label # keep").size()
+                    && secondLineTextEdits.at(0).replacementText == QStringLiteral("line label -text \"Side passage\" # keep"),
+                "mapObjectTextOptionRewriteEdits should expose exact source ranges for non-first physical lines.")) {
+        return 1;
+    }
+
     errorMessage.clear();
     if (!expect(rewriteMapObjectTextOption(&contents,
                                                                   1,
