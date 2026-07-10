@@ -358,6 +358,31 @@ int matchingScrapStartIndex(const QStringList &lines, int endscrapIndex)
     return -1;
 }
 
+int matchingEndscrapIndex(const TherionParsedSourceDocument &sourceDocument, int scrapStartIndex)
+{
+    if (scrapStartIndex < 0 || scrapStartIndex >= sourceDocument.lines.size()) {
+        return -1;
+    }
+
+    int depth = 0;
+    for (int index = scrapStartIndex; index < sourceDocument.lines.size(); ++index) {
+        const TherionParsedLine &parsedLine = sourceDocument.lines.at(index).parsed;
+        if (parsedLine.directive == QStringLiteral("scrap")) {
+            ++depth;
+            continue;
+        }
+        if (parsedLine.directive != QStringLiteral("endscrap")) {
+            continue;
+        }
+        --depth;
+        if (depth == 0) {
+            return index;
+        }
+    }
+
+    return -1;
+}
+
 QSet<QString> identifiersInsideScrap(const QStringList &lines, int scrapStartIndex, int endscrapIndex)
 {
     QSet<QString> identifiers;
@@ -368,6 +393,20 @@ QSet<QString> identifiersInsideScrap(const QStringList &lines, int scrapStartInd
     for (int index = scrapStartIndex + 1; index < endscrapIndex; ++index) {
         const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(index), index + 1);
         collectIdentifiersFromTokens(parsedLine.tokens, &identifiers);
+    }
+
+    return identifiers;
+}
+
+QSet<QString> identifiersInsideScrap(const TherionParsedSourceDocument &sourceDocument, int scrapStartIndex, int endscrapIndex)
+{
+    QSet<QString> identifiers;
+    if (scrapStartIndex < 0 || endscrapIndex <= scrapStartIndex || endscrapIndex > sourceDocument.lines.size()) {
+        return identifiers;
+    }
+
+    for (int index = scrapStartIndex + 1; index < endscrapIndex; ++index) {
+        collectIdentifiersFromTokens(sourceDocument.lines.at(index).parsed.tokens, &identifiers);
     }
 
     return identifiers;
@@ -2071,7 +2110,7 @@ bool TherionDocumentEditor::appendReferencedAreaEdits(const QString &contents,
         return false;
     }
 
-    const TherionParsedLine scrapLine = TherionDocumentParser::parseLine(lines.at(scrapStartIndex), scrapLineNumber);
+    const TherionParsedLine &scrapLine = parsedDocument.lines.at(scrapStartIndex).parsed;
     if (scrapLine.directive != QStringLiteral("scrap")) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "Smart Area target is not a scrap.");
@@ -2079,7 +2118,7 @@ bool TherionDocumentEditor::appendReferencedAreaEdits(const QString &contents,
         return false;
     }
 
-    const int insertionIndex = matchingEndscrapIndex(lines, scrapStartIndex);
+    const int insertionIndex = matchingEndscrapIndex(parsedDocument, scrapStartIndex);
     if (insertionIndex < 0) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "Smart Area target scrap is missing endscrap.");
@@ -2087,7 +2126,7 @@ bool TherionDocumentEditor::appendReferencedAreaEdits(const QString &contents,
         return false;
     }
 
-    QSet<QString> existingIdentifiers = identifiersInsideScrap(lines, scrapStartIndex, insertionIndex);
+    QSet<QString> existingIdentifiers = identifiersInsideScrap(parsedDocument, scrapStartIndex, insertionIndex);
     QSet<int> seenLineNumbers;
     QStringList areaReferences;
     for (const TherionReferencedAreaBoundaryLine &boundaryLine : boundaryLines) {
