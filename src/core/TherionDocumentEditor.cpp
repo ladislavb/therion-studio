@@ -2288,13 +2288,15 @@ bool TherionDocumentEditor::lineAreaVertexRewriteEdits(const QString &contents,
         return false;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(contents);
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
+    const TherionParsedSourceDocument &parsedDocument = sourceDocument.parsedDocument();
     QStringList lines;
-    lines.reserve(sourceDocument.lines.size());
-    for (const TherionParsedSourceLine &sourceLine : sourceDocument.lines) {
+    lines.reserve(parsedDocument.lines.size());
+    for (const TherionParsedSourceLine &sourceLine : parsedDocument.lines) {
         lines.append(sourceLine.text);
     }
-    if (lineNumber > lines.size()) {
+    const TherionSourceDocumentLine *blockStartSourceLine = sourceDocument.lineAtLineNumber(lineNumber);
+    if (blockStartSourceLine == nullptr) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line no longer exists.");
         }
@@ -2392,14 +2394,14 @@ bool TherionDocumentEditor::lineAreaVertexRewriteEdits(const QString &contents,
     lineText.replace(reference.xToken.start,
                      reference.xToken.length,
                      formatCoordinateLikeExistingToken(oldXTokenText, point.x()));
-    if (reference.lineIndex >= sourceDocument.lines.size()) {
+    if (reference.lineIndex >= parsedDocument.lines.size()) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected %1 vertex source range could not be rewritten.").arg(normalizedKind);
         }
         return false;
     }
 
-    const TherionParsedSourceLine &sourceLine = sourceDocument.lines.at(reference.lineIndex);
+    const TherionParsedSourceLine &sourceLine = parsedDocument.lines.at(reference.lineIndex);
     edits->append(TherionSourceTextEdit{
         sourceLine.startOffset,
         sourceLine.textLength,
