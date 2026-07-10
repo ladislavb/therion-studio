@@ -1325,7 +1325,32 @@ int runRewritePointCoordinatesTest()
         return 1;
     }
 
-    contents = QStringLiteral("survey s\r\npoint station 10 20 station -name mixed\nendsurvey\r");
+    const QString mixedLineEndingPointContents =
+        QStringLiteral("survey s\r\npoint station 10 20 station -name mixed\nendsurvey\r");
+    contents = mixedLineEndingPointContents;
+    QVector<TherionSourceTextEdit> mixedLineEndingEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::pointCoordinateRewriteEdits(mixedLineEndingPointContents,
+                                                                    2,
+                                                                    QPointF(30.25, -40.5),
+                                                                    &mixedLineEndingEdits,
+                                                                    &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int mixedLineEndingXOffset = mixedLineEndingPointContents.indexOf(QStringLiteral("10"));
+    const int mixedLineEndingYOffset = mixedLineEndingPointContents.indexOf(QStringLiteral("20"));
+    if (!expect(mixedLineEndingEdits.size() == 2
+                    && mixedLineEndingEdits.at(0).startOffset == mixedLineEndingXOffset
+                    && mixedLineEndingEdits.at(0).length == QStringLiteral("10").size()
+                    && mixedLineEndingEdits.at(0).replacementText == QStringLiteral("30.250")
+                    && mixedLineEndingEdits.at(1).startOffset == mixedLineEndingYOffset
+                    && mixedLineEndingEdits.at(1).length == QStringLiteral("20").size()
+                    && mixedLineEndingEdits.at(1).replacementText == QStringLiteral("-40.500"),
+                "pointCoordinateRewriteEdits should preserve exact mixed-line-ending coordinate offsets.")) {
+        return 1;
+    }
+
     errorMessage.clear();
     if (!expect(rewritePointCoordinates(&contents, 2, QPointF(30.25, -40.5), &errorMessage),
                 errorMessage.toUtf8().constData())) {

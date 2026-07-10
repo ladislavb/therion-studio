@@ -188,6 +188,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - M8 has started with the low-risk structure-entry rename planner: it now resolves target source lines through
   `TherionSourceDocument` instead of reparsing a standalone parsed source document, with CRLF token-range regression
   coverage.
+- Point-coordinate rewrite planning now uses `TherionSourceDocument` line lookup as well, with exact mixed-line-ending
+  coordinate token offset coverage.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.
