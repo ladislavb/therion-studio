@@ -296,6 +296,27 @@ int runRewritePreservesOtherContentTest()
         return 1;
     }
 
+    const QString crlfRenamePlannerContents = QStringLiteral("survey old-survey\r\nmap old-map # keep\r\n");
+    QVector<TherionSourceTextEdit> crlfRenameEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::structureEntryNameRewriteEdits(crlfRenamePlannerContents,
+                                                                       2,
+                                                                       QStringLiteral("Maps"),
+                                                                       QStringLiteral("crlf map"),
+                                                                       &crlfRenameEdits,
+                                                                       &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int crlfRenameStartOffset = crlfRenamePlannerContents.indexOf(QStringLiteral("old-map"));
+    if (!expect(crlfRenameEdits.size() == 1
+                    && crlfRenameEdits.at(0).startOffset == crlfRenameStartOffset
+                    && crlfRenameEdits.at(0).length == QStringLiteral("old-map").size()
+                    && crlfRenameEdits.at(0).replacementText == QStringLiteral("\"crlf map\""),
+                "structureEntryNameRewriteEdits should preserve exact CRLF token-range offsets.")) {
+        return 1;
+    }
+
     if (!expect(rewriteStructureEntryName(&contents, 1, QStringLiteral("Surveys"), QStringLiteral("new-survey"), &errorMessage), errorMessage.toUtf8().constData())) {
         return 1;
     }

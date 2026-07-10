@@ -185,6 +185,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - DOM M7 map read-only projection migration is closed for production DOM-backed contexts; remaining map parsed-line
   references are compatibility adapters for contexts without DOM callbacks, focused legacy tests, or M8 source-rewrite
   planners.
+- M8 has started with the low-risk structure-entry rename planner: it now resolves target source lines through
+  `TherionSourceDocument` instead of reparsing a standalone parsed source document, with CRLF token-range regression
+  coverage.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.
