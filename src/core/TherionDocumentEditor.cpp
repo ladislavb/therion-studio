@@ -333,15 +333,15 @@ QString generatedIdentifier(const QString &prefix, const QSet<QString> &existing
     return QStringLiteral("%1-%2").arg(normalizedPrefix).arg(suffix);
 }
 
-int matchingScrapStartIndex(const QStringList &lines, int endscrapIndex)
+int matchingScrapStartIndex(const TherionParsedSourceDocument &sourceDocument, int endscrapIndex)
 {
-    if (endscrapIndex < 0 || endscrapIndex >= lines.size()) {
+    if (endscrapIndex < 0 || endscrapIndex >= sourceDocument.lines.size()) {
         return -1;
     }
 
     int depth = 0;
     for (int index = endscrapIndex; index >= 0; --index) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(index), index + 1);
+        const TherionParsedLine &parsedLine = sourceDocument.lines.at(index).parsed;
         if (parsedLine.directive == QStringLiteral("endscrap")) {
             ++depth;
             continue;
@@ -381,21 +381,6 @@ int matchingEndscrapIndex(const TherionParsedSourceDocument &sourceDocument, int
     }
 
     return -1;
-}
-
-QSet<QString> identifiersInsideScrap(const QStringList &lines, int scrapStartIndex, int endscrapIndex)
-{
-    QSet<QString> identifiers;
-    if (scrapStartIndex < 0 || endscrapIndex <= scrapStartIndex || endscrapIndex > lines.size()) {
-        return identifiers;
-    }
-
-    for (int index = scrapStartIndex + 1; index < endscrapIndex; ++index) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(index), index + 1);
-        collectIdentifiersFromTokens(parsedLine.tokens, &identifiers);
-    }
-
-    return identifiers;
 }
 
 QSet<QString> identifiersInsideScrap(const TherionParsedSourceDocument &sourceDocument, int scrapStartIndex, int endscrapIndex)
@@ -1396,42 +1381,16 @@ QString uniqueObjectIdentifier(const QString &baseIdentifier, const QSet<QString
     }
 }
 
-int lastEndscrapLineIndex(const QStringList &lines)
+int lastEndscrapLineIndex(const TherionParsedSourceDocument &sourceDocument)
 {
     int foundIndex = -1;
-    for (int index = 0; index < lines.size(); ++index) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(index), index + 1);
-        if (parsedLine.directive == QStringLiteral("endscrap")) {
+    for (int index = 0; index < sourceDocument.lines.size(); ++index) {
+        if (sourceDocument.lines.at(index).parsed.directive == QStringLiteral("endscrap")) {
             foundIndex = index;
         }
     }
 
     return foundIndex;
-}
-
-int matchingEndscrapIndex(const QStringList &lines, int scrapStartIndex)
-{
-    if (scrapStartIndex < 0 || scrapStartIndex >= lines.size()) {
-        return -1;
-    }
-
-    int depth = 0;
-    for (int index = scrapStartIndex; index < lines.size(); ++index) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(index), index + 1);
-        if (parsedLine.directive == QStringLiteral("scrap")) {
-            ++depth;
-            continue;
-        }
-        if (parsedLine.directive != QStringLiteral("endscrap")) {
-            continue;
-        }
-        --depth;
-        if (depth == 0) {
-            return index;
-        }
-    }
-
-    return -1;
 }
 
 struct UnclosedMapBlock
@@ -1441,11 +1400,11 @@ struct UnclosedMapBlock
     int lineNumber = 0;
 };
 
-UnclosedMapBlock firstUnclosedMapBlock(const QStringList &lines)
+UnclosedMapBlock firstUnclosedMapBlock(const TherionParsedSourceDocument &sourceDocument)
 {
     QVector<UnclosedMapBlock> openBlocks;
-    for (int index = 0; index < lines.size(); ++index) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(index), index + 1);
+    for (int index = 0; index < sourceDocument.lines.size(); ++index) {
+        const TherionParsedLine &parsedLine = sourceDocument.lines.at(index).parsed;
         if (parsedLine.directive == QStringLiteral("scrap")) {
             openBlocks.append(UnclosedMapBlock{
                 QStringLiteral("scrap"),
@@ -1496,9 +1455,9 @@ UnclosedMapBlock firstUnclosedMapBlock(const QStringList &lines)
     return openBlocks.isEmpty() ? UnclosedMapBlock{} : openBlocks.constLast();
 }
 
-bool rejectDraftInsertionIntoUnclosedScrap(const QStringList &lines, QString *errorMessage)
+bool rejectDraftInsertionIntoUnclosedScrap(const TherionParsedSourceDocument &sourceDocument, QString *errorMessage)
 {
-    const UnclosedMapBlock unclosedBlock = firstUnclosedMapBlock(lines);
+    const UnclosedMapBlock unclosedBlock = firstUnclosedMapBlock(sourceDocument);
     if (unclosedBlock.lineNumber <= 0) {
         return false;
     }
@@ -1513,32 +1472,32 @@ bool rejectDraftInsertionIntoUnclosedScrap(const QStringList &lines, QString *er
     return true;
 }
 
-int endscrapLineIndexForScrapIdentifier(const QStringList &lines, const QString &scrapIdentifier)
+int endscrapLineIndexForScrapIdentifier(const TherionParsedSourceDocument &sourceDocument, const QString &scrapIdentifier)
 {
     const QString normalizedIdentifier = scrapIdentifier.trimmed();
     if (normalizedIdentifier.isEmpty()) {
         return -1;
     }
 
-    for (int index = 0; index < lines.size(); ++index) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(index), index + 1);
+    for (int index = 0; index < sourceDocument.lines.size(); ++index) {
+        const TherionParsedLine &parsedLine = sourceDocument.lines.at(index).parsed;
         if (parsedLine.directive != QStringLiteral("scrap")
             || parsedLine.tokens.value(1).compare(normalizedIdentifier, Qt::CaseInsensitive) != 0) {
             continue;
         }
-        return matchingEndscrapIndex(lines, index);
+        return matchingEndscrapIndex(sourceDocument, index);
     }
 
     return -1;
 }
 
-int draftInsertionEndscrapLineIndex(const QStringList &lines,
+int draftInsertionEndscrapLineIndex(const TherionParsedSourceDocument &sourceDocument,
                                     const TherionDraftObjectOptions &objectOptions,
                                     QString *errorMessage)
 {
     const QString targetScrapIdentifier = objectOptions.targetScrapIdentifier.trimmed();
     if (!targetScrapIdentifier.isEmpty()) {
-        const int targetedIndex = endscrapLineIndexForScrapIdentifier(lines, targetScrapIdentifier);
+        const int targetedIndex = endscrapLineIndexForScrapIdentifier(sourceDocument, targetScrapIdentifier);
         if (targetedIndex >= 0) {
             return targetedIndex;
         }
@@ -1550,7 +1509,7 @@ int draftInsertionEndscrapLineIndex(const QStringList &lines,
         return -1;
     }
 
-    return lastEndscrapLineIndex(lines);
+    return lastEndscrapLineIndex(sourceDocument);
 }
 
 }
@@ -1778,11 +1737,12 @@ bool TherionDocumentEditor::appendDraftGeometryEdits(const QString &contents,
     }
 
     QString updated = contents;
-    const QStringList originalLines = splitLinesTrimmingCarriageReturns(updated);
-    if (rejectDraftInsertionIntoUnclosedScrap(originalLines, errorMessage)) {
+    const TherionSourceDocument originalSourceDocument = TherionSourceDocument::fromText(updated);
+    const TherionParsedSourceDocument &originalParsedDocument = originalSourceDocument.parsedDocument();
+    if (rejectDraftInsertionIntoUnclosedScrap(originalParsedDocument, errorMessage)) {
         return false;
     }
-    const bool needsFallbackScrap = draftInsertionEndscrapLineIndex(originalLines, objectOptions, nullptr) < 0
+    const bool needsFallbackScrap = draftInsertionEndscrapLineIndex(originalParsedDocument, objectOptions, nullptr) < 0
         && objectOptions.targetScrapIdentifier.trimmed().isEmpty();
     if (needsFallbackScrap) {
         QVector<TherionSourceTextEdit> fallbackEdits;
@@ -1792,8 +1752,9 @@ bool TherionDocumentEditor::appendDraftGeometryEdits(const QString &contents,
         }
     }
 
-    QStringList lines = splitLinesTrimmingCarriageReturns(updated);
-    int insertionIndex = draftInsertionEndscrapLineIndex(lines, objectOptions, errorMessage);
+    const TherionSourceDocument updatedSourceDocument = TherionSourceDocument::fromText(updated);
+    const TherionParsedSourceDocument &updatedParsedDocument = updatedSourceDocument.parsedDocument();
+    int insertionIndex = draftInsertionEndscrapLineIndex(updatedParsedDocument, objectOptions, errorMessage);
 
     if (insertionIndex < 0 && needsFallbackScrap) {
         if (errorMessage != nullptr) {
@@ -1825,14 +1786,14 @@ bool TherionDocumentEditor::appendDraftGeometryEdits(const QString &contents,
         }
         geometryLines.append(QStringLiteral("  endline"));
     } else {
-        const int scrapStartIndex = matchingScrapStartIndex(lines, insertionIndex);
+        const int scrapStartIndex = matchingScrapStartIndex(updatedParsedDocument, insertionIndex);
         if (scrapStartIndex < 0) {
             if (errorMessage != nullptr) {
                 *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "Unable to resolve scrap boundaries for area insertion.");
             }
             return false;
         }
-        const QSet<QString> existingIdentifiers = identifiersInsideScrap(lines, scrapStartIndex, insertionIndex);
+        const QSet<QString> existingIdentifiers = identifiersInsideScrap(updatedParsedDocument, scrapStartIndex, insertionIndex);
         const QString borderIdentifier = generatedIdentifier(QStringLiteral("line"), existingIdentifiers);
 
         geometryLines.append(QStringLiteral("  line border -id %1 -close on").arg(borderIdentifier));
@@ -1905,11 +1866,12 @@ bool TherionDocumentEditor::appendDraftLineGeometryEdits(const QString &contents
     }
 
     QString updated = contents;
-    const QStringList originalLines = splitLinesTrimmingCarriageReturns(updated);
-    if (rejectDraftInsertionIntoUnclosedScrap(originalLines, errorMessage)) {
+    const TherionSourceDocument originalSourceDocument = TherionSourceDocument::fromText(updated);
+    const TherionParsedSourceDocument &originalParsedDocument = originalSourceDocument.parsedDocument();
+    if (rejectDraftInsertionIntoUnclosedScrap(originalParsedDocument, errorMessage)) {
         return false;
     }
-    const bool needsFallbackScrap = draftInsertionEndscrapLineIndex(originalLines, objectOptions, nullptr) < 0
+    const bool needsFallbackScrap = draftInsertionEndscrapLineIndex(originalParsedDocument, objectOptions, nullptr) < 0
         && objectOptions.targetScrapIdentifier.trimmed().isEmpty();
     if (needsFallbackScrap) {
         QVector<TherionSourceTextEdit> fallbackEdits;
@@ -1919,8 +1881,9 @@ bool TherionDocumentEditor::appendDraftLineGeometryEdits(const QString &contents
         }
     }
 
-    QStringList lines = splitLinesTrimmingCarriageReturns(updated);
-    int insertionIndex = draftInsertionEndscrapLineIndex(lines, objectOptions, errorMessage);
+    const TherionSourceDocument updatedSourceDocument = TherionSourceDocument::fromText(updated);
+    const TherionParsedSourceDocument &updatedParsedDocument = updatedSourceDocument.parsedDocument();
+    int insertionIndex = draftInsertionEndscrapLineIndex(updatedParsedDocument, objectOptions, errorMessage);
 
     if (insertionIndex < 0 && needsFallbackScrap) {
         if (errorMessage != nullptr) {
@@ -2000,11 +1963,12 @@ bool TherionDocumentEditor::appendDraftAreaGeometryEdits(const QString &contents
     }
 
     QString updated = contents;
-    const QStringList originalLines = splitLinesTrimmingCarriageReturns(updated);
-    if (rejectDraftInsertionIntoUnclosedScrap(originalLines, errorMessage)) {
+    const TherionSourceDocument originalSourceDocument = TherionSourceDocument::fromText(updated);
+    const TherionParsedSourceDocument &originalParsedDocument = originalSourceDocument.parsedDocument();
+    if (rejectDraftInsertionIntoUnclosedScrap(originalParsedDocument, errorMessage)) {
         return false;
     }
-    const bool needsFallbackScrap = draftInsertionEndscrapLineIndex(originalLines, objectOptions, nullptr) < 0
+    const bool needsFallbackScrap = draftInsertionEndscrapLineIndex(originalParsedDocument, objectOptions, nullptr) < 0
         && objectOptions.targetScrapIdentifier.trimmed().isEmpty();
     if (needsFallbackScrap) {
         QVector<TherionSourceTextEdit> fallbackEdits;
@@ -2014,8 +1978,9 @@ bool TherionDocumentEditor::appendDraftAreaGeometryEdits(const QString &contents
         }
     }
 
-    QStringList lines = splitLinesTrimmingCarriageReturns(updated);
-    int insertionIndex = draftInsertionEndscrapLineIndex(lines, objectOptions, errorMessage);
+    const TherionSourceDocument updatedSourceDocument = TherionSourceDocument::fromText(updated);
+    const TherionParsedSourceDocument &updatedParsedDocument = updatedSourceDocument.parsedDocument();
+    int insertionIndex = draftInsertionEndscrapLineIndex(updatedParsedDocument, objectOptions, errorMessage);
 
     if (insertionIndex < 0 && needsFallbackScrap) {
         if (errorMessage != nullptr) {
@@ -2026,14 +1991,14 @@ bool TherionDocumentEditor::appendDraftAreaGeometryEdits(const QString &contents
         return false;
     }
 
-    const int scrapStartIndex = matchingScrapStartIndex(lines, insertionIndex);
+    const int scrapStartIndex = matchingScrapStartIndex(updatedParsedDocument, insertionIndex);
     if (scrapStartIndex < 0) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "Unable to resolve scrap boundaries for area insertion.");
         }
         return false;
     }
-    const QSet<QString> existingIdentifiers = identifiersInsideScrap(lines, scrapStartIndex, insertionIndex);
+    const QSet<QString> existingIdentifiers = identifiersInsideScrap(updatedParsedDocument, scrapStartIndex, insertionIndex);
 
     const QString borderIdentifier = generatedIdentifier(QStringLiteral("line"), existingIdentifiers);
 

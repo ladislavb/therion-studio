@@ -222,6 +222,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   edit planner.
 - Smart Area referenced-area scrap and identifier scans now reuse `TherionSourceDocument` parsed lines instead of
   reparsing physical source rows.
+- Draft geometry insertion target and scrap-boundary scans now use `TherionSourceDocument` parsed lines across point,
+  line, and area planners.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.
