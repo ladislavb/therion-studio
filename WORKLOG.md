@@ -216,6 +216,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   replacement.
 - Smart Area referenced-area rewrite planning now resolves scrap lines and boundary source offsets through
   `TherionSourceDocument`.
+- Physical source-line insertion edit planning now uses `TherionSourceDocument` parsed projection for line endings and
+  insert offsets.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.
