@@ -2312,6 +2312,29 @@ int runRewriteOrientationOptionsTest()
         return 1;
     }
 
+    const QString secondLineOrientationContents = QStringLiteral("scrap s1\r\n"
+                                                                "point 10 20 station -name a3 # keep\r\n"
+                                                                "endscrap\r\n");
+    QVector<TherionSourceTextEdit> secondLineOrientationEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::pointOrientationRewriteEdits(secondLineOrientationContents,
+                                                                    2,
+                                                                    true,
+                                                                    90.0,
+                                                                    &secondLineOrientationEdits,
+                                                                    &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int secondLineOrientationStartOffset = secondLineOrientationContents.indexOf(QStringLiteral("point 10 20 station -name a3 # keep"));
+    if (!expect(secondLineOrientationEdits.size() == 1
+                    && secondLineOrientationEdits.at(0).startOffset == secondLineOrientationStartOffset
+                    && secondLineOrientationEdits.at(0).length == QStringLiteral("point 10 20 station -name a3 # keep").size()
+                    && secondLineOrientationEdits.at(0).replacementText == QStringLiteral("point 10 20 station -name a3 -orientation 90 # keep"),
+                "pointOrientationRewriteEdits should expose exact source ranges for non-first physical lines.")) {
+        return 1;
+    }
+
     contents = QStringLiteral("line slope\n"
                               "  10 20 -orientation 45\n"
                               "  30 40\n"

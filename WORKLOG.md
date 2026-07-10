@@ -194,6 +194,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   the same exact physical-line replacement edits.
 - Line option-toggle rewrite planning now also resolves target lines through `TherionSourceDocument`, with exact
   non-first-line source range coverage.
+- Point-orientation rewrite planning now resolves target point/station lines through `TherionSourceDocument`, with exact
+  non-first-line source range coverage.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.
