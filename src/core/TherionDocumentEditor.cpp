@@ -2053,14 +2053,16 @@ bool TherionDocumentEditor::appendReferencedAreaEdits(const QString &contents,
         return false;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(contents);
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
+    const TherionParsedSourceDocument &parsedDocument = sourceDocument.parsedDocument();
     QStringList lines;
-    lines.reserve(sourceDocument.lines.size());
-    for (const TherionParsedSourceLine &sourceLine : sourceDocument.lines) {
+    lines.reserve(parsedDocument.lines.size());
+    for (const TherionParsedSourceLine &sourceLine : parsedDocument.lines) {
         lines.append(sourceLine.text);
     }
     const int scrapStartIndex = scrapLineNumber - 1;
-    if (scrapStartIndex < 0 || scrapStartIndex >= lines.size()) {
+    const TherionSourceDocumentLine *scrapSourceLine = sourceDocument.lineAtLineNumber(scrapLineNumber);
+    if (scrapSourceLine == nullptr || scrapStartIndex < 0 || scrapStartIndex >= lines.size()) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "Smart Area target scrap no longer exists.");
         }
@@ -2114,7 +2116,7 @@ bool TherionDocumentEditor::appendReferencedAreaEdits(const QString &contents,
                 return false;
             }
             lines[boundaryLine.lineNumber - 1] = lineText;
-            const TherionParsedSourceLine &boundarySourceLine = sourceDocument.lines.at(boundaryLine.lineNumber - 1);
+            const TherionParsedSourceLine &boundarySourceLine = parsedDocument.lines.at(boundaryLine.lineNumber - 1);
             edits->append(TherionSourceTextEdit{
                 boundarySourceLine.startOffset,
                 boundarySourceLine.textLength,
@@ -2142,11 +2144,11 @@ bool TherionDocumentEditor::appendReferencedAreaEdits(const QString &contents,
     areaLines.append(QStringLiteral("  endarea"));
 
     QString lineEnding;
-    if (insertionIndex > 0 && insertionIndex - 1 < sourceDocument.lines.size()) {
-        lineEnding = sourceDocument.lines.at(insertionIndex - 1).lineEnding;
+    if (insertionIndex > 0 && insertionIndex - 1 < parsedDocument.lines.size()) {
+        lineEnding = parsedDocument.lines.at(insertionIndex - 1).lineEnding;
     }
-    if (lineEnding.isEmpty() && insertionIndex < sourceDocument.lines.size()) {
-        lineEnding = sourceDocument.lines.at(insertionIndex).lineEnding;
+    if (lineEnding.isEmpty() && insertionIndex < parsedDocument.lines.size()) {
+        lineEnding = parsedDocument.lines.at(insertionIndex).lineEnding;
     }
     if (lineEnding.isEmpty()) {
         lineEnding = TherionSourceText::detectedLineEnding(contents);
@@ -2158,8 +2160,8 @@ bool TherionDocumentEditor::appendReferencedAreaEdits(const QString &contents,
         insertedText += lineEnding;
     }
 
-    const int insertOffset = insertionIndex < sourceDocument.lines.size()
-        ? sourceDocument.lines.at(insertionIndex).startOffset
+    const int insertOffset = insertionIndex < parsedDocument.lines.size()
+        ? parsedDocument.lines.at(insertionIndex).startOffset
         : contents.size();
     edits->append(TherionSourceTextEdit{
         insertOffset,

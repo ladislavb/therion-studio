@@ -214,6 +214,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   non-first-line source range coverage.
 - Line coordinate-row rewrite planning now uses `TherionSourceDocument` plus its parsed projection for line-block range
   replacement.
+- Smart Area referenced-area rewrite planning now resolves scrap lines and boundary source offsets through
+  `TherionSourceDocument`.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.
