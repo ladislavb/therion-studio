@@ -2613,6 +2613,28 @@ int runRewriteOrientationOptionsTest()
         return 1;
     }
 
+    const QString secondLineAlignContents = QStringLiteral("scrap s1\r\n"
+                                                          "point 10 20 label -text hello # keep\r\n"
+                                                          "endscrap\r\n");
+    QVector<TherionSourceTextEdit> secondLineAlignEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::pointAlignRewriteEdits(secondLineAlignContents,
+                                                              2,
+                                                              QStringLiteral("bottom-right"),
+                                                              &secondLineAlignEdits,
+                                                              &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int secondLineAlignStartOffset = secondLineAlignContents.indexOf(QStringLiteral("point 10 20 label -text hello # keep"));
+    if (!expect(secondLineAlignEdits.size() == 1
+                    && secondLineAlignEdits.at(0).startOffset == secondLineAlignStartOffset
+                    && secondLineAlignEdits.at(0).length == QStringLiteral("point 10 20 label -text hello # keep").size()
+                    && secondLineAlignEdits.at(0).replacementText == QStringLiteral("point 10 20 label -text hello -align bottom-right # keep"),
+                "pointAlignRewriteEdits should expose exact source ranges for non-first physical lines.")) {
+        return 1;
+    }
+
     errorMessage.clear();
     if (!expect(rewritePointAlign(&contents, 1, QString(), &errorMessage),
                 errorMessage.toUtf8().constData())) {
