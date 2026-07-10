@@ -192,6 +192,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   coordinate token offset coverage.
 - Line/area vertex rewrite planning now resolves selected source lines through `TherionSourceDocument` before producing
   the same exact physical-line replacement edits.
+- Line option-toggle rewrite planning now also resolves target lines through `TherionSourceDocument`, with exact
+  non-first-line source range coverage.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.

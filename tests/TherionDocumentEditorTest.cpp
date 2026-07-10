@@ -1871,6 +1871,30 @@ int runRewriteLineOptionToggleTest()
         return 1;
     }
 
+    const QString secondLineToggleContents = QStringLiteral("scrap s1\r\n"
+                                                           "line wall -reverse off # keep\r\n"
+                                                           "endline\r\n"
+                                                           "endscrap\r\n");
+    QVector<TherionSourceTextEdit> secondLineToggleEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::lineOptionToggleRewriteEdits(secondLineToggleContents,
+                                                                    2,
+                                                                    QStringLiteral("-reverse"),
+                                                                    true,
+                                                                    &secondLineToggleEdits,
+                                                                    &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int secondLineToggleStartOffset = secondLineToggleContents.indexOf(QStringLiteral("line wall -reverse off # keep"));
+    if (!expect(secondLineToggleEdits.size() == 1
+                    && secondLineToggleEdits.at(0).startOffset == secondLineToggleStartOffset
+                    && secondLineToggleEdits.at(0).length == QStringLiteral("line wall -reverse off # keep").size()
+                    && secondLineToggleEdits.at(0).replacementText == QStringLiteral("line wall -reverse on # keep"),
+                "lineOptionToggleRewriteEdits should expose exact source ranges for non-first physical lines.")) {
+        return 1;
+    }
+
     contents = QStringLiteral("line wall -close on -reverse off\n");
     errorMessage.clear();
     if (!expect(rewriteLineOptionToggle(&contents, 1, QStringLiteral("reverse"), true, &errorMessage),
