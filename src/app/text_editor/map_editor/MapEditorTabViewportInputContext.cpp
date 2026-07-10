@@ -159,15 +159,6 @@ MapEditorViewportInputContext MapEditorTab::viewportInputContext()
             }
             if (normalizedKind.isEmpty()) {
                 normalizedKind = mapObjectKindForSourceLine(geometryProjectionForCurrentDocument(), lineNumber);
-                if (normalizedKind.isEmpty()) {
-                    const QVector<TherionParsedLine> parsedLines = parsedLinesForCurrentDocument();
-                    for (const TherionParsedLine &parsedLine : parsedLines) {
-                        if (parsedLine.lineNumber == lineNumber) {
-                            normalizedKind = objectKindForDirective(parsedLine.directive);
-                            break;
-                        }
-                    }
-                }
             }
             if (normalizedKind.isEmpty()) {
                 normalizedKind = QStringLiteral("object");

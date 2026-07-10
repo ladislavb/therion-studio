@@ -172,6 +172,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   to parsed lines.
 - Map scene refresh now reuses logical commands for entries, geometry collection, point-orientation lookup, and cursor
   fallback selection, creating the parsed-line compatibility snapshot only when the logical source is unavailable.
+- Map viewport context-menu metadata now uses the TH2 geometry projection for missing object-kind lookup instead of
+  building the parsed-line compatibility snapshot during right-click selection preparation.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.
