@@ -2579,6 +2579,29 @@ int runRewriteOrientationOptionsTest()
         return 1;
     }
 
+    const QString secondLineClipContents = QStringLiteral("scrap s1\r\n"
+                                                         "line wall # keep\r\n"
+                                                         "endline\r\n"
+                                                         "endscrap\r\n");
+    QVector<TherionSourceTextEdit> secondLineClipEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::mapObjectClipDisabledRewriteEdits(secondLineClipContents,
+                                                                         2,
+                                                                         true,
+                                                                         &secondLineClipEdits,
+                                                                         &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int secondLineClipStartOffset = secondLineClipContents.indexOf(QStringLiteral("line wall # keep"));
+    if (!expect(secondLineClipEdits.size() == 1
+                    && secondLineClipEdits.at(0).startOffset == secondLineClipStartOffset
+                    && secondLineClipEdits.at(0).length == QStringLiteral("line wall # keep").size()
+                    && secondLineClipEdits.at(0).replacementText == QStringLiteral("line wall -clip off # keep"),
+                "mapObjectClipDisabledRewriteEdits should expose exact source ranges for non-first physical lines.")) {
+        return 1;
+    }
+
     contents = QStringLiteral("point 10 20 label -text hello\n");
     errorMessage.clear();
     if (!expect(rewritePointAlign(&contents, 1, QStringLiteral("top-left"), &errorMessage),
