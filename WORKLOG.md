@@ -170,6 +170,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   parsed lines.
 - Map background auto area-adjust bounds now derive geometry from the revision-cached TH2 projection before falling back
   to parsed lines.
+- Map scene refresh now reuses logical commands for entries, geometry collection, point-orientation lookup, and cursor
+  fallback selection, creating the parsed-line compatibility snapshot only when the logical source is unavailable.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.

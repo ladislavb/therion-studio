@@ -246,6 +246,7 @@ QString mapEntryTitleForLine(const TherionParsedLine &parsedLine);
 QString mapEntrySubtitleForLine(const TherionParsedLine &parsedLine);
 QColor mapEntryAccentForCategory(const QString &category);
 QVector<MapSceneEntry> collectMapSceneEntries(const QVector<TherionParsedLine> &parsedLines);
+QVector<MapSceneEntry> collectMapSceneEntries(const QVector<TherionSourceLogicalCommand> &commands);
 
 QRectF geometryBoundsForFeatures(const QVector<MapGeometryFeature> &features);
 std::optional<qreal> sourceUnitsPerMeterFromScrapScale(const QStringList &tokens);

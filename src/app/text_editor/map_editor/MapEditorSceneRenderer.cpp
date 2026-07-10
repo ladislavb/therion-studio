@@ -2090,6 +2090,16 @@ QVector<MapSceneEntry> collectMapSceneEntries(const QVector<TherionParsedLine> &
     return entries;
 }
 
+QVector<MapSceneEntry> collectMapSceneEntries(const QVector<TherionSourceLogicalCommand> &commands)
+{
+    QVector<TherionParsedLine> parsedLines;
+    parsedLines.reserve(commands.size());
+    for (const TherionSourceLogicalCommand &command : commands) {
+        parsedLines.append(command.parsed);
+    }
+    return collectMapSceneEntries(parsedLines);
+}
+
 void renderMapWorkspaceScene(QGraphicsScene *scene,
                              const QString &documentPath,
                              const QVector<MapSceneEntry> &entries,

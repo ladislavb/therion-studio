@@ -121,6 +121,7 @@ bool restoreSceneRefreshSelection(const MapEditorSceneRefreshContext &context)
 }
 
 int fallbackSceneRefreshSelectionLine(const MapEditorSceneRefreshContext &context,
+                                      const QVector<TherionSourceLogicalCommand> &commands,
                                       const QVector<TherionParsedLine> &parsedLines)
 {
     const int cursorLine = context.currentLineNumber ? context.currentLineNumber() : 0;
@@ -129,8 +130,9 @@ int fallbackSceneRefreshSelectionLine(const MapEditorSceneRefreshContext &contex
         return 0;
     }
 
-    const CursorGeometrySelection cursorSelection =
-        cursorGeometrySelectionForTextCursor(parsedLines, cursorLine, cursorColumn);
+    const CursorGeometrySelection cursorSelection = !commands.isEmpty()
+        ? cursorGeometrySelectionForTextCursor(commands, cursorLine, cursorColumn)
+        : cursorGeometrySelectionForTextCursor(parsedLines, cursorLine, cursorColumn);
     return cursorSelection.featureLineNumber > 0
         ? cursorSelection.featureLineNumber
         : cursorLine;
@@ -228,22 +230,41 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
     context_.clearMapScene();
     const qint64 clearMs = logTiming ? stageTimer.restart() : 0;
 
-    const QVector<TherionParsedLine> parsedLines = context_.parsedLinesForCurrentDocument
-        ? context_.parsedLinesForCurrentDocument()
-        : TherionDocumentParser::parseTokenLines(context_.documentText());
+    const QVector<TherionSourceLogicalCommand> logicalCommands =
+        context_.logicalSource.logicalCommandsForCurrentDocument
+            ? context_.logicalSource.logicalCommandsForCurrentDocument()
+            : QVector<TherionSourceLogicalCommand>();
+    std::optional<QVector<TherionParsedLine>> parsedLines;
+    auto parsedLinesForRefresh = [&]() -> const QVector<TherionParsedLine> & {
+        if (!parsedLines.has_value()) {
+            parsedLines = context_.parsedLinesForCurrentDocument
+                ? context_.parsedLinesForCurrentDocument()
+                : TherionDocumentParser::parseTokenLines(context_.documentText());
+        }
+        return parsedLines.value();
+    };
     const qint64 parseMs = logTiming ? stageTimer.restart() : 0;
-    const QVector<MapSceneEntry> entries = collectMapSceneEntries(parsedLines);
+    const QVector<MapSceneEntry> entries = !logicalCommands.isEmpty()
+        ? collectMapSceneEntries(logicalCommands)
+        : collectMapSceneEntries(parsedLinesForRefresh());
     QVector<MapGeometryFeature> geometryFeatures;
     if (context_.logicalSource.geometryProjectionForCurrentDocument
-        && context_.logicalSource.logicalCommandsForCurrentDocument) {
-        geometryFeatures = collectGeometryFeatures(context_.logicalSource.geometryProjectionForCurrentDocument(),
-                                                   context_.logicalSource.logicalCommandsForCurrentDocument());
+        && !logicalCommands.isEmpty()) {
+        const Th2GeometryProjection geometryProjection =
+            context_.logicalSource.geometryProjectionForCurrentDocument();
+        geometryFeatures = collectGeometryFeatures(geometryProjection, logicalCommands);
     } else {
-        geometryFeatures = collectGeometryFeatures(parsedLines);
+        geometryFeatures = collectGeometryFeatures(parsedLinesForRefresh());
     }
     QHash<int, TherionParsedLine> parsedLinesByLineNumber;
-    for (const TherionParsedLine &parsedLine : parsedLines) {
-        parsedLinesByLineNumber.insert(parsedLine.lineNumber, parsedLine);
+    if (!logicalCommands.isEmpty()) {
+        for (const TherionSourceLogicalCommand &command : logicalCommands) {
+            parsedLinesByLineNumber.insert(command.parsed.lineNumber, command.parsed);
+        }
+    } else {
+        for (const TherionParsedLine &parsedLine : parsedLinesForRefresh()) {
+            parsedLinesByLineNumber.insert(parsedLine.lineNumber, parsedLine);
+        }
     }
     for (MapGeometryFeature &feature : geometryFeatures) {
         if (feature.kind != MapGeometryFeature::Kind::Point) {
@@ -288,7 +309,11 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
     const qint64 backgroundMs = logTiming ? stageTimer.restart() : 0;
     const bool restoredSelection = restoreSceneRefreshSelection(context_);
     if (!restoredSelection) {
-        context_.selectMapLine(fallbackSceneRefreshSelectionLine(context_, parsedLines), !preserveViewport);
+        context_.selectMapLine(fallbackSceneRefreshSelectionLine(
+                                   context_,
+                                   logicalCommands,
+                                   logicalCommands.isEmpty() ? parsedLinesForRefresh() : QVector<TherionParsedLine>{}),
+                               !preserveViewport);
     }
     const qint64 selectionMs = logTiming ? stageTimer.restart() : 0;
     context_.applyInspectorObjectVisibility();
@@ -332,7 +357,7 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
                    .arg(preserveViewport ? 1 : 0)
                    .arg(beforeItemCount)
                    .arg(afterItemCount)
-                   .arg(parsedLines.size())
+                   .arg(parsedLines.has_value() ? parsedLines->size() : 0)
                    .arg(entries.size())
                    .arg(geometryFeatures.size())
                    .arg(restoredSelection ? 1 : 0)

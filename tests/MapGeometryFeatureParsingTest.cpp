@@ -229,6 +229,51 @@ int runProjectionGeometryFeatureAdapterParityTest()
     return 0;
 }
 
+int runLogicalMapSceneEntryAdapterParityTest()
+{
+    const QString text = QStringLiteral(
+        "scrap s1 -projection plan\n"
+        "point 10 20 station -name P1\n"
+        "line wall -id wall-1 -close on\n"
+        "  0 0\n"
+        "  10 0\n"
+        "  10 10\n"
+        "endline\n"
+        "area water -id a1\n"
+        "  wall-1\n"
+        "endarea\n"
+        "endscrap\n");
+
+    const QVector<TherionParsedLine> parsedLines = TherionDocumentParser::parseTokenLines(text);
+    const QVector<MapSceneEntry> parsedEntries = collectMapSceneEntries(parsedLines);
+
+    TherionSourceDocumentMetadata metadata;
+    metadata.sourceType = TherionSourceDocumentType::TherionMap;
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(text, metadata);
+    const TherionSourceLogicalDocument logicalDocument =
+        TherionSourceLogicalDocument::fromSourceDocument(sourceDocument);
+    const QVector<MapSceneEntry> logicalEntries = collectMapSceneEntries(logicalDocument.commands());
+
+    if (!expect(logicalEntries.size() == parsedEntries.size(),
+                "Expected logical map scene entry adapter to preserve entry count.")) {
+        return 1;
+    }
+
+    for (int index = 0; index < parsedEntries.size(); ++index) {
+        const MapSceneEntry &parsed = parsedEntries.at(index);
+        const MapSceneEntry &logical = logicalEntries.at(index);
+        if (!expect(logical.lineNumber == parsed.lineNumber
+                        && logical.category == parsed.category
+                        && logical.title == parsed.title
+                        && logical.subtitle == parsed.subtitle,
+                    "Expected logical map scene entry adapter to preserve scene entry content.")) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 int runBezierSegmentParsingTest()
 {
     const QString text =
@@ -2431,6 +2476,9 @@ int main(int argc, char **argv)
         return rc;
     }
     if (const int rc = runProjectionGeometryFeatureAdapterParityTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runLogicalMapSceneEntryAdapterParityTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runBezierSegmentParsingTest(); rc != 0) {
