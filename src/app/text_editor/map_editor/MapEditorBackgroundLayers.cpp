@@ -57,7 +57,6 @@
 #include "../../../core/PocketTopoImport.h"
 #include "../../../core/TherionBackgroundMetadata.h"
 #include "../../../core/TherionCommandLineModel.h"
-#include "../../../core/TherionDocumentParser.h"
 #include "../../../core/TherionSourceText.h"
 #include "../../../core/TherionTokenRules.h"
 #include "../../../core/TherionXviParser.h"
@@ -3215,8 +3214,10 @@ QRectF MapEditorTab::xtherionAutoAreaAdjustRect() const
     }
 
     if (textEditor_ != nullptr) {
-        const QVector<TherionParsedLine> parsedLines = TherionDocumentParser::parseTokenLines(textEditor_->text());
-        const QVector<MapGeometryFeature> features = collectGeometryFeatures(parsedLines);
+        const QVector<TherionSourceLogicalCommand> logicalCommands = logicalCommandsForCurrentDocument();
+        const QVector<MapGeometryFeature> features = !logicalCommands.isEmpty()
+            ? collectGeometryFeatures(geometryProjectionForCurrentDocument(), logicalCommands)
+            : collectGeometryFeatures(parsedLinesForCurrentDocument());
         if (!features.isEmpty()) {
             includeRect(geometryBoundsForFeatures(features));
         }

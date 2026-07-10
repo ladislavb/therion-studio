@@ -168,6 +168,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   falling back to parsed lines.
 - Map selected-vertex source navigation now resolves source text references from logical commands before falling back to
   parsed lines.
+- Map background auto area-adjust bounds now derive geometry from the revision-cached TH2 projection before falling back
+  to parsed lines.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.
