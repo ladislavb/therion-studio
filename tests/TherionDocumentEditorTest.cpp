@@ -3248,6 +3248,28 @@ int runRewriteScrapProjectionTest()
         return 1;
     }
 
+    const QString secondLineProjectionContents = QStringLiteral("encoding utf-8\r\n"
+                                                               "scrap s2 # keep\r\n"
+                                                               "endscrap\r\n");
+    QVector<TherionSourceTextEdit> secondLineProjectionEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::scrapProjectionRewriteEdits(secondLineProjectionContents,
+                                                                   2,
+                                                                   QStringLiteral("extended"),
+                                                                   &secondLineProjectionEdits,
+                                                                   &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int secondLineProjectionStartOffset = secondLineProjectionContents.indexOf(QStringLiteral("scrap s2 # keep"));
+    if (!expect(secondLineProjectionEdits.size() == 1
+                    && secondLineProjectionEdits.at(0).startOffset == secondLineProjectionStartOffset
+                    && secondLineProjectionEdits.at(0).length == QStringLiteral("scrap s2 # keep").size()
+                    && secondLineProjectionEdits.at(0).replacementText == QStringLiteral("scrap s2 -projection extended # keep"),
+                "scrapProjectionRewriteEdits should expose exact source ranges for non-first physical lines.")) {
+        return 1;
+    }
+
     errorMessage.clear();
     if (!expect(rewriteScrapProjection(&contents,
                                                               1,
