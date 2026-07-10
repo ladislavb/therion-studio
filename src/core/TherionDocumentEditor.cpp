@@ -846,13 +846,15 @@ bool linePointNumericOptionRewriteEdits(const QString &contents,
         return false;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(contents);
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
+    const TherionParsedSourceDocument &parsedDocument = sourceDocument.parsedDocument();
     QStringList lines;
-    lines.reserve(sourceDocument.lines.size());
-    for (const TherionParsedSourceLine &sourceLine : sourceDocument.lines) {
+    lines.reserve(parsedDocument.lines.size());
+    for (const TherionParsedSourceLine &sourceLine : parsedDocument.lines) {
         lines.append(sourceLine.text);
     }
-    if (lineNumber > lines.size()) {
+    const TherionSourceDocumentLine *blockStartSourceLine = sourceDocument.lineAtLineNumber(lineNumber);
+    if (blockStartSourceLine == nullptr) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line no longer exists.");
         }
@@ -907,14 +909,14 @@ bool linePointNumericOptionRewriteEdits(const QString &contents,
         }
         if (lineText.trimmed().isEmpty()
             && coordinateTokenPairsForLine(parsedLine, existing.lineIndex == blockStartLineIndex ? 1 : 0).isEmpty()) {
-            const TherionParsedSourceLine &sourceLine = sourceDocument.lines.at(existing.lineIndex);
+            const TherionParsedSourceLine &sourceLine = parsedDocument.lines.at(existing.lineIndex);
             edits->append(TherionSourceTextEdit{
                 sourceLine.startOffset,
                 sourceLine.textLength + sourceLine.lineEndingLength,
                 QString(),
             });
         } else {
-            const TherionParsedSourceLine &sourceLine = sourceDocument.lines.at(existing.lineIndex);
+            const TherionParsedSourceLine &sourceLine = parsedDocument.lines.at(existing.lineIndex);
             if (lineText != sourceLine.text) {
                 edits->append(TherionSourceTextEdit{
                     sourceLine.startOffset,
@@ -962,7 +964,7 @@ bool linePointNumericOptionRewriteEdits(const QString &contents,
             lineText.insert(optionToken.start + optionToken.length,
                             QStringLiteral(" %1").arg(formattedValue));
         }
-        const TherionParsedSourceLine &sourceLine = sourceDocument.lines.at(existing.lineIndex);
+        const TherionParsedSourceLine &sourceLine = parsedDocument.lines.at(existing.lineIndex);
         if (lineText != sourceLine.text) {
             edits->append(TherionSourceTextEdit{
                 sourceLine.startOffset,
@@ -979,20 +981,20 @@ bool linePointNumericOptionRewriteEdits(const QString &contents,
     const QString indent = indentMatch.hasMatch() && !indentMatch.captured(0).isEmpty()
         ? indentMatch.captured(0)
         : QStringLiteral("  ");
-    if (target->optionBlockEndLineIndex < 0 || target->optionBlockEndLineIndex >= sourceDocument.lines.size()) {
+    if (target->optionBlockEndLineIndex < 0 || target->optionBlockEndLineIndex >= parsedDocument.lines.size()) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "Line-point option insertion range could not be rewritten.");
         }
         return false;
     }
-    QString insertionLineEnding = sourceDocument.lines.value(target->coordinateLineIndex).lineEnding;
+    QString insertionLineEnding = parsedDocument.lines.value(target->coordinateLineIndex).lineEnding;
     if (insertionLineEnding.isEmpty()) {
         insertionLineEnding = TherionSourceText::detectedLineEnding(contents);
     }
     const QString insertedLine = QStringLiteral("%1%2 %3%4")
                                      .arg(indent, linePointOptionOutputToken(normalizedOption), formattedValue, insertionLineEnding);
     edits->append(TherionSourceTextEdit{
-        sourceDocument.lines.at(target->optionBlockEndLineIndex).startOffset,
+        parsedDocument.lines.at(target->optionBlockEndLineIndex).startOffset,
         0,
         insertedLine,
     });

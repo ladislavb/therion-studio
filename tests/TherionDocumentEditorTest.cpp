@@ -2442,6 +2442,32 @@ int runRewriteOrientationOptionsTest()
         return 1;
     }
 
+    const QString secondLineLeftSizeContents = QStringLiteral("encoding utf-8\r\n"
+                                                             "line slope\n"
+                                                             "  10 20\r"
+                                                             "  30 40\n"
+                                                             "endline\r");
+    QVector<TherionSourceTextEdit> secondLineLeftSizeEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::linePointLeftSizeRewriteEdits(secondLineLeftSizeContents,
+                                                                     2,
+                                                                     0,
+                                                                     true,
+                                                                     40.0,
+                                                                     &secondLineLeftSizeEdits,
+                                                                     &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int secondLineLeftSizeStartOffset = secondLineLeftSizeContents.indexOf(QStringLiteral("  30 40\n"));
+    if (!expect(secondLineLeftSizeEdits.size() == 1
+                    && secondLineLeftSizeEdits.at(0).startOffset == secondLineLeftSizeStartOffset
+                    && secondLineLeftSizeEdits.at(0).length == 0
+                    && secondLineLeftSizeEdits.at(0).replacementText == QStringLiteral("  l-size 40.0\r"),
+                "linePointLeftSizeRewriteEdits should expose exact insertion ranges for non-first physical line blocks.")) {
+        return 1;
+    }
+
     errorMessage.clear();
     if (!expect(rewriteLinePointLeftSize(&contents, 1, 0, true, 40.0, &errorMessage),
                 errorMessage.toUtf8().constData())) {
