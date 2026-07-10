@@ -202,6 +202,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   source range coverage.
 - Line-point numeric option rewrite planning now uses `TherionSourceDocument` plus its parsed projection for line-block
   scans and standalone option-row insertions.
+- Scrap-scale rewrite planning now resolves target scrap lines through `TherionSourceDocument`, with exact non-first-line
+  source range coverage.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.

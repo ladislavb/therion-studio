@@ -2697,6 +2697,28 @@ int runRewriteScrapScaleTest()
         return 1;
     }
 
+    const QString secondLineScaleContents = QStringLiteral("encoding utf-8\r\n"
+                                                          "scrap s2 -projection plan # keep\r\n"
+                                                          "endscrap\r\n");
+    QVector<TherionSourceTextEdit> secondLineScaleEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::scrapScaleRewriteEdits(secondLineScaleContents,
+                                                              2,
+                                                              QStringLiteral("[1 2 3 4 5 6 7 8 m]"),
+                                                              &secondLineScaleEdits,
+                                                              &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int secondLineScaleStartOffset = secondLineScaleContents.indexOf(QStringLiteral("scrap s2 -projection plan # keep"));
+    if (!expect(secondLineScaleEdits.size() == 1
+                    && secondLineScaleEdits.at(0).startOffset == secondLineScaleStartOffset
+                    && secondLineScaleEdits.at(0).length == QStringLiteral("scrap s2 -projection plan # keep").size()
+                    && secondLineScaleEdits.at(0).replacementText == QStringLiteral("scrap s2 -projection plan -scale [1 2 3 4 5 6 7 8 m] # keep"),
+                "scrapScaleRewriteEdits should expose exact source ranges for non-first physical lines.")) {
+        return 1;
+    }
+
     errorMessage.clear();
     if (!expect(rewriteScrapScale(&contents,
                                                          1,
