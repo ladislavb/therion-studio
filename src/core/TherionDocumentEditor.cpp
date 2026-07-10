@@ -3027,15 +3027,16 @@ bool TherionDocumentEditor::mapObjectQuickFieldsRewriteEdits(const QString &cont
         return false;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(contents);
-    if (lineNumber > sourceDocument.lines.size()) {
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
+    const TherionSourceDocumentLine *sourceDocumentLine = sourceDocument.lineAtLineNumber(lineNumber);
+    if (sourceDocumentLine == nullptr) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line no longer exists.");
         }
         return false;
     }
 
-    const TherionParsedSourceLine &sourceLine = sourceDocument.lines.at(lineNumber - 1);
+    const TherionParsedSourceLine &sourceLine = sourceDocumentLine->sourceLine;
     QString lineText = sourceLine.text;
     TherionParsedLine parsedLine = sourceLine.parsed;
     if (parsedLine.directive.isEmpty()) {

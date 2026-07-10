@@ -2833,6 +2833,33 @@ int runRewriteMapObjectQuickFieldsTest()
         return 1;
     }
 
+    const QString secondLineQuickFieldContents = QStringLiteral("scrap s1\r\n"
+                                                               "line wall -id old # keep\r\n"
+                                                               "endline\r\n"
+                                                               "endscrap\r\n");
+    QVector<TherionSourceTextEdit> secondLineQuickFieldEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::mapObjectQuickFieldsRewriteEdits(secondLineQuickFieldContents,
+                                                                        2,
+                                                                        QStringLiteral("border"),
+                                                                        QStringLiteral("temporary"),
+                                                                        QStringLiteral("line-2"),
+                                                                        QString(),
+                                                                        false,
+                                                                        &secondLineQuickFieldEdits,
+                                                                        &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int secondLineQuickFieldStartOffset = secondLineQuickFieldContents.indexOf(QStringLiteral("line wall -id old # keep"));
+    if (!expect(secondLineQuickFieldEdits.size() == 1
+                    && secondLineQuickFieldEdits.at(0).startOffset == secondLineQuickFieldStartOffset
+                    && secondLineQuickFieldEdits.at(0).length == QStringLiteral("line wall -id old # keep").size()
+                    && secondLineQuickFieldEdits.at(0).replacementText == QStringLiteral("line border -id line-2 -subtype temporary # keep"),
+                "mapObjectQuickFieldsRewriteEdits should expose exact source ranges for non-first physical lines.")) {
+        return 1;
+    }
+
     errorMessage.clear();
     if (!expect(rewriteMapObjectQuickFields(&contents,
                                                                    1,
