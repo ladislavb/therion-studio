@@ -3219,6 +3219,28 @@ int runRewriteMapObjectQuickFieldsTest()
         return 1;
     }
 
+    const QString secondLineValueContents = QStringLiteral("scrap s1\r\n"
+                                                          "point 10 20 altitude # keep\r\n"
+                                                          "endscrap\r\n");
+    QVector<TherionSourceTextEdit> secondLineValueEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::mapObjectValueOptionRewriteEdits(secondLineValueContents,
+                                                                        2,
+                                                                        QStringLiteral("[fix 1200]"),
+                                                                        &secondLineValueEdits,
+                                                                        &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int secondLineValueStartOffset = secondLineValueContents.indexOf(QStringLiteral("point 10 20 altitude # keep"));
+    if (!expect(secondLineValueEdits.size() == 1
+                    && secondLineValueEdits.at(0).startOffset == secondLineValueStartOffset
+                    && secondLineValueEdits.at(0).length == QStringLiteral("point 10 20 altitude # keep").size()
+                    && secondLineValueEdits.at(0).replacementText == QStringLiteral("point 10 20 altitude -value [fix 1200] # keep"),
+                "mapObjectValueOptionRewriteEdits should expose exact source ranges for non-first physical lines.")) {
+        return 1;
+    }
+
     errorMessage.clear();
     if (!expect(rewriteMapObjectValueOption(&contents,
                                                                    1,
