@@ -224,6 +224,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Map object-details line-point option lookup and edit-controller object-line validation now use
   `TherionSourceDocument` snapshots instead of reparsing physical source lines before applying existing rewrite
   services.
+- Map area/source reference resolver fallbacks and scene-refresh parsed-line fallback now build their compatibility
+  token-line views through `TherionSourceDocument` instead of direct whole-document parser calls.
 - Legacy physical source-line insertion mutation now uses the same `TherionSourceDocument` parsed projection path as the
   edit planner.
 - Smart Area referenced-area scrap and identifier scans now reuse `TherionSourceDocument` parsed lines instead of

@@ -2,8 +2,8 @@
 
 #include "MapEditorSceneInternals.h"
 #include "../../../core/Th2GeometryProjection.h"
-#include "../../../core/TherionDocumentParser.h"
 #include "../../../core/TherionSourceLogicalDocument.h"
+#include "../../../core/TherionSourceDocument.h"
 #include "../../../core/TherionTokenRules.h"
 
 #include <cmath>
@@ -26,7 +26,7 @@ QVector<TherionParsedLine> parsedLinesForLogicalCommands(const QVector<TherionSo
 
 std::optional<MapGeometryFeature> lineFeatureForLineNumber(const QString &documentText, int lineNumber)
 {
-    return lineFeatureForLineNumber(TherionDocumentParser::parseTokenLines(documentText), lineNumber);
+    return lineFeatureForLineNumber(TherionSourceDocument::fromText(documentText).tokenLines(), lineNumber);
 }
 
 std::optional<MapGeometryFeature> lineFeatureForLineNumber(const QVector<TherionParsedLine> &parsedLines, int lineNumber)

@@ -4,7 +4,7 @@
 #include "MapEditorSceneInternals.h"
 #include "MapEditorSceneSupport.h"
 #include "MapEditorSourceReferenceResolver.h"
-#include "../../../core/TherionDocumentParser.h"
+#include "../../../core/TherionSourceDocument.h"
 #include "../../../platform/DiagnosticLogging.h"
 
 #include <QGraphicsScene>
@@ -240,7 +240,7 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
         if (!parsedLines.has_value()) {
             parsedLines = context_.parsedLinesForCurrentDocument
                 ? context_.parsedLinesForCurrentDocument()
-                : TherionDocumentParser::parseTokenLines(context_.documentText());
+                : TherionSourceDocument::fromText(context_.documentText()).tokenLines();
         }
         return parsedLines.value();
     };

@@ -2,8 +2,8 @@
 
 #include "../../../core/Th2GeometryProjection.h"
 #include "../../../core/TherionCommandLineModel.h"
-#include "../../../core/TherionDocumentParser.h"
 #include "../../../core/TherionSourceLogicalDocument.h"
+#include "../../../core/TherionSourceDocument.h"
 
 #include <QHash>
 #include <QStringList>
@@ -149,7 +149,7 @@ QVector<AreaReferenceBlock> areaReferenceBlocks(const Th2GeometryProjection &pro
 
 QVector<TherionParsedLine> parsedTokenLinesForText(const QString &text)
 {
-    return TherionDocumentParser::parseTokenLines(text);
+    return TherionSourceDocument::fromText(text).tokenLines();
 }
 
 QVector<TherionParsedLine> parsedTokenLinesForLogicalCommands(const QVector<TherionSourceLogicalCommand> &commands)
