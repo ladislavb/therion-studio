@@ -6,43 +6,50 @@ Scope: static review of repository structure, dead-code candidates, duplicate co
 
 This document is an active review record. Completed follow-ups should be removed from this file and tracked through code, tests, `ARCHITECTURE.md`, `WORKLOG.md`, or archive history as appropriate.
 
-Status update: 2026-06-29
+Status update: 2026-07-12
 
-- The unified source DOM direction now has a dedicated operational plan in `plans/UNIFIED_SOURCE_DOM_PLAN.md`.
-- `TherionSourceText`, `TherionSourceDocument`, `TherionSourceLogicalDocument`, and `TherionSourceSnapshotCache` provide the current shared source snapshot and logical command foundation.
-- Source document line/offset lookup, logical command/token offset lookup, and selected validator migrations are implemented and covered by `TherionCoreQTests`.
-- Map editor release stabilization has a separate Windows-input diagnostic/fix trail; do not fold broad map projection rewrites into release-stabilization work without new evidence.
+- Unified Source DOM migration M0-M9 is implemented and the completed plan is archived at
+  `plans/archive/UNIFIED_SOURCE_DOM_PLAN.md`.
+- `TherionSourceText`, `TherionSourceDocument`, `TherionSourceLogicalDocument`, `TherionSourceSnapshotCache`, and
+  `Th2GeometryProjection` provide the current shared source snapshot, logical command, and TH2 projection foundation.
+- New direct `TherionDocumentParser` production call sites are guarded by `scripts/check_structure_constraints.py`.
+- Map editor release stabilization has a separate Windows-input diagnostic/fix trail; do not fold broad map rendering
+  rewrites into release-stabilization work without new evidence.
 - This review should now be read as an architecture risk register. Detailed implementation slices belong in the focused plans and `WORKLOG.md`.
 
 ## Executive Summary
 
-Therion Studio is close to a coherent architecture, but the biggest remaining maintenance risk is that the application still does not have one authoritative source parser/model for Therion documents. Existing source snapshot and token-line compatibility APIs are useful stepping stones, but Raw editor, Block editor, Map editor, Structure index, syntax highlighting, command help, background metadata, and source rewrite operations still need to converge on one shared lossless source model and one source-change transaction path.
+Therion Studio now has one authoritative shared source model for Therion documents. The largest remaining architecture risk
+is no longer parser/model convergence, but keeping future source mutations, projection refreshes, and UI smoke workflows
+inside the shared transaction/projection boundaries.
 
-For the first stable public release, avoid a broad parser rewrite. Keep current behavior stable, add guardrails where risky paths are touched, and continue the unified parser/source transaction migration as the next major architecture phase.
+For `2026.7.2`, avoid broad parser or renderer rewrites. Keep current behavior stable, use the existing guardrails, and
+treat source-model changes as focused maintenance or regression fixes.
 
 ## Priority Findings
 
-### P0 - Missing Unified Lossless Source Model
+### P0 - Unified Lossless Source Model Baseline
 
 Evidence:
 
-- The first lossless source snapshot and logical command APIs exist, but much of the application still consumes token-line compatibility projections or local interpretation code.
-- Map, Block, Structure, completion, syntax validation, command help, source rewriting, and background metadata still have separate projection paths.
-- Some source rewrite paths have migrated to source ranges, but the document model is not yet the single canonical source of parsed command, block, option, geometry, and reference data.
+- `TherionSourceDocument`, `TherionSourceLogicalDocument`, and `Th2GeometryProjection` are the shared projection
+  boundaries for Raw, Blocks, Map, Structure, Validation, completion/help, and source rewrite planning.
+- Remaining direct parser calls are documented core/synthetic exceptions enforced by `scripts/check_structure_constraints.py`.
+- The completed migration history is archived in `plans/archive/UNIFIED_SOURCE_DOM_PLAN.md`.
 
 Risk:
 
-- Round-trip behavior remains fragile when source trivia, continuation lines, comments, blank lines, encoding, or source ranges matter.
-- Projections can drift because each layer can still reinterpret source text differently.
-- Parser, validation, highlighting, map/source synchronization, and project-index behavior can diverge under edge cases.
+- Future changes can still regress if new UI or planner code bypasses source snapshots/projections or source transaction
+  helpers.
+- Compatibility fallback APIs can outlive their usefulness unless they remain guarded and tested.
 
 Recommended direction:
 
-- Continue building a shared `TherionSourceDocument` model that preserves every physical source line, newline style, indentation, comments, blank lines, token spans, command/directive spans, block ranges, file type context, and encoding metadata.
 - Keep raw text as the canonical persisted output.
-- Build Raw, Blocks, Map, Structure, Context Help, completion, syntax, validation, and compiler-facing projections from the shared source model.
-- Keep legacy token-line APIs as temporary compatibility boundaries only while consumers migrate.
-- Follow `plans/UNIFIED_SOURCE_DOM_PLAN.md` for concrete slice order; prefer Raw/Blocks/Validation/Structure consumers before broad Map scene projection rewrites.
+- Extend shared source/projection types when new behavior needs command, token, block, option, geometry, background, or
+  reference data.
+- Keep legacy token-line compatibility APIs narrow, tested, and outside new production UI code where practical.
+- Run structure guardrails and focused regression tests before treating source-model changes as complete.
 
 ### P0 - Source Writes Are Not Yet One Cross-Editor Transaction
 

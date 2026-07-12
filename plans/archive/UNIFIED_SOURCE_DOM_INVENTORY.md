@@ -1,8 +1,11 @@
 # Unified Source DOM Inventory
 
-This file is the current call-site inventory required by `plans/UNIFIED_SOURCE_DOM_PLAN.md` M1.
-It records the current legacy parser/line-splitting hotspots and classifies which ones may remain as intentional
-compatibility or synthetic-snippet callers.
+Archived snapshot from the completed Unified Source DOM migration. The active migration plan is archived beside this file
+as `plans/archive/UNIFIED_SOURCE_DOM_PLAN.md`; current parser exception rules are enforced by
+`scripts/check_structure_constraints.py`.
+
+This file records the M1 legacy parser/line-splitting inventory as it existed during the migration. It is retained for
+audit/history only and should not be used as the current call-site list.
 
 The snapshot below was gathered from:
 

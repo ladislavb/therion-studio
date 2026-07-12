@@ -4,22 +4,22 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Current Focus
 
-1. `2026.7.2` development planning and first implementation slices after `2026.7.1`.
-2. Unified Source DOM consumer migration in small, tested slices.
-3. Project source snapshot and validation/cache reuse work for repeated project scans.
-4. Plan-driven follow-ups for map partial refresh, GUI cleanup, SVG backgrounds, reporting, and 3D viewer refinement.
+1. `2026.7.2` post-DOM stabilization and next feature selection.
+2. Real-project smoke testing for Raw, Blocks, Map, Validation, Structure, and Compiler navigation after DOM closure.
+3. Track the one-off `MapEditorDragUndoRedoSmokeTest` segfault signal from the first full verification run.
+4. Plan-driven follow-ups for map partial refresh, validation/cache tuning, GUI cleanup, SVG backgrounds, reporting, LiDAR design, and 3D viewer refinement.
 
 ## Active Work
 
 ### 2026.7.2 Planning
 
-- Treat Unified Source DOM completion as the primary `2026.7.2` release theme. Use
-  `plans/UNIFIED_SOURCE_DOM_PLAN.md` as the ordered migration backlog and keep each implementation commit to one
-  Raw/Blocks/Map/Structure/Validation/transaction slice.
+- Treat Unified Source DOM implementation as closed for `2026.7.2`; the completed M0-M9 plan is archived at
+  `plans/archive/UNIFIED_SOURCE_DOM_PLAN.md`. Future parser/source-model work should treat the DOM as the current
+  architecture and extend it through focused regressions rather than reviving the migration queue.
 - Keep SQL reporting improvements scoped to incremental follow-ups such as saved presets, filtering, summaries/charts, or
-  direct database-export workflows after the active DOM slice is not at risk.
-- Keep LiDAR/point-cloud processing as design/backlog work until the DOM migration has a stable Map/TH2 projection
-  boundary; do not start heavy point-cloud implementation during the DOM completion push.
+  direct database-export workflows.
+- Keep LiDAR/point-cloud processing as design/backlog work until the Map/TH2 projection boundary has a concrete import,
+  registration, and 2D projection design.
 
 ### 2026.7.1 Stabilization Notes
 
@@ -94,203 +94,24 @@ Active planning only. Completed history belongs in archive files. Stable archite
   summaries/charts, or a direct Therion `export database` action before expanding the SQL viewer into a broader analysis
   workspace.
 
-### Unified Source DOM / Transactions
+### Post-DOM Stabilization
 
-- Use `plans/UNIFIED_SOURCE_DOM_PLAN.md` as the detailed slice queue.
-- Raw completion prefix detection now uses shared logical token ranges for parsed cursor tokens while preserving the
-  existing completion-character filtering for path and partial-token behavior; keep this covered in
-  `TextEditorRawEditorQTests`.
-- Raw context help command selection and the completion-popup required-argument fallback now resolve commands through
-  logical offsets instead of physical-line rescans, and the synthetic input-path insertion helper now uses a shared
-  logical document for its command check.
-- Blocks canvas data-body scanning now uses shared logical commands when deciding where data rows end, so continuation
-  rows after a data body do not get reparsed as standalone raw lines.
-- Blocks details selection loading now reads selected logical commands from a source snapshot when populating read-only
-  fields and option rows for continued commands.
-- Blocks logical-line consumers now share a DOM-aware parsed-line helper that prefers cached
-  `TherionSourceLogicalDocument` commands and source-document physical lines before falling back to legacy synthetic-line
-  parsing.
-- DOM legacy parser removal now has a structure guardrail: new direct `TherionDocumentParser` production calls fail
-  `scripts/check_structure_constraints.py` unless they match the documented core/synthetic exception list.
-- Blocks document outline data-body scanning now reuses `TherionSourceLogicalDocument::commandAtPhysicalLine()` for
-  physical-row lookup, with regression coverage that comments inside a `data` body do not truncate the tracked range.
-- Blocks toolbox auto-scope lookup now uses the shared logical source snapshot and a revision-keyed cache instead of
-  reparsing physical lines, and regression coverage keeps the resolved insertion context anchored to the selected
-  command's parent block.
-- Blocks selection-details data-header readings-order chips now reuse already parsed logical tokens instead of
-  retokenizing the joined readings-order string, preserving the same UI behavior with less local parsing.
-- Blocks option-argument editors now reuse the shared command-option editor parser instead of tokenizing the value cell
-  locally, so arity-aware splitting stays aligned with the rest of the command-editing stack.
-- Blocks data-block dialog now builds one shared `TherionSourceDocument` snapshot for its scope and row scans instead of
-  reparsing each row with `parseLine(...)`, and its data-header field parsing now reuses parsed tokens instead of
-  tokenizing the joined column string again.
-- Blocks delete executor now uses the same shared `TherionSourceDocument` snapshot for `data` scope scans and body-range
-  detection instead of reparsing each scanned line independently.
-- Blocks line-build service now reuses a single `TherionSourceDocument` snapshot for logical-line parsing instead of
-  reparsing the selected line directly.
-- Blocks canvas rebuild now uses the shared source snapshot for the final `data` body scan fallback instead of
-  reparsing physical lines directly when the logical projection does not cover a scanned row.
-- Blocks encoding-root normalization now uses a shared `TherionSourceDocument` snapshot for the line scan instead of
-  parsing each physical line independently.
-- Map object-details standalone row helpers now build one shared `TherionSourceDocument` snapshot for the row scan
-  instead of parsing each standalone row independently.
-- PocketTopo XVI insertion placement now uses a shared core source snapshot helper instead of parsing the raw text
-  line by line inside the map editor.
-- DOM M6 is starting with a read-only `Th2GeometryProjection` core contract for `.th2` point/line/area/scrap/map and
-  background metadata objects; keep UI consumers on existing paths until projection tests establish range and identity
-  behavior for each migrated object type.
-- `Th2GeometryProjection` also exposes stable object keys and source-line lookup helpers so the first M7 map read-only
-  consumer can migrate without adding new local object-search code.
-- Map object-details line feature lookups now receive the revision-cached `Th2GeometryProjection` through
-  `MapEditorLogicalSourceContext` and use it to resolve selected line objects before falling back to logical-command
-  feature conversion.
-- Map area-reference read-only lookups now have `Th2GeometryProjection` resolver overloads; object details and inspector
-  delete-block indicators prefer the projection path with logical-command fallback.
-- Map area-border selection highlighting now prefers the `Th2GeometryProjection` area-reference path with logical-command
-  fallback, keeping area selection visual behavior on the shared TH2 projection.
-- Map point-selection source-line navigation now has a `Th2GeometryProjection` lookup path with parsed-line fallback, keeping
-  vertex column navigation on the legacy parser until the projection carries coordinate token spans.
-- Map selection object-kind detection now has a `Th2GeometryProjection` lookup path for point/line/area/scrap source
-  lines, preserving the parsed-line fallback for compatibility.
-- Map geometry feature collection now has a tested `Th2GeometryProjection` compatibility adapter that preserves current
-  `MapGeometryFeature` output without switching scene refresh rendering yet.
-- Map scene refresh now prefers the `Th2GeometryProjection` geometry-feature adapter for editable map geometry and keeps
-  the legacy parsed-line path as a fallback when no logical source context is available.
-- Map selection line-feature lookup now prefers `Th2GeometryProjection` plus logical commands for path-like click
-  selection and cursor-owner anchor restoration, falling back to parsed lines only without logical source context.
-- Map Objects inspector object discovery now consumes `TherionSourceLogicalDocument` commands through
-  `ProjectStructureIndex::scanTh2Objects()` and only falls back to parsed lines when no logical source context is present.
-- Smart Area preview now builds candidate geometry from the TH2 projection adapter when logical commands are available,
-  preserving the parsed-line geometry path only as a fallback.
-- Map cursor-to-selection geometry and scrap-line lookup now use logical-command resolver overloads before falling back
-  to the parsed-line compatibility snapshot.
-- Map selection context-menu object-kind fallback now uses the TH2 geometry projection before falling back to parsed
-  lines.
-- Map Object Details scrap metadata and pending-insert scrap choices now use logical-command inspector helpers before
-  falling back to parsed lines.
-- Map selected-vertex source navigation now resolves source text references from logical commands before falling back to
-  parsed lines.
-- Map background auto area-adjust bounds now derive geometry from the revision-cached TH2 projection before falling back
-  to parsed lines.
-- Map scene refresh now reuses logical commands for entries, geometry collection, point-orientation lookup, and cursor
-  fallback selection, creating the parsed-line compatibility snapshot only when the logical source is unavailable.
-- Map viewport context-menu metadata now uses the TH2 geometry projection for missing object-kind lookup instead of
-  building the parsed-line compatibility snapshot during right-click selection preparation.
-- Map selection object-kind, line-feature, selected point/source-vertex navigation, and cursor-to-selection lookup now
-  use the DOM logical/projection path whenever the production callbacks are available, keeping parsed-line lookup only as
-  a compatibility fallback for contexts without DOM access.
-- Map object-details pending scrap metadata, object tree discovery, and background auto-adjust bounds now also treat
-  available DOM callbacks as authoritative, so empty logical/projection results no longer trigger a production parsed-line
-  compatibility scan.
-- Smart Area preview and full map scene refresh now make the same distinction: parsed-line compatibility remains only for
-  contexts without DOM callbacks, not for valid empty DOM projections.
-- DOM M7 map read-only projection migration is closed for production DOM-backed contexts; remaining map parsed-line
-  references are compatibility adapters for contexts without DOM callbacks, focused legacy tests, or M8 source-rewrite
-  planners.
-- M8 has started with the low-risk structure-entry rename planner: it now resolves target source lines through
-  `TherionSourceDocument` instead of reparsing a standalone parsed source document, with CRLF token-range regression
-  coverage.
-- Point-coordinate rewrite planning now uses `TherionSourceDocument` line lookup as well, with exact mixed-line-ending
-  coordinate token offset coverage.
-- Line/area vertex rewrite planning now resolves selected source lines through `TherionSourceDocument` before producing
-  the same exact physical-line replacement edits.
-- Line option-toggle rewrite planning now also resolves target lines through `TherionSourceDocument`, with exact
-  non-first-line source range coverage.
-- Point-orientation rewrite planning now resolves target point/station lines through `TherionSourceDocument`, with exact
-  non-first-line source range coverage.
-- Map object clip rewrite planning now resolves target map object lines through `TherionSourceDocument`, with exact
-  non-first-line source range coverage.
-- Point-align rewrite planning now resolves target point lines through `TherionSourceDocument`, with exact non-first-line
-  source range coverage.
-- Line-point numeric option rewrite planning now uses `TherionSourceDocument` plus its parsed projection for line-block
-  scans and standalone option-row insertions.
-- Scrap-scale rewrite planning now resolves target scrap lines through `TherionSourceDocument`, with exact non-first-line
-  source range coverage.
-- Scrap-projection rewrite planning now resolves target scrap lines through `TherionSourceDocument`, with exact
-  non-first-line source range coverage.
-- Map object quick-fields rewrite planning now resolves target object lines through `TherionSourceDocument`, with exact
-  non-first-line source range coverage.
-- Map object text-option rewrite planning now resolves target label lines through `TherionSourceDocument`, with exact
-  non-first-line source range coverage.
-- Map object value-option rewrite planning now resolves target point lines through `TherionSourceDocument`, with exact
-  non-first-line source range coverage.
-- Line coordinate-row rewrite planning now uses `TherionSourceDocument` plus its parsed projection for line-block range
-  replacement.
-- Smart Area referenced-area rewrite planning now resolves scrap lines and boundary source offsets through
-  `TherionSourceDocument`.
-- Physical source-line insertion edit planning now uses `TherionSourceDocument` parsed projection for line endings and
-  insert offsets.
-- Map object delete, move, and line-split rewrite planners now resolve object/source block and area-reference scans
-  through `TherionSourceDocument` snapshots, preserving existing newline/write-buffer behavior while removing local
-  planner reparsing.
-- Map object-details line-point option lookup and edit-controller object-line validation now use
-  `TherionSourceDocument` snapshots instead of reparsing physical source lines before applying existing rewrite
-  services.
-- Map area/source reference resolver fallbacks and scene-refresh parsed-line fallback now build their compatibility
-  token-line views through `TherionSourceDocument` instead of direct whole-document parser calls.
-- Map tab parsed-line cache now builds its compatibility token-line view from a revision-keyed
-  `TherionSourceDocument` map snapshot instead of direct whole-document parser calls.
-- Core scrap-block append planning now derives existing scrap names from a `TherionSourceDocument` snapshot instead of a
-  direct whole-document parser call.
-- Command options dialog now parses its configured source line through a one-line `TherionSourceDocument` snapshot,
-  preserving the caller-provided physical line number for existing dialog behavior.
-- Block editor logical-line fallback parsing now uses a one-line `TherionSourceDocument` snapshot instead of direct
-  `parseLine`, and the isolated apply-executor test target now links `therion_core` because the helper depends on core
-  source-model types.
-- Legacy physical source-line insertion mutation now uses the same `TherionSourceDocument` parsed projection path as the
-  edit planner.
-- Smart Area referenced-area scrap and identifier scans now reuse `TherionSourceDocument` parsed lines instead of
-  reparsing physical source rows.
-- Draft geometry insertion target and scrap-boundary scans now use `TherionSourceDocument` parsed lines across point,
-  line, and area planners.
-- Line-point option, line/area vertex, and line coordinate-row planners now reuse `TherionSourceDocument` parsed lines
-  for block start/end and coordinate scans.
-- Line-point option edits and Smart Area boundary checks now use stored parsed source lines when the source row has not
-  been locally mutated.
-- Remaining local single-line option mutation helpers now route their intentional reparse through `parseMutableLineText`.
-- Map details panel line-action, line-option, and line-point read-only feature lookups now consume
-  `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
-  text for each lookup.
-- Map area-reference lookups now have logical-command resolver overloads, and the object-details delete guard reads the
-  "Used by area" state from the shared logical source projection instead of reparsing editor text directly.
-- Map selection and inspector-object area-reference consumers now receive revision-cached logical commands from
-  `MapEditorTab` instead of reparsing editor text for border-line highlighting and delete-blocked state.
-- The object-details delete guard now uses the same logical-command area-reference resolver before mutating source text,
-  avoiding the last map area-reference lookup that reparsed editor text directly.
-- The object-details panel now reuses the map tab's revision-cached logical commands for read-only selected-command,
-  line-feature, area-reference, quick-field, and scrap-scale lookups instead of creating local source snapshot caches per
-  field refresh.
-- Line-extension start now resolves the selected endpoint feature from the map tab's revision-cached logical commands,
-  while the commit path still uses explicit before/after source text for the rewrite transaction.
-- Canvas line-vertex owner selection restore now resolves line features from the map tab's revision-cached logical commands
-  instead of reparsing editor text during restore.
-- Canvas partial-refresh feature resolution after a source edit now also uses revision-cached logical commands; rewrite
-  planning paths still use explicit before/after source text snapshots.
-- Map controller contexts now share a small `MapEditorLogicalSourceContext` for revision-cached logical command access
-  instead of each owning an identical callback field.
-- Map canvas source-transaction test contexts now provide the same logical-source callback shape as production contexts,
-  keeping partial-refresh regression coverage aligned with the shared logical-source path.
-- Map partial-refresh regression coverage now verifies that vertex index entries point to live scene items for the
-  refreshed line after one-line item replacement.
-- Next implementation slice: start M8 transaction/rewrite planner migration, beginning with the lowest-risk source
-  rewrite path that already has focused undo/redo or round-trip coverage.
-- Keep Therion namespace/reference changes behind `docs/THERION_COMPATIBILITY.md` coverage, especially
-  `object@child.parent` qualified-reference order.
-- Keep source transaction ownership work incremental: one caller or workflow per commit, with explicit result handling,
-  undo label, revision behavior, projection invalidation, dirty-state behavior, and selection/cursor restoration.
-- Source transaction diagnostics now split undo timing into command creation, `QUndoStack::push`, and guard overhead so
-  map vertex-move logs can identify whether remaining latency is snapshot allocation or undo-stack insertion.
-- Map undo-stack index changes now update the command surface once through the undo-owner handler instead of also using a
-  duplicate direct command-surface connection during every map undo push.
-- Do not delete token-line compatibility APIs until Map geometry and legacy tests have replacement coverage.
+- Keep the shared source model architecture guarded by `scripts/check_structure_constraints.py`; new direct
+  `TherionDocumentParser` production calls should remain limited to the documented core/synthetic exception list.
+- Run real-project smoke passes before broadening source-model behavior again: Raw completion/help/validation, Blocks
+  nested/data/continued commands, Map selection/inspector/create/delete/move/split/backgrounds, Structure, Validation,
+  and Compiler diagnostic navigation.
+- Track `MapEditorDragUndoRedoSmokeTest`: the first full post-DOM verification run saw one segfault, but the isolated
+  test, 10-repeat run, and second full suite passed.
+- Keep further parser/source-model changes incremental and regression-backed; do not revive the archived DOM migration
+  queue for ordinary feature work.
 
 ### Validation And Catalog Metadata
 
 - Treat full-project validation as an explicit/manual workflow by default; use the Settings toggle only when projects are
   small enough or the user wants live full-project diagnostics.
-- Use `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md` for the DOM-first project source snapshot slice queue; current
-  findings show Structure and Validation now share snapshot-compatible collection/index input paths, while repeated
-  requests still need explicit cache ownership.
+- Use `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md` only for future validation/cache follow-ups; Structure and
+  Validation already share snapshot-compatible collection/index input paths and explicit cache ownership.
 - `ProjectSourceProjectionCache` now provides the first focused per-run source/logical projection cache for project source
   snapshots with observable reuse stats.
 - `ProjectValidationScanner` local per-file validation now uses `ProjectSourceProjectionCache` for source and
@@ -437,8 +258,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Complete safe one-line map partial refresh according to `plans/MAP_PARTIAL_REFRESH_PLAN.md` after release stabilization.
 - Optional Structure graph view for relationships such as `preview`, `revise`, `join`, `equate`, relationship status, and station-network edges.
 - Compiler-confirmed project-index comparison once lightweight indexing is no longer sufficient.
-- Add project-index snapshot cache ownership and per-file validation cache according to
-  `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md`.
+- Broaden retained project validation cache coverage only if fresh logs show repeated scans still rebuilding unchanged
+  source or project-index projections.
 - Restore automatic full-project validation as the recommended/default mode only after live diagnostics are incremental,
   cancellable, and UI-cheap for nested projects.
 - Add a manual `Help -> Check for Updates...` workflow only after deciding how to handle networking without destabilizing

@@ -33,11 +33,11 @@ Rules:
 - C++ tests should use QTest for new coverage while CTest remains the repository-level orchestrator. QTest executables should be grouped by dependency and runtime boundary: core-only logic, app services, text-editor/widget support, map-editor/offscreen UI, and special integration/process tests. Prefer aggregate runners for many small same-boundary tests, but keep tests isolated when they are slow, flaky, UI-heavy, process-backed, resource-sensitive, or useful as crash-containment boundaries.
 - Static/global access is acceptable only for deterministic, stateless transformations with no hidden IO, mutable cache, settings, resource, or platform dependency.
 
-## Source Model Direction
+## Source Model Architecture
 
-Therion Studio is migrating toward one shared, lossless source model for `.th`, `.th2`, and `thconfig` files.
+Therion Studio uses one shared, lossless source model for `.th`, `.th2`, and `thconfig` files.
 
-The source model should preserve:
+The source model preserves:
 
 - physical source lines
 - comments and blank lines
@@ -50,6 +50,18 @@ The source model should preserve:
 - block ranges and parent stacks
 - unknown but valid Therion directives
 
+The main source-model contracts are:
+
+- `TherionSourceText` for physical source text, line endings, offsets, and source-preserving text reconstruction.
+- `TherionSourceDocument` for lossless physical-line snapshots, parsed source lines, source metadata, source roles, block
+  ranges, and source lookup by line or offset.
+- `TherionSourceLogicalDocument` for continuation-aware logical commands, command/token/option source ranges, block
+  context, catalog metadata, and logical command lookup.
+- `Th2GeometryProjection` for read-only `.th2` point, line, area, scrap, map, geometry, and background metadata
+  projection used by Map consumers.
+- `TextEditorSourceTransactionController` and map source transaction helpers for user-visible source mutations, undo/redo,
+  dirty state, revision checks, projection invalidation, and selection/cursor restoration.
+
 Consumers should use shared source snapshots and logical command metadata where available:
 
 - Raw editor: highlighting, completion, context help, validation tooltips
@@ -60,6 +72,12 @@ Consumers should use shared source snapshots and logical command metadata where 
 - Compiler workflows: target config resolution and source-aware feedback
 
 Do not solve projection drift by copying parser logic into UI renderers, inspectors, sidebars, scene items, or completion code. Extend core parsing/token/range/catalog metadata instead.
+
+Direct `TherionDocumentParser::parseLine`, `parseTokenLines`, and `tokenizeLine` calls are legacy-sensitive and are
+guarded by `scripts/check_structure_constraints.py`. New production call sites should not be added unless they are a
+documented core/synthetic exception such as parser implementation, logical source construction, validator safe-fix
+snippets, command-option snippets, source-editor single-line rewrite helpers, or map pending-insert snippets that do not
+have source text yet.
 
 Map raster background layers hold a full-resolution (display-capped) pixmap and are sized into the preview canvas through an item-level transform, not by baking the source down to preview pixels. This keeps backgrounds sharp under view zoom and separates pixmap updates (source load, Gamma) from placement (position/scale), so repositioning and refit do not re-rasterize. `.xvi`/vector reference layers remain vector-painted projections and are unaffected.
 
