@@ -224,6 +224,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   reparsing physical source rows.
 - Draft geometry insertion target and scrap-boundary scans now use `TherionSourceDocument` parsed lines across point,
   line, and area planners.
+- Line-point option, line/area vertex, and line coordinate-row planners now reuse `TherionSourceDocument` parsed lines
+  for block start/end and coordinate scans.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.

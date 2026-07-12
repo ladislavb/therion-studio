@@ -763,15 +763,15 @@ struct LinePointOptionTarget
 
 QVector<QPair<int, int>> coordinateTokenPairsForLine(const TherionParsedLine &parsedLine, int startTokenIndex);
 
-std::optional<LinePointOptionTarget> linePointOptionTarget(QStringList *lines,
+std::optional<LinePointOptionTarget> linePointOptionTarget(const TherionParsedSourceDocument &sourceDocument,
                                                           int blockStartLineIndex,
                                                           int blockEndLineIndex,
                                                           int sourceVertexIndex,
                                                           const QString &canonicalOption)
 {
-    if (lines == nullptr
-        || blockStartLineIndex < 0
+    if (blockStartLineIndex < 0
         || blockEndLineIndex <= blockStartLineIndex
+        || blockEndLineIndex > sourceDocument.lines.size()
         || sourceVertexIndex < 0) {
         return std::nullopt;
     }
@@ -780,7 +780,7 @@ std::optional<LinePointOptionTarget> linePointOptionTarget(QStringList *lines,
     int coordinateLineIndex = -1;
     int lastCoordinateTokenIndex = -1;
     for (int rowIndex = blockStartLineIndex; rowIndex < blockEndLineIndex; ++rowIndex) {
-        const TherionParsedLine rowLine = TherionDocumentParser::parseLine(lines->at(rowIndex), rowIndex + 1);
+        const TherionParsedLine &rowLine = sourceDocument.lines.at(rowIndex).parsed;
         const int startTokenIndex = rowIndex == blockStartLineIndex ? 1 : 0;
         const QVector<QPair<int, int>> pairs = coordinateTokenPairsForLine(rowLine, startTokenIndex);
         for (const QPair<int, int> &pair : pairs) {
@@ -801,7 +801,7 @@ std::optional<LinePointOptionTarget> linePointOptionTarget(QStringList *lines,
 
     int optionBlockEndLineIndex = blockEndLineIndex;
     for (int rowIndex = coordinateLineIndex + 1; rowIndex < blockEndLineIndex; ++rowIndex) {
-        const TherionParsedLine rowLine = TherionDocumentParser::parseLine(lines->at(rowIndex), rowIndex + 1);
+        const TherionParsedLine &rowLine = sourceDocument.lines.at(rowIndex).parsed;
         if (!coordinateTokenPairsForLine(rowLine, 0).isEmpty()) {
             optionBlockEndLineIndex = rowIndex;
             break;
@@ -814,7 +814,7 @@ std::optional<LinePointOptionTarget> linePointOptionTarget(QStringList *lines,
     target.lastCoordinateTokenIndex = lastCoordinateTokenIndex;
 
     for (int rowIndex = coordinateLineIndex; rowIndex < optionBlockEndLineIndex; ++rowIndex) {
-        const TherionParsedLine rowLine = TherionDocumentParser::parseLine(lines->at(rowIndex), rowIndex + 1);
+        const TherionParsedLine &rowLine = sourceDocument.lines.at(rowIndex).parsed;
         const int startTokenIndex = rowIndex == blockStartLineIndex ? 1 : 0;
         for (int tokenIndex = startTokenIndex; tokenIndex < rowLine.tokens.size(); ++tokenIndex) {
             if (!isLinePointOptionToken(rowLine.tokens.at(tokenIndex), canonicalOption)) {
@@ -888,7 +888,7 @@ bool linePointNumericOptionRewriteEdits(const QString &contents,
     }
 
     const int blockStartLineIndex = lineNumber - 1;
-    const TherionParsedLine startLine = TherionDocumentParser::parseLine(lines.at(blockStartLineIndex), lineNumber);
+    const TherionParsedLine &startLine = parsedDocument.lines.at(blockStartLineIndex).parsed;
     if (startLine.directive != QStringLiteral("line")) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line is not a writable line block.");
@@ -897,8 +897,8 @@ bool linePointNumericOptionRewriteEdits(const QString &contents,
     }
 
     int blockEndLineIndex = -1;
-    for (int candidateIndex = blockStartLineIndex + 1; candidateIndex < lines.size(); ++candidateIndex) {
-        const TherionParsedLine candidateLine = TherionDocumentParser::parseLine(lines.at(candidateIndex), candidateIndex + 1);
+    for (int candidateIndex = blockStartLineIndex + 1; candidateIndex < parsedDocument.lines.size(); ++candidateIndex) {
+        const TherionParsedLine &candidateLine = parsedDocument.lines.at(candidateIndex).parsed;
         if (candidateLine.directive == QStringLiteral("endline")) {
             blockEndLineIndex = candidateIndex;
             break;
@@ -912,7 +912,7 @@ bool linePointNumericOptionRewriteEdits(const QString &contents,
     }
 
     const std::optional<LinePointOptionTarget> target =
-        linePointOptionTarget(&lines, blockStartLineIndex, blockEndLineIndex, sourceVertexIndex, normalizedOption);
+        linePointOptionTarget(parsedDocument, blockStartLineIndex, blockEndLineIndex, sourceVertexIndex, normalizedOption);
     if (!target.has_value()) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line block does not contain the requested vertex.");
@@ -2314,7 +2314,7 @@ bool TherionDocumentEditor::lineAreaVertexRewriteEdits(const QString &contents,
     }
 
     const int blockStartLineIndex = lineNumber - 1;
-    const TherionParsedLine startLine = TherionDocumentParser::parseLine(lines.at(blockStartLineIndex), lineNumber);
+    const TherionParsedLine &startLine = parsedDocument.lines.at(blockStartLineIndex).parsed;
     if (startLine.directive != normalizedKind) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line is not a writable %1 geometry block.").arg(normalizedKind);
@@ -2326,8 +2326,8 @@ bool TherionDocumentEditor::lineAreaVertexRewriteEdits(const QString &contents,
         ? QStringLiteral("endline")
         : QStringLiteral("endarea");
     int blockEndLineIndex = -1;
-    for (int candidateIndex = blockStartLineIndex + 1; candidateIndex < lines.size(); ++candidateIndex) {
-        const TherionParsedLine candidateLine = TherionDocumentParser::parseLine(lines.at(candidateIndex), candidateIndex + 1);
+    for (int candidateIndex = blockStartLineIndex + 1; candidateIndex < parsedDocument.lines.size(); ++candidateIndex) {
+        const TherionParsedLine &candidateLine = parsedDocument.lines.at(candidateIndex).parsed;
         if (candidateLine.directive == blockEndDirective) {
             blockEndLineIndex = candidateIndex;
             break;
@@ -2350,7 +2350,7 @@ bool TherionDocumentEditor::lineAreaVertexRewriteEdits(const QString &contents,
 
     QVector<CoordinateTokenReference> references;
     for (int lineIndex = blockStartLineIndex; lineIndex < blockEndLineIndex; ++lineIndex) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(lineIndex), lineIndex + 1);
+        const TherionParsedLine &parsedLine = parsedDocument.lines.at(lineIndex).parsed;
         const int startTokenIndex = lineIndex == blockStartLineIndex ? 1 : 0;
         const QVector<QPair<int, int>> pairs = coordinateTokenPairsForLine(parsedLine, startTokenIndex);
         for (const QPair<int, int> &pair : pairs) {
@@ -3377,7 +3377,7 @@ bool TherionDocumentEditor::lineCoordinateRowsRewriteEdits(const QString &conten
     }
 
     const int blockStartLineIndex = lineNumber - 1;
-    const TherionParsedLine startLine = TherionDocumentParser::parseLine(lines.at(blockStartLineIndex), lineNumber);
+    const TherionParsedLine &startLine = parsedDocument.lines.at(blockStartLineIndex).parsed;
     if (startLine.directive != QStringLiteral("line")) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line is not a writable line block.");
@@ -3393,8 +3393,8 @@ bool TherionDocumentEditor::lineCoordinateRowsRewriteEdits(const QString &conten
     }
 
     int blockEndLineIndex = -1;
-    for (int candidateIndex = blockStartLineIndex + 1; candidateIndex < lines.size(); ++candidateIndex) {
-        const TherionParsedLine candidateLine = TherionDocumentParser::parseLine(lines.at(candidateIndex), candidateIndex + 1);
+    for (int candidateIndex = blockStartLineIndex + 1; candidateIndex < parsedDocument.lines.size(); ++candidateIndex) {
+        const TherionParsedLine &candidateLine = parsedDocument.lines.at(candidateIndex).parsed;
         if (candidateLine.directive == QStringLiteral("endline")) {
             blockEndLineIndex = candidateIndex;
             break;
@@ -3408,7 +3408,7 @@ bool TherionDocumentEditor::lineCoordinateRowsRewriteEdits(const QString &conten
     }
 
     for (int lineIndex = blockStartLineIndex + 1; lineIndex < blockEndLineIndex; ++lineIndex) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(lineIndex), lineIndex + 1);
+        const TherionParsedLine &parsedLine = parsedDocument.lines.at(lineIndex).parsed;
         if (parsedLine.tokens.isEmpty()) {
             continue;
         }
