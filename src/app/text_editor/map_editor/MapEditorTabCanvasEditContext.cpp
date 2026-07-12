@@ -4,11 +4,77 @@
 #include "MapEditorCanvasEditController.h"
 #include "../TextEditorTab.h"
 
+#include <QGraphicsScene>
+#include <QGraphicsView>
 #include <QPointer>
+#include <QScrollBar>
 #include <QTimer>
+#include <QTransform>
+#include <QWidget>
 
 namespace TherionStudio
 {
+namespace
+{
+struct MapEditorViewportSnapshot
+{
+    QPointer<QGraphicsScene> scene;
+    QPointer<QGraphicsView> view;
+    QRectF sceneRect;
+    QTransform transform;
+    int horizontalScrollValue = 0;
+    int verticalScrollValue = 0;
+
+    bool valid() const
+    {
+        return scene != nullptr && view != nullptr && view->scene() == scene;
+    }
+};
+
+MapEditorViewportSnapshot captureMapEditorViewportSnapshot(QGraphicsScene *scene, QGraphicsView *view)
+{
+    MapEditorViewportSnapshot snapshot;
+    if (scene == nullptr || view == nullptr || view->scene() != scene) {
+        return snapshot;
+    }
+
+    snapshot.scene = scene;
+    snapshot.view = view;
+    snapshot.sceneRect = scene->sceneRect();
+    snapshot.transform = view->transform();
+    if (QScrollBar *horizontalScrollBar = view->horizontalScrollBar(); horizontalScrollBar != nullptr) {
+        snapshot.horizontalScrollValue = horizontalScrollBar->value();
+    }
+    if (QScrollBar *verticalScrollBar = view->verticalScrollBar(); verticalScrollBar != nullptr) {
+        snapshot.verticalScrollValue = verticalScrollBar->value();
+    }
+    return snapshot;
+}
+
+void restoreMapEditorViewportSnapshot(const MapEditorViewportSnapshot &snapshot)
+{
+    if (!snapshot.valid()) {
+        return;
+    }
+
+    // This runs after every deferred projection and selection update belonging
+    // to the source transaction. Restoring the original scene rect first keeps
+    // the raw scrollbar values in the same scene-coordinate system.
+    snapshot.scene->setSceneRect(snapshot.sceneRect);
+    snapshot.view->setTransform(snapshot.transform);
+    if (QScrollBar *horizontalScrollBar = snapshot.view->horizontalScrollBar(); horizontalScrollBar != nullptr) {
+        horizontalScrollBar->setValue(qBound(horizontalScrollBar->minimum(),
+                                             snapshot.horizontalScrollValue,
+                                             horizontalScrollBar->maximum()));
+    }
+    if (QScrollBar *verticalScrollBar = snapshot.view->verticalScrollBar(); verticalScrollBar != nullptr) {
+        verticalScrollBar->setValue(qBound(verticalScrollBar->minimum(),
+                                           snapshot.verticalScrollValue,
+                                           verticalScrollBar->maximum()));
+    }
+}
+}
+
 MapEditorCanvasEditContext MapEditorTab::canvasEditContext()
 {
     return MapEditorCanvasEditContext{
@@ -175,9 +241,28 @@ TextEditorSourceTransactionResult MapEditorTab::applySourceTextChangeWithSnapsho
     int insertedLineNumber,
     std::function<void()> afterProjectionHook)
 {
+    // Source rewriting may emit cursor changes after the command guard has
+    // unwound. Keep the map/text selection bridge from treating those internal
+    // signals as user navigation until the corresponding preserved-viewport
+    // scene refresh has completed.
+    mapViewportPreservationInProgress_ = true;
+    const QPointer<QGraphicsView> preservedView(mapView_);
+    const MapEditorViewportSnapshot viewportSnapshot = captureMapEditorViewportSnapshot(mapScene_, preservedView);
+    const QPointer<QWidget> preservedViewport = preservedView != nullptr ? preservedView->viewport() : nullptr;
+    const bool viewportUpdatesWereEnabled = preservedViewport != nullptr && preservedViewport->updatesEnabled();
+    if (viewportUpdatesWereEnabled) {
+        preservedViewport->setUpdatesEnabled(false);
+    }
     auto deferredProjectionRefresh = [guarded = QPointer<MapEditorTab>(this),
+                                      viewportSnapshot,
+                                      preservedViewport,
+                                      viewportUpdatesWereEnabled,
                                       afterProjectionHook = std::move(afterProjectionHook)]() mutable {
-        QTimer::singleShot(0, guarded, [guarded, afterProjectionHook = std::move(afterProjectionHook)]() mutable {
+        QTimer::singleShot(0, guarded, [guarded,
+                                        viewportSnapshot,
+                                        preservedViewport,
+                                        viewportUpdatesWereEnabled,
+                                        afterProjectionHook = std::move(afterProjectionHook)]() mutable {
             if (guarded == nullptr) {
                 return;
             }
@@ -185,14 +270,28 @@ TextEditorSourceTransactionResult MapEditorTab::applySourceTextChangeWithSnapsho
             if (afterProjectionHook) {
                 afterProjectionHook();
             }
+            restoreMapEditorViewportSnapshot(viewportSnapshot);
+            if (viewportUpdatesWereEnabled && preservedViewport != nullptr) {
+                preservedViewport->setUpdatesEnabled(true);
+                preservedViewport->update();
+            }
+            guarded->mapViewportPreservationInProgress_ = false;
         });
     };
-    return MapEditorCanvasEditController(canvasEditContext())
+    const TextEditorSourceTransactionResult result = MapEditorCanvasEditController(canvasEditContext())
         .applySourceTextChangeWithSnapshotDeferredProjection(label,
                                                              beforeText,
                                                              afterText,
                                                              insertedLineNumber,
                                                              std::move(deferredProjectionRefresh));
+    if (result != TextEditorSourceTransactionResult::Applied) {
+        if (viewportUpdatesWereEnabled && preservedViewport != nullptr) {
+            preservedViewport->setUpdatesEnabled(true);
+            preservedViewport->update();
+        }
+        mapViewportPreservationInProgress_ = false;
+    }
+    return result;
 }
 
 bool MapEditorTab::insertLineVertexFromSelection(bool before)

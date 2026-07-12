@@ -202,6 +202,15 @@ void MapEditorTab::refreshWorkspaceModeUi()
 
 void MapEditorTab::handleTextEditorCurrentLineChanged(int lineNumber)
 {
+    // A map source transaction moves the text cursor to the inserted or
+    // rewritten command.  Treating that internal cursor change as user text
+    // navigation would select and center the command, overriding the viewport
+    // preserved by the map scene refresh.
+    if (mapCommandApplyInProgress_ || mapViewportPreservationInProgress_) {
+        emit currentLineChanged(lineNumber);
+        return;
+    }
+
     if (selectionSyncState_.pendingNavigationLineNumber_ > 0
         && selectionSyncState_.pendingNavigationLineNumber_ != lineNumber) {
         selectionSyncState_.pendingNavigationLineNumber_ = 0;
@@ -218,7 +227,9 @@ void MapEditorTab::handleTextEditorCurrentLineChanged(int lineNumber)
 
 void MapEditorTab::handleTextEditorCursorPositionChanged(int lineNumber, int columnNumber)
 {
-    if (selectionSyncState_.textNavigationInProgress_) {
+    if (mapCommandApplyInProgress_
+        || mapViewportPreservationInProgress_
+        || selectionSyncState_.textNavigationInProgress_) {
         return;
     }
 

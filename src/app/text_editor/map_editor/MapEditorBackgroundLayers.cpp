@@ -2125,8 +2125,25 @@ QRectF MapEditorTab::mapBackgroundFitBounds() const
     return combinedBounds;
 }
 
+void MapEditorTab::updateEmptyDocumentGuideVisibility()
+{
+    if (mapScene_ == nullptr) {
+        return;
+    }
+
+    const bool showGuides = !mapBackgroundFitBounds().isValid();
+    const QList<QGraphicsItem *> sceneItems = mapScene_->items();
+    for (QGraphicsItem *item : sceneItems) {
+        if (item != nullptr && item->data(kMapSceneEmptyDocumentGuideRole).toBool()) {
+            item->setVisible(showGuides);
+        }
+    }
+}
+
 void MapEditorTab::refreshBackgroundLayerControls()
 {
+    updateEmptyDocumentGuideVisibility();
+    updateMapSceneScrollBounds();
     updatingBackgroundLayerControls_ = true;
     setSelectedBackgroundLayerIndexInternal(selectedBackgroundLayerIndex_);
     updatingBackgroundLayerControls_ = false;
@@ -2135,6 +2152,8 @@ void MapEditorTab::refreshBackgroundLayerControls()
 
 void MapEditorTab::refreshBackgroundLayerPropertyControls()
 {
+    updateEmptyDocumentGuideVisibility();
+    updateMapSceneScrollBounds();
     updatingBackgroundLayerControls_ = true;
     setSelectedBackgroundLayerIndexInternal(selectedBackgroundLayerIndex_);
     updatingBackgroundLayerControls_ = false;
@@ -2675,6 +2694,13 @@ void MapEditorTab::loadBackgroundLayersFromSession()
 
         const XtherionBackgroundReference *metadataReference = findMetadataReferenceForPath(layerPath, metadataByPath, metadataByFileName);
         const bool hasMetadata = metadataReference != nullptr;
+        // Session state may customize a source-declared background, but it
+        // must not silently introduce a drawing reference that the TH2 file
+        // itself does not contain. Such a layer has no portable placement or
+        // source-coordinate contract.
+        if (!hasMetadata) {
+            continue;
+        }
 
         if (layerPath.endsWith(QStringLiteral(".xvi"), Qt::CaseInsensitive)) {
             XviDocument xviDocument;

@@ -484,6 +484,8 @@ The rules below define the expected day-to-day interaction model. If a later req
 - The map magnifier shall be enabled by default and shall be user-toggleable through the `View -> Show Map Magnifier` / `Hide Map Magnifier` menu action. This preference shall be stored as UI/session state and shall not modify the TH2 source document.
 - Background image position, X/Y scale, rotation, opacity, gamma, and visibility shall be editable per session.
 - Background layers shall support insertion, selection, visibility toggles, opacity adjustment, gamma adjustment, persisted positioning, and persisted advanced transforms where the source metadata format can represent them.
+- Session state may restore local display settings only for a background layer declared by the current TH2 source metadata; it shall not silently introduce a visible background reference that is absent from the TH2 document.
+- The map viewport shall permit panning to every visible background layer edge, including a layer moved, scaled, or rotated beyond the base map canvas; expanding the scrollable extent shall not change the map/source coordinate projection.
 - Adding a raster background image from the TH2 Visual map editor shall write XTherion-compatible `##XTHERION## xth_me_image_insert` metadata to the TH2 source, using document-relative paths where possible.
 - Adding a PocketTopo Therion export (`.txt`) from the TH2 Visual map editor's background workflow shall prompt for XVI scale, resolution, grid spacing, and plan or extended-elevation projection; convert the selected PocketTopo projection data into a generated `.xvi` file beside the export using `_p` or `_e` naming; add the generated `.xvi` as the background layer; and write XTherion-compatible `##XTHERION## xth_me_image_insert` metadata to the TH2 source.
 - Adding an SVG background from the TH2 Visual map editor shall write Mapiah-compatible `##MAPIAH## image_insert_v1` metadata with `format=svg`, document-relative paths where possible, transform fields, intrinsic size, and source viewBox fields derived from the SVG root metadata.
@@ -502,7 +504,7 @@ The rules below define the expected day-to-day interaction model. If a later req
 - The `Backgrounds` inspector shall not expose separate editor-generated map-grid controls; reference grid content shall come from background layers such as `.xvi` files.
 - The map editor shall read Therion scrap `-scale` in numeric, unit, ratio, and 8/9-parameter calibration forms so manual scale calibration and geometry transforms remain compatible with Therion and XTherion-authored files.
 - Manual edits to a selected scrap scale shall write XTherion-compatible 8-parameter `-scale [x1 y1 x2 y2 rx1 ry1 rx2 ry2 unit]` metadata and shall preserve other scrap options/comments where practical.
-- Background sketch or image layers shall be restorable when reopening the document.
+- Background sketch or image layers declared by TH2 source metadata shall be restorable when reopening the document.
 - `.xvi` vector background references shall render as background layers when present.
 - `.xvi` vector background rendering shall draw embedded `XVIgrid` lines as background content when present.
 - The map editor shall not expose a dedicated touch-controls toolbar mode; mouse, touchpad, Magic Mouse, pinch, stylus, and platform touch gestures shall use automatic input-policy handling.

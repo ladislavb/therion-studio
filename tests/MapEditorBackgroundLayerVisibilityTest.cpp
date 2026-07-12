@@ -9,6 +9,7 @@
 #include <QDir>
 #include <QDoubleSpinBox>
 #include <QFile>
+#include <QGraphicsItem>
 #include <QGraphicsPathItem>
 #include <QGraphicsView>
 #include <QImage>
@@ -255,6 +256,27 @@ QGraphicsPathItem *findVisibleBackgroundPivotMarker(MapEditorTab *mapTab)
     return nullptr;
 }
 
+bool hasVisibleEmptyDocumentGuide(MapEditorTab *mapTab)
+{
+    if (mapTab == nullptr) {
+        return false;
+    }
+
+    auto *view = mapTab->findChild<QGraphicsView *>(QStringLiteral("mapCanvasView"));
+    if (view == nullptr || view->scene() == nullptr) {
+        return false;
+    }
+
+    for (QGraphicsItem *item : view->scene()->items()) {
+        if (item != nullptr
+            && item->isVisible()
+            && item->data(kMapSceneEmptyDocumentGuideRole).toBool()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 int runBackgroundVisibilityDoesNotDirtyDocumentTest()
 {
     QTemporaryDir tempDir;
@@ -377,6 +399,156 @@ int runBackgroundVisibilityDoesNotDirtyDocumentTest()
         return 1;
     }
     if (!expect(!mapTab->isDirty(), "Showing a background layer should not dirty the TH2 document.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int runVisibleBackgroundSuppressesEmptyDocumentGuidesTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Failed to create temporary directory for empty-map background guide test.")) {
+        return 1;
+    }
+
+    const QString imagePath = tempDir.filePath(QStringLiteral("empty-map-background.png"));
+    QImage image(160, 100, QImage::Format_ARGB32);
+    image.fill(QColor(80, 120, 160, 255));
+    if (!expect(image.save(imagePath), "Failed to create background image for empty-map guide test.")) {
+        return 1;
+    }
+
+    const QString filePath = tempDir.filePath(QStringLiteral("empty-map-background.th2"));
+    const QString th2Contents = QStringLiteral(
+        "encoding utf-8\n"
+        "##XTHERION## xth_me_area_adjust -32 -132 192 32\n"
+        "##XTHERION## xth_me_area_zoom_to 100\n"
+        "##XTHERION## xth_me_image_insert {0 1 1} {0 {}} empty-map-background.png 0 {}\n");
+    if (!expect(writeTextFile(filePath, th2Contents.toUtf8()),
+                "Failed to create TH2 file for empty-map background guide test.")) {
+        return 1;
+    }
+
+    QtFileSystem fileSystem;
+    FakeSessionStore sessionStore;
+    QMainWindow hostWindow;
+    hostWindow.resize(960, 720);
+    auto *central = new QWidget(&hostWindow);
+    auto *layout = new QVBoxLayout(central);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+
+    auto *mapTab = new MapEditorTab(fileSystem, sessionStore, CommandCatalogStore(), central);
+    layout->addWidget(mapTab);
+    hostWindow.setCentralWidget(central);
+    hostWindow.show();
+    pumpEvents();
+
+    QString errorMessage;
+    if (!expect(mapTab->loadFile(filePath, &errorMessage),
+                "MapEditorTab failed to load TH2 file for empty-map background guide test.")) {
+        if (!errorMessage.isEmpty()) {
+            std::cerr << errorMessage.toStdString() << '\n';
+        }
+        return 1;
+    }
+    if (!expect(waitForSingleRasterLayerReady(mapTab, image.size()),
+                "Expected empty-map metadata background to finish loading.")) {
+        return 1;
+    }
+
+    if (!expect(!hasVisibleEmptyDocumentGuide(mapTab),
+                "A visible background must suppress the empty-document canvas and message.")) {
+        return 1;
+    }
+
+    mapTab->triggerInsertScrap();
+    pumpEventsFor(200);
+    if (!expect(!hasVisibleEmptyDocumentGuide(mapTab),
+                "Creating an empty scrap must not reveal empty-document guides over a visible background.")) {
+        return 1;
+    }
+
+    mapTab->setSelectedBackgroundLayerIndex(0);
+    mapTab->toggleSelectedBackgroundLayerVisibility();
+    pumpEvents();
+    if (!expect(hasVisibleEmptyDocumentGuide(mapTab),
+                "Hiding the only background should restore empty-document guidance.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int runSessionOnlyBackgroundIsNotRestoredTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Failed to create temporary directory for session-only background test.")) {
+        return 1;
+    }
+
+    const QString imagePath = tempDir.filePath(QStringLiteral("session-only-background.png"));
+    QImage image(80, 40, QImage::Format_ARGB32);
+    image.fill(QColor(80, 120, 160, 255));
+    if (!expect(image.save(imagePath), "Failed to create image for session-only background test.")) {
+        return 1;
+    }
+
+    const QString filePath = tempDir.filePath(QStringLiteral("empty-session-target.th2"));
+    if (!expect(writeTextFile(filePath, QByteArray("encoding utf-8\n")),
+                "Failed to create empty TH2 file for session-only background test.")) {
+        return 1;
+    }
+
+    QJsonObject sessionLayer;
+    sessionLayer.insert(QStringLiteral("path"), QFileInfo(imagePath).absoluteFilePath());
+    sessionLayer.insert(QStringLiteral("visible"), true);
+    sessionLayer.insert(QStringLiteral("opacity"), 0.58);
+    sessionLayer.insert(QStringLiteral("gamma"), 1.0);
+    sessionLayer.insert(QStringLiteral("x_scale"), 1.0);
+    sessionLayer.insert(QStringLiteral("y_scale"), 1.0);
+    sessionLayer.insert(QStringLiteral("rotation_deg"), 0.0);
+    sessionLayer.insert(QStringLiteral("x"), 0.0);
+    sessionLayer.insert(QStringLiteral("y"), 0.0);
+    QJsonArray sessionLayers;
+    sessionLayers.append(sessionLayer);
+    QJsonObject sessionRoot;
+    sessionRoot.insert(QFileInfo(filePath).canonicalFilePath(), sessionLayers);
+
+    QtFileSystem fileSystem;
+    FakeSessionStore sessionStore;
+    sessionStore.setTherionMapBackgroundLayers(
+        QString::fromUtf8(QJsonDocument(sessionRoot).toJson(QJsonDocument::Compact)));
+    QMainWindow hostWindow;
+    hostWindow.resize(960, 720);
+    auto *central = new QWidget(&hostWindow);
+    auto *layout = new QVBoxLayout(central);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+
+    auto *mapTab = new MapEditorTab(fileSystem, sessionStore, CommandCatalogStore(), central);
+    layout->addWidget(mapTab);
+    hostWindow.setCentralWidget(central);
+    hostWindow.show();
+    pumpEvents();
+
+    QString errorMessage;
+    if (!expect(mapTab->loadFile(filePath, &errorMessage),
+                "MapEditorTab failed to load empty TH2 file for session-only background test.")) {
+        if (!errorMessage.isEmpty()) {
+            std::cerr << errorMessage.toStdString() << '\n';
+        }
+        return 1;
+    }
+    pumpEvents();
+
+    if (!expect(mapTab->backgroundLayerCount() == 0,
+                "Session-only background data must not add a layer absent from TH2 metadata.")) {
+        return 1;
+    }
+    if (!expect(!mapTab->isDirty(),
+                "Ignoring a session-only background must not modify the TH2 document.")) {
         return 1;
     }
 
@@ -527,6 +699,30 @@ int runRasterBackgroundKeepsFullResolutionTest()
     // The on-screen footprint must be the fitted preview size, not the source pixel size.
     if (!expect(bounds.width() < static_cast<qreal>(sourceWidth),
                 "Raster scene footprint should be the projected preview size, not raw source pixels.")) {
+        return 1;
+    }
+
+    auto *mapView = mapTab->findChild<QGraphicsView *>(QStringLiteral("mapCanvasView"));
+    if (!expect(mapView != nullptr && mapView->viewport() != nullptr,
+                "Expected map canvas viewport for background pan bounds test.")) {
+        return 1;
+    }
+    mapTab->setSelectedBackgroundLayerIndex(0);
+    const QPointF originalPosition = mapTab->backgroundLayerPosition(0);
+    mapTab->setSelectedBackgroundLayerPosition(QPointF(originalPosition.x() + 3000.0,
+                                                        originalPosition.y()));
+    pumpEventsFor(150);
+    const QRectF movedBounds = mapTab->backgroundLayerSceneBounds(0);
+    if (!expect(movedBounds.isValid()
+                    && movedBounds.right() > mapEditorCanvasSceneFrame().right(),
+                "Moving a raster background outside the base canvas should move its scene bounds.")) {
+        return 1;
+    }
+    mapView->centerOn(movedBounds.right(), movedBounds.center().y());
+    pumpEvents();
+    const QRectF visibleSceneBounds = mapView->mapToScene(mapView->viewport()->rect()).boundingRect();
+    if (!expect(visibleSceneBounds.right() >= movedBounds.right(),
+                "Map pan should reach the far edge of a moved raster background.")) {
         return 1;
     }
 
@@ -2079,6 +2275,12 @@ int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
     if (const int rc = runBackgroundVisibilityDoesNotDirtyDocumentTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runVisibleBackgroundSuppressesEmptyDocumentGuidesTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runSessionOnlyBackgroundIsNotRestoredTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runMapiahPercentEncodedXviSampleLoadsTest(); rc != 0) {

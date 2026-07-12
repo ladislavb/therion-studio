@@ -13,6 +13,7 @@
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QKeyEvent>
+#include <QLineF>
 #include <QMouseEvent>
 #include <QScrollBar>
 #include <QTouchEvent>
@@ -162,6 +163,100 @@ int runResizeAutoFitSuppressesCommandSurfaceUpdateTest()
     }
     if (!expect(zoomStatusUpdates > 0,
                 "Resize autofit lifecycle path should still synchronize zoom status.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int runBackgroundBoundsExpandScrollableSceneWithoutChangingCanvasProjectionTest()
+{
+    QGraphicsScene scene;
+    QGraphicsScene *scenePointer = &scene;
+    QGraphicsView view(&scene);
+    view.resize(320, 240);
+    view.show();
+
+    const QRectF backgroundBounds(-600.0, 1000.0, 320.0, 240.0);
+    MapEditorSceneLifecycleContext context;
+    context.scene = &scenePointer;
+    context.mapBackgroundFitBounds = [backgroundBounds]() {
+        return backgroundBounds;
+    };
+
+    MapEditorSceneLifecycleController controller(context);
+    controller.updateSceneRectForBackgroundBounds();
+
+    if (!expect(scene.sceneRect().contains(mapEditorCanvasSceneFrame())
+                    && scene.sceneRect().contains(backgroundBounds),
+                "Scrollable map bounds should include the fixed canvas and a moved background layer.")) {
+        return 1;
+    }
+    if (!expect(controller.mapPreviewBounds() == mapEditorCanvasPreviewBounds(),
+                "Expanding scroll bounds for a background must not change the map source projection bounds.")) {
+        return 1;
+    }
+
+    view.centerOn(backgroundBounds.bottomRight());
+    qApp->processEvents();
+    const QRectF visibleSceneBounds = view.mapToScene(view.viewport()->rect()).boundingRect();
+    if (!expect(visibleSceneBounds.contains(backgroundBounds.bottomRight()),
+                "Map pan should be able to reach the far edge of a background outside the original canvas frame.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int runSceneRectAndScrollValueRestorePreservesViewportTest()
+{
+    QGraphicsScene scene;
+    const QRectF originalSceneRect(-4000.0, -3000.0, 8000.0, 6000.0);
+    scene.setSceneRect(originalSceneRect);
+    QGraphicsView view(&scene);
+    view.resize(333, 247);
+    view.show();
+    view.scale(4.51, 4.51);
+    view.centerOn(QPointF(1375.25, -725.75));
+    qApp->processEvents();
+
+    QScrollBar *const horizontalScrollBar = view.horizontalScrollBar();
+    QScrollBar *const verticalScrollBar = view.verticalScrollBar();
+    const QTransform originalTransform = view.transform();
+    const int originalHorizontalScrollValue = horizontalScrollBar->value();
+    const int originalVerticalScrollValue = verticalScrollBar->value();
+    const QPointF originalViewportCenter = view.mapToScene(view.viewport()->rect().center());
+
+    // Simulate a source refresh that builds a scene with different bounds.
+    scene.setSceneRect(QRectF(-12000.0, -9000.0, 24000.0, 18000.0));
+    view.centerOn(QPointF(-6000.0, 4500.0));
+    qApp->processEvents();
+
+    // The refresh controller restores these values in this order. Restoring
+    // the original scene rect first gives the scroll values their original
+    // coordinate meaning even at a high zoom factor.
+    scene.setSceneRect(originalSceneRect);
+    view.setTransform(originalTransform);
+    horizontalScrollBar->setValue(qBound(horizontalScrollBar->minimum(),
+                                         originalHorizontalScrollValue,
+                                         horizontalScrollBar->maximum()));
+    verticalScrollBar->setValue(qBound(verticalScrollBar->minimum(),
+                                       originalVerticalScrollValue,
+                                       verticalScrollBar->maximum()));
+    qApp->processEvents();
+
+    if (!expect(scene.sceneRect() == originalSceneRect,
+                "Preserved map refresh should restore the original scene rectangle.")) {
+        return 1;
+    }
+    if (!expect(horizontalScrollBar->value() == originalHorizontalScrollValue
+                    && verticalScrollBar->value() == originalVerticalScrollValue,
+                "Preserved map refresh should restore exact horizontal and vertical scrollbar values.")) {
+        return 1;
+    }
+    if (!expect(QLineF(originalViewportCenter,
+                       view.mapToScene(view.viewport()->rect().center())).length() < 0.0001,
+                "Restoring the original scene rectangle and scroll values should keep the high-zoom viewport fixed.")) {
         return 1;
     }
 
@@ -2023,5 +2118,11 @@ int main(int argc, char **argv)
     if (const int rc = runInteractiveDrawCloseHitRadiusScalesWithZoomTest(); rc != 0) {
         return rc;
     }
-    return runResizeAutoFitSuppressesCommandSurfaceUpdateTest();
+    if (const int rc = runResizeAutoFitSuppressesCommandSurfaceUpdateTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runBackgroundBoundsExpandScrollableSceneWithoutChangingCanvasProjectionTest(); rc != 0) {
+        return rc;
+    }
+    return runSceneRectAndScrollValueRestorePreservesViewportTest();
 }

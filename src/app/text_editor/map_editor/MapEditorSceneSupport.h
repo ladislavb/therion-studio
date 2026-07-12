@@ -37,6 +37,43 @@ constexpr int kMapSceneInteractionHoverRole = Qt::UserRole + 125;
 constexpr int kMapScenePendingPrimarySelectionRole = Qt::UserRole + 126;
 constexpr int kMapSceneInteractionSelectionRole = Qt::UserRole + 127;
 constexpr int kMapSceneFocusedVertexRole = Qt::UserRole + 128;
+// These items are only useful while a visual map has neither geometry nor a
+// visible background. Background loading follows the initial scene render, so
+// the items must be toggleable without rebuilding the scene.
+constexpr int kMapSceneEmptyDocumentGuideRole = Qt::UserRole + 129;
+
+constexpr qreal kMapEditorCanvasFrameInset = 24.0;
+constexpr qreal kMapEditorCanvasPreviewInset = 20.0;
+
+inline QRectF mapEditorCanvasSceneFrame()
+{
+    return QRectF(0.0, 0.0, 1200.0, 900.0);
+}
+
+inline QRectF mapEditorCanvasPreviewBounds()
+{
+    const QRectF geometryCanvas = mapEditorCanvasSceneFrame().adjusted(kMapEditorCanvasFrameInset,
+                                                                         kMapEditorCanvasFrameInset,
+                                                                         -kMapEditorCanvasFrameInset,
+                                                                         -kMapEditorCanvasFrameInset);
+    return geometryCanvas.adjusted(kMapEditorCanvasPreviewInset,
+                                   kMapEditorCanvasPreviewInset,
+                                   -kMapEditorCanvasPreviewInset,
+                                   -kMapEditorCanvasPreviewInset);
+}
+
+inline QRectF mapEditorScrollableSceneRect(const QRectF &backgroundBounds)
+{
+    QRectF scrollableBounds = mapEditorCanvasSceneFrame();
+    if (backgroundBounds.isValid()) {
+        scrollableBounds = scrollableBounds.united(
+            backgroundBounds.adjusted(-kMapEditorCanvasFrameInset,
+                                      -kMapEditorCanvasFrameInset,
+                                      kMapEditorCanvasFrameInset,
+                                      kMapEditorCanvasFrameInset));
+    }
+    return scrollableBounds;
+}
 
 enum MapSceneSelectionSubtype
 {

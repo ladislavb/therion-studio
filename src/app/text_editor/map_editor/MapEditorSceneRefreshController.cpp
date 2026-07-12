@@ -63,6 +63,19 @@ QGraphicsScene *MapEditorSceneRefreshController::scene() const
     return context_.scene != nullptr ? *context_.scene : nullptr;
 }
 
+void MapEditorSceneRefreshController::updateSceneRectForBackgroundBounds()
+{
+    QGraphicsScene *mapScene = scene();
+    if (mapScene == nullptr) {
+        return;
+    }
+
+    const QRectF backgroundBounds = context_.mapBackgroundFitBounds
+        ? context_.mapBackgroundFitBounds()
+        : QRectF();
+    mapScene->setSceneRect(mapEditorScrollableSceneRect(backgroundBounds));
+}
+
 bool restoreSceneRefreshSelection(const MapEditorSceneRefreshContext &context)
 {
     const int lineNumber = context.sceneRefreshSelectionLineNumber
@@ -205,6 +218,7 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
     const QTransform preservedTransform = canPreserveViewport
         ? context_.view->transform()
         : QTransform();
+    const QRectF preservedSceneRect = canPreserveViewport ? mapScene->sceneRect() : QRectF();
     const QPointF preservedCenter = canPreserveViewport
         ? context_.view->mapToScene(context_.view->viewport()->rect().center())
         : QPointF();
@@ -307,6 +321,9 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
     context_.restoreBackgroundImageItems();
     context_.reprojectMetadataBackgroundLayersForCurrentDocument();
     context_.restoreDraftGeometryItems();
+    if (!canPreserveViewport) {
+        updateSceneRectForBackgroundBounds();
+    }
     const qint64 backgroundMs = logTiming ? stageTimer.restart() : 0;
     const bool restoredSelection = restoreSceneRefreshSelection(context_);
     if (!restoredSelection) {
@@ -321,6 +338,10 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
     context_.updateGeometrySelectionPresentation();
     const qint64 presentationMs = logTiming ? stageTimer.restart() : 0;
     if (canPreserveViewport) {
+        // Retaining the original scene rect means the exact scrollbar values
+        // still refer to the same scene coordinates. This avoids both the
+        // large remap jump and the high-zoom rounding drift of centerOn().
+        mapScene->setSceneRect(preservedSceneRect);
         context_.view->setTransform(preservedTransform);
         if (preservedHorizontalScrollBar != nullptr && preservedVerticalScrollBar != nullptr) {
             preservedHorizontalScrollBar->setValue(qBound(preservedHorizontalScrollBar->minimum(),

@@ -86,6 +86,7 @@ public:
 
 private:
     QGraphicsScene *scene() const;
+    void updateSceneRectForBackgroundBounds();
     const MapEditorOrientationApplicabilityByCommand &orientationApplicabilityByCommand() const;
     void refreshMapScenePreservingUndoStack(bool preserveViewport);
 

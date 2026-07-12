@@ -2864,14 +2864,22 @@ int runDragUndoRedoSmoke()
     const int lineDirectivesBefore = countDirectiveLines(textBeforeInteractiveDrawing, QStringLiteral("line"));
     const int areaDirectivesBefore = countDirectiveLines(textBeforeInteractiveDrawing, QStringLiteral("area"));
     const QPoint viewportCenter = mapView->viewport()->rect().center();
+    const QPoint offCenterPointInsertPosition = viewportCenter + QPoint(96, -64);
     const QString textBeforePointInsert = mapTab->text();
+    const QPointF sceneCenterBeforePointInsert = mapView->mapToScene(mapView->viewport()->rect().center());
     mapTab->triggerAddPoint();
     pumpEvents();
-    sendMouse(mapView->viewport(), QEvent::MouseButtonPress, viewportCenter, Qt::LeftButton, Qt::LeftButton);
-    sendMouse(mapView->viewport(), QEvent::MouseButtonRelease, viewportCenter, Qt::LeftButton, Qt::NoButton);
-    pumpEvents();
+    sendMouse(mapView->viewport(), QEvent::MouseButtonPress, offCenterPointInsertPosition, Qt::LeftButton, Qt::LeftButton);
+    sendMouse(mapView->viewport(), QEvent::MouseButtonRelease, offCenterPointInsertPosition, Qt::LeftButton, Qt::NoButton);
+    waitForMs(200);
     if (!expect(countDirectiveLines(mapTab->text(), QStringLiteral("point")) == pointDirectivesBefore + 1,
                 "Point mode click-to-place should insert one new point directive.")) {
+        return 1;
+    }
+    const QPointF sceneCenterAfterPointInsert = mapView->mapToScene(mapView->viewport()->rect().center());
+    const QPointF pointInsertSceneCenterDelta = sceneCenterAfterPointInsert - sceneCenterBeforePointInsert;
+    if (!expect(std::hypot(pointInsertSceneCenterDelta.x(), pointInsertSceneCenterDelta.y()) < 3.0,
+                "Inserting an off-center point should not recenter the map viewport on that point.")) {
         return 1;
     }
     const QString textAfterPointInsert = mapTab->text();

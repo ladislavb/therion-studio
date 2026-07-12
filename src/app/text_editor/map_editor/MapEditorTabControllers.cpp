@@ -68,6 +68,11 @@ void MapEditorTab::restoreBackgroundImageItems()
     MapEditorSceneLifecycleController(sceneLifecycleContext()).restoreBackgroundImageItems();
 }
 
+void MapEditorTab::updateMapSceneScrollBounds()
+{
+    MapEditorSceneLifecycleController(sceneLifecycleContext()).updateSceneRectForBackgroundBounds();
+}
+
 void MapEditorTab::fitMapToView(bool includeBackgroundImages)
 {
     MapEditorSceneLifecycleController(sceneLifecycleContext()).fitMapToView(includeBackgroundImages);

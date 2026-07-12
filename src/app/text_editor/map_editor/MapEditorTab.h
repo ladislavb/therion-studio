@@ -558,12 +558,14 @@ private:
     void loadBackgroundImageSourceAsync(QGraphicsPixmapItem *item);
     void refreshBackgroundLayerControls();
     void refreshBackgroundLayerPropertyControls();
+    void updateMapSceneScrollBounds();
     void applyBackgroundLayerStackingOrder();
     void saveBackgroundLayersToSession() const;
     void loadBackgroundLayersFromSession();
     void loadBackgroundLayersFromDocumentMetadata();
     void syncAutoBackgroundLayersFromCurrentDocument();
     void reprojectMetadataBackgroundLayersForCurrentDocument();
+    void updateEmptyDocumentGuideVisibility();
     QRectF xtherionAutoAreaAdjustRect() const;
     void syncBackgroundLayerXtherionMetadata(QGraphicsPixmapItem *item, const QString &label, bool preserveExistingPlacement = false);
     bool syncBackgroundLayerXtherionGammaMetadata(QGraphicsPixmapItem *item, const QString &label);
@@ -813,6 +815,7 @@ private:
     QString toolbarStatusNote_;
     bool updatingSelection_ = false;
     bool updatingBackgroundLayerControls_ = false;
+    bool mapViewportPreservationInProgress_ = false;
     bool autoFitEnabled_ = true;
     qreal zoomFactor_ = 1.0;
     bool fitBackgroundRequested_ = false;

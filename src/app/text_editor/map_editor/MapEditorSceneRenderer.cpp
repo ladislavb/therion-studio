@@ -2142,14 +2142,21 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
     };
 
     const MapCanvasTheme canvasTheme = mapCanvasThemeForScene(scene);
-    const QRectF sceneFrame(0, 0, 1200, 900);
+    const QRectF sceneFrame = mapEditorCanvasSceneFrame();
     scene->setSceneRect(sceneFrame);
-    const QRectF geometryCanvas = sceneFrame.adjusted(24.0, 24.0, -24.0, -24.0);
+    const QRectF geometryCanvas = sceneFrame.adjusted(kMapEditorCanvasFrameInset,
+                                                       kMapEditorCanvasFrameInset,
+                                                       -kMapEditorCanvasFrameInset,
+                                                       -kMapEditorCanvasFrameInset);
     if (showEmptyDocumentGuides || !geometryFeatures.isEmpty()) {
-        makeMouseTransparent(scene->addRect(geometryCanvas, QPen(canvasTheme.canvasBorder, 1.2), QBrush(canvasTheme.canvasFill)));
+        QGraphicsRectItem *canvasItem =
+            makeMouseTransparent(scene->addRect(geometryCanvas, QPen(canvasTheme.canvasBorder, 1.2), QBrush(canvasTheme.canvasFill)));
+        if (canvasItem != nullptr && geometryFeatures.isEmpty()) {
+            canvasItem->setData(kMapSceneEmptyDocumentGuideRole, true);
+        }
     }
 
-    const QRectF previewBounds = geometryCanvas.adjusted(20.0, 20.0, -20.0, -20.0);
+    const QRectF previewBounds = mapEditorCanvasPreviewBounds();
     const QRectF sourceBounds = (sourceBoundsOverride.has_value() && sourceBoundsOverride->isValid())
         ? sourceBoundsOverride.value()
         : geometryBoundsForFeatures(geometryFeatures);
@@ -2166,6 +2173,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
 
     if (geometryFeatures.isEmpty() && showEmptyDocumentGuides) {
         auto *emptyGeometryItem = makeMouseTransparent(scene->addText(QObject::tr("No parseable point, line, or area geometry was found in this document yet."), QFont(QStringLiteral("Menlo"), 11)));
+        emptyGeometryItem->setData(kMapSceneEmptyDocumentGuideRole, true);
         emptyGeometryItem->setDefaultTextColor(canvasTheme.mutedText);
         emptyGeometryItem->setPos(previewBounds.left() + 16.0, previewBounds.top() + 16.0);
     } else {
