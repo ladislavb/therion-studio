@@ -91,6 +91,11 @@
         <translation>Znova</translation>
     </message>
     <message>
+        <location filename="../src/app/MainWindowWorkspaceCommandBar.cpp" line="283"/>
+        <source>Format Document</source>
+        <translation>Formátovať dokument</translation>
+    </message>
+    <message>
         <location filename="../src/app/MainWindowWorkspaceCommandBar.cpp" line="280"/>
         <source>Compile Current Config</source>
         <translation>Kompilovať aktuálnu konfiguráciu</translation>
@@ -6503,6 +6508,16 @@ subtype blocks</translation>
 </context>
 <context>
     <name>TherionStudio::TextEditorTab</name>
+    <message>
+        <location filename="../src/app/text_editor/TextEditorTabSourceRewriteDelegates.cpp" line="44"/>
+        <source>Format Document</source>
+        <translation>Formátovať dokument</translation>
+    </message>
+    <message>
+        <location filename="../src/app/text_editor/TextEditorTabSourceRewriteDelegates.cpp" line="50"/>
+        <source>Formatting skipped: document changed.</source>
+        <translation>Formátovanie preskočené: dokument sa zmenil.</translation>
+    </message>
     <message>
         <location filename="../src/app/text_editor/raw_editor/RawEditorCompletionContextAnalyzer.cpp" line="302"/>
         <source>top-level</source>

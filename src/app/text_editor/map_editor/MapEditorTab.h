@@ -158,6 +158,7 @@ public:
     bool applyValidationFixes(const QVector<TherionSourceDiagnosticFix> &fixes);
     void triggerUndo();
     void triggerRedo();
+    void triggerFormatDocument();
     void triggerZoomIn();
     void triggerZoomOut();
     void triggerFit();

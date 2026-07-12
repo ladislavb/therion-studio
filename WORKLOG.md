@@ -16,6 +16,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Treat Unified Source DOM implementation as closed for `2026.7.2`; the completed M0-M9 plan is archived at
   `plans/archive/UNIFIED_SOURCE_DOM_PLAN.md`. Future parser/source-model work should treat the DOM as the current
   architecture and extend it through focused regressions rather than reviving the migration queue.
+- Raw source workspaces now expose an explicit `Format Document` toolbar action with a `text-quote` icon. It uses the shared source document
+  structure to normalize leading indentation to literal tabs in one undo step while preserving code bodies, blank rows,
+  line endings, and encoding; formatting remains opt-in rather than an opening/save side effect.
 - Keep SQL reporting improvements scoped to incremental follow-ups such as saved presets, filtering, summaries/charts, or
   direct database-export workflows.
 - Keep LiDAR/point-cloud processing as design/backlog work until the Map/TH2 projection boundary has a concrete import,

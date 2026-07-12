@@ -162,6 +162,7 @@ public:
     bool canRedo() const;
     void triggerUndo();
     void triggerRedo();
+    bool formatDocument();
     void setInlineStatusVisible(bool visible);
     void setModeSelectorVisible(bool visible);
     EditorMode editorMode() const;

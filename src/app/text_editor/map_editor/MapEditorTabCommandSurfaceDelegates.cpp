@@ -88,6 +88,13 @@ void MapEditorTab::triggerRedo()
     handleRedoTriggered();
 }
 
+void MapEditorTab::triggerFormatDocument()
+{
+    if (textEditor_ != nullptr) {
+        textEditor_->formatDocument();
+    }
+}
+
 void MapEditorTab::triggerZoomIn()
 {
     handleZoomInTriggered();

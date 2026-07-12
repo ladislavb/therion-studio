@@ -103,6 +103,8 @@ set(THERION_CORE_SOURCES
     src/core/TherionDocumentEditor.h
     src/core/TherionSourceDocument.cpp
     src/core/TherionSourceDocument.h
+    src/core/TherionSourceFormatter.cpp
+    src/core/TherionSourceFormatter.h
     src/core/TherionSourceLogicalDocument.cpp
     src/core/TherionSourceLogicalDocument.h
     src/core/TherionSourceReferenceResolver.cpp
@@ -778,6 +780,7 @@ set(THERION_STUDIO_RESOURCE_FILES
     resources/icons/lucide/square.svg
     resources/icons/lucide/square-dashed-mouse-pointer.svg
     resources/icons/lucide/square-plus.svg
+    resources/icons/lucide/text-quote.svg
     resources/icons/lucide/toy-brick.svg
     resources/icons/lucide/trash-2.svg
     resources/icons/lucide/undo-2.svg
@@ -1045,6 +1048,7 @@ therion_add_core_qtest_runner(TherionCoreQTests
     tests/core/ThreeDViewerSceneStatisticsTest.cpp
     tests/core/TherionDocumentEditorDraftInsertionTest.cpp
     tests/core/TherionSourceDocumentTest.cpp
+    tests/core/TherionSourceFormatterTest.cpp
     tests/core/TherionSourceLogicalDocumentTest.cpp
     tests/core/TherionSourceSnapshotCacheTest.cpp
     tests/core/TherionSourceValidatorFixTest.cpp

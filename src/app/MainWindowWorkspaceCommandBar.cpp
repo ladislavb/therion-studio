@@ -279,6 +279,9 @@ void MainWindow::initializeWorkspaceModeSwitcher()
     workspaceEditSeparator_ = createWorkspaceToolbarSeparator(workspaceModeSwitcher_);
     workspaceUndoButton_ = createWorkspaceIconButton(workspaceModeSwitcher_, tr("Undo"), QStringLiteral("undo-2"));
     workspaceRedoButton_ = createWorkspaceIconButton(workspaceModeSwitcher_, tr("Redo"), QStringLiteral("redo-2"));
+    workspaceFormatSeparator_ = createWorkspaceToolbarSeparator(workspaceModeSwitcher_);
+    workspaceFormatDocumentButton_ =
+        createWorkspaceIconButton(workspaceModeSwitcher_, tr("Format Document"), QStringLiteral("text-quote"));
     workspaceCompileCurrentConfigButton_ =
         createWorkspaceIconButton(workspaceModeSwitcher_, tr("Compile Current Config"), QStringLiteral("play"));
     hostLayout->addWidget(workspaceNewDocumentButton_);
@@ -287,6 +290,8 @@ void MainWindow::initializeWorkspaceModeSwitcher()
     hostLayout->addWidget(workspaceEditSeparator_);
     hostLayout->addWidget(workspaceUndoButton_);
     hostLayout->addWidget(workspaceRedoButton_);
+    hostLayout->addWidget(workspaceFormatSeparator_);
+    hostLayout->addWidget(workspaceFormatDocumentButton_);
     workspaceCompileSeparator_ = createWorkspaceToolbarSeparator(workspaceModeSwitcher_);
     hostLayout->addWidget(workspaceCompileSeparator_);
     hostLayout->addWidget(workspaceCompileCurrentConfigButton_);
@@ -409,6 +414,7 @@ void MainWindow::initializeWorkspaceModeSwitcher()
     });
     connect(workspaceUndoButton_, &QToolButton::clicked, this, &MainWindow::triggerUndoForActiveDocument);
     connect(workspaceRedoButton_, &QToolButton::clicked, this, &MainWindow::triggerRedoForActiveDocument);
+    connect(workspaceFormatDocumentButton_, &QToolButton::clicked, this, &MainWindow::triggerFormatDocumentForActiveDocument);
     connect(workspaceCompileCurrentConfigButton_, &QToolButton::clicked, this, &MainWindow::triggerCompileCurrentConfigForActiveDocument);
     connect(workspaceZoomInButton_, &QToolButton::clicked, this, &MainWindow::triggerZoomInForActiveDocument);
     connect(workspaceZoomOutButton_, &QToolButton::clicked, this, &MainWindow::triggerZoomOutForActiveDocument);
@@ -492,6 +498,8 @@ void MainWindow::initializeWorkspaceModeSwitcher()
     workspaceZoomGroup_->setVisible(false);
     workspaceMapToolsGroup_->setVisible(false);
     workspaceEditSeparator_->setVisible(false);
+    workspaceFormatSeparator_->setVisible(false);
+    workspaceFormatDocumentButton_->setVisible(false);
     workspaceHistorySeparator_->setVisible(false);
     workspaceCompileSeparator_->setVisible(false);
     workspaceCompileCurrentConfigButton_->setVisible(false);
@@ -517,6 +525,8 @@ void MainWindow::refreshWorkspaceModeSwitcher()
         || workspaceExportCsvButton_ == nullptr
         || workspaceUndoButton_ == nullptr
         || workspaceRedoButton_ == nullptr
+        || workspaceFormatSeparator_ == nullptr
+        || workspaceFormatDocumentButton_ == nullptr
         || workspaceCompileCurrentConfigButton_ == nullptr
         || workspaceZoomGroup_ == nullptr
         || workspaceZoomInButton_ == nullptr
@@ -569,6 +579,11 @@ void MainWindow::refreshWorkspaceModeSwitcher()
         && mapTab->workspaceMode() == TherionStudio::MapEditorTab::WorkspaceMode::Visual;
     const bool showZoomTools = showMapModes && !mapPaneDetached;
     const bool showMapTools = showMapModes && !mapPaneDetached;
+    const bool rawTextSurfaceActive = textTab != nullptr
+        && textTab->editorMode() == TherionStudio::TextEditorTab::EditorMode::Raw;
+    const bool rawMapSurfaceActive = mapTab != nullptr
+        && mapTab->workspaceMode() == TherionStudio::MapEditorTab::WorkspaceMode::Raw;
+    const bool showFormatDocument = rawTextSurfaceActive || rawMapSurfaceActive;
     QColor commandBarBackground = palette().color(QPalette::Window);
     if (showTextModes && textTab != nullptr) {
         const QColor sourceSurface = textTab->sourceSurfaceColor();
@@ -586,6 +601,7 @@ void MainWindow::refreshWorkspaceModeSwitcher()
     workspaceThreeDViewerGroup_->setVisible(showThreeDViewerModes);
     workspaceNewDocumentButton_->setVisible(showEditorActions);
     workspaceEditSeparator_->setVisible(showEditorActions && tabWidget != nullptr);
+    workspaceFormatSeparator_->setVisible(showEditorActions && showFormatDocument);
     workspaceHistorySeparator_->setVisible(showEditorActions && showZoomTools);
     workspaceZoomGroup_->setVisible(showEditorActions && showZoomTools);
     workspaceZoomSeparator_->setVisible(showEditorActions && showZoomTools);
@@ -631,8 +647,10 @@ void MainWindow::refreshWorkspaceModeSwitcher()
     const bool canRedo = documentCanRedoForWidget(tabWidget);
     workspaceUndoButton_->setVisible(showEditorActions);
     workspaceRedoButton_->setVisible(showEditorActions);
+    workspaceFormatDocumentButton_->setVisible(showEditorActions && showFormatDocument);
     workspaceUndoButton_->setEnabled(showEditorActions && canUndo);
     workspaceRedoButton_->setEnabled(showEditorActions && canRedo);
+    workspaceFormatDocumentButton_->setEnabled(showEditorActions && showFormatDocument);
     if (undoAction_ != nullptr) {
         undoAction_->setEnabled(canUndo);
     }
@@ -817,6 +835,23 @@ void MainWindow::triggerRedoForActiveDocument()
     }
 
     if (documentRedoForWidget(tabWidget)) {
+        refreshWorkspaceModeSwitcher();
+    }
+}
+
+void MainWindow::triggerFormatDocumentForActiveDocument()
+{
+    if (auto *mapTab = currentMapEditorTab(); mapTab != nullptr) {
+        if (mapTab->workspaceMode() == TherionStudio::MapEditorTab::WorkspaceMode::Raw) {
+            mapTab->triggerFormatDocument();
+            refreshWorkspaceModeSwitcher();
+        }
+        return;
+    }
+
+    if (auto *textTab = currentTextTab(); textTab != nullptr
+        && textTab->editorMode() == TherionStudio::TextEditorTab::EditorMode::Raw) {
+        textTab->formatDocument();
         refreshWorkspaceModeSwitcher();
     }
 }

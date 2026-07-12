@@ -364,7 +364,8 @@ The rules below define the expected day-to-day interaction model. If a later req
 - The editor shall display 1-based source line numbers in a left gutter that stays synchronized with document scroll position.
 - For active document tabs, the application shall show a full-width document command toolbar directly above the tab strip.
 - The document command toolbar shall include, from the left, `Save`, a visual separator, `Undo` and `Redo`.
-- `Save`, `Undo`, and `Redo` in the document command toolbar shall be represented as icon-only controls with accessible names/tooltips.
+- While a Therion source document is in its Raw workspace, the document command toolbar shall also expose `Format Document` after `Redo`; it shall be represented as an icon-only control with an accessible name and tooltip.
+- `Save`, `Undo`, `Redo`, and `Format Document` in the document command toolbar shall be represented as icon-only controls with accessible names/tooltips.
 - Main-window document command toolbars shall not draw their own bottom border; separation below the toolbar shall come from the native tab/content frame or the embedded editor content separator.
 - Main-window document chrome shall use one continuous left divider between sidebar content and the editor area; the document command toolbar, file tabs, and document content shall align to that divider without duplicate embedded-canvas left borders.
 - Main-window file tabs shall use native platform tab rendering and shall sit on the `QTabWidget` editor/canvas frame without custom tab-bar geometry overrides.
@@ -374,6 +375,7 @@ The rules below define the expected day-to-day interaction model. If a later req
 - For `.th` and Therion config documents, the `Raw`/`Blocks` mode selector shall be shown in this document command toolbar instead of a dedicated in-content mode row.
 - The Settings dialog shall allow choosing the default editor mode for newly opened `.th` and Therion config documents: `Raw` or `Blocks`; the default shall be `Raw`.
 - The default text-editor mode preference shall apply only when opening a new `.th` or Therion config tab and shall not modify document source merely because the tab initially opens in Blocks mode.
+- `Format Document` shall be an explicit, single undoable source transaction. It shall normalize only leading indentation of structurally parsed Therion rows to one literal tab per open block depth, preserve blank rows, comments and their content, code-block body rows, original line endings, and document encoding, and shall not run automatically when opening, saving, switching modes, or editing a document.
 - The application shall show the active document's current text encoding as a compact status-bar value tied to the active document context.
 - When the active document is open in the map editor, the status area shall reserve the leftmost, expanding status-bar position for the current map workflow instruction, such as selection guidance, active drawing-mode steps, draft completion keys, and recent map-edit status messages.
 - Text, Blocks, and TH2 Visual inspector surfaces shall provide a `File` inspector view with a document panel titled by the active file name; the panel shall show the active document's full path, a copy-path action, on-disk size, last-modified timestamp, current text encoding, and any non-UTF-8 conversion warning/action.
