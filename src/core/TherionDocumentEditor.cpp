@@ -686,6 +686,11 @@ bool removeTokenAtTokenIndex(QString *lineText,
     return true;
 }
 
+TherionParsedLine parseMutableLineText(const QString &lineText)
+{
+    return TherionDocumentParser::parseLine(lineText);
+}
+
 bool isSingleTokenOptionWithValue(const QString &token)
 {
     const QString trimmed = token.trimmed();
@@ -716,7 +721,7 @@ bool removeMalformedMapObjectOptionTokens(QString *lineText)
     }
 
     for (;;) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(*lineText);
+        const TherionParsedLine parsedLine = parseMutableLineText(*lineText);
         int removeTokenIndex = -1;
         for (int index = 2; index < parsedLine.tokens.size(); ++index) {
             if (!isSingleTokenOptionWithValue(parsedLine.tokens.at(index))) {
@@ -1065,7 +1070,7 @@ bool upsertSingleValueOption(QString *lineText, const QString &optionName, const
     const QString normalizedOption = optionName.trimmed().startsWith(QLatin1Char('-'))
         ? optionName.trimmed()
         : QStringLiteral("-%1").arg(optionName.trimmed());
-    TherionParsedLine parsedLine = TherionDocumentParser::parseLine(*lineText);
+    TherionParsedLine parsedLine = parseMutableLineText(*lineText);
     const int existingOptionIndex = optionTokenIndex(parsedLine, normalizedOption);
     const QString serializedValue = serializedInlineToken(value);
     if (serializedValue.isEmpty()) {
@@ -1111,7 +1116,7 @@ bool upsertMapObjectValueOption(QString *lineText, const QString &value)
         return false;
     }
 
-    TherionParsedLine parsedLine = TherionDocumentParser::parseLine(*lineText);
+    TherionParsedLine parsedLine = parseMutableLineText(*lineText);
     const int existingOptionIndex = optionTokenIndex(parsedLine, QStringLiteral("-value"));
     const QString trimmedValue = value.trimmed();
     const QString serializedValue = trimmedValue.isEmpty()

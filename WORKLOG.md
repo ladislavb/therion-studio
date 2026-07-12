@@ -228,6 +228,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
   for block start/end and coordinate scans.
 - Line-point option edits and Smart Area boundary checks now use stored parsed source lines when the source row has not
   been locally mutated.
+- Remaining local single-line option mutation helpers now route their intentional reparse through `parseMutableLineText`.
 - Map details panel line-action, line-option, and line-point read-only feature lookups now consume
   `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
   text for each lookup.
