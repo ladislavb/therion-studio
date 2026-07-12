@@ -54,7 +54,10 @@ QVector<TherionParsedLine> MapEditorTab::parsedLinesForCurrentDocument() const
         return cachedParsedLines_;
     }
 
-    cachedParsedLines_ = TherionDocumentParser::parseTokenLines(textEditor_->text());
+    TherionSourceDocumentMetadata metadata;
+    metadata.sourceType = TherionSourceDocumentType::TherionMap;
+    metadata.revisionId = currentRevision;
+    cachedParsedLines_ = TherionSourceDocument::fromText(textEditor_->text(), metadata).tokenLines();
     cachedParsedLinesRevision_ = currentRevision;
     cachedParsedLinesValid_ = true;
     return cachedParsedLines_;

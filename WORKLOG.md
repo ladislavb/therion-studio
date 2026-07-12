@@ -226,6 +226,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   services.
 - Map area/source reference resolver fallbacks and scene-refresh parsed-line fallback now build their compatibility
   token-line views through `TherionSourceDocument` instead of direct whole-document parser calls.
+- Map tab parsed-line cache now builds its compatibility token-line view from a revision-keyed
+  `TherionSourceDocument` map snapshot instead of direct whole-document parser calls.
 - Legacy physical source-line insertion mutation now uses the same `TherionSourceDocument` parsed projection path as the
   edit planner.
 - Smart Area referenced-area scrap and identifier scans now reuse `TherionSourceDocument` parsed lines instead of
