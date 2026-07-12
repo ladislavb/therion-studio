@@ -9,8 +9,8 @@
 #include "MapEditorSceneSupport.h"
 #include "MapEditorSourceReferenceResolver.h"
 #include "../../../core/TherionDocumentEditor.h"
-#include "../../../core/TherionDocumentParser.h"
 #include "../../../core/TherionSourceLogicalDocument.h"
+#include "../../../core/TherionSourceDocument.h"
 #include "../../../core/TherionSourceText.h"
 #include "../../../core/TherionTokenRules.h"
 
@@ -84,6 +84,14 @@ QStringList trimmedLinePointStandaloneRows(const QString &rawRowsText)
         }
     }
     return trimmedRows;
+}
+
+const TherionParsedSourceLine *sourceLineAt(const TherionSourceDocument &sourceDocument, int lineNumber)
+{
+    if (lineNumber <= 0 || lineNumber > sourceDocument.parsedDocument().lines.size()) {
+        return nullptr;
+    }
+    return &sourceDocument.parsedDocument().lines.at(lineNumber - 1);
 }
 
 bool requireSourceTransaction(const MapEditorObjectDetailsContext &context, const QString &message)
@@ -345,11 +353,9 @@ void MapEditorObjectDetailsEditController::applyScrapScaleEdits()
         targetLineNumber = *context_.selectedObjectLineNumber;
     } else {
         const int cursorLineNumber = context_.textEditor->currentLineNumber();
-        const QStringList lines = TherionSourceText::splitTextLines(context_.textEditor->text());
-        if (cursorLineNumber > 0 && cursorLineNumber <= lines.size()) {
-            const TherionParsedLine parsedLine =
-                TherionDocumentParser::parseLine(lines.at(cursorLineNumber - 1), cursorLineNumber);
-            if (parsedLine.directive == QStringLiteral("scrap")) {
+        const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(context_.textEditor->text());
+        if (const TherionParsedSourceLine *sourceLine = sourceLineAt(sourceDocument, cursorLineNumber)) {
+            if (sourceLine->parsed.directive == QStringLiteral("scrap")) {
                 targetLineNumber = cursorLineNumber;
             }
         }
@@ -424,18 +430,15 @@ void MapEditorObjectDetailsEditController::handleConfigureObjectSettingsTriggere
     }
 
     QString beforeText = context_.textEditor->text();
-    const QStringList lines = TherionSourceText::splitTextLines(beforeText);
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(beforeText);
+    const QVector<TherionParsedSourceLine> &sourceLines = sourceDocument.parsedDocument().lines;
 
     int targetLineNumber = *context_.selectedObjectLineNumber;
     QString targetKind = context_.selectedObjectKind->trimmed().toLower();
     if (!(targetLineNumber > 0 && isConfigurableMapObjectKind(targetKind))) {
         targetLineNumber = context_.textEditor->currentLineNumber();
-        if (targetLineNumber > 0) {
-            if (targetLineNumber <= lines.size()) {
-                const TherionParsedLine parsedLine =
-                    TherionDocumentParser::parseLine(lines.at(targetLineNumber - 1), targetLineNumber);
-                targetKind = objectKindForDirective(parsedLine.directive);
-            }
+        if (const TherionParsedSourceLine *sourceLine = sourceLineAt(sourceDocument, targetLineNumber)) {
+            targetKind = objectKindForDirective(sourceLine->parsed.directive);
         }
     }
 
@@ -445,14 +448,20 @@ void MapEditorObjectDetailsEditController::handleConfigureObjectSettingsTriggere
         return;
     }
 
-    if (targetLineNumber > lines.size()) {
+    if (targetLineNumber > sourceLines.size()) {
         *context_.toolbarStatusNote = tr("Selected map object is out of range.");
         context_.refreshToolbarSummary();
         return;
     }
 
-    const QString sourceLine = lines.at(targetLineNumber - 1);
-    const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(sourceLine, targetLineNumber);
+    const TherionParsedSourceLine *targetSourceLine = sourceLineAt(sourceDocument, targetLineNumber);
+    if (targetSourceLine == nullptr) {
+        *context_.toolbarStatusNote = tr("Selected map object is out of range.");
+        context_.refreshToolbarSummary();
+        return;
+    }
+    const QString sourceLine = targetSourceLine->text;
+    const TherionParsedLine &parsedLine = targetSourceLine->parsed;
     const QString parsedKind = objectKindForDirective(parsedLine.directive);
     if (parsedKind != targetKind) {
         *context_.toolbarStatusNote = tr("Selected map object source line no longer matches the selection.");
@@ -758,17 +767,17 @@ void MapEditorObjectDetailsEditController::applyObjectOrientationEdits()
     const bool leftSizeEnabled = context_.linePointLeftSizeEnabledCheck->isVisible()
         && context_.linePointLeftSizeEnabledCheck->isChecked();
     const qreal leftSize = qMax<qreal>(0.1, context_.linePointLeftSizeSpin->value());
-    const QStringList documentLines = TherionSourceText::splitTextLines(beforeText);
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(beforeText);
+    const int lineCount = sourceDocument.parsedDocument().lines.size();
     QString errorMessage;
     QVector<TherionSourceTextEdit> sourceEdits;
     bool rewritten = false;
     if (selectedObjectKind == QStringLiteral("point")) {
-        if (selectedLineNumber > documentLines.size()) {
+        const TherionParsedSourceLine *selectedSourceLine = sourceLineAt(sourceDocument, selectedLineNumber);
+        if (selectedSourceLine == nullptr || selectedLineNumber > lineCount) {
             return;
         }
-        const TherionParsedLine parsedLine =
-            TherionDocumentParser::parseLine(documentLines.at(selectedLineNumber - 1), selectedLineNumber);
-        if (!isOrientationSupportedForParsedLine(parsedLine, orientationApplicabilityByCommand())) {
+        if (!isOrientationSupportedForParsedLine(selectedSourceLine->parsed, orientationApplicabilityByCommand())) {
             *context_.toolbarStatusNote = tr("Orientation is not supported for this point type.");
             context_.refreshToolbarSummary();
             context_.refreshObjectDetailsPanel();
@@ -795,13 +804,13 @@ void MapEditorObjectDetailsEditController::applyObjectOrientationEdits()
             context_.refreshObjectDetailsPanel();
             return;
         }
-        if (selectedLineNumber > documentLines.size()) {
+        const TherionParsedSourceLine *selectedSourceLine = sourceLineAt(sourceDocument, selectedLineNumber);
+        if (selectedSourceLine == nullptr || selectedLineNumber > lineCount) {
             return;
         }
-        const TherionParsedLine parsedLine =
-            TherionDocumentParser::parseLine(documentLines.at(selectedLineNumber - 1), selectedLineNumber);
-        const bool orientationSupported = isOrientationSupportedForParsedLine(parsedLine, orientationApplicabilityByCommand());
-        const bool leftSizeSupported = isLinePointLeftSizeSupportedForParsedLine(parsedLine);
+        const bool orientationSupported =
+            isOrientationSupportedForParsedLine(selectedSourceLine->parsed, orientationApplicabilityByCommand());
+        const bool leftSizeSupported = isLinePointLeftSizeSupportedForParsedLine(selectedSourceLine->parsed);
         if (!orientationSupported && !leftSizeSupported) {
             *context_.toolbarStatusNote = tr("Orientation is not supported for this line type.");
             context_.refreshToolbarSummary();

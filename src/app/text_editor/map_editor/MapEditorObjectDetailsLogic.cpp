@@ -1,7 +1,6 @@
 #include "MapEditorObjectDetailsLogic.h"
 
 #include "../../../core/TherionCommandSyntax.h"
-#include "../../../core/TherionDocumentParser.h"
 #include "../../../core/TherionSourceDocument.h"
 #include "../../../core/TherionSourceText.h"
 #include "../../../core/TherionTokenRules.h"
@@ -439,6 +438,12 @@ bool isLinePointOptionTokenForMapDetails(const QString &token, const QStringList
     return false;
 }
 
+const TherionParsedLine *parsedSourceLineAt(const TherionSourceDocument &sourceDocument, int lineNumber)
+{
+    const TherionSourceDocumentLine *sourceLine = sourceDocument.lineAtLineNumber(lineNumber);
+    return sourceLine != nullptr ? &sourceLine->sourceLine.parsed : nullptr;
+}
+
 std::optional<qreal> linePointNumericOptionForSourceVertex(const QString &documentText,
                                                            int lineNumber,
                                                            int sourceVertexIndex,
@@ -449,21 +454,22 @@ std::optional<qreal> linePointNumericOptionForSourceVertex(const QString &docume
         return std::nullopt;
     }
 
-    const QStringList lines = TherionSourceText::splitTextLines(documentText);
-    if (lineNumber > lines.size()) {
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(documentText);
+    const int lineCount = sourceDocument.parsedDocument().lines.size();
+    if (lineNumber > lineCount) {
         return std::nullopt;
     }
 
     const int blockStartLineIndex = lineNumber - 1;
-    const TherionParsedLine startLine = TherionDocumentParser::parseLine(lines.at(blockStartLineIndex), lineNumber);
-    if (startLine.directive != QStringLiteral("line")) {
+    const TherionParsedLine *startLine = parsedSourceLineAt(sourceDocument, lineNumber);
+    if (startLine == nullptr || startLine->directive != QStringLiteral("line")) {
         return std::nullopt;
     }
 
     int blockEndLineIndex = -1;
-    for (int candidateIndex = blockStartLineIndex + 1; candidateIndex < lines.size(); ++candidateIndex) {
-        const TherionParsedLine candidateLine = TherionDocumentParser::parseLine(lines.at(candidateIndex), candidateIndex + 1);
-        if (candidateLine.directive == QStringLiteral("endline")) {
+    for (int candidateIndex = blockStartLineIndex + 1; candidateIndex < lineCount; ++candidateIndex) {
+        const TherionParsedLine *candidateLine = parsedSourceLineAt(sourceDocument, candidateIndex + 1);
+        if (candidateLine != nullptr && candidateLine->directive == QStringLiteral("endline")) {
             blockEndLineIndex = candidateIndex;
             break;
         }
@@ -474,9 +480,12 @@ std::optional<qreal> linePointNumericOptionForSourceVertex(const QString &docume
 
     int nextSourceIndex = 0;
     for (int rowIndex = blockStartLineIndex; rowIndex < blockEndLineIndex; ++rowIndex) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(rowIndex), rowIndex + 1);
+        const TherionParsedLine *parsedLine = parsedSourceLineAt(sourceDocument, rowIndex + 1);
+        if (parsedLine == nullptr) {
+            continue;
+        }
         const int startTokenIndex = rowIndex == blockStartLineIndex ? 1 : 0;
-        const QVector<QPair<int, int>> coordinatePairs = coordinateTokenPairsForLine(parsedLine, startTokenIndex);
+        const QVector<QPair<int, int>> coordinatePairs = coordinateTokenPairsForLine(*parsedLine, startTokenIndex);
         if (coordinatePairs.isEmpty()) {
             continue;
         }
@@ -511,13 +520,16 @@ std::optional<qreal> linePointNumericOptionForSourceVertex(const QString &docume
         };
 
         std::optional<qreal> optionValue =
-            optionValueFromLine(parsedLine, qMax(startTokenIndex, coordinatePairs.at(sourceVertexIndex - firstSourceIndex).second + 1));
+            optionValueFromLine(*parsedLine, qMax(startTokenIndex, coordinatePairs.at(sourceVertexIndex - firstSourceIndex).second + 1));
         for (int optionRowIndex = rowIndex + 1; optionRowIndex < blockEndLineIndex; ++optionRowIndex) {
-            const TherionParsedLine optionRowLine = TherionDocumentParser::parseLine(lines.at(optionRowIndex), optionRowIndex + 1);
-            if (!coordinateTokenPairsForLine(optionRowLine, 0).isEmpty()) {
+            const TherionParsedLine *optionRowLine = parsedSourceLineAt(sourceDocument, optionRowIndex + 1);
+            if (optionRowLine == nullptr) {
+                continue;
+            }
+            if (!coordinateTokenPairsForLine(*optionRowLine, 0).isEmpty()) {
                 break;
             }
-            if (const std::optional<qreal> rowValue = optionValueFromLine(optionRowLine, 0)) {
+            if (const std::optional<qreal> rowValue = optionValueFromLine(*optionRowLine, 0)) {
                 optionValue = rowValue;
             }
         }
