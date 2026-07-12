@@ -48,19 +48,15 @@ This plan tracks the long-running migration toward one shared, lossless Therion 
 
 ### Remaining Local Parsing And Lookup Hotspots
 
-- `TherionDocumentEditor.cpp` still contains many rewrite planners that split lines, parse rows, infer insertion offsets, and preserve line endings locally. These are high-risk because they own source mutation semantics.
-- `MapEditorTab::parsedLinesForCurrentDocument()` still caches `TherionDocumentParser::parseTokenLines()` as a TH2
-  compatibility adapter for contexts without DOM callbacks, rewrite planners, background metadata write workflows, and
-  geometry compatibility tests.
-- `MapEditorObjectDetailsLogic`, `MapEditorObjectDeletePlanner`, `MapEditorObjectMovePlanner`,
-  `MapEditorLineSplitPlanner`, `MapEditorSourceReferenceResolver`, `MapEditorAreaReferenceResolver`, and
-  `MapEditorBackgroundLayers` still contain direct `parseLine`, `parseTokenLines`, `splitTextLines`, or
-  `detectedLineEnding` calls. Production DOM-backed read-only Map consumers no longer use these paths as their primary
-  source, but rewrite planners intentionally remain on explicit before/after source text snapshots until
-  transaction-specific coverage exists.
-- Blocks details, delete, data-block, toolbox, line-build, and option-argument helpers still contain small local `parseLine` / `tokenizeLine` calls where the logical document does not yet expose the exact needed operation.
-- Map geometry tests and map geometry feature parsing still exercise token-line compatibility inputs; this is useful guardrail coverage but also marks the migration boundary for a future TH2 projection.
-- `TherionBackgroundMetadata` and map background workflows preserve XTherion/Mapiah metadata through local line edits. They should move only after map background round-trip coverage is explicit.
+- The remaining direct `TherionDocumentParser` production calls are quarantined by
+  `scripts/check_structure_constraints.py` and limited to parser implementation, logical DOM construction,
+  validator safe-fix/scope snippets, command-option value snippets, source-editor single-line rewrite helpers, and map
+  pending-insert snippets that do not have source text yet.
+- `TherionDocumentEditor.cpp` still owns low-level token rewrite helpers for source mutations, but their callers are
+  routed through shared source snapshots and transaction boundaries. Any further extraction should preserve existing
+  undo/redo and round-trip coverage.
+- Compatibility tests still exercise token-line parsing APIs directly. This is retained as guardrail coverage for the
+  parser core and source-preservation boundaries, not as a production UI parsing path.
 
 ### Current Migration Rule
 
@@ -410,6 +406,19 @@ Stop condition:
 ### M9 - Legacy Removal
 
 Goal: remove or quarantine duplicate parser paths after migrated consumers and tests are in place.
+
+Status: complete for the `2026.7.2` DOM migration closure. `scripts/check_structure_constraints.py` now rejects new direct
+`TherionDocumentParser::parseLine`, `parseTokenLines`, or `tokenizeLine` calls outside the documented exception list.
+
+Final allowed legacy list:
+
+- Parser implementation in `src/core/TherionDocumentParser.cpp`.
+- Logical command construction in `src/core/TherionSourceLogicalDocument.cpp`.
+- Validator synthetic single-line parsing in `src/core/TherionSourceValidator.cpp`.
+- Command-option value snippet tokenization in `src/core/TherionCommandSyntax.cpp`.
+- Source-editor single-line rewrite helper parsing in `src/core/TherionDocumentEditor.cpp`.
+- Map pending-insert synthetic snippets in `MapEditorObjectDetailsPanelController.cpp` and
+  `MapEditorTabSourceEditWorkflow.cpp`.
 
 Steps:
 

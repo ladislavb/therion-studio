@@ -688,6 +688,7 @@ bool removeTokenAtTokenIndex(QString *lineText,
 
 TherionParsedLine parseMutableLineText(const QString &lineText)
 {
+    // Source-edit helpers reparse one mutated physical line before applying token-level rewrites.
     return TherionDocumentParser::parseLine(lineText);
 }
 

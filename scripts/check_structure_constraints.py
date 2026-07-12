@@ -178,6 +178,42 @@ MAP_EDITOR_SOURCE_MUTATION_LOW_LEVEL_PATTERNS = (
 # - QUndoCommand implementations that store before/after snapshots internally.
 MAP_EDITOR_SOURCE_MUTATION_ALLOWED_PATTERNS_BY_FILE = {}
 
+DOM_LEGACY_PARSER_CALL_PATTERN = re.compile(
+    r"TherionDocumentParser::(?:parseLine|parseTokenLines|tokenizeLine)\("
+)
+
+# Unified Source DOM migration guardrail: document parsing should flow through
+# TherionSourceDocument/TherionSourceLogicalDocument snapshots. The remaining
+# direct parser calls are deliberately limited to parser/core construction,
+# token-level source rewrites, validation safe-fix snippets, command syntax
+# option snippets, and map pending-insert snippets that do not have source text yet.
+DOM_LEGACY_PARSER_ALLOWED_PATTERNS_BY_FILE = {
+    "src/core/TherionDocumentParser.cpp": (
+        "TherionParsedLine TherionDocumentParser::parseLine(",
+        "QVector<TherionParsedLine> TherionDocumentParser::parseTokenLines(",
+        "QStringList TherionDocumentParser::tokenizeLine(",
+    ),
+    "src/core/TherionSourceLogicalDocument.cpp": (
+        "TherionDocumentParser::parseLine(command.text, command.startLineNumber)",
+    ),
+    "src/core/TherionSourceValidator.cpp": (
+        "TherionDocumentParser::parseLine(lineText)",
+    ),
+    "src/core/TherionCommandSyntax.cpp": (
+        "TherionDocumentParser::tokenizeLine(value)",
+    ),
+    "src/core/TherionDocumentEditor.cpp": (
+        "TherionDocumentParser::parseLine(lineText)",
+    ),
+    "src/app/text_editor/map_editor/MapEditorObjectDetailsPanelController.cpp": (
+        'TherionDocumentParser::parseLine(QStringLiteral("point 0 0 %1").arg(pendingFields->type.trimmed()))',
+        'TherionDocumentParser::parseLine(QStringLiteral("line %1").arg(pendingFields->type.trimmed()))',
+    ),
+    "src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp": (
+        'TherionDocumentParser::parseLine(QStringLiteral("line %1").arg(interactiveDrawState_.pendingInsertFields_.type.trimmed()))',
+    ),
+}
+
 CMAKE_SOURCE_PATH_PATTERN = re.compile(r"src/[A-Za-z0-9_./+-]+\.(?:cpp|h)")
 CMAKE_SOURCE_SUFFIXES = {".cpp", ".h"}
 CMAKE_UNIQUE_SOURCE_SETS = (
@@ -202,6 +238,11 @@ def contains_text(path: pathlib.Path, text: str) -> bool:
 
 def map_source_mutation_is_allowed(relative_path: str, line_text: str) -> bool:
     allowed_patterns = MAP_EDITOR_SOURCE_MUTATION_ALLOWED_PATTERNS_BY_FILE.get(relative_path, set())
+    return any(pattern in line_text for pattern in allowed_patterns)
+
+
+def dom_legacy_parser_call_is_allowed(relative_path: str, line_text: str) -> bool:
+    allowed_patterns = DOM_LEGACY_PARSER_ALLOWED_PATTERNS_BY_FILE.get(relative_path, ())
     return any(pattern in line_text for pattern in allowed_patterns)
 
 
@@ -244,6 +285,7 @@ def main() -> int:
     checked: list[tuple[str, int, int]] = []
     layout_violations: list[str] = []
     dependency_violations: list[str] = []
+    dom_parser_violations: list[str] = []
     source_list_violations: list[str] = []
 
     for relative_path, limit in LINE_LIMITS.items():
@@ -334,6 +376,19 @@ def main() -> int:
                         "or an approved snapshot command)"
                     )
 
+    for relative_path in repository_source_paths():
+        absolute_path = REPO_ROOT / relative_path
+        with absolute_path.open("r", encoding="utf-8", errors="replace") as handle:
+            for line_number, line_text in enumerate(handle, start=1):
+                if not DOM_LEGACY_PARSER_CALL_PATTERN.search(line_text):
+                    continue
+                if dom_legacy_parser_call_is_allowed(relative_path, line_text):
+                    continue
+                dom_parser_violations.append(
+                    f"{relative_path}:{line_number}: forbidden direct TherionDocumentParser call "
+                    "(use TherionSourceDocument/TherionSourceLogicalDocument snapshots or add a documented guardrail exception)"
+                )
+
     cmake_text = (REPO_ROOT / "CMakeLists.txt").read_text(encoding="utf-8", errors="replace")
     repository_sources = repository_source_paths()
     listed_sources = cmake_source_paths(cmake_text)
@@ -354,7 +409,7 @@ def main() -> int:
                     f"{source_set}: {relative_path} is listed {count} times"
                 )
 
-    if violations or layout_violations or dependency_violations or source_list_violations:
+    if violations or layout_violations or dependency_violations or dom_parser_violations or source_list_violations:
         print("Structure constraint violations detected:")
         for relative_path, actual, limit in violations:
             if actual < 0:
@@ -364,6 +419,8 @@ def main() -> int:
         for violation in layout_violations:
             print(f"  - {violation}")
         for violation in dependency_violations:
+            print(f"  - {violation}")
+        for violation in dom_parser_violations:
             print(f"  - {violation}")
         for violation in source_list_violations:
             print(f"  - {violation}")
@@ -395,6 +452,7 @@ def main() -> int:
     print("  - MapEditor viewport-input controller uses an explicit context instead of MapEditorTab friendship")
     print("  - MapEditor canvas-edit controller uses an explicit context instead of MapEditorTab friendship")
     print("  - MapEditor source mutations are confined to the atomic helper or approved snapshot commands")
+    print("  - Direct TherionDocumentParser calls are confined to documented DOM migration exceptions")
     print("Source-list hygiene passed:")
     print(f"  - {len(repository_sources)} src/**/*.cpp and src/**/*.h files are listed in CMakeLists.txt")
     print("  - CMakeLists.txt does not reference missing src/**/*.cpp or src/**/*.h files")

@@ -588,6 +588,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
                 pendingLinePointAvailable && context_.pendingInsertLinePointSegmentSubtype
                     ? context_.pendingInsertLinePointSegmentSubtype()
                     : QString();
+            // Pending insert previews parse synthetic command snippets before source text exists.
             const TherionParsedLine pendingPointParsedLine =
                 TherionDocumentParser::parseLine(QStringLiteral("point 0 0 %1").arg(pendingFields->type.trimmed()));
             const TherionParsedLine pendingLineParsedLine =

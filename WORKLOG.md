@@ -110,6 +110,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Blocks logical-line consumers now share a DOM-aware parsed-line helper that prefers cached
   `TherionSourceLogicalDocument` commands and source-document physical lines before falling back to legacy synthetic-line
   parsing.
+- DOM legacy parser removal now has a structure guardrail: new direct `TherionDocumentParser` production calls fail
+  `scripts/check_structure_constraints.py` unless they match the documented core/synthetic exception list.
 - Blocks document outline data-body scanning now reuses `TherionSourceLogicalDocument::commandAtPhysicalLine()` for
   physical-row lookup, with regression coverage that comments inside a `data` body do not truncate the tracked range.
 - Blocks toolbox auto-scope lookup now uses the shared logical source snapshot and a revision-keyed cache instead of

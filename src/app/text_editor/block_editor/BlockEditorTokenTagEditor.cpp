@@ -1,6 +1,6 @@
 #include "BlockEditorTokenTagEditor.h"
 
-#include "../../../core/TherionDocumentParser.h"
+#include "../../../core/TherionSourceDocument.h"
 
 #include <QCompleter>
 #include <QKeyEvent>
@@ -300,7 +300,9 @@ bool BlockEditorTokenTagEditor::commitInputTokens()
     if (rawInput.isEmpty()) {
         return false;
     }
-    QStringList parsedTokens = TherionDocumentParser::tokenizeLine(rawInput);
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(rawInput);
+    const TherionSourceDocumentLine *sourceLine = sourceDocument.lineAtLineNumber(1);
+    QStringList parsedTokens = sourceLine != nullptr ? sourceLine->sourceLine.parsed.tokens : QStringList{};
     if (parsedTokens.isEmpty()) {
         parsedTokens = rawInput.split(QRegularExpression(QStringLiteral(R"(\s+)")), Qt::SkipEmptyParts);
     }

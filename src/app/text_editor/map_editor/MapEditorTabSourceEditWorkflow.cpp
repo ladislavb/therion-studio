@@ -234,6 +234,7 @@ void MapEditorTab::captureInteractiveLineAnchor(const QPointF &anchorScenePoint,
                                                 const std::optional<QPointF> &dragScenePoint)
 {
     const QString pendingCommand = interactiveDrawState_.pendingInsertFields_.commandKind.trimmed().toLower();
+    // Pending insert previews parse a synthetic line command before source text exists.
     const TherionParsedLine pendingLineParsedLine =
         TherionDocumentParser::parseLine(QStringLiteral("line %1").arg(interactiveDrawState_.pendingInsertFields_.type.trimmed()));
     const bool pendingLinePointOrientationSupported = pendingCommand == QStringLiteral("line")
