@@ -926,7 +926,7 @@ bool linePointNumericOptionRewriteEdits(const QString &contents,
             return true;
         }
         QString lineText = lines.at(existing.lineIndex);
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lineText, existing.lineIndex + 1);
+        const TherionParsedLine &parsedLine = parsedDocument.lines.at(existing.lineIndex).parsed;
         if (!removeOptionAtTokenIndex(&lineText, parsedLine, existing.optionTokenIndex)) {
             if (errorMessage != nullptr) {
                 *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "Line-point option could not be removed.");
@@ -959,7 +959,7 @@ bool linePointNumericOptionRewriteEdits(const QString &contents,
         : formatLinePointSize(value);
     if (existing.lineIndex >= 0) {
         QString lineText = lines.at(existing.lineIndex);
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lineText, existing.lineIndex + 1);
+        const TherionParsedLine &parsedLine = parsedDocument.lines.at(existing.lineIndex).parsed;
         if (existing.valueTokenIndex >= 0 && existing.valueTokenIndex < parsedLine.tokenSpans.size()) {
             const TherionParsedToken valueToken = parsedLine.tokenSpans.at(existing.valueTokenIndex);
             if (valueToken.start < 0
@@ -2103,7 +2103,7 @@ bool TherionDocumentEditor::appendReferencedAreaEdits(const QString &contents,
         seenLineNumbers.insert(boundaryLine.lineNumber);
 
         QString lineText = lines.at(boundaryLine.lineNumber - 1);
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lineText, boundaryLine.lineNumber);
+        const TherionParsedLine &parsedLine = parsedDocument.lines.at(boundaryLine.lineNumber - 1).parsed;
         if (parsedLine.directive != QStringLiteral("line")) {
             if (errorMessage != nullptr) {
                 *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "Smart Area boundary no longer resolves to a line.");
