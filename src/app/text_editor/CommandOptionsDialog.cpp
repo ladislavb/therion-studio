@@ -23,7 +23,7 @@
 #include <QVBoxLayout>
 
 #include "../../core/TherionCommandSyntax.h"
-#include "../../core/TherionDocumentParser.h"
+#include "../../core/TherionSourceDocument.h"
 
 #include <algorithm>
 #include <utility>
@@ -250,7 +250,13 @@ std::optional<QString> CommandOptionsDialog::configureLine(const QString &comman
         return std::nullopt;
     }
 
-    const TherionParsedLine commandParsedLine = TherionDocumentParser::parseLine(sourceLine, lineNumber);
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(sourceLine);
+    const TherionSourceDocumentLine *sourceDocumentLine = sourceDocument.lineAtLineNumber(1);
+    if (sourceDocumentLine == nullptr) {
+        return std::nullopt;
+    }
+    TherionParsedLine commandParsedLine = sourceDocumentLine->sourceLine.parsed;
+    commandParsedLine.lineNumber = lineNumber;
     if (commandParsedLine.tokens.isEmpty()) {
         return std::nullopt;
     }

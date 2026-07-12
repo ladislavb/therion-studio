@@ -230,6 +230,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   `TherionSourceDocument` map snapshot instead of direct whole-document parser calls.
 - Core scrap-block append planning now derives existing scrap names from a `TherionSourceDocument` snapshot instead of a
   direct whole-document parser call.
+- Command options dialog now parses its configured source line through a one-line `TherionSourceDocument` snapshot,
+  preserving the caller-provided physical line number for existing dialog behavior.
 - Legacy physical source-line insertion mutation now uses the same `TherionSourceDocument` parsed projection path as the
   edit planner.
 - Smart Area referenced-area scrap and identifier scans now reuse `TherionSourceDocument` parsed lines instead of
