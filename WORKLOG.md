@@ -218,6 +218,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   `TherionSourceDocument`.
 - Physical source-line insertion edit planning now uses `TherionSourceDocument` parsed projection for line endings and
   insert offsets.
+- Map object delete, move, and line-split rewrite planners now resolve object/source block and area-reference scans
+  through `TherionSourceDocument` snapshots, preserving existing newline/write-buffer behavior while removing local
+  planner reparsing.
 - Legacy physical source-line insertion mutation now uses the same `TherionSourceDocument` parsed projection path as the
   edit planner.
 - Smart Area referenced-area scrap and identifier scans now reuse `TherionSourceDocument` parsed lines instead of

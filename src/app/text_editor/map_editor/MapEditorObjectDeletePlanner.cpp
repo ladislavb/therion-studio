@@ -1,7 +1,7 @@
 #include "MapEditorObjectDeletePlanner.h"
 
 #include "../../../core/TherionCommandLineModel.h"
-#include "../../../core/TherionDocumentParser.h"
+#include "../../../core/TherionSourceDocument.h"
 
 #include <QCoreApplication>
 #include <QSet>
@@ -59,14 +59,14 @@ QVector<SourceLine> splitSourceLines(const QString &text)
     return lines;
 }
 
-QStringList sourceLineTexts(const QVector<SourceLine> &sourceLines)
+const TherionParsedLine *parsedLineAt(const QVector<TherionParsedLine> &parsedLines, int lineNumber)
 {
-    QStringList lines;
-    lines.reserve(sourceLines.size());
-    for (const SourceLine &line : sourceLines) {
-        lines.append(line.text);
+    for (const TherionParsedLine &parsedLine : parsedLines) {
+        if (parsedLine.lineNumber == lineNumber) {
+            return &parsedLine;
+        }
     }
-    return lines;
+    return nullptr;
 }
 
 QString joinSourceLines(const QVector<SourceLine> &lines)
@@ -93,20 +93,27 @@ QString closingDirectiveFor(const QString &directive)
     return QString();
 }
 
-int matchingBlockEndLine(const QStringList &lines, int startLine, const QString &openingDirective, const QString &closingDirective)
+int matchingBlockEndLine(const QVector<TherionParsedLine> &parsedLines,
+                         int lineCount,
+                         int startLine,
+                         const QString &openingDirective,
+                         const QString &closingDirective)
 {
-    if (startLine <= 0 || startLine > lines.size() || openingDirective.isEmpty() || closingDirective.isEmpty()) {
+    if (startLine <= 0 || startLine > lineCount || openingDirective.isEmpty() || closingDirective.isEmpty()) {
         return 0;
     }
 
     int depth = 0;
-    for (int line = startLine; line <= lines.size(); ++line) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(line - 1), line);
-        if (parsedLine.directive == openingDirective) {
+    for (int line = startLine; line <= lineCount; ++line) {
+        const TherionParsedLine *parsedLine = parsedLineAt(parsedLines, line);
+        if (parsedLine == nullptr) {
+            continue;
+        }
+        if (parsedLine->directive == openingDirective) {
             ++depth;
             continue;
         }
-        if (parsedLine.directive != closingDirective) {
+        if (parsedLine->directive != closingDirective) {
             continue;
         }
         --depth;
@@ -117,39 +124,48 @@ int matchingBlockEndLine(const QStringList &lines, int startLine, const QString 
     return 0;
 }
 
-SourceRange commandRangeAtLine(const QStringList &lines, int lineNumber, QString *directive = nullptr)
+SourceRange commandRangeAtLine(const QVector<TherionParsedLine> &parsedLines,
+                               int lineCount,
+                               int lineNumber,
+                               QString *directive = nullptr)
 {
-    if (lineNumber <= 0 || lineNumber > lines.size()) {
+    if (lineNumber <= 0 || lineNumber > lineCount) {
         return {};
     }
 
-    const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(lineNumber - 1), lineNumber);
+    const TherionParsedLine *parsedLine = parsedLineAt(parsedLines, lineNumber);
+    if (parsedLine == nullptr) {
+        return {};
+    }
     if (directive != nullptr) {
-        *directive = parsedLine.directive;
+        *directive = parsedLine->directive;
     }
-    if (parsedLine.directive.isEmpty()) {
+    if (parsedLine->directive.isEmpty()) {
         return {};
     }
 
-    const QString closingDirective = closingDirectiveFor(parsedLine.directive);
+    const QString closingDirective = closingDirectiveFor(parsedLine->directive);
     if (closingDirective.isEmpty()) {
         return {lineNumber, lineNumber};
     }
 
-    const int endLine = matchingBlockEndLine(lines, lineNumber, parsedLine.directive, closingDirective);
+    const int endLine = matchingBlockEndLine(parsedLines, lineCount, lineNumber, parsedLine->directive, closingDirective);
     return endLine >= lineNumber ? SourceRange{lineNumber, endLine} : SourceRange{};
 }
 
-QSet<QString> areaLineReferences(const QStringList &lines, const SourceRange &areaRange)
+QSet<QString> areaLineReferences(const QVector<TherionParsedLine> &parsedLines, int lineCount, const SourceRange &areaRange)
 {
     QSet<QString> references;
-    if (areaRange.startLine <= 0 || areaRange.endLine <= areaRange.startLine || areaRange.endLine > lines.size()) {
+    if (areaRange.startLine <= 0 || areaRange.endLine <= areaRange.startLine || areaRange.endLine > lineCount) {
         return references;
     }
 
     for (int line = areaRange.startLine + 1; line < areaRange.endLine; ++line) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(line - 1), line);
-        for (const QString &token : parsedLine.tokens) {
+        const TherionParsedLine *parsedLine = parsedLineAt(parsedLines, line);
+        if (parsedLine == nullptr) {
+            continue;
+        }
+        for (const QString &token : parsedLine->tokens) {
             if (!token.startsWith(QLatin1Char('-'))) {
                 references.insert(token);
             }
@@ -228,9 +244,10 @@ MapEditorObjectDeletePlan planMapEditorObjectDelete(const QString &text, int lin
     }
 
     const QVector<SourceLine> sourceLines = splitSourceLines(text);
-    const QStringList lines = sourceLineTexts(sourceLines);
+    const QVector<TherionParsedLine> parsedLines = TherionSourceDocument::fromText(text).tokenLines();
+    const int lineCount = sourceLines.size();
     QString targetDirective;
-    const SourceRange targetRange = commandRangeAtLine(lines, lineNumber, &targetDirective);
+    const SourceRange targetRange = commandRangeAtLine(parsedLines, lineCount, lineNumber, &targetDirective);
     if (targetRange.startLine <= 0) {
         plan.errorMessage = QCoreApplication::translate("TherionStudio::MapEditorObjectDeletePlanner",
                                                         "Unable to resolve object source block.");
@@ -238,20 +255,21 @@ MapEditorObjectDeletePlan planMapEditorObjectDelete(const QString &text, int lin
     }
 
     QVector<AreaReference> areas;
-    for (int currentLine = 1; currentLine <= lines.size(); ++currentLine) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(currentLine - 1), currentLine);
+    for (const TherionParsedLine &parsedLine : parsedLines) {
         if (parsedLine.directive == QStringLiteral("area")) {
             QString directive;
-            const SourceRange range = commandRangeAtLine(lines, currentLine, &directive);
+            const SourceRange range = commandRangeAtLine(parsedLines, lineCount, parsedLine.lineNumber, &directive);
             if (range.startLine > 0) {
-                areas.append(AreaReference{range.startLine, range.endLine, areaLineReferences(lines, range)});
+                areas.append(AreaReference{range.startLine, range.endLine, areaLineReferences(parsedLines, lineCount, range)});
             }
         }
     }
 
     if (targetDirective == QStringLiteral("line")) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(lineNumber - 1), lineNumber);
-        const QString lineId = commandOptionValue(parsedLine.tokens, QStringLiteral("-id"));
+        const TherionParsedLine *parsedLine = parsedLineAt(parsedLines, lineNumber);
+        const QString lineId = parsedLine != nullptr
+            ? commandOptionValue(parsedLine->tokens, QStringLiteral("-id"))
+            : QString();
         if (!lineId.isEmpty()) {
             for (const AreaReference &area : std::as_const(areas)) {
                 if (area.lineIds.contains(lineId)) {
