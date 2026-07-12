@@ -150,7 +150,14 @@ TherionParsedLine blockEditorParsedLineForLogicalLine(const BlockEditorLogicalLi
         }
     }
 
-    return TherionDocumentParser::parseLine(logicalLine.text, logicalLine.startLine);
+    const TherionSourceDocument fallbackSourceDocument = TherionSourceDocument::fromText(logicalLine.text);
+    const TherionSourceDocumentLine *fallbackSourceLine = fallbackSourceDocument.lineAtLineNumber(1);
+    if (fallbackSourceLine == nullptr) {
+        return {};
+    }
+    TherionParsedLine parsedLine = fallbackSourceLine->sourceLine.parsed;
+    parsedLine.lineNumber = logicalLine.startLine;
+    return parsedLine;
 }
 
 bool blockEditorSourceLineRangeReplacementEdit(const QString &contents,

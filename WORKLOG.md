@@ -232,6 +232,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   direct whole-document parser call.
 - Command options dialog now parses its configured source line through a one-line `TherionSourceDocument` snapshot,
   preserving the caller-provided physical line number for existing dialog behavior.
+- Block editor logical-line fallback parsing now uses a one-line `TherionSourceDocument` snapshot instead of direct
+  `parseLine`, and the isolated apply-executor test target now links `therion_core` because the helper depends on core
+  source-model types.
 - Legacy physical source-line insertion mutation now uses the same `TherionSourceDocument` parsed projection path as the
   edit planner.
 - Smart Area referenced-area scrap and identifier scans now reuse `TherionSourceDocument` parsed lines instead of

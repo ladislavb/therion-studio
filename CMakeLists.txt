@@ -1344,7 +1344,7 @@ qt_add_executable(BlockEditorApplyExecutorTest
     src/app/text_editor/block_editor/BlockEditorSourceText.cpp
     src/app/text_editor/block_editor/BlockEditorSourceText.h)
 
-target_link_libraries(BlockEditorApplyExecutorTest PRIVATE Qt6::Widgets)
+target_link_libraries(BlockEditorApplyExecutorTest PRIVATE therion_core Qt6::Widgets)
 
 qt_add_executable(BlockEditorLogicQTests
     tests/BlockEditorLogicQTestMain.cpp
