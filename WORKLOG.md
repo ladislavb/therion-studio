@@ -228,6 +228,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   token-line views through `TherionSourceDocument` instead of direct whole-document parser calls.
 - Map tab parsed-line cache now builds its compatibility token-line view from a revision-keyed
   `TherionSourceDocument` map snapshot instead of direct whole-document parser calls.
+- Core scrap-block append planning now derives existing scrap names from a `TherionSourceDocument` snapshot instead of a
+  direct whole-document parser call.
 - Legacy physical source-line insertion mutation now uses the same `TherionSourceDocument` parsed projection path as the
   edit planner.
 - Smart Area referenced-area scrap and identifier scans now reuse `TherionSourceDocument` parsed lines instead of

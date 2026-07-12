@@ -1646,7 +1646,7 @@ bool TherionDocumentEditor::appendScrapBlockEdits(const QString &contents,
     edits->clear();
 
     const QString lineEnding = contents.contains(QStringLiteral("\r\n")) ? QStringLiteral("\r\n") : QStringLiteral("\n");
-    const QVector<TherionParsedLine> parsedLines = TherionDocumentParser::parseTokenLines(contents);
+    const QVector<TherionParsedLine> parsedLines = TherionSourceDocument::fromText(contents).tokenLines();
 
     QSet<QString> existingNames;
     for (const TherionParsedLine &parsedLine : parsedLines) {
