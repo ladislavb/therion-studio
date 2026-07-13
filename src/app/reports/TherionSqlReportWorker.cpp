@@ -1,6 +1,7 @@
 #include "TherionSqlReportWorker.h"
 
 #include <QCoreApplication>
+#include <QScopeGuard>
 #include <QThread>
 
 #include <utility>
@@ -21,12 +22,34 @@ QString sourceMismatchErrorText()
         "TherionStudio::TherionSqlReportDatabase",
         "The query does not belong to the currently loaded SQL export.");
 }
+
+QString cancelledErrorText()
+{
+    return QCoreApplication::translate("TherionStudio::TherionSqlReportWorker",
+                                       "The SQL report operation was cancelled.");
+}
+
+QString timedOutErrorText()
+{
+    return QCoreApplication::translate("TherionStudio::TherionSqlReportWorker",
+                                       "The SQL query exceeded its execution deadline.");
+}
 }
 
 TherionSqlReportWorker::TherionSqlReportWorker(
     TherionSqlReportDatabase::ConnectionLifecycleObserver lifecycleObserver)
-    : lifecycleObserver_(std::move(lifecycleObserver))
+    : TherionSqlReportWorker(std::make_shared<TherionSqlReportExecutionControl>(),
+                             std::move(lifecycleObserver))
 {
+}
+
+TherionSqlReportWorker::TherionSqlReportWorker(
+    TherionSqlReportExecutionControlPtr executionControl,
+    TherionSqlReportDatabase::ConnectionLifecycleObserver lifecycleObserver)
+    : lifecycleObserver_(std::move(lifecycleObserver))
+    , executionControl_(std::move(executionControl))
+{
+    Q_ASSERT(executionControl_ != nullptr);
     qRegisterMetaType<TherionSqlReportImportRequest>();
     qRegisterMetaType<TherionSqlReportQueryRequest>();
     qRegisterMetaType<TherionSqlReportImportWorkerResult>();
@@ -42,20 +65,37 @@ TherionSqlReportWorker::~TherionSqlReportWorker()
 void TherionSqlReportWorker::importDatabase(const TherionSqlReportImportRequest &request)
 {
     verifyWorkerThread();
+    TherionSqlReportImportWorkerResult result;
+    result.requestId = request.requestId;
+    result.sourceIdentity = request.sourceIdentity;
+    if (!executionControl_->beginOperation(request.requestId, 0)) {
+        result.errorCode = TherionSqlReportErrorCode::Cancelled;
+        result.errorMessage = cancelledErrorText();
+        result.cancelled = true;
+        emit importFinished(result);
+        return;
+    }
+    auto operationGuard = qScopeGuard([this, request]() {
+        executionControl_->finishOperation(request.requestId);
+    });
+
     if (database_ == nullptr) {
-        database_ = std::make_unique<TherionSqlReportDatabase>(lifecycleObserver_);
+        database_ = std::make_unique<TherionSqlReportDatabase>(executionControl_, lifecycleObserver_);
     }
 
     sourceIdentity_.clear();
     const TherionSqlReportImportResult importResult = database_->importFile(request.filePath);
 
-    TherionSqlReportImportWorkerResult result;
-    result.requestId = request.requestId;
-    result.sourceIdentity = request.sourceIdentity;
     result.importedStatementCount = importResult.importedStatementCount;
     result.missingTables = importResult.missingTables;
     result.errorMessage = importResult.errorMessage;
-    if (importResult.success) {
+    const auto interruptionReason = executionControl_->interruptionReason(request.requestId);
+    if (interruptionReason == TherionSqlReportExecutionControl::InterruptionReason::Cancelled) {
+        result.errorCode = TherionSqlReportErrorCode::Cancelled;
+        result.errorMessage = cancelledErrorText();
+        result.cancelled = true;
+        database_.reset();
+    } else if (importResult.success) {
         sourceIdentity_ = request.sourceIdentity;
         result.schema = currentSchema();
     } else {
@@ -71,6 +111,18 @@ void TherionSqlReportWorker::executeQuery(const TherionSqlReportQueryRequest &re
     TherionSqlReportQueryWorkerResult result;
     result.requestId = request.requestId;
     result.sourceIdentity = request.sourceIdentity;
+
+    if (!executionControl_->beginOperation(request.requestId,
+                                           request.executionTimeoutMilliseconds)) {
+        result.errorCode = TherionSqlReportErrorCode::Cancelled;
+        result.errorMessage = cancelledErrorText();
+        result.cancelled = true;
+        emit queryFinished(result);
+        return;
+    }
+    auto operationGuard = qScopeGuard([this, request]() {
+        executionControl_->finishOperation(request.requestId);
+    });
 
     if (database_ == nullptr || !database_->isOpen()) {
         result.errorCode = TherionSqlReportErrorCode::DatabaseNotLoaded;
@@ -94,7 +146,17 @@ void TherionSqlReportWorker::executeQuery(const TherionSqlReportQueryRequest &re
                                                      &result.errorMessage,
                                                      request.rowLimit);
     }
-    if (!result.errorMessage.isEmpty()) {
+    const auto interruptionReason = executionControl_->interruptionReason(request.requestId);
+    if (interruptionReason == TherionSqlReportExecutionControl::InterruptionReason::Cancelled) {
+        result.table = {};
+        result.errorCode = TherionSqlReportErrorCode::Cancelled;
+        result.errorMessage = cancelledErrorText();
+        result.cancelled = true;
+    } else if (interruptionReason == TherionSqlReportExecutionControl::InterruptionReason::TimedOut) {
+        result.table = {};
+        result.errorCode = TherionSqlReportErrorCode::TimedOut;
+        result.errorMessage = timedOutErrorText();
+    } else if (!result.errorMessage.isEmpty()) {
         result.errorCode = TherionSqlReportErrorCode::QueryFailed;
     }
     emit queryFinished(result);
@@ -103,6 +165,7 @@ void TherionSqlReportWorker::executeQuery(const TherionSqlReportQueryRequest &re
 void TherionSqlReportWorker::shutdown()
 {
     verifyWorkerThread();
+    executionControl_->requestShutdown();
     sourceIdentity_.clear();
     database_.reset();
 }

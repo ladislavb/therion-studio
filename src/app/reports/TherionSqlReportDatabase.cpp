@@ -100,6 +100,12 @@ bool prepareStatement(sqlite3 *database,
     return false;
 }
 
+int reportProgressCallback(void *context)
+{
+    auto *executionControl = static_cast<TherionSqlReportExecutionControl *>(context);
+    return executionControl != nullptr && executionControl->shouldInterruptCurrentOperation() ? 1 : 0;
+}
+
 QString cleanedSqlForPrefix(QString statement)
 {
     statement = statement.trimmed();
@@ -206,9 +212,19 @@ QVector<TherionSqlReportDefinition> loadPresetDefinitionsFromResource()
 }
 
 TherionSqlReportDatabase::TherionSqlReportDatabase(ConnectionLifecycleObserver lifecycleObserver)
+    : TherionSqlReportDatabase(std::make_shared<TherionSqlReportExecutionControl>(),
+                               std::move(lifecycleObserver))
+{
+}
+
+TherionSqlReportDatabase::TherionSqlReportDatabase(
+    TherionSqlReportExecutionControlPtr executionControl,
+    ConnectionLifecycleObserver lifecycleObserver)
     : ownerThread_(QThread::currentThread())
+    , executionControl_(std::move(executionControl))
     , lifecycleObserver_(std::move(lifecycleObserver))
 {
+    Q_ASSERT(executionControl_ != nullptr);
 }
 
 TherionSqlReportDatabase::~TherionSqlReportDatabase()
@@ -303,6 +319,8 @@ void TherionSqlReportDatabase::close()
 {
     verifyOwnerThread();
     if (database_ != nullptr) {
+        sqlite3_progress_handler(database_, 0, nullptr, nullptr);
+        executionControl_->detachConnection(database_);
         const int closeResult = sqlite3_close_v2(database_);
         Q_ASSERT(closeResult == SQLITE_OK);
         Q_UNUSED(closeResult);
@@ -341,6 +359,8 @@ bool TherionSqlReportDatabase::openMemoryDatabase(QString *errorMessage)
         return false;
     }
     database_ = openedDatabase;
+    executionControl_->attachConnection(database_);
+    sqlite3_progress_handler(database_, 1000, reportProgressCallback, executionControl_.get());
     if (lifecycleObserver_) {
         lifecycleObserver_(ConnectionLifecycleEvent::Opened);
     }
@@ -357,14 +377,32 @@ TherionSqlReportImportResult TherionSqlReportDatabase::importFile(const QString 
         return result;
     }
 
+    QByteArray sqlBytes;
+    constexpr qint64 kImportReadChunkSize = 256 * 1024;
+    while (!file.atEnd()) {
+        if (executionControl_->shouldInterruptCurrentOperation()) {
+            return result;
+        }
+        const QByteArray chunk = file.read(kImportReadChunkSize);
+        if (chunk.isEmpty() && file.error() != QFileDevice::NoError) {
+            result.errorMessage = tr("Could not read %1.").arg(nativePath(path));
+            return result;
+        }
+        sqlBytes.append(chunk);
+    }
+
     QString errorMessage;
     if (!openMemoryDatabase(&errorMessage)) {
         result.errorMessage = errorMessage;
         return result;
     }
 
-    const QString sqlText = QString::fromUtf8(file.readAll());
+    const QString sqlText = QString::fromUtf8(sqlBytes);
     const QStringList statements = splitSqlStatements(sqlText, &errorMessage);
+    if (executionControl_->shouldInterruptCurrentOperation()) {
+        close();
+        return result;
+    }
     if (!errorMessage.isEmpty()) {
         result.errorMessage = errorMessage;
         close();
@@ -470,13 +508,17 @@ TherionSqlReportTable TherionSqlReportDatabase::executeCustomQuery(const QString
     return executeReportQuery(cleanedSqlForPrefix(query), errorMessage, rowLimit);
 }
 
-QStringList TherionSqlReportDatabase::splitSqlStatements(const QString &sqlText, QString *errorMessage)
+QStringList TherionSqlReportDatabase::splitSqlStatements(const QString &sqlText,
+                                                         QString *errorMessage) const
 {
     QStringList statements;
     QString current;
     bool inString = false;
     QChar stringQuote;
     for (int index = 0; index < sqlText.size(); ++index) {
+        if ((index % 4096) == 0 && executionControl_->shouldInterruptCurrentOperation()) {
+            return {};
+        }
         const QChar character = sqlText.at(index);
         current.append(character);
 
@@ -616,6 +658,10 @@ bool TherionSqlReportDatabase::importStatements(const QStringList &statements,
 {
     Q_ASSERT(result != nullptr);
     for (const QString &statement : statements) {
+        if (executionControl_->shouldInterruptCurrentOperation()) {
+            executeStatement(QStringLiteral("rollback"), nullptr);
+            return false;
+        }
         if (statement.trimmed().isEmpty()) {
             continue;
         }

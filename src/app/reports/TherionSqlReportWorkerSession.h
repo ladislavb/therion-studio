@@ -26,6 +26,7 @@ public:
     void shutdown() override;
 
 private:
+    TherionSqlReportExecutionControlPtr executionControl_;
     QThread *workerThread_ = nullptr;
     TherionSqlReportWorker *worker_ = nullptr;
     bool shuttingDown_ = false;

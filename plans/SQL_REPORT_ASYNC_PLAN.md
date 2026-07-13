@@ -4,7 +4,7 @@ Date: 2026-07-13
 
 Review findings: P1-2 and the report-specific part of P2-1.
 
-Status: active; S1-S3A complete, S3B interruption/deadline is next.
+Status: active; S1-S4 complete, S5 preset/settings and CSV IO extraction is next.
 
 Scope: move Therion SQL import and read-only report queries behind a worker-owned SQLite connection with request
 supersession, real interruption, bounded execution, and safe tab teardown. Preset persistence and CSV file output move
@@ -159,7 +159,7 @@ contracts, local Qt 6.11.1 plugin linkage, and repository CI/package Qt installa
   tests.
 - S3A deliberately adds no cancellation claim. Its purpose is to establish the stable owned handle required by S3B.
 
-### S3B — Add Interruption And Deadline Policy
+### S3B — Add Interruption And Deadline Policy — Complete
 
 1. Add connection-lifetime synchronization that prevents close from racing `sqlite3_interrupt()`.
 2. Install a per-operation progress handler with atomic cancellation and monotonic deadline state.
@@ -167,13 +167,27 @@ contracts, local Qt 6.11.1 plugin linkage, and repository CI/package Qt installa
 4. Interrupt active work immediately when a newer request or session shutdown supersedes it.
 5. Prove cancellation, timeout, recovery, and bounded teardown with deterministic recursive-query tests.
 
-## S4 — Progress And Recovery
+Implemented outcome:
+
+- `TherionSqlReportExecutionControl` generation-keys operations, synchronizes native connection attach/detach against
+  cross-thread `sqlite3_interrupt()`, and carries atomic cancellation and monotonic deadline state.
+- The connection-owned progress handler enforces the ten-second production query deadline. A newer import/query and
+  session shutdown interrupt active work immediately; cancellation and timeout use distinct worker result codes and
+  translated messages.
+- Recursive CTE tests cover deadline expiry, supersession cancellation, successful reuse after either outcome, and
+  interrupted teardown within a fixed bound.
+
+## S4 — Progress And Recovery — Complete
 
 - Import progress may report statements/bytes processed at a bounded frequency.
 - Query execution reports indeterminate busy state unless the SQLite policy provides a meaningful bounded metric.
 - A cancelled/failed request shall leave the worker able to import/query again.
 - Status and error strings are translated at the presentation boundary or through explicit translation contexts.
 - No request logs SQL text or imported source content.
+
+The tab already presents bounded busy state for import and indeterminate query execution. Import progress remains an
+optional future UX enhancement; it is not required for the responsiveness exit gate. Recovery after timeout and
+cancellation is now deterministic worker-test coverage.
 
 ## S5 — Extract Report Persistence And CSV IO
 

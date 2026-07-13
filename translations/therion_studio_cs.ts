@@ -7642,6 +7642,17 @@ subtype blocks</translation>
     </message>
 </context>
 <context>
+    <name>TherionStudio::TherionSqlReportWorker</name>
+    <message>
+        <source>The SQL report operation was cancelled.</source>
+        <translation>Operace SQL reportu byla zrušena.</translation>
+    </message>
+    <message>
+        <source>The SQL query exceeded its execution deadline.</source>
+        <translation>SQL dotaz překročil časový limit pro spuštění.</translation>
+    </message>
+</context>
+<context>
     <name>TherionStudio::TherionSqlReportWorkerSession</name>
     <message>
         <source>The SQL report session is closing.</source>

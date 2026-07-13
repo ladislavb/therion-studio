@@ -121,18 +121,24 @@ SQL report import and query execution target a dedicated worker-thread boundary:
   never receive or retain native SQLite handles or prepared statements.
 - Import and query requests/results cross the boundary as immutable value DTOs carrying request and source identity,
   execution policy, schema/table data, and explicit error/cancellation state.
+- A shared report execution control carries only atomic request/deadline state and a mutex-protected native connection
+  pointer. The session may use that seam to call `sqlite3_interrupt()` from another thread, while connection detach and
+  close remain serialized on the worker thread so interruption cannot race a stale handle.
+- A SQLite progress handler enforces a monotonic per-query deadline and observes supersession or shutdown cancellation;
+  cancellation and timeout remain distinct worker result states.
 - Connection teardown occurs only after statement-local query objects have been destroyed.
 - `MainWindow` explicitly composes a `TherionSqlReportWorkerSession` and injects its narrow session contract into the
   report tab. The session owns thread dispatch and asynchronous teardown; the tab owns only presentation state and
   accepts results whose monotonically increasing request ID and source generation are both current.
 
-The async tab workflow suppresses superseded results and keeps closing bounded by disconnecting UI publication before
-the worker drains. It does not yet interrupt a SQLite statement already executing; real interruption and deadline policy
-remain S3 scope, so the SQL responsiveness finding stays open until that slice is verified on packaged platforms.
+The async tab workflow suppresses superseded results, interrupts active SQLite execution when a newer request arrives,
+and keeps closing bounded by disconnecting UI publication before requesting worker shutdown. Read-only queries use a
+ten-second execution deadline; timeout, cancellation, recovery, and interrupted teardown are covered with recursive-query
+worker tests.
 The report database intentionally does not use QSQLITE: Qt's driver reports query cancellation as unsupported and its
 native handle cannot be paired portably with an independently linked SQLite library. The isolated report subsystem
 instead links the platform-owned SQLite API directly (`SQLite3::SQLite3` on macOS/Linux and Windows SDK `winsqlite3`),
-which gives the worker one stable handle for the planned interruption/progress policy without Qt private APIs.
+which gives the worker one stable handle for interruption and progress handling without Qt private APIs.
 
 ## Validation Architecture
 

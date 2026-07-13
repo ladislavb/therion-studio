@@ -23,8 +23,9 @@ TherionSqlReportWorkerSession::TherionSqlReportWorkerSession(
     TherionSqlReportDatabase::ConnectionLifecycleObserver lifecycleObserver,
     QObject *parent)
     : TherionSqlReportSession(parent)
+    , executionControl_(std::make_shared<TherionSqlReportExecutionControl>())
     , workerThread_(new QThread)
-    , worker_(new TherionSqlReportWorker(std::move(lifecycleObserver)))
+    , worker_(new TherionSqlReportWorker(executionControl_, std::move(lifecycleObserver)))
 {
     worker_->moveToThread(workerThread_);
     connect(worker_, &TherionSqlReportWorker::importFinished,
@@ -79,6 +80,9 @@ bool TherionSqlReportWorkerSession::requestImport(const TherionSqlReportImportRe
             "TherionStudio::TherionSqlReportWorkerSession",
             "The SQL report session is closing.");
     }
+    if (accepted) {
+        executionControl_->acceptRequest(request.requestId);
+    }
     return accepted;
 }
 
@@ -88,13 +92,16 @@ void TherionSqlReportWorkerSession::requestQuery(const TherionSqlReportQueryRequ
         return;
     }
     QPointer<TherionSqlReportWorker> worker(worker_);
-    QMetaObject::invokeMethod(worker_,
-                              [worker, request]() {
-                                  if (worker != nullptr) {
-                                      worker->executeQuery(request);
-                                  }
-                              },
-                              Qt::QueuedConnection);
+    const bool accepted = QMetaObject::invokeMethod(worker_,
+                                                    [worker, request]() {
+                                                        if (worker != nullptr) {
+                                                            worker->executeQuery(request);
+                                                        }
+                                                    },
+                                                    Qt::QueuedConnection);
+    if (accepted) {
+        executionControl_->acceptRequest(request.requestId);
+    }
 }
 
 void TherionSqlReportWorkerSession::shutdown()
@@ -103,6 +110,7 @@ void TherionSqlReportWorkerSession::shutdown()
         return;
     }
     shuttingDown_ = true;
+    executionControl_->requestShutdown();
     disconnect(worker_, nullptr, this, nullptr);
 
     QPointer<TherionSqlReportWorker> worker(worker_);

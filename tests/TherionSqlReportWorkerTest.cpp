@@ -1,6 +1,7 @@
 #include "../src/app/reports/TherionSqlReportWorker.h"
 
 #include <QDir>
+#include <QElapsedTimer>
 #include <QFile>
 #include <QMutex>
 #include <QMutexLocker>
@@ -50,6 +51,7 @@ class TherionSqlReportWorkerTest final : public QObject
 
 private slots:
     void ownsConnectionOnWorkerThreadAndTearsDownCleanly();
+    void interruptsTimesOutAndRecovers();
 };
 
 void TherionSqlReportWorkerTest::ownsConnectionOnWorkerThreadAndTearsDownCleanly()
@@ -225,6 +227,150 @@ void TherionSqlReportWorkerTest::ownsConnectionOnWorkerThreadAndTearsDownCleanly
         QVERIFY(lifecycleEvents.contains(TherionSqlReportDatabase::ConnectionLifecycleEvent::Closed));
         QVERIFY(lifecycleEvents.contains(TherionSqlReportDatabase::ConnectionLifecycleEvent::Removed));
     }
+}
+
+void TherionSqlReportWorkerTest::interruptsTimesOutAndRecovers()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    const QString validPath = writeFixture(&tempDir,
+                                           QStringLiteral("valid.sql"),
+                                           minimalTherionSqlExport());
+    QVERIFY(!validPath.isEmpty());
+
+    QThread workerThread;
+    const auto executionControl = std::make_shared<TherionSqlReportExecutionControl>();
+    QPointer<TherionSqlReportWorker> worker = new TherionSqlReportWorker(executionControl);
+    worker->moveToThread(&workerThread);
+    connect(&workerThread, &QThread::finished, worker, &QObject::deleteLater);
+    workerThread.start();
+    auto workerCleanupGuard = qScopeGuard([&]() {
+        executionControl->requestShutdown();
+        if (worker != nullptr && workerThread.isRunning()) {
+            QMetaObject::invokeMethod(worker,
+                                      [worker]() {
+                                          if (worker != nullptr) {
+                                              worker->shutdown();
+                                          }
+                                      },
+                                      Qt::BlockingQueuedConnection);
+        }
+        workerThread.quit();
+        workerThread.wait(2000);
+    });
+
+    QVector<TherionSqlReportImportWorkerResult> importResults;
+    QVector<TherionSqlReportQueryWorkerResult> queryResults;
+    connect(worker,
+            &TherionSqlReportWorker::importFinished,
+            this,
+            [&](const TherionSqlReportImportWorkerResult &result) {
+                importResults.append(result);
+            });
+    connect(worker,
+            &TherionSqlReportWorker::queryFinished,
+            this,
+            [&](const TherionSqlReportQueryWorkerResult &result) {
+                queryResults.append(result);
+            });
+
+    const TherionSqlReportImportRequest importRequest{
+        1,
+        QStringLiteral("source-a"),
+        validPath,
+    };
+    QVERIFY(QMetaObject::invokeMethod(worker,
+                                      [worker, importRequest]() {
+                                          worker->importDatabase(importRequest);
+                                      },
+                                      Qt::QueuedConnection));
+    QTRY_COMPARE_WITH_TIMEOUT(importResults.size(), 1, 3000);
+    QCOMPARE(importResults.constLast().errorCode, TherionSqlReportErrorCode::None);
+
+    const QString expensiveQuery = QStringLiteral(
+        "with recursive numbers(value) as ("
+        "select 0 union all select value + 1 from numbers where value < 1000000000"
+        ") select sum(value) from numbers");
+    TherionSqlReportQueryRequest timeoutRequest{
+        2,
+        QStringLiteral("source-a"),
+        expensiveQuery,
+        100,
+        TherionSqlReportExecutionPolicy::CustomReadOnly,
+        20,
+    };
+    QVERIFY(QMetaObject::invokeMethod(worker,
+                                      [worker, timeoutRequest]() {
+                                          worker->executeQuery(timeoutRequest);
+                                      },
+                                      Qt::QueuedConnection));
+    QTRY_COMPARE_WITH_TIMEOUT(queryResults.size(), 1, 3000);
+    QCOMPARE(queryResults.constLast().errorCode, TherionSqlReportErrorCode::TimedOut);
+    QVERIFY(!queryResults.constLast().errorMessage.isEmpty());
+    QVERIFY(!queryResults.constLast().cancelled);
+
+    TherionSqlReportQueryRequest recoveryRequest = timeoutRequest;
+    recoveryRequest.requestId = 3;
+    recoveryRequest.queryText = QStringLiteral("select NAME from SURVEY");
+    recoveryRequest.executionTimeoutMilliseconds = 1000;
+    QVERIFY(QMetaObject::invokeMethod(worker,
+                                      [worker, recoveryRequest]() {
+                                          worker->executeQuery(recoveryRequest);
+                                      },
+                                      Qt::QueuedConnection));
+    QTRY_COMPARE_WITH_TIMEOUT(queryResults.size(), 2, 3000);
+    QCOMPARE(queryResults.constLast().errorCode, TherionSqlReportErrorCode::None);
+    QCOMPARE(queryResults.constLast().table.rows.constFirst(),
+             QStringList{QStringLiteral("main")});
+
+    TherionSqlReportQueryRequest cancelledRequest = timeoutRequest;
+    cancelledRequest.requestId = 4;
+    cancelledRequest.executionTimeoutMilliseconds = 0;
+    QVERIFY(QMetaObject::invokeMethod(worker,
+                                      [worker, cancelledRequest]() {
+                                          worker->executeQuery(cancelledRequest);
+                                      },
+                                      Qt::QueuedConnection));
+    QTest::qWait(10);
+    executionControl->acceptRequest(5);
+    QTRY_COMPARE_WITH_TIMEOUT(queryResults.size(), 3, 3000);
+    QCOMPARE(queryResults.constLast().errorCode, TherionSqlReportErrorCode::Cancelled);
+    QVERIFY(queryResults.constLast().cancelled);
+
+    recoveryRequest.requestId = 5;
+    QVERIFY(QMetaObject::invokeMethod(worker,
+                                      [worker, recoveryRequest]() {
+                                          worker->executeQuery(recoveryRequest);
+                                      },
+                                      Qt::QueuedConnection));
+    QTRY_COMPARE_WITH_TIMEOUT(queryResults.size(), 4, 3000);
+    QCOMPARE(queryResults.constLast().errorCode, TherionSqlReportErrorCode::None);
+
+    TherionSqlReportQueryRequest teardownRequest = cancelledRequest;
+    teardownRequest.requestId = 6;
+    QVERIFY(QMetaObject::invokeMethod(worker,
+                                      [worker, teardownRequest]() {
+                                          worker->executeQuery(teardownRequest);
+                                      },
+                                      Qt::QueuedConnection));
+    QTest::qWait(10);
+
+    QSemaphore workerDestroyed;
+    connect(worker, &QObject::destroyed, [&]() { workerDestroyed.release(); });
+    QElapsedTimer teardownTimer;
+    teardownTimer.start();
+    executionControl->requestShutdown();
+    QVERIFY(QMetaObject::invokeMethod(worker,
+                                      [worker]() {
+                                          worker->shutdown();
+                                          worker->deleteLater();
+                                      },
+                                      Qt::QueuedConnection));
+    QVERIFY(workerDestroyed.tryAcquire(1, 2000));
+    QVERIFY2(teardownTimer.elapsed() < 2000, "Interrupted worker teardown exceeded its bound");
+    worker = nullptr;
+    workerThread.quit();
+    QVERIFY(workerThread.wait(2000));
 }
 
 int runTherionSqlReportWorkerTest(int argc, char **argv)

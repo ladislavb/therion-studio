@@ -1,5 +1,7 @@
 #pragma once
 
+#include "TherionSqlReportExecutionControl.h"
+
 #include <QCoreApplication>
 #include <QString>
 #include <QStringList>
@@ -53,6 +55,8 @@ public:
 
 public:
     explicit TherionSqlReportDatabase(ConnectionLifecycleObserver lifecycleObserver = {});
+    TherionSqlReportDatabase(TherionSqlReportExecutionControlPtr executionControl,
+                             ConnectionLifecycleObserver lifecycleObserver = {});
     ~TherionSqlReportDatabase();
 
     TherionSqlReportDatabase(const TherionSqlReportDatabase &) = delete;
@@ -71,7 +75,7 @@ public:
     static QVector<TherionSqlReportDefinition> predefinedReports();
 
 private:
-    static QStringList splitSqlStatements(const QString &sqlText, QString *errorMessage);
+    QStringList splitSqlStatements(const QString &sqlText, QString *errorMessage) const;
     static bool isAllowedImportStatement(const QString &statement, QString *errorMessage);
     static bool isReadOnlySelectStatement(const QString &statement, QString *errorMessage);
     static QString normalizedStatementPrefix(QString statement);
@@ -89,6 +93,7 @@ private:
     QString filePath_;
     sqlite3 *database_ = nullptr;
     QThread *ownerThread_ = nullptr;
+    TherionSqlReportExecutionControlPtr executionControl_;
     ConnectionLifecycleObserver lifecycleObserver_;
 };
 

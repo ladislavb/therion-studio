@@ -100,11 +100,7 @@ Verification:
 
 ### P1-2 — SQL Import and Queries Can Block the UI Indefinitely
 
-Progress (2026-07-13): S1-S2 added the worker-owned, thread-affine SQLite contract, moved the production tab to an
-explicitly injected async session, and verified stale-result suppression, event-loop responsiveness, and bounded UI
-teardown. S3A replaced QSQLITE in the isolated report subsystem with a directly owned platform SQLite connection while
-preserving import/query behavior and package wiring. S3B interruption/deadline policy remains open, so this finding is
-not yet resolved.
+Status: resolved 2026-07-13.
 
 Evidence:
 
@@ -112,23 +108,16 @@ Evidence:
   operations no longer freeze the UI event loop.
 - `TherionSqlReportTab` suppresses results whose request ID or source generation has been superseded and disconnects UI
   publication before asynchronous teardown.
-- `TherionSqlReportDatabase` still has a result-row limit but no execution deadline or progress handler; the row cap
-  cannot stop computation before a row is returned.
-- Qt 6 QSQLITE reports `QSqlDriver::CancelQuery` as unsupported. S3A removed that blocker by giving the report worker a
-  directly owned SQLite handle; `sqlite3_interrupt()` and progress-handler policy still require S3B implementation.
+- `TherionSqlReportExecutionControl` synchronizes native connection lifetime with cross-thread interruption and keeps
+  cancellation, request generation, and monotonic deadline state atomic.
+- The SQLite progress handler enforces a ten-second query deadline. Newer requests and shutdown call
+  `sqlite3_interrupt()` immediately, while worker results distinguish cancellation from timeout.
+- Recursive-query tests prove timeout, supersession cancellation, recovery on the same worker, and bounded interrupted
+  teardown.
 
-Impact:
-
-- Large Therion SQL exports or expensive custom reports violate the responsiveness requirements in the specification
-  and architecture.
-- Closing a tab or superseding a query cannot cancel work safely.
-
-Recommendation:
-
-- Give a report worker exclusive ownership of its SQLite connection; Qt SQL connections must remain thread-affine.
-- Make import/query requests generation-keyed and cancellable, surface progress/busy state, and suppress stale results.
-- Add a bounded query execution policy using SQLite interruption/progress support in addition to the existing row cap.
-- Test large imports, superseded queries, cancellation, tab teardown, and error recovery.
+Remaining work is architectural cleanup rather than this responsiveness defect: S5 extracts preset/settings and CSV IO
+ownership from the widget. Cross-platform package jobs remain the final verification of the S3A platform dependency
+wiring.
 
 ### P1-3 — Structure and Outputs Publish Superseded Worker Results
 

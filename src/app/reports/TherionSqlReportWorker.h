@@ -23,7 +23,9 @@ enum class TherionSqlReportErrorCode
     ImportFailed,
     DatabaseNotLoaded,
     SourceMismatch,
-    QueryFailed
+    QueryFailed,
+    Cancelled,
+    TimedOut
 };
 
 struct TherionSqlReportSchemaTable
@@ -46,6 +48,7 @@ struct TherionSqlReportQueryRequest
     QString queryText;
     int rowLimit = 1000;
     TherionSqlReportExecutionPolicy executionPolicy = TherionSqlReportExecutionPolicy::CustomReadOnly;
+    int executionTimeoutMilliseconds = 10000;
 };
 
 struct TherionSqlReportImportWorkerResult
@@ -77,6 +80,9 @@ class TherionSqlReportWorker final : public QObject
 public:
     explicit TherionSqlReportWorker(
         TherionSqlReportDatabase::ConnectionLifecycleObserver lifecycleObserver = {});
+    TherionSqlReportWorker(
+        TherionSqlReportExecutionControlPtr executionControl,
+        TherionSqlReportDatabase::ConnectionLifecycleObserver lifecycleObserver = {});
     ~TherionSqlReportWorker() override;
 
 public slots:
@@ -93,6 +99,7 @@ private:
     QVector<TherionSqlReportSchemaTable> currentSchema() const;
 
     TherionSqlReportDatabase::ConnectionLifecycleObserver lifecycleObserver_;
+    TherionSqlReportExecutionControlPtr executionControl_;
     std::unique_ptr<TherionSqlReportDatabase> database_;
     QString sourceIdentity_;
 };
