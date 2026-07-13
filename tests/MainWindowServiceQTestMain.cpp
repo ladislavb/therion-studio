@@ -18,6 +18,7 @@ int runMainWindowHelpDocumentTest(int argc, char **argv);
 int runMainWindowRecentFilesServiceTest(int argc, char **argv);
 int runMainWindowRecentProjectsServiceTest(int argc, char **argv);
 int runProjectFileWatchInventoryTest(int argc, char **argv);
+int runProjectFileWatchInventoryServiceTest(int argc, char **argv);
 int runProjectOutputsScannerTest(int argc, char **argv);
 int runProjectStructureScannerTest(int argc, char **argv);
 
@@ -34,6 +35,7 @@ int main(int argc, char **argv)
     status |= runMainWindowRecentFilesServiceTest(argc, argv);
     status |= runMainWindowRecentProjectsServiceTest(argc, argv);
     status |= runProjectFileWatchInventoryTest(argc, argv);
+    status |= runProjectFileWatchInventoryServiceTest(argc, argv);
     status |= runProjectOutputsScannerTest(argc, argv);
     status |= runProjectStructureScannerTest(argc, argv);
     status |= runMainWindowSessionDocumentServiceTest(argc, argv);

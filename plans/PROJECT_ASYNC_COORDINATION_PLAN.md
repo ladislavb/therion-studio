@@ -4,7 +4,7 @@ Date: 2026-07-13
 
 Review findings: P1-3, P1-5.
 
-Status: active; A1-A3 and W1 complete, W2 is next.
+Status: active; A1-A3 and W1-W2 complete, W3 is next.
 
 Scope: make Structure/Outputs result publication monotonic and move recursive project-watch inventory discovery off the
 GUI thread. This plan does not redesign project source snapshots, validation caches, or platform watcher policy.
@@ -134,7 +134,7 @@ and discovery errors without presentation or watcher dependencies. Focused `QTem
 signatures, skipped directories, symlink exclusion, outside-root exclusion, and invalid-root reporting; the app/service
 runner passed ten consecutive release runs. W2 remains responsible for moving this completed pure operation to a worker.
 
-## W2 — Add Generation-Keyed Inventory Service
+## W2 — Add Generation-Keyed Inventory Service — Complete
 
 Add a QObject workflow service that runs W1 through `QtConcurrent` or an equivalent existing Qt worker boundary.
 
@@ -147,6 +147,13 @@ Requirements:
 - diagnostic timing includes root, directory/file counts, discovery time, and superseded state.
 
 Tests: same-root replacement, changed-root replacement, teardown during work, discovery error.
+
+Outcome (2026-07-13): `ProjectFileWatchInventoryService` runs the pure collector through `QtConcurrent`, assigns a
+monotonic request serial at acceptance, and suppresses stale completion while retaining only the latest pending request.
+Its result carries the normalized root, full inventory (including directory/file counts and discovery errors), request
+serial, and elapsed discovery time for later bounded diagnostics. It owns no watcher and is safe to destroy before a
+worker completion is delivered. Focused QTests cover normal publication, same-root replacement followed by changed-root
+replacement, discovery errors, and teardown; the app/service runner passed ten consecutive release runs.
 
 ## W3 — Apply Watcher Deltas On The GUI Thread
 
