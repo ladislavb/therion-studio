@@ -43,6 +43,7 @@ apt-get install -y \
     file \
     g++ \
     libgl1-mesa-dev \
+    libsqlite3-dev \
     libxkbcommon-dev \
     libxkbcommon-x11-0 \
     libxcb-cursor0 \

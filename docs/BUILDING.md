@@ -326,6 +326,7 @@ On supported Ubuntu and Debian-family systems, install the development dependenc
 
 ```sh
 sudo apt-get install \
+  libsqlite3-dev \
   qt6-base-dev \
   qt6-base-dev-tools \
   qt6-declarative-dev \

@@ -140,6 +140,7 @@ should_bundle_runtime_library() {
         libsasl2.so* | \
         libselinux.so* | \
         libssh2.so* | \
+        libsqlite3.so* | \
         libssl.so* | \
         libtasn1.so* | \
         libduktape.so* | \

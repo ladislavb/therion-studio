@@ -9,12 +9,13 @@
 #include <QJsonParseError>
 #include <QJsonValue>
 #include <QRegularExpression>
-#include <QSqlError>
-#include <QSqlQuery>
-#include <QSqlRecord>
 #include <QThread>
-#include <QUuid>
-#include <QVariant>
+
+#ifdef Q_OS_WIN
+#include <winsqlite/winsqlite3.h>
+#else
+#include <sqlite3.h>
+#endif
 
 #include <utility>
 
@@ -27,12 +28,76 @@ QString nativePath(const QString &path)
     return QDir::toNativeSeparators(path);
 }
 
-QString valueToDisplayString(const QVariant &value)
+QString sqliteErrorText(sqlite3 *database)
 {
-    if (!value.isValid() || value.isNull()) {
+    return database != nullptr ? QString::fromUtf8(sqlite3_errmsg(database)) : QString();
+}
+
+QString sqliteColumnText(sqlite3_stmt *statement, int column)
+{
+    const int columnType = sqlite3_column_type(statement, column);
+    if (columnType == SQLITE_NULL) {
         return QString();
     }
-    return value.toString();
+    if (columnType == SQLITE_INTEGER) {
+        return QString::number(sqlite3_column_int64(statement, column));
+    }
+    if (columnType == SQLITE_FLOAT) {
+        return QString::number(sqlite3_column_double(statement, column), 'g', 15);
+    }
+    if (columnType == SQLITE_BLOB) {
+        const auto *blob = static_cast<const char *>(sqlite3_column_blob(statement, column));
+        const int byteCount = sqlite3_column_bytes(statement, column);
+        return blob != nullptr ? QString::fromUtf8(blob, byteCount) : QString();
+    }
+    const auto *text = reinterpret_cast<const char *>(sqlite3_column_text(statement, column));
+    const int byteCount = sqlite3_column_bytes(statement, column);
+    return text != nullptr ? QString::fromUtf8(text, byteCount) : QString();
+}
+
+class SqliteStatement final
+{
+public:
+    ~SqliteStatement()
+    {
+        if (statement_ != nullptr) {
+            sqlite3_finalize(statement_);
+        }
+    }
+
+    sqlite3_stmt **address()
+    {
+        return &statement_;
+    }
+
+    sqlite3_stmt *get() const
+    {
+        return statement_;
+    }
+
+private:
+    sqlite3_stmt *statement_ = nullptr;
+};
+
+bool prepareStatement(sqlite3 *database,
+                      const QString &sql,
+                      SqliteStatement *statement,
+                      QString *errorMessage)
+{
+    Q_ASSERT(statement != nullptr);
+    const QByteArray utf8Sql = sql.toUtf8();
+    const int result = sqlite3_prepare_v2(database,
+                                          utf8Sql.constData(),
+                                          utf8Sql.size(),
+                                          statement->address(),
+                                          nullptr);
+    if (result == SQLITE_OK) {
+        return true;
+    }
+    if (errorMessage != nullptr) {
+        *errorMessage = sqliteErrorText(database);
+    }
+    return false;
 }
 
 QString cleanedSqlForPrefix(QString statement)
@@ -141,8 +206,7 @@ QVector<TherionSqlReportDefinition> loadPresetDefinitionsFromResource()
 }
 
 TherionSqlReportDatabase::TherionSqlReportDatabase(ConnectionLifecycleObserver lifecycleObserver)
-    : connectionName_(QStringLiteral("therion-sql-report-%1").arg(QUuid::createUuid().toString(QUuid::WithoutBraces)))
-    , ownerThread_(QThread::currentThread())
+    : ownerThread_(QThread::currentThread())
     , lifecycleObserver_(std::move(lifecycleObserver))
 {
 }
@@ -155,7 +219,7 @@ TherionSqlReportDatabase::~TherionSqlReportDatabase()
 bool TherionSqlReportDatabase::isOpen() const
 {
     verifyOwnerThread();
-    return database_.isValid() && database_.isOpen();
+    return database_ != nullptr;
 }
 
 QString TherionSqlReportDatabase::filePath() const
@@ -174,7 +238,22 @@ QString TherionSqlReportDatabase::displayName() const
 QStringList TherionSqlReportDatabase::tableNames() const
 {
     verifyOwnerThread();
-    return isOpen() ? database_.tables(QSql::Tables) : QStringList();
+    QStringList names;
+    if (!isOpen()) {
+        return names;
+    }
+
+    SqliteStatement statement;
+    if (!prepareStatement(database_,
+                          QStringLiteral("select name from sqlite_master where type = 'table' order by name"),
+                          &statement,
+                          nullptr)) {
+        return names;
+    }
+    while (sqlite3_step(statement.get()) == SQLITE_ROW) {
+        names.append(sqliteColumnText(statement.get(), 0));
+    }
+    return names;
 }
 
 QStringList TherionSqlReportDatabase::tableColumns(const QString &tableName) const
@@ -185,10 +264,17 @@ QStringList TherionSqlReportDatabase::tableColumns(const QString &tableName) con
         return columns;
     }
 
-    const QSqlRecord record = database_.record(tableName);
-    columns.reserve(record.count());
-    for (int column = 0; column < record.count(); ++column) {
-        columns.append(record.fieldName(column));
+    QString escapedTableName = tableName;
+    escapedTableName.replace(QLatin1Char('"'), QStringLiteral("\"\""));
+    SqliteStatement statement;
+    if (!prepareStatement(database_,
+                          QStringLiteral("pragma table_info(\"%1\")").arg(escapedTableName),
+                          &statement,
+                          nullptr)) {
+        return columns;
+    }
+    while (sqlite3_step(statement.get()) == SQLITE_ROW) {
+        columns.append(sqliteColumnText(statement.get(), 1));
     }
     return columns;
 }
@@ -216,18 +302,15 @@ QVector<TherionSqlReportDefinition> TherionSqlReportDatabase::predefinedReports(
 void TherionSqlReportDatabase::close()
 {
     verifyOwnerThread();
-    if (database_.isValid()) {
-        database_.close();
+    if (database_ != nullptr) {
+        const int closeResult = sqlite3_close_v2(database_);
+        Q_ASSERT(closeResult == SQLITE_OK);
+        Q_UNUSED(closeResult);
         if (lifecycleObserver_) {
             lifecycleObserver_(ConnectionLifecycleEvent::Closed);
-        }
-        database_ = QSqlDatabase();
-    }
-    if (QSqlDatabase::contains(connectionName_)) {
-        QSqlDatabase::removeDatabase(connectionName_);
-        if (lifecycleObserver_) {
             lifecycleObserver_(ConnectionLifecycleEvent::Removed);
         }
+        database_ = nullptr;
     }
     filePath_.clear();
 }
@@ -236,18 +319,28 @@ bool TherionSqlReportDatabase::openMemoryDatabase(QString *errorMessage)
 {
     verifyOwnerThread();
     close();
-    database_ = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), connectionName_);
     if (lifecycleObserver_) {
         lifecycleObserver_(ConnectionLifecycleEvent::Added);
     }
-    database_.setDatabaseName(QStringLiteral(":memory:"));
-    if (!database_.open()) {
+    sqlite3 *openedDatabase = nullptr;
+    const int openResult = sqlite3_open_v2(":memory:",
+                                           &openedDatabase,
+                                           SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX,
+                                           nullptr);
+    if (openResult != SQLITE_OK) {
         if (errorMessage != nullptr) {
             *errorMessage = tr("Could not open in-memory SQLite database: %1")
-                                .arg(database_.lastError().text());
+                                .arg(sqliteErrorText(openedDatabase));
+        }
+        if (openedDatabase != nullptr) {
+            sqlite3_close_v2(openedDatabase);
+        }
+        if (lifecycleObserver_) {
+            lifecycleObserver_(ConnectionLifecycleEvent::Removed);
         }
         return false;
     }
+    database_ = openedDatabase;
     if (lifecycleObserver_) {
         lifecycleObserver_(ConnectionLifecycleEvent::Opened);
     }
@@ -278,9 +371,9 @@ TherionSqlReportImportResult TherionSqlReportDatabase::importFile(const QString 
         return result;
     }
 
-    if (!database_.transaction()) {
+    if (!executeStatement(QStringLiteral("begin immediate"), &errorMessage)) {
         result.errorMessage = tr("Could not start SQLite import transaction: %1")
-                                  .arg(database_.lastError().text());
+                                  .arg(errorMessage);
         close();
         return result;
     }
@@ -291,9 +384,9 @@ TherionSqlReportImportResult TherionSqlReportDatabase::importFile(const QString 
         return result;
     }
 
-    if (!database_.commit()) {
+    if (!executeStatement(QStringLiteral("commit"), &errorMessage)) {
         result.errorMessage = tr("Could not commit SQLite import transaction: %1")
-                                  .arg(database_.lastError().text());
+                                  .arg(errorMessage);
         close();
         return result;
     }
@@ -325,30 +418,37 @@ TherionSqlReportTable TherionSqlReportDatabase::executeReportQuery(const QString
         return table;
     }
 
-    QSqlQuery query(database_);
-    query.setForwardOnly(true);
-    if (!query.exec(queryText)) {
-        if (errorMessage != nullptr) {
-            *errorMessage = query.lastError().text();
-        }
+    SqliteStatement statement;
+    if (!prepareStatement(database_, queryText, &statement, errorMessage)) {
         return table;
     }
 
-    const QSqlRecord record = query.record();
-    for (int column = 0; column < record.count(); ++column) {
-        table.columns.append(record.fieldName(column));
+    const int columnCount = sqlite3_column_count(statement.get());
+    table.columns.reserve(columnCount);
+    for (int column = 0; column < columnCount; ++column) {
+        table.columns.append(QString::fromUtf8(sqlite3_column_name(statement.get(), column)));
     }
 
     const int boundedLimit = qMax(1, rowLimit);
-    while (query.next()) {
+    while (true) {
+        const int stepResult = sqlite3_step(statement.get());
+        if (stepResult == SQLITE_DONE) {
+            break;
+        }
+        if (stepResult != SQLITE_ROW) {
+            if (errorMessage != nullptr) {
+                *errorMessage = sqliteErrorText(database_);
+            }
+            return {};
+        }
         if (table.rows.size() >= boundedLimit) {
             table.truncated = true;
             break;
         }
         QStringList row;
-        row.reserve(record.count());
-        for (int column = 0; column < record.count(); ++column) {
-            row.append(valueToDisplayString(query.value(column)));
+        row.reserve(columnCount);
+        for (int column = 0; column < columnCount; ++column) {
+            row.append(sqliteColumnText(statement.get(), column));
         }
         table.rows.append(row);
     }
@@ -515,13 +615,12 @@ bool TherionSqlReportDatabase::importStatements(const QStringList &statements,
                                                 QString *errorMessage)
 {
     Q_ASSERT(result != nullptr);
-    QSqlQuery query(database_);
     for (const QString &statement : statements) {
         if (statement.trimmed().isEmpty()) {
             continue;
         }
         if (!isAllowedImportStatement(statement, errorMessage)) {
-            database_.rollback();
+            executeStatement(QStringLiteral("rollback"), nullptr);
             return false;
         }
         const QString prefix = normalizedStatementPrefix(statement);
@@ -530,18 +629,36 @@ bool TherionSqlReportDatabase::importStatements(const QStringList &statements,
             || prefix == QStringLiteral("END")) {
             continue;
         }
-        if (!query.exec(statement)) {
-            database_.rollback();
+        QString statementError;
+        if (!executeStatement(statement, &statementError)) {
+            executeStatement(QStringLiteral("rollback"), nullptr);
             if (errorMessage != nullptr) {
                 *errorMessage = tr("Could not import SQL statement %1: %2")
                                     .arg(result->importedStatementCount + 1)
-                                    .arg(query.lastError().text());
+                                    .arg(statementError);
             }
             return false;
         }
         ++result->importedStatementCount;
     }
     return true;
+}
+
+bool TherionSqlReportDatabase::executeStatement(const QString &statement, QString *errorMessage) const
+{
+    verifyOwnerThread();
+    SqliteStatement preparedStatement;
+    if (!prepareStatement(database_, statement, &preparedStatement, errorMessage)) {
+        return false;
+    }
+    const int result = sqlite3_step(preparedStatement.get());
+    if (result == SQLITE_DONE) {
+        return true;
+    }
+    if (errorMessage != nullptr) {
+        *errorMessage = sqliteErrorText(database_);
+    }
+    return false;
 }
 
 void TherionSqlReportDatabase::verifyOwnerThread() const

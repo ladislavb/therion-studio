@@ -108,6 +108,17 @@ void TherionSqlReportDatabaseTest::importsTherionSqlExportAndRunsReports()
     QCOMPARE(table.rows.size(), 1);
     QCOMPARE(table.rows.first().first(), QStringLiteral("2"));
 
+    errorMessage.clear();
+    const TherionSqlReportTable typedValues = database.executeCustomQuery(
+        QStringLiteral("select NULL as NullValue, 10 as IntegerValue, 10.0 as RealValue, x'74657874' as BlobValue"),
+        &errorMessage);
+    QVERIFY2(errorMessage.isEmpty(), qPrintable(errorMessage));
+    QCOMPARE(typedValues.rows,
+             (QVector<QStringList>{QStringList{QString(),
+                                               QStringLiteral("10"),
+                                               QStringLiteral("10"),
+                                               QStringLiteral("text")}}));
+
     const QVector<TherionSqlReportDefinition> reports = TherionSqlReportDatabase::predefinedReports();
     const auto overview = std::find_if(reports.cbegin(), reports.cend(), [](const TherionSqlReportDefinition &report) {
         return report.id == QStringLiteral("overview");

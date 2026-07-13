@@ -15,26 +15,6 @@ using namespace TherionStudio;
 
 namespace
 {
-QMutex messageMutex;
-QStringList sqlConnectionWarnings;
-QtMessageHandler previousMessageHandler = nullptr;
-
-void captureSqlConnectionWarnings(QtMsgType type,
-                                  const QMessageLogContext &context,
-                                  const QString &message)
-{
-    if (type == QtWarningMsg
-        && (message.contains(QStringLiteral("QSqlDatabase"))
-            || message.contains(QStringLiteral("removeDatabase"))
-            || message.contains(QStringLiteral("still in use")))) {
-        QMutexLocker locker(&messageMutex);
-        sqlConnectionWarnings.append(message);
-    }
-    if (previousMessageHandler != nullptr) {
-        previousMessageHandler(type, context, message);
-    }
-}
-
 QString minimalTherionSqlExport()
 {
     return QStringLiteral(
@@ -85,16 +65,6 @@ void TherionSqlReportWorkerTest::ownsConnectionOnWorkerThreadAndTearsDownCleanly
         minimalTherionSqlExport() + QStringLiteral("insert into MISSING values (1);\n"));
     QVERIFY(!validPath.isEmpty());
     QVERIFY(!malformedPath.isEmpty());
-
-    {
-        QMutexLocker locker(&messageMutex);
-        sqlConnectionWarnings.clear();
-    }
-    previousMessageHandler = qInstallMessageHandler(captureSqlConnectionWarnings);
-    auto messageHandlerGuard = qScopeGuard([&]() {
-        qInstallMessageHandler(previousMessageHandler);
-        previousMessageHandler = nullptr;
-    });
 
     QThread workerThread;
     QMutex lifecycleMutex;
@@ -254,10 +224,6 @@ void TherionSqlReportWorkerTest::ownsConnectionOnWorkerThreadAndTearsDownCleanly
         QVERIFY(lifecycleEvents.contains(TherionSqlReportDatabase::ConnectionLifecycleEvent::Opened));
         QVERIFY(lifecycleEvents.contains(TherionSqlReportDatabase::ConnectionLifecycleEvent::Closed));
         QVERIFY(lifecycleEvents.contains(TherionSqlReportDatabase::ConnectionLifecycleEvent::Removed));
-    }
-    {
-        QMutexLocker locker(&messageMutex);
-        QVERIFY2(sqlConnectionWarnings.isEmpty(), qPrintable(sqlConnectionWarnings.join(QLatin1Char('\n'))));
     }
 }
 

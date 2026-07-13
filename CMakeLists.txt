@@ -53,8 +53,19 @@ set(THERION_STUDIO_LOX_CORPUS_ROOT
     "${CMAKE_CURRENT_SOURCE_DIR}/sample_data"
     CACHE PATH "Root of the optional real-project .lox test corpus")
 
-find_package(Qt6 6.4 REQUIRED COMPONENTS Core Widgets Svg Sql Concurrent Test Quick QuickWidgets Qml QuickControls2)
+find_package(Qt6 6.4 REQUIRED COMPONENTS Core Widgets Svg Concurrent Test Quick QuickWidgets Qml QuickControls2)
 find_package(Qt6LinguistTools 6.4 QUIET)
+
+if(WIN32)
+    set(THERION_SQLITE_LIBRARY winsqlite3)
+else()
+    find_package(SQLite3 3.8.3 REQUIRED)
+    if(TARGET SQLite3::SQLite3)
+        set(THERION_SQLITE_LIBRARY SQLite3::SQLite3)
+    else()
+        set(THERION_SQLITE_LIBRARY SQLite::SQLite3)
+    endif()
+endif()
 
 qt_standard_project_setup()
 
@@ -331,13 +342,13 @@ target_link_libraries(therion_app
         Qt6::Core
         Qt6::Widgets
         Qt6::Svg
-        Qt6::Sql
         Qt6::Quick
         Qt6::QuickWidgets
         Qt6::Qml
         Qt6::QuickControls2
     PRIVATE
         therion_platform
+        ${THERION_SQLITE_LIBRARY}
         Qt6::Concurrent)
 
 therion_enable_strict_warnings(therion_app)
@@ -876,7 +887,7 @@ if(APPLE)
         MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}")
 endif()
 
-target_link_libraries(TherionStudio PRIVATE therion_app therion_core therion_platform Qt6::Widgets Qt6::Svg Qt6::Sql Qt6::Concurrent)
+target_link_libraries(TherionStudio PRIVATE therion_app therion_core therion_platform Qt6::Widgets Qt6::Svg Qt6::Concurrent)
 
 target_compile_definitions(TherionStudio PRIVATE
     THERION_STUDIO_VERSION_STRING="${THERION_STUDIO_VERSION}"

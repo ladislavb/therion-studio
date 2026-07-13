@@ -102,8 +102,9 @@ Verification:
 
 Progress (2026-07-13): S1-S2 added the worker-owned, thread-affine SQLite contract, moved the production tab to an
 explicitly injected async session, and verified stale-result suppression, event-loop responsiveness, and bounded UI
-teardown. S3 feasibility confirmed that Qt QSQLITE does not support `QSqlDriver::CancelQuery`; a portable native
-interruption/deadline path requires an explicit direct-SQLite dependency decision. This finding remains open.
+teardown. S3A replaced QSQLITE in the isolated report subsystem with a directly owned platform SQLite connection while
+preserving import/query behavior and package wiring. S3B interruption/deadline policy remains open, so this finding is
+not yet resolved.
 
 Evidence:
 
@@ -113,8 +114,8 @@ Evidence:
   publication before asynchronous teardown.
 - `TherionSqlReportDatabase` still has a result-row limit but no execution deadline or progress handler; the row cap
   cannot stop computation before a row is returned.
-- Qt 6 QSQLITE reports `QSqlDriver::CancelQuery` as unsupported. Using `sqlite3_interrupt()` through the exposed native
-  handle is not portable unless the application owns and packages the exact SQLite library behind that handle.
+- Qt 6 QSQLITE reports `QSqlDriver::CancelQuery` as unsupported. S3A removed that blocker by giving the report worker a
+  directly owned SQLite handle; `sqlite3_interrupt()` and progress-handler policy still require S3B implementation.
 
 Impact:
 

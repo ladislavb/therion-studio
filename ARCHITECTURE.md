@@ -117,8 +117,8 @@ SQL report import and query execution target a dedicated worker-thread boundary:
 
 - `TherionSqlReportWorker` owns `TherionSqlReportDatabase` and creates it only after the worker has entered its affinity
   thread.
-- The SQLite connection is created, queried, closed, and removed on that same thread; widgets shall never receive or
-  retain `QSqlDatabase` or `QSqlQuery` values.
+- The report subsystem owns a direct SQLite C connection created, queried, and closed on that same thread; widgets shall
+  never receive or retain native SQLite handles or prepared statements.
 - Import and query requests/results cross the boundary as immutable value DTOs carrying request and source identity,
   execution policy, schema/table data, and explicit error/cancellation state.
 - Connection teardown occurs only after statement-local query objects have been destroyed.
@@ -129,9 +129,10 @@ SQL report import and query execution target a dedicated worker-thread boundary:
 The async tab workflow suppresses superseded results and keeps closing bounded by disconnecting UI publication before
 the worker drains. It does not yet interrupt a SQLite statement already executing; real interruption and deadline policy
 remain S3 scope, so the SQL responsiveness finding stays open until that slice is verified on packaged platforms.
-Qt's QSQLITE driver currently reports query cancellation as unsupported. Native-handle interruption shall not be added
-unless the application can guarantee that every packaged platform calls the same SQLite library instance that owns the
-connection; linking an unrelated SQLite library and passing it the plugin-owned handle is not an accepted seam.
+The report database intentionally does not use QSQLITE: Qt's driver reports query cancellation as unsupported and its
+native handle cannot be paired portably with an independently linked SQLite library. The isolated report subsystem
+instead links the platform-owned SQLite API directly (`SQLite3::SQLite3` on macOS/Linux and Windows SDK `winsqlite3`),
+which gives the worker one stable handle for the planned interruption/progress policy without Qt private APIs.
 
 ## Validation Architecture
 

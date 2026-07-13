@@ -4,7 +4,7 @@ Date: 2026-07-13
 
 Review findings: P1-2 and the report-specific part of P2-1.
 
-Status: active; S1-S2 complete, S3 feasibility hit a stop condition and needs an explicit dependency decision.
+Status: active; S1-S3A complete, S3B interruption/deadline is next.
 
 Scope: move Therion SQL import and read-only report queries behind a worker-owned SQLite connection with request
 supersession, real interruption, bounded execution, and safe tab teardown. Preset persistence and CSV file output move
@@ -13,11 +13,11 @@ out of the widget only after the worker lifecycle is stable.
 ## Required Ownership
 
 - `TherionSqlReportTab` owns widgets, busy/error presentation, latest request identity, and immutable table DTOs.
-- `TherionSqlReportWorker` owns `TherionSqlReportDatabase`, its `QSqlDatabase` connection, import/query execution, and
+- `TherionSqlReportWorker` owns `TherionSqlReportDatabase`, its native SQLite connection, import/query execution, and
   connection teardown.
 - The SQLite connection is created, used, and destroyed on one dedicated worker thread.
-- Queued signals cross the thread boundary only with value requests/results; never with `QSqlDatabase`, `QSqlQuery`,
-  model, or widget pointers.
+- Queued signals cross the thread boundary only with value requests/results; never with native SQLite handles,
+  prepared statements, model, or widget pointers.
 - The existing read-only statement policy, expected-schema validation, row cap, presets, and CSV output remain stable.
 
 ## Non-Goals
@@ -132,9 +132,9 @@ Feasibility outcome (2026-07-13): blocked at the planned stop condition.
 - Dynamically guessing or resolving symbols from the driver plugin is rejected because symbol visibility and library
   identity are not guaranteed across packaged platforms.
 
-Decision required before implementation:
+Decision outcome:
 
-1. Recommended: replace Qt SQL inside this isolated report subsystem with a directly owned SQLite C adapter and add one
+1. Selected: replace Qt SQL inside this isolated report subsystem with a directly owned SQLite C adapter and add one
    explicitly versioned SQLite dependency/package path. This gives the worker a stable connection handle, progress
    handler, interruption, deadlines, and deterministic tests, but requires a focused database-adapter migration and
    packaging verification on all three platforms.
@@ -146,6 +146,26 @@ Decision required before implementation:
 Primary evidence: Qt 6 QSQLITE source (`QSQLiteDriver::hasFeature(CancelQuery) == false`), Qt's public
 `QSqlDriver::handle()`/`cancelQuery()` contracts, SQLite's `sqlite3_interrupt()` and `sqlite3_progress_handler()`
 contracts, local Qt 6.11.1 plugin linkage, and repository CI/package Qt installation paths.
+
+### S3A — Own The SQLite Connection Directly — Complete
+
+- `TherionSqlReportDatabase` now owns a native in-memory SQLite connection and prepared statements without QSQLITE,
+  `QSqlDatabase`, Qt private APIs, or configure-time downloads.
+- macOS/Linux use CMake's system SQLite target; Windows uses the Windows SDK `winsqlite3` API. Linux source/package
+  builders install the development package explicitly, Debian shlibdeps discovers the runtime dependency, and AppImage
+  staging includes `libsqlite3`.
+- Existing statement allow-listing, transactional rollback, schema validation, read-only custom-query policy, row cap,
+  null/integer/real/text/blob display conversion, worker affinity, and lifecycle behavior remain covered by focused
+  tests.
+- S3A deliberately adds no cancellation claim. Its purpose is to establish the stable owned handle required by S3B.
+
+### S3B — Add Interruption And Deadline Policy
+
+1. Add connection-lifetime synchronization that prevents close from racing `sqlite3_interrupt()`.
+2. Install a per-operation progress handler with atomic cancellation and monotonic deadline state.
+3. Distinguish user/supersession cancellation from deadline expiry in worker result codes and translated presentation.
+4. Interrupt active work immediately when a newer request or session shutdown supersedes it.
+5. Prove cancellation, timeout, recovery, and bounded teardown with deterministic recursive-query tests.
 
 ## S4 — Progress And Recovery
 

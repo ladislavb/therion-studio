@@ -1,7 +1,6 @@
 #pragma once
 
 #include <QCoreApplication>
-#include <QSqlDatabase>
 #include <QString>
 #include <QStringList>
 #include <QVector>
@@ -9,6 +8,7 @@
 #include <functional>
 
 class QThread;
+struct sqlite3;
 
 namespace TherionStudio
 {
@@ -84,10 +84,10 @@ private:
     bool openMemoryDatabase(QString *errorMessage);
     bool validateExpectedSchema(QStringList *missingTables) const;
     void verifyOwnerThread() const;
+    bool executeStatement(const QString &statement, QString *errorMessage) const;
 
-    QString connectionName_;
     QString filePath_;
-    QSqlDatabase database_;
+    sqlite3 *database_ = nullptr;
     QThread *ownerThread_ = nullptr;
     ConnectionLifecycleObserver lifecycleObserver_;
 };

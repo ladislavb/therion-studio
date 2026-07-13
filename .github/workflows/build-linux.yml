@@ -28,6 +28,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             libgl1-mesa-dev \
+            libsqlite3-dev \
             libxkbcommon-x11-0 \
             ninja-build \
             libxcb-cursor0 \

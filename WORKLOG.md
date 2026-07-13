@@ -5,9 +5,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ## Current Focus
 
 1. `2026.7.2` post-DOM stabilization and next feature selection.
-2. Decide the S3 dependency boundary in `SQL_REPORT_ASYNC_PLAN.md`: import/query dispatch and stale-result suppression
-   are asynchronous, but Qt QSQLITE has no cancellation hook and portable interruption requires a directly owned SQLite
-   adapter or an explicit decision to leave P1-2 open. Keep watcher W1-W4 queued behind SQL
+2. Continue `SQL_REPORT_ASYNC_PLAN.md` with S3B: the report database now owns the platform SQLite connection directly;
+   add real interruption and progress-handler deadlines over that stable handle. Keep watcher W1-W4 queued behind SQL
    S1-S4 as a separate worker/thread-affinity chain.
 3. Real-project smoke testing for Raw, Blocks, Map, Validation, Structure, and Compiler navigation after DOM closure.
 4. Plan-driven follow-ups for map partial refresh, validation/cache tuning, GUI cleanup, SVG backgrounds, reporting, LiDAR design, and 3D viewer refinement.
@@ -24,8 +23,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   line endings, and encoding; formatting remains opt-in rather than an opening/save side effect.
 - The SQL report tab now receives an explicitly composed worker session, accepts file loads without blocking on import,
   keeps import/query requests generation-keyed, suppresses stale schema/table results, presents coherent busy/error state,
-  and disconnects UI publication before asynchronous worker teardown. Real SQLite interruption remains S3; keep
-  preset/CSV ownership extraction as a later separate slice.
+  and disconnects UI publication before asynchronous worker teardown. The report database has migrated from QSQLITE to
+  a directly owned platform SQLite handle while preserving import/query/schema/value behavior; real interruption and
+  deadlines remain S3B, and preset/CSV ownership extraction stays a later separate slice.
 - Keep LiDAR/point-cloud processing as design/backlog work until the Map/TH2 projection boundary has a concrete import,
   registration, and 2D projection design.
 
@@ -265,9 +265,6 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Blocked / Needs Input
 
-- SQL report interruption/deadline: Qt QSQLITE reports `CancelQuery` unsupported, and its native handle cannot safely be
-  passed to an independently linked SQLite library across all packaged platforms. Recommended next step is an explicit
-  decision whether to add a versioned direct-SQLite adapter/dependency for the isolated report subsystem.
 - Old Therion/Metapost crash fixture: parked until a reproducible project or minimal fixture is available.
 - Stylus/Sidecar behavior: needs hardware-specific manual validation.
 
