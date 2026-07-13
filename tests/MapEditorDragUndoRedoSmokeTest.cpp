@@ -1195,6 +1195,21 @@ QSet<int> selectedSourceLineNumbers(QGraphicsScene *scene)
     return lineNumbers;
 }
 
+bool waitForSelectedSourceLineNumbers(QGraphicsScene *scene,
+                                      const QSet<int> &expectedLineNumbers,
+                                      int timeoutMs = 1000)
+{
+    const qint64 deadline = QDateTime::currentMSecsSinceEpoch() + timeoutMs;
+    while (QDateTime::currentMSecsSinceEpoch() <= deadline) {
+        pumpEvents();
+        if (selectedSourceLineNumbers(scene) == expectedLineNumbers) {
+            return true;
+        }
+        QThread::msleep(5);
+    }
+    return selectedSourceLineNumbers(scene) == expectedLineNumbers;
+}
+
 
 void sendMouse(QWidget *widget,
                QEvent::Type type,
@@ -2368,12 +2383,18 @@ int runAreaBorderHitSelectionSmoke()
     mapView->centerOn(areaFillItem);
     pumpEvents();
 
+    linePathItem = findPathItemForLine(mapView->scene(), 4);
+    areaFillItem = findPathItemForLine(mapView->scene(), 11, kMapSceneSelectionSubtypeAreaFill);
+    if (!expect(linePathItem != nullptr && areaFillItem != nullptr,
+                "Area scene items should remain available after initial viewport positioning.")) {
+        return 1;
+    }
+
     const QPointF borderScenePoint = linePathItem->mapToScene(linePathItem->path().pointAtPercent(0.25));
     const QPoint borderViewportPoint = mapView->mapFromScene(borderScenePoint);
     sendMouse(mapView->viewport(), QEvent::MouseButtonPress, borderViewportPoint, Qt::LeftButton, Qt::LeftButton);
     sendMouse(mapView->viewport(), QEvent::MouseButtonRelease, borderViewportPoint, Qt::LeftButton, Qt::NoButton);
-    pumpEvents();
-    if (!expect(selectedSourceLineNumbers(mapView->scene()) == QSet<int>({4}),
+    if (!expect(waitForSelectedSourceLineNumbers(mapView->scene(), QSet<int>({4})),
                 "Clicking a referenced area border should select the owning line object.")) {
         return 1;
     }
@@ -2383,6 +2404,13 @@ int runAreaBorderHitSelectionSmoke()
     }
     if (!expect(!objectsTree->selectionModel()->selectedRows().isEmpty(),
                 "Map-object selection should select the corresponding row in the Objects inspector.")) {
+        return 1;
+    }
+
+    linePathItem = findPathItemForLine(mapView->scene(), 4);
+    areaFillItem = findPathItemForLine(mapView->scene(), 11, kMapSceneSelectionSubtypeAreaFill);
+    if (!expect(linePathItem != nullptr && areaFillItem != nullptr,
+                "Area scene items should remain available after border selection.")) {
         return 1;
     }
 
@@ -2401,7 +2429,7 @@ int runAreaBorderHitSelectionSmoke()
     const QPoint nearBorderFillViewportPoint = mapView->mapFromScene(nearBorderFillScenePoint);
     sendMouse(mapView->viewport(), QEvent::MouseButtonPress, nearBorderFillViewportPoint, Qt::LeftButton, Qt::LeftButton);
     sendMouse(mapView->viewport(), QEvent::MouseButtonRelease, nearBorderFillViewportPoint, Qt::LeftButton, Qt::NoButton);
-    pumpEvents();
+    waitForSelectedSourceLineNumbers(mapView->scene(), QSet<int>({11}));
     const QSet<int> nearBorderSelection = selectedSourceLineNumbers(mapView->scene());
     if (!expect(nearBorderSelection == QSet<int>({11}),
                 "Clicking inside an area near its border at high zoom should select the area, not the border line.")) {
@@ -2420,12 +2448,16 @@ int runAreaBorderHitSelectionSmoke()
     mapTab->goToLine(4);
     pumpEvents();
 
+    areaFillItem = findPathItemForLine(mapView->scene(), 11, kMapSceneSelectionSubtypeAreaFill);
+    if (!expect(areaFillItem != nullptr,
+                "Area fill path should remain available after source navigation.")) {
+        return 1;
+    }
     const QPointF fillScenePoint = areaFillItem->mapToScene(areaFillItem->path().boundingRect().center());
     const QPoint fillViewportPoint = mapView->mapFromScene(fillScenePoint);
     sendMouse(mapView->viewport(), QEvent::MouseButtonPress, fillViewportPoint, Qt::LeftButton, Qt::LeftButton);
     sendMouse(mapView->viewport(), QEvent::MouseButtonRelease, fillViewportPoint, Qt::LeftButton, Qt::NoButton);
-    pumpEvents();
-    if (!expect(selectedSourceLineNumbers(mapView->scene()) == QSet<int>({11}),
+    if (!expect(waitForSelectedSourceLineNumbers(mapView->scene(), QSet<int>({11})),
                 "Clicking inside a referenced area fill should select the area object.")) {
         return 1;
     }

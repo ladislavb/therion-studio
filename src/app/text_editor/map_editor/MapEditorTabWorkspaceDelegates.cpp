@@ -6,6 +6,7 @@
 #include <QLayout>
 #include <QPushButton>
 #include <QSplitter>
+#include <QTimer>
 
 #include "../TextEditorTab.h"
 
@@ -27,6 +28,14 @@ bool MapEditorTab::loadFile(const QString &filePath, QString *errorMessage)
     const bool loaded = textEditor_->loadFile(filePath, errorMessage);
     if (!loaded) {
         return false;
+    }
+
+    // TextEditorTab emits documentTextChanged while loading, which schedules
+    // the normal debounced source-edit refresh. The load workflow performs an
+    // explicit scene refresh below, so leaving that timer active would rebuild
+    // the scene again after callers have already started interacting with it.
+    if (sourceDrivenMapRefreshTimer_ != nullptr) {
+        sourceDrivenMapRefreshTimer_->stop();
     }
 
     resetUndoOwnerState();
