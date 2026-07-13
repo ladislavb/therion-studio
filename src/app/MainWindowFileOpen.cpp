@@ -2,6 +2,8 @@
 
 #include "MainWindowDocumentOpenController.h"
 #include "three_d_viewer/ThreeDViewerTab.h"
+#include "reports/TherionSqlReportCsvExporter.h"
+#include "reports/TherionSqlReportPresetStore.h"
 #include "reports/TherionSqlReportTab.h"
 #include "reports/TherionSqlReportWorkerSession.h"
 #include "../core/TherionFileTypes.h"
@@ -15,7 +17,10 @@
 #include <QMimeDatabase>
 #include <QMimeType>
 #include <QModelIndex>
+#include <QSettings>
 #include <QUrl>
+
+#include <memory>
 
 bool openFileExternally(QWidget *parent, const QString &filePath)
 {
@@ -187,7 +192,12 @@ TherionStudio::TherionSqlReportTab *MainWindow::openTherionSqlReportTab(const QS
     }
 
     auto *reportSession = new TherionStudio::TherionSqlReportWorkerSession();
-    auto *tab = new TherionStudio::TherionSqlReportTab(reportSession);
+    auto presetStore = std::make_unique<TherionStudio::TherionSqlReportSettingsPresetStore>(
+        std::make_unique<QSettings>());
+    auto csvExporter = std::make_unique<TherionStudio::TherionSqlReportCsvFileExporter>();
+    auto *tab = new TherionStudio::TherionSqlReportTab(reportSession,
+                                                        std::move(presetStore),
+                                                        std::move(csvExporter));
     reportSession->setParent(tab);
     tab->setProjectRootPath(projectRootPath_);
     QString errorMessage;

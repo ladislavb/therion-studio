@@ -2,23 +2,34 @@
 
 #include "TherionSqlReportDatabase.h"
 
+#include <memory>
+
 class QSettings;
 
 namespace TherionStudio
 {
 
-class TherionSqlReportPresetStore final
+class TherionSqlReportPresetStore
 {
 public:
-    explicit TherionSqlReportPresetStore(QSettings &settings);
+    virtual ~TherionSqlReportPresetStore() = default;
 
-    QVector<TherionSqlReportDefinition> loadCustomPresets() const;
-    void saveCustomPresets(const QVector<TherionSqlReportDefinition> &presets);
+    virtual QVector<TherionSqlReportDefinition> loadCustomPresets() const = 0;
+    virtual void saveCustomPresets(const QVector<TherionSqlReportDefinition> &presets) = 0;
 
     static QString createPresetId();
+};
+
+class TherionSqlReportSettingsPresetStore final : public TherionSqlReportPresetStore
+{
+public:
+    explicit TherionSqlReportSettingsPresetStore(std::unique_ptr<QSettings> settings);
+
+    QVector<TherionSqlReportDefinition> loadCustomPresets() const override;
+    void saveCustomPresets(const QVector<TherionSqlReportDefinition> &presets) override;
 
 private:
-    QSettings &settings_;
+    std::unique_ptr<QSettings> settings_;
 };
 
 } // namespace TherionStudio

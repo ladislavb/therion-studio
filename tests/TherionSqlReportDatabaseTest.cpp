@@ -1,4 +1,5 @@
 #include "../src/app/reports/TherionSqlReportDatabase.h"
+#include "../src/app/reports/TherionSqlReportCsvExporter.h"
 #include "../src/app/reports/TherionSqlReportPresetStore.h"
 
 #include <QDir>
@@ -8,6 +9,7 @@
 #include <QtTest/QtTest>
 
 #include <algorithm>
+#include <memory>
 
 using namespace TherionStudio;
 
@@ -22,6 +24,7 @@ private slots:
     void importsTherionSqlExportAndRunsReports();
     void rejectsCustomMutationQuery();
     void storesCustomPresetsInSettings();
+    void serializesAndWritesCsvWithExistingEscaping();
 };
 
 QString minimalTherionSqlExport()
@@ -162,9 +165,6 @@ void TherionSqlReportDatabaseTest::storesCustomPresetsInSettings()
     QVERIFY(tempDir.isValid());
     const QString settingsPath = QDir(tempDir.path()).filePath(QStringLiteral("settings.ini"));
 
-    QSettings settings(settingsPath, QSettings::IniFormat);
-    TherionSqlReportPresetStore store(settings);
-
     QVector<TherionSqlReportDefinition> presets;
     presets.append(TherionSqlReportDefinition{
         QStringLiteral("custom-1"),
@@ -176,11 +176,13 @@ void TherionSqlReportDatabaseTest::storesCustomPresetsInSettings()
         QStringLiteral("Ignored"),
         QStringLiteral("select * from STATION")
     });
-    store.saveCustomPresets(presets);
-    settings.sync();
-
-    QSettings reloadedSettings(settingsPath, QSettings::IniFormat);
-    TherionSqlReportPresetStore reloadedStore(reloadedSettings);
+    {
+        auto settings = std::make_unique<QSettings>(settingsPath, QSettings::IniFormat);
+        TherionSqlReportSettingsPresetStore store(std::move(settings));
+        store.saveCustomPresets(presets);
+    }
+    auto reloadedSettings = std::make_unique<QSettings>(settingsPath, QSettings::IniFormat);
+    TherionSqlReportSettingsPresetStore reloadedStore(std::move(reloadedSettings));
     const QVector<TherionSqlReportDefinition> reloaded = reloadedStore.loadCustomPresets();
 
     QCOMPARE(reloaded.size(), 1);
@@ -188,6 +190,35 @@ void TherionSqlReportDatabaseTest::storesCustomPresetsInSettings()
     QCOMPARE(reloaded.first().title, QStringLiteral("My report"));
     QCOMPARE(reloaded.first().query, QStringLiteral("select NAME from SURVEY"));
     QVERIFY(!TherionSqlReportPresetStore::createPresetId().isEmpty());
+}
+
+void TherionSqlReportDatabaseTest::serializesAndWritesCsvWithExistingEscaping()
+{
+    const TherionSqlReportTable table{
+        {QStringLiteral("Name"), QStringLiteral("Notes, quoted")},
+        {
+            {QStringLiteral("main"), QStringLiteral("plain")},
+            {QStringLiteral("comma,value"), QStringLiteral("He said \"hello\"")},
+            {QStringLiteral("multiline"), QStringLiteral("first\nsecond")},
+        },
+    };
+    const QByteArray expected(
+        "Name,\"Notes, quoted\"\n"
+        "main,plain\n"
+        "\"comma,value\",\"He said \"\"hello\"\"\"\n"
+        "multiline,\"first\nsecond\"\n");
+    QCOMPARE(TherionSqlReportCsvFileExporter::serialize(table), expected);
+
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    const QString filePath = QDir(tempDir.path()).filePath(QStringLiteral("report.csv"));
+    TherionSqlReportCsvFileExporter exporter;
+    QString errorMessage;
+    QVERIFY2(exporter.writeTable(filePath, table, &errorMessage), qPrintable(errorMessage));
+
+    QFile file(filePath);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    QCOMPARE(file.readAll(), expected);
 }
 }
 

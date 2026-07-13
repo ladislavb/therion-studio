@@ -1,4 +1,5 @@
 #include "../src/app/reports/TherionSqlReportTab.h"
+#include "../src/app/reports/TherionSqlReportCsvExporter.h"
 #include "../src/app/reports/TherionSqlReportWorkerSession.h"
 
 #include <QDir>
@@ -13,6 +14,7 @@
 #include <QTimer>
 
 #include <atomic>
+#include <memory>
 
 using namespace TherionStudio;
 
@@ -36,6 +38,42 @@ QByteArray largeSqlExport(int surveyCount)
         contents.append(", 'survey');\n");
     }
     return contents;
+}
+
+class MemoryPresetStore final : public TherionSqlReportPresetStore
+{
+public:
+    QVector<TherionSqlReportDefinition> loadCustomPresets() const override
+    {
+        return presets_;
+    }
+
+    void saveCustomPresets(const QVector<TherionSqlReportDefinition> &presets) override
+    {
+        presets_ = presets;
+    }
+
+private:
+    QVector<TherionSqlReportDefinition> presets_;
+};
+
+class MemoryCsvExporter final : public TherionSqlReportCsvExporter
+{
+public:
+    bool writeTable(const QString &, const TherionSqlReportTable &, QString *) const override
+    {
+        return true;
+    }
+};
+
+std::unique_ptr<TherionSqlReportPresetStore> makePresetStore()
+{
+    return std::make_unique<MemoryPresetStore>();
+}
+
+std::unique_ptr<TherionSqlReportCsvExporter> makeCsvExporter()
+{
+    return std::make_unique<MemoryCsvExporter>();
 }
 }
 
@@ -94,7 +132,7 @@ private slots:
 void TherionSqlReportTabTest::unreadablePathIsRejectedSynchronously()
 {
     auto *session = new TherionSqlReportWorkerSession;
-    TherionSqlReportTab tab(session);
+    TherionSqlReportTab tab(session, makePresetStore(), makeCsvExporter());
     session->setParent(&tab);
     QString errorMessage;
     QVERIFY(!tab.loadFile(QStringLiteral("missing-report.sql"), &errorMessage));
@@ -114,7 +152,7 @@ void TherionSqlReportTabTest::largeImportKeepsEventLoopResponsive()
     file.close();
 
     auto *session = new TherionSqlReportWorkerSession;
-    TherionSqlReportTab tab(session);
+    TherionSqlReportTab tab(session, makePresetStore(), makeCsvExporter());
     session->setParent(&tab);
     int heartbeatCount = 0;
     QTimer heartbeat;
@@ -138,7 +176,7 @@ void TherionSqlReportTabTest::largeImportKeepsEventLoopResponsive()
 void TherionSqlReportTabTest::newerLoadSuppressesOlderSchema()
 {
     FakeTherionSqlReportSession session;
-    TherionSqlReportTab tab(&session);
+    TherionSqlReportTab tab(&session, makePresetStore(), makeCsvExporter());
     QString errorMessage;
     QVERIFY(tab.loadFile(QStringLiteral("first.sql"), &errorMessage));
     QVERIFY(tab.loadFile(QStringLiteral("second.sql"), &errorMessage));
@@ -166,7 +204,7 @@ void TherionSqlReportTabTest::newerLoadSuppressesOlderSchema()
 void TherionSqlReportTabTest::newerQuerySuppressesOlderTable()
 {
     FakeTherionSqlReportSession session;
-    TherionSqlReportTab tab(&session);
+    TherionSqlReportTab tab(&session, makePresetStore(), makeCsvExporter());
     QString errorMessage;
     QVERIFY(tab.loadFile(QStringLiteral("report.sql"), &errorMessage));
     const TherionSqlReportImportRequest import = session.importRequests.constFirst();
@@ -205,7 +243,7 @@ void TherionSqlReportTabTest::newerQuerySuppressesOlderTable()
 void TherionSqlReportTabTest::importFailureLeavesEmptyCoherentState()
 {
     FakeTherionSqlReportSession session;
-    TherionSqlReportTab tab(&session);
+    TherionSqlReportTab tab(&session, makePresetStore(), makeCsvExporter());
     QString errorMessage;
     QVERIFY(tab.loadFile(QStringLiteral("broken.sql"), &errorMessage));
     const TherionSqlReportImportRequest request = session.importRequests.constFirst();
@@ -229,7 +267,7 @@ void TherionSqlReportTabTest::importFailureLeavesEmptyCoherentState()
 void TherionSqlReportTabTest::closingTabDisconnectsPublicationAndRequestsShutdown()
 {
     FakeTherionSqlReportSession session;
-    auto *tab = new TherionSqlReportTab(&session);
+    auto *tab = new TherionSqlReportTab(&session, makePresetStore(), makeCsvExporter());
     QString errorMessage;
     QVERIFY(tab->loadFile(QStringLiteral("report.sql"), &errorMessage));
     const TherionSqlReportImportRequest request = session.importRequests.constFirst();
@@ -255,17 +293,21 @@ void TherionSqlReportTabTest::closingTabDuringRealImportIsBoundedAndTearsDownWor
     QCOMPARE(file.write(contents), contents.size());
     file.close();
 
+    std::atomic<int> openedConnections = 0;
     std::atomic<int> closedConnections = 0;
     auto *session = new TherionSqlReportWorkerSession(
-        [&closedConnections](TherionSqlReportDatabase::ConnectionLifecycleEvent event) {
-            if (event == TherionSqlReportDatabase::ConnectionLifecycleEvent::Closed) {
+        [&openedConnections, &closedConnections](TherionSqlReportDatabase::ConnectionLifecycleEvent event) {
+            if (event == TherionSqlReportDatabase::ConnectionLifecycleEvent::Opened) {
+                openedConnections.fetch_add(1, std::memory_order_relaxed);
+            } else if (event == TherionSqlReportDatabase::ConnectionLifecycleEvent::Closed) {
                 closedConnections.fetch_add(1, std::memory_order_relaxed);
             }
         });
-    auto *tab = new TherionSqlReportTab(session);
+    auto *tab = new TherionSqlReportTab(session, makePresetStore(), makeCsvExporter());
     session->setParent(tab);
     QString errorMessage;
     QVERIFY(tab->loadFile(filePath, &errorMessage));
+    QTRY_COMPARE_WITH_TIMEOUT(openedConnections.load(std::memory_order_relaxed), 1, 3000);
 
     QElapsedTimer closeTimer;
     closeTimer.start();

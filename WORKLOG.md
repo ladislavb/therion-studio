@@ -5,9 +5,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ## Current Focus
 
 1. `2026.7.2` post-DOM stabilization and next feature selection.
-2. Continue `SQL_REPORT_ASYNC_PLAN.md` with S5 preset/settings and CSV IO ownership extraction. SQL S1-S4 now provide
-   worker-thread execution, stale suppression, real interruption, a progress-handler deadline, recovery, and bounded
-   teardown. Keep watcher W1-W4 as a separate worker/thread-affinity chain.
+2. Start watcher W1-W4 in `PROJECT_ASYNC_COORDINATION_PLAN.md`: move project watcher inventory behind a separate
+   worker/thread-affinity boundary. SQL S1-S5 is complete.
 3. Real-project smoke testing for Raw, Blocks, Map, Validation, Structure, and Compiler navigation after DOM closure.
 4. Plan-driven follow-ups for map partial refresh, validation/cache tuning, GUI cleanup, SVG backgrounds, reporting, LiDAR design, and 3D viewer refinement.
 
@@ -26,8 +25,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   and disconnects UI publication before asynchronous worker teardown. The report database has migrated from QSQLITE to
   a directly owned platform SQLite handle while preserving import/query/schema/value behavior. Superseded requests and
   shutdown now interrupt active SQLite work, recursive queries have a ten-second progress-handler deadline, cancellation
-  and timeout are distinct results, and the same worker recovers for later queries. Preset/CSV ownership extraction is
-  the next separate slice.
+  and timeout are distinct results, and the same worker recovers for later queries. `MainWindow` now composes the
+  settings-backed custom-preset store and CSV file exporter; the tab keeps only preset/dialog presentation while
+  deterministic CSV serialization and file IO are focused services with parity coverage.
 - Keep LiDAR/point-cloud processing as design/backlog work until the Map/TH2 projection boundary has a concrete import,
   registration, and 2D projection design.
 

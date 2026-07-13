@@ -4,7 +4,7 @@ Date: 2026-07-13
 
 Review findings: P1-2 and the report-specific part of P2-1.
 
-Status: active; S1-S4 complete, S5 preset/settings and CSV IO extraction is next.
+Status: complete; S1-S5 complete.
 
 Scope: move Therion SQL import and read-only report queries behind a worker-owned SQLite connection with request
 supersession, real interruption, bounded execution, and safe tab teardown. Preset persistence and CSV file output move
@@ -189,7 +189,7 @@ The tab already presents bounded busy state for import and indeterminate query e
 optional future UX enhancement; it is not required for the responsiveness exit gate. Recovery after timeout and
 cancellation is now deterministic worker-test coverage.
 
-## S5 — Extract Report Persistence And CSV IO
+## S5 — Extract Report Persistence And CSV IO — Complete
 
 Only after S1-S4:
 
@@ -199,6 +199,15 @@ Only after S1-S4:
 4. Preserve CSV quoting, headers, row order, and existing user workflow.
 
 Keep this as a separate commit chain from worker changes.
+
+Implemented outcome:
+
+- `MainWindow` composes a settings-backed preset-store adapter and CSV file exporter, then injects both into the tab.
+  `TherionSqlReportTab` no longer constructs or owns `QSettings`.
+- CSV quoting and UTF-8 serialization are deterministic in `TherionSqlReportCsvFileExporter`; the tab retains only the
+  save dialog, export intent, and translated success/failure presentation.
+- Focused tests cover settings-backed preset round-trip, injected tab fakes, CSV quoting/header/row ordering parity,
+  file output, and real-import teardown after the worker connection has opened.
 
 ## Verification Matrix
 

@@ -115,9 +115,8 @@ Evidence:
 - Recursive-query tests prove timeout, supersession cancellation, recovery on the same worker, and bounded interrupted
   teardown.
 
-Remaining work is architectural cleanup rather than this responsiveness defect: S5 extracts preset/settings and CSV IO
-ownership from the widget. Cross-platform package jobs remain the final verification of the S3A platform dependency
-wiring.
+The report-specific cleanup is complete: preset/settings and CSV IO ownership now sit behind explicit injected
+adapters. Cross-platform package jobs remain the final verification of the S3A platform dependency wiring.
 
 ### P1-3 — Structure and Outputs Publish Superseded Worker Results
 
@@ -260,8 +259,8 @@ Recommendation:
 
 ### P2-1 — Presentation Components Still Own External State and File I/O
 
-- `TherionSqlReportTab` owns `QSettings`, constructs its preset store, opens save dialogs, and writes CSV directly
-  (`src/app/reports/TherionSqlReportTab.h:6-67`, `TherionSqlReportTab.cpp:629-670`).
+- The report-specific part is resolved: `TherionSqlReportTab` receives its preset/settings adapter and CSV file exporter
+  from `MainWindow`, retains only dialog/presentation work, and has focused CSV parity and injected-fake coverage.
 - `MainWindowHelpDialog.cpp:84-99` reads application settings directly while resolving manual language.
 - `MapEditorBackgroundLayers.cpp` combines dialogs, file loading, parsing, asynchronous image work, session state,
   graphics-item updates, and source transactions in one presentation translation unit.

@@ -32,7 +32,7 @@ localization, and acceptance-criteria updates in the same slice.
 | --- | --- | --- | --- |
 | P1-1 non-hermetic core runner | `TEST_HERMETICITY_PLAN.md` | H1-H3 complete | resolved 2026-07-13 |
 | P1-3 stale Structure/Outputs results | `PROJECT_ASYNC_COORDINATION_PLAN.md` | A1-A3 complete | resolved 2026-07-13 |
-| P1-2 blocking SQL import/query | `SQL_REPORT_ASYNC_PLAN.md` | S1-S4 complete; S5 ownership extraction next | resolved 2026-07-13 |
+| P1-2 blocking SQL import/query | `SQL_REPORT_ASYNC_PLAN.md` | S1-S5 complete | resolved 2026-07-13 |
 | P1-5 UI-thread project watcher walk | `PROJECT_ASYNC_COORDINATION_PLAN.md` | W1 pure watch inventory | A1-A3 recommended first |
 | P1-7 localization extraction blind spot | `LOCALIZATION_EXTRACTION_PLAN.md` | L1 fix known visible literals | none; separate commit chain |
 | P1-6 static Map resource/cache state | `MAP_RUNTIME_OWNERSHIP_PLAN.md` | R1 style catalog provider seam | scanner/SQL work independent |
@@ -83,8 +83,7 @@ latest-pending, and teardown cases in the shared app/service QTest runner.
 Complete SQL S1-S4, then watcher W1-W4. SQL and watcher work shall be separate commit chains because their cancellation,
 thread affinity, and user-facing states differ.
 
-SQL S5 (preset persistence and CSV extraction) is a lower-priority dependency-injection follow-up. It is not required
-to close the GUI-thread responsiveness gate and shall remain a separate commit chain.
+SQL S5 (preset persistence and CSV extraction) is complete as its own dependency-injection commit chain.
 
 Exit gate:
 

@@ -302,6 +302,8 @@ set(THERION_APP_SOURCES
     src/app/TherionRunnerStartSuccessPresenter.h
     src/app/reports/TherionSqlReportDatabase.cpp
     src/app/reports/TherionSqlReportDatabase.h
+    src/app/reports/TherionSqlReportCsvExporter.cpp
+    src/app/reports/TherionSqlReportCsvExporter.h
     src/app/reports/TherionSqlReportExecutionControl.cpp
     src/app/reports/TherionSqlReportExecutionControl.h
     src/app/reports/TherionSqlReportPresetStore.cpp

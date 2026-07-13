@@ -3,8 +3,9 @@
 #include "TherionSqlReportPresetStore.h"
 #include "TherionSqlReportSession.h"
 
-#include <QSettings>
 #include <QWidget>
+
+#include <memory>
 
 class QLabel;
 class QListWidget;
@@ -17,13 +18,17 @@ namespace TherionStudio
 
 class InspectorPanel;
 class SqlReportTableModel;
+class TherionSqlReportCsvExporter;
 
 class TherionSqlReportTab final : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit TherionSqlReportTab(TherionSqlReportSession *session, QWidget *parent = nullptr);
+    TherionSqlReportTab(TherionSqlReportSession *session,
+                        std::unique_ptr<TherionSqlReportPresetStore> customPresetStore,
+                        std::unique_ptr<TherionSqlReportCsvExporter> csvExporter,
+                        QWidget *parent = nullptr);
     ~TherionSqlReportTab() override;
 
     bool loadFile(const QString &filePath, QString *errorMessage);
@@ -69,8 +74,8 @@ private:
     TherionSqlReportSession *session_ = nullptr;
     QVector<TherionSqlReportDefinition> reports_;
     QVector<TherionSqlReportDefinition> customReports_;
-    QSettings customPresetSettings_;
-    TherionSqlReportPresetStore customPresetStore_;
+    std::unique_ptr<TherionSqlReportPresetStore> customPresetStore_;
+    std::unique_ptr<TherionSqlReportCsvExporter> csvExporter_;
     QString projectRootPath_;
     QString filePath_;
     QString sourceIdentity_;

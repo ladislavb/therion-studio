@@ -1,5 +1,7 @@
 #include "TherionSqlReportTab.h"
 
+#include "TherionSqlReportCsvExporter.h"
+
 #include "../ExportFileName.h"
 #include "../text_editor/InspectorPanel.h"
 
@@ -7,7 +9,6 @@
 #include <QDateTime>
 #include <QAbstractItemView>
 #include <QDir>
-#include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFrame>
@@ -23,7 +24,6 @@
 #include <QSignalBlocker>
 #include <QSplitter>
 #include <QTableView>
-#include <QTextStream>
 #include <QVBoxLayout>
 
 namespace TherionStudio
@@ -47,19 +47,6 @@ void applyThinSplitterStyle(QSplitter *splitter, const QString &objectName)
     splitter->setStyleSheet(QString());
 }
 
-QString csvEscaped(QString value)
-{
-    if (value.contains(QLatin1Char('"'))) {
-        value.replace(QLatin1Char('"'), QStringLiteral("\"\""));
-    }
-    if (value.contains(QLatin1Char(','))
-        || value.contains(QLatin1Char('\n'))
-        || value.contains(QLatin1Char('\r'))
-        || value.contains(QLatin1Char('"'))) {
-        return QStringLiteral("\"%1\"").arg(value);
-    }
-    return value;
-}
 }
 
 class SqlReportTableModel final : public QAbstractTableModel
@@ -120,14 +107,21 @@ private:
     TherionSqlReportTable table_;
 };
 
-TherionSqlReportTab::TherionSqlReportTab(TherionSqlReportSession *session, QWidget *parent)
+TherionSqlReportTab::TherionSqlReportTab(
+    TherionSqlReportSession *session,
+    std::unique_ptr<TherionSqlReportPresetStore> customPresetStore,
+    std::unique_ptr<TherionSqlReportCsvExporter> csvExporter,
+    QWidget *parent)
     : QWidget(parent)
     , session_(session)
-    , customPresetStore_(customPresetSettings_)
+    , customPresetStore_(std::move(customPresetStore))
+    , csvExporter_(std::move(csvExporter))
 {
     Q_ASSERT(session_ != nullptr);
+    Q_ASSERT(customPresetStore_ != nullptr);
+    Q_ASSERT(csvExporter_ != nullptr);
     reports_ = TherionSqlReportDatabase::predefinedReports();
-    customReports_ = customPresetStore_.loadCustomPresets();
+    customReports_ = customPresetStore_->loadCustomPresets();
     buildUi();
     populateReports();
     runCustomSqlButton_->setEnabled(false);
@@ -582,7 +576,7 @@ void TherionSqlReportTab::saveCurrentQueryAsPreset()
             return;
         }
         customReports_[duplicateIndex].query = query;
-        customPresetStore_.saveCustomPresets(customReports_);
+        customPresetStore_->saveCustomPresets(customReports_);
         populateCustomReports(customReports_.at(duplicateIndex).id);
         statusLabel_->setText(tr("Saved custom SQL preset \"%1\".").arg(title));
         return;
@@ -591,7 +585,7 @@ void TherionSqlReportTab::saveCurrentQueryAsPreset()
     if (selectedPreset != nullptr) {
         selectedPreset->title = title;
         selectedPreset->query = query;
-        customPresetStore_.saveCustomPresets(customReports_);
+        customPresetStore_->saveCustomPresets(customReports_);
         populateCustomReports(selectedId);
         statusLabel_->setText(tr("Saved custom SQL preset \"%1\".").arg(title));
         return;
@@ -602,7 +596,7 @@ void TherionSqlReportTab::saveCurrentQueryAsPreset()
     preset.title = title;
     preset.query = query;
     customReports_.append(preset);
-    customPresetStore_.saveCustomPresets(customReports_);
+    customPresetStore_->saveCustomPresets(customReports_);
     populateCustomReports(preset.id);
     statusLabel_->setText(tr("Saved custom SQL preset \"%1\".").arg(title));
 }
@@ -638,7 +632,7 @@ void TherionSqlReportTab::renameSelectedCustomPreset()
 
     const QString presetId = preset->id;
     preset->title = title;
-    customPresetStore_.saveCustomPresets(customReports_);
+    customPresetStore_->saveCustomPresets(customReports_);
     populateCustomReports(presetId);
     statusLabel_->setText(tr("Renamed custom SQL preset to \"%1\".").arg(title));
 }
@@ -663,7 +657,7 @@ void TherionSqlReportTab::deleteSelectedCustomPreset()
         return;
     }
     customReports_.removeAt(index);
-    customPresetStore_.saveCustomPresets(customReports_);
+    customPresetStore_->saveCustomPresets(customReports_);
     populateCustomReports();
     statusLabel_->setText(tr("Deleted custom SQL preset \"%1\".").arg(title));
 }
@@ -755,24 +749,10 @@ void TherionSqlReportTab::exportCurrentTableCsv()
         return;
     }
 
-    QFile file(outputPath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    QString writeError;
+    if (!csvExporter_->writeTable(outputPath, currentTable_, &writeError)) {
         QMessageBox::warning(this, tr("Export CSV"), tr("Could not write %1.").arg(QDir::toNativeSeparators(outputPath)));
         return;
-    }
-
-    QTextStream stream(&file);
-    QStringList escapedHeader;
-    for (const QString &column : currentTable_.columns) {
-        escapedHeader.append(csvEscaped(column));
-    }
-    stream << escapedHeader.join(QLatin1Char(',')) << '\n';
-    for (const QStringList &row : std::as_const(currentTable_.rows)) {
-        QStringList escapedRow;
-        for (const QString &value : row) {
-            escapedRow.append(csvEscaped(value));
-        }
-        stream << escapedRow.join(QLatin1Char(',')) << '\n';
     }
     statusLabel_->setText(tr("Exported CSV to %1.").arg(QDir::toNativeSeparators(outputPath)));
 }

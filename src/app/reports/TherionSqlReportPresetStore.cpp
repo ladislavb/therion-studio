@@ -6,6 +6,8 @@
 #include <QSettings>
 #include <QUuid>
 
+#include <utility>
+
 namespace TherionStudio
 {
 namespace
@@ -18,14 +20,15 @@ QString trimmedString(const QJsonObject &object, const QString &key)
 }
 }
 
-TherionSqlReportPresetStore::TherionSqlReportPresetStore(QSettings &settings)
-    : settings_(settings)
+TherionSqlReportSettingsPresetStore::TherionSqlReportSettingsPresetStore(std::unique_ptr<QSettings> settings)
+    : settings_(std::move(settings))
 {
+    Q_ASSERT(settings_ != nullptr);
 }
 
-QVector<TherionSqlReportDefinition> TherionSqlReportPresetStore::loadCustomPresets() const
+QVector<TherionSqlReportDefinition> TherionSqlReportSettingsPresetStore::loadCustomPresets() const
 {
-    const QString encoded = settings_.value(QString::fromLatin1(kCustomPresetsKey)).toString();
+    const QString encoded = settings_->value(QString::fromLatin1(kCustomPresetsKey)).toString();
     if (encoded.trimmed().isEmpty()) {
         return {};
     }
@@ -55,7 +58,8 @@ QVector<TherionSqlReportDefinition> TherionSqlReportPresetStore::loadCustomPrese
     return presets;
 }
 
-void TherionSqlReportPresetStore::saveCustomPresets(const QVector<TherionSqlReportDefinition> &presets)
+void TherionSqlReportSettingsPresetStore::saveCustomPresets(
+    const QVector<TherionSqlReportDefinition> &presets)
 {
     QJsonArray array;
     for (const TherionSqlReportDefinition &preset : presets) {
@@ -70,8 +74,8 @@ void TherionSqlReportPresetStore::saveCustomPresets(const QVector<TherionSqlRepo
         array.append(object);
     }
 
-    settings_.setValue(QString::fromLatin1(kCustomPresetsKey),
-                       QString::fromUtf8(QJsonDocument(array).toJson(QJsonDocument::Compact)));
+    settings_->setValue(QString::fromLatin1(kCustomPresetsKey),
+                        QString::fromUtf8(QJsonDocument(array).toJson(QJsonDocument::Compact)));
 }
 
 QString TherionSqlReportPresetStore::createPresetId()

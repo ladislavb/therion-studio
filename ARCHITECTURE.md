@@ -130,6 +130,8 @@ SQL report import and query execution target a dedicated worker-thread boundary:
 - `MainWindow` explicitly composes a `TherionSqlReportWorkerSession` and injects its narrow session contract into the
   report tab. The session owns thread dispatch and asynchronous teardown; the tab owns only presentation state and
   accepts results whose monotonically increasing request ID and source generation are both current.
+- `MainWindow` also composes and injects the report preset/settings adapter and CSV file exporter. The tab owns preset
+  interaction and save-dialog presentation, but neither constructs `QSettings` nor serializes or writes CSV data.
 
 The async tab workflow suppresses superseded results, interrupts active SQLite execution when a newer request arrives,
 and keeps closing bounded by disconnecting UI publication before requesting worker shutdown. Read-only queries use a
