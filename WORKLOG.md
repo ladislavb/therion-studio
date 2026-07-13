@@ -5,8 +5,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ## Current Focus
 
 1. `2026.7.2` post-DOM stabilization and next feature selection.
-2. Execute `plans/REVIEW_IMPLEMENTATION_PLAN.md`: restore a hermetic `.lox` test baseline, then address superseded
-   Structure/Outputs results and SQL report UI-thread work.
+2. Complete `TEST_HERMETICITY_PLAN.md` H2-H3 by separating the optional `.lox` corpus from mandatory unit coverage,
+   then address superseded Structure/Outputs results and SQL report UI-thread work.
 3. Real-project smoke testing for Raw, Blocks, Map, Validation, Structure, and Compiler navigation after DOM closure.
 4. Plan-driven follow-ups for map partial refresh, validation/cache tuning, GUI cleanup, SVG backgrounds, reporting, LiDAR design, and 3D viewer refinement.
 
@@ -221,7 +221,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Continue migrating touched hand-rolled tests to QTest where the dependency/runtime boundary is already clear.
 - Keep `python3 scripts/check_structure_constraints.py` green and preserve guardrails against map-editor source mutation
   bypasses.
-- Keep optional sample-data dependent tests from aborting CI when fixture directories are absent.
+- Keep mandatory `.lox` coverage on the committed fixture root; move optional real-project corpus rows and aggregate
+  semantic expectations out of the normal `unit` result in H2-H3.
 - Keep Linux/Windows CI and package Qt runtime module lists aligned with QML inspector imports.
 - Keep Linux strict-warning builds green by updating aggregate initializers when project scan/source structs gain fields.
 - Keep app-library and editor-test support source ownership aligned with static-link boundaries; shared UI components such

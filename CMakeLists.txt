@@ -1056,6 +1056,9 @@ therion_add_core_qtest_runner(TherionCoreQTests
     tests/core/TherionSourceTextTest.cpp
     tests/core/TherionTokenRulesTest.cpp)
 
+target_compile_definitions(TherionCoreQTests PRIVATE
+    THERION_STUDIO_TEST_FIXTURE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
+
 therion_add_core_unit_test(CommandOptionParserTest
     tests/CommandOptionParserTest.cpp)
 

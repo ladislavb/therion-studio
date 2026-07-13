@@ -4,16 +4,17 @@ Date: 2026-07-13
 
 Review findings: P1-1, P2-4.
 
-Status: active. This is the first implementation plan in `REVIEW_IMPLEMENTATION_PLAN.md`.
+Status: active. H1 is complete; H2 is the next slice in `REVIEW_IMPLEMENTATION_PLAN.md`.
 
 Scope: make mandatory CTest labels deterministic in a clean checkout while retaining optional real-project corpus
 coverage as explicitly opt-in integration tests.
 
-## Current Failure Contract
+## Current State
 
-`tests/core/ThreeDViewerLoxLoaderTest.cpp` treats any local `sample_data/` directory as evidence that a fixed Babice
-fixture exists. A partial ignored corpus therefore fails `TherionCoreQTests`, while a checkout without the directory
-skips the same test. Mandatory unit coverage must not depend on ignored developer data.
+H1 removed the fixed-path dependency on ignored `sample_data/`. Mandatory loader coverage now uses the committed
+`tests/fixtures/three_d_viewer/1302.lox` Therion export through an explicit compile-time fixture root. The optional
+sample matrix and aggregate semantic assertions still run inside `TherionCoreQTests`; H2-H3 must separate that corpus
+policy so arbitrary partial corpora cannot affect the mandatory result.
 
 ## Non-Goals
 
@@ -23,7 +24,17 @@ skips the same test. Mandatory unit coverage must not depend on ignored develope
 - Do not split the complete core aggregate runner in this plan.
 - Do not change `.lox` parser behavior unless the committed minimal fixture exposes a real defect.
 
-## H1 — Establish A Committed Minimal Fixture
+## H1 — Establish A Committed Minimal Fixture — Completed 2026-07-13
+
+Implemented result:
+
+- committed the maintainer-approved `sample_data/clopy/_output/1302.lox` export under
+  `tests/fixtures/three_d_viewer/` with provenance, license, and SHA-256 documentation;
+- supplied `THERION_STUDIO_TEST_FIXTURE_ROOT` to `TherionCoreQTests` from CMake;
+- replaced the fixed optional Babice path test with exact survey/station/shot/mesh, qualified-name, and bounds assertions
+  over the committed fixture;
+- verified the release core runner both with the current partial local corpus and from `/tmp`, where no `sample_data/`
+  root is discoverable.
 
 Allowed scope:
 

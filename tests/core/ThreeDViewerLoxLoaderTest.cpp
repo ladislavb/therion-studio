@@ -26,14 +26,10 @@ QString repositoryRoot()
     return {};
 }
 
-QString sampleLoxPath()
+QString committedLoxPath()
 {
-    const QString root = repositoryRoot();
-    if (root.isEmpty()) {
-        return {};
-    }
-    return QDir(root).filePath(
-        QStringLiteral("sample_data/babice/02_clopy_a_okoli/1302_ve_clopech/_output/1302.lox"));
+    return QDir(QStringLiteral(THERION_STUDIO_TEST_FIXTURE_ROOT))
+        .filePath(QStringLiteral("three_d_viewer/1302.lox"));
 }
 
 QStringList sampleLoxPaths()
@@ -129,7 +125,7 @@ class ThreeDViewerLoxLoaderTest : public QObject
     Q_OBJECT
 
 private slots:
-    void loadsSampleLoxScene();
+    void loadsCommittedLoxScene();
     void loadsSampleLoxFixtureMatrix_data();
     void loadsSampleLoxFixtureMatrix();
     void sampleFixtureMatrixCoversSceneSemantics();
@@ -138,37 +134,43 @@ private slots:
     void rejectsTruncatedInput();
 };
 
-void ThreeDViewerLoxLoaderTest::loadsSampleLoxScene()
+void ThreeDViewerLoxLoaderTest::loadsCommittedLoxScene()
 {
-    const QString path = sampleLoxPath();
-    if (path.isEmpty()) {
-        QSKIP("Repository root with sample_data was not found.");
-    }
-    QVERIFY2(QFile::exists(path), qPrintable(QStringLiteral("Sample .lox fixture is missing: %1").arg(path)));
+    const QString path = committedLoxPath();
+    QVERIFY2(QFile::exists(path), qPrintable(QStringLiteral("Committed .lox fixture is missing: %1").arg(path)));
 
     const ThreeDViewerLoxLoader loader;
     const ThreeDViewerLoxLoader::Result result = loader.loadFile(path);
 
     QVERIFY2(result.ok(), qPrintable(result.error));
-    QVERIFY(!result.scene.isEmpty());
-    QVERIFY(result.scene.surveys.size() > 0);
-    QVERIFY(result.scene.stations.size() > 0);
-    QVERIFY(result.scene.shots.size() > 0);
+    QCOMPARE(result.scene.surveys.size(), 3);
+    QCOMPARE(result.scene.stations.size(), 10);
+    QCOMPARE(result.scene.shots.size(), 9);
+    QCOMPARE(result.scene.meshGroups.size(), 1);
+
+    const ThreeDViewerSurvey &survey = result.scene.surveys.at(2);
+    QCOMPARE(survey.id, quint32(2));
+    QCOMPARE(survey.parentId, quint32(1));
+    QCOMPARE(survey.name, QStringLiteral("hp"));
+    QCOMPARE(survey.title, QStringLiteral("Hlavní polygon"));
+
+    const ThreeDViewerStation &station = result.scene.stations.first();
+    QCOMPARE(station.id, quint32(0));
+    QCOMPARE(result.scene.stationQualifiedName(station), QStringLiteral("0@hp.1302"));
+
+    const ThreeDViewerShot &shot = result.scene.shots.first();
+    QCOMPARE(shot.fromStationId, quint32(0));
+    QCOMPARE(shot.toStationId, quint32(1));
+    QCOMPARE(shot.surveyId, quint32(2));
 
     const ThreeDViewerBounds bounds = result.scene.bounds();
     QVERIFY(bounds.valid);
-    QVERIFY(bounds.minimum.x <= bounds.maximum.x);
-    QVERIFY(bounds.minimum.y <= bounds.maximum.y);
-    QVERIFY(bounds.minimum.z <= bounds.maximum.z);
-
-    bool hasNamedStation = false;
-    for (const ThreeDViewerStation &station : result.scene.stations) {
-        if (!station.name.isEmpty()) {
-            hasNamedStation = true;
-            break;
-        }
-    }
-    QVERIFY(hasNamedStation);
+    QCOMPARE(bounds.minimum.x, -5.511378785446);
+    QCOMPARE(bounds.minimum.y, -15.48373914206);
+    QCOMPARE(bounds.minimum.z, -17.59977728999);
+    QCOMPARE(bounds.maximum.x, 0.827920906564);
+    QCOMPARE(bounds.maximum.y, 0.0);
+    QCOMPARE(bounds.maximum.z, 0.9730335954936);
 }
 
 void ThreeDViewerLoxLoaderTest::loadsSampleLoxFixtureMatrix_data()
