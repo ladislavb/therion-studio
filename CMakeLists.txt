@@ -46,6 +46,12 @@ option(THERION_ENABLE_STRICT_WARNINGS
 option(THERION_ENABLE_QT_LINUX_DEPLOY_INSTALL
     "Run Qt's Linux runtime deployment script during install; intended for AppDir/AppImage builds"
     OFF)
+option(THERION_STUDIO_ENABLE_LOX_CORPUS_TESTS
+    "Build opt-in tests that consume ignored real-project .lox fixtures"
+    OFF)
+set(THERION_STUDIO_LOX_CORPUS_ROOT
+    "${CMAKE_CURRENT_SOURCE_DIR}/sample_data"
+    CACHE PATH "Root of the optional real-project .lox test corpus")
 
 find_package(Qt6 6.4 REQUIRED COMPONENTS Core Widgets Svg Sql Concurrent Test Quick QuickWidgets Qml QuickControls2)
 find_package(Qt6LinguistTools 6.4 QUIET)
@@ -1059,6 +1065,13 @@ therion_add_core_qtest_runner(TherionCoreQTests
 target_compile_definitions(TherionCoreQTests PRIVATE
     THERION_STUDIO_TEST_FIXTURE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
 
+if(THERION_STUDIO_ENABLE_LOX_CORPUS_TESTS)
+    therion_add_core_qtest_runner(ThreeDViewerLoxCorpusTest
+        tests/core/ThreeDViewerLoxCorpusTest.cpp)
+    target_compile_definitions(ThreeDViewerLoxCorpusTest PRIVATE
+        THERION_STUDIO_LOX_CORPUS_ROOT="${THERION_STUDIO_LOX_CORPUS_ROOT}")
+endif()
+
 therion_add_core_unit_test(CommandOptionParserTest
     tests/CommandOptionParserTest.cpp)
 
@@ -1671,9 +1684,15 @@ set(THERION_UI_TEST_TARGETS
     MapEditorViewportInputControllerTest
     MapEditorViewportTabletInputTest)
 
+set(THERION_CORPUS_TEST_TARGETS)
+if(TARGET ThreeDViewerLoxCorpusTest)
+    list(APPEND THERION_CORPUS_TEST_TARGETS ThreeDViewerLoxCorpusTest)
+endif()
+
 set(THERION_TEST_EXECUTABLE_TARGETS
     ${THERION_UNIT_TEST_TARGETS}
-    ${THERION_UI_TEST_TARGETS})
+    ${THERION_UI_TEST_TARGETS}
+    ${THERION_CORPUS_TEST_TARGETS})
 
 set(THERION_TEST_SUPPORT_TARGETS
     therion_text_editor_ui_test_support
@@ -1684,6 +1703,11 @@ add_custom_target(therion_unit_tests
 
 add_custom_target(therion_ui_tests
     DEPENDS ${THERION_UI_TEST_TARGETS})
+
+if(THERION_CORPUS_TEST_TARGETS)
+    add_custom_target(therion_corpus_tests
+        DEPENDS ${THERION_CORPUS_TEST_TARGETS})
+endif()
 
 foreach(test_target IN LISTS THERION_TEST_EXECUTABLE_TARGETS THERION_TEST_SUPPORT_TARGETS)
     target_compile_definitions(${test_target} PRIVATE
@@ -1714,3 +1738,10 @@ set_tests_properties(
     ${THERION_UI_TEST_TARGETS}
     PROPERTIES
         LABELS "ui")
+
+if(THERION_CORPUS_TEST_TARGETS)
+    set_tests_properties(
+        ${THERION_CORPUS_TEST_TARGETS}
+        PROPERTIES
+            LABELS "corpus")
+endif()

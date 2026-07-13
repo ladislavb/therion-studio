@@ -4,7 +4,7 @@ Date: 2026-07-13
 
 Review findings: P1-1, P2-4.
 
-Status: active. H1 is complete; H2 is the next slice in `REVIEW_IMPLEMENTATION_PLAN.md`.
+Status: active. H1-H2 are complete; H3 is the next slice in `REVIEW_IMPLEMENTATION_PLAN.md`.
 
 Scope: make mandatory CTest labels deterministic in a clean checkout while retaining optional real-project corpus
 coverage as explicitly opt-in integration tests.
@@ -12,9 +12,9 @@ coverage as explicitly opt-in integration tests.
 ## Current State
 
 H1 removed the fixed-path dependency on ignored `sample_data/`. Mandatory loader coverage now uses the committed
-`tests/fixtures/three_d_viewer/1302.lox` Therion export through an explicit compile-time fixture root. The optional
-sample matrix and aggregate semantic assertions still run inside `TherionCoreQTests`; H2-H3 must separate that corpus
-policy so arbitrary partial corpora cannot affect the mandatory result.
+`tests/fixtures/three_d_viewer/1302.lox` Therion export through an explicit compile-time fixture root. H2 moved the
+known real-project fixture matrix into an opt-in `ThreeDViewerLoxCorpusTest` with row-level skips and a dedicated
+`corpus` CTest label. H3 still owns a mandatory regression test for corpus path-resolution policy.
 
 ## Non-Goals
 
@@ -64,7 +64,16 @@ Verification:
 - the focused loader case from a build-directory working directory;
 - `git diff --check`.
 
-## H2 — Separate Optional Corpus Coverage
+## H2 — Separate Optional Corpus Coverage — Completed 2026-07-13
+
+Implemented result:
+
+- removed dynamic `sample_data/` discovery and aggregate corpus semantics from `TherionCoreQTests`;
+- added opt-in `ThreeDViewerLoxCorpusTest` with one data row per known fixture and per-row semantic expectations;
+- added `THERION_STUDIO_ENABLE_LOX_CORPUS_TESTS`, overridable `THERION_STUDIO_LOX_CORPUS_ROOT`, the `corpus` CTest
+  label, and the `therion_corpus_tests` build target;
+- documented default, complete, missing, and partial-corpus behavior in `docs/BUILDING.md`;
+- verified all ten local rows, then a one-file corpus with one passing row and nine independent skips.
 
 Allowed scope:
 

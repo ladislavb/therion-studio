@@ -11,6 +11,35 @@ This document describes the current build and packaging workflow.
 The bundled command catalog, syntax palette, and UI icons are compiled into Qt resources.
 Localization maintenance is documented in `docs/LOCALIZATION.md`.
 
+## Optional LOX Corpus Tests
+
+Mandatory `unit` tests use only fixtures committed under `tests/fixtures/`. Broader
+real-project `.lox` coverage is opt-in because `sample_data/` is intentionally not
+part of a clean checkout.
+
+Configure and run the optional corpus test with:
+
+```sh
+cmake -S . -B build-corpus \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DTHERION_STUDIO_ENABLE_LOX_CORPUS_TESTS=ON
+cmake --build build-corpus --target therion_corpus_tests
+ctest --test-dir build-corpus -L corpus --output-on-failure
+```
+
+The default corpus root is `<repository>/sample_data`. Override it when the corpus
+is stored elsewhere:
+
+```sh
+cmake -S . -B build-corpus \
+  -DTHERION_STUDIO_ENABLE_LOX_CORPUS_TESTS=ON \
+  -DTHERION_STUDIO_LOX_CORPUS_ROOT=/path/to/sample_data
+```
+
+Each known fixture is an independent QTest data row. Available files are verified;
+missing files report an intentional row-level skip. Enabling or partially populating
+the optional corpus does not change the mandatory `unit` label.
+
 ## Map Object Style Gallery
 
 The map object style gallery is a developer review artifact for bundled and user override styles.
