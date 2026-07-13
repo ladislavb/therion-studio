@@ -272,6 +272,7 @@ signals:
     void dirtyStateChanged(bool dirty);
     void currentLineChanged(int lineNumber);
     void documentTextChanged();
+    void sourceDrivenMapRefreshCompleted();
     void backgroundLayersChanged();
     void backgroundLayerPropertiesChanged();
     void modeStatusChanged();

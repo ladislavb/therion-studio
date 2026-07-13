@@ -104,8 +104,6 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Run real-project smoke passes before broadening source-model behavior again: Raw completion/help/validation, Blocks
   nested/data/continued commands, Map selection/inspector/create/delete/move/split/backgrounds, Structure, Validation,
   and Compiler diagnostic navigation.
-- Track `MapEditorDragUndoRedoSmokeTest`: the first full post-DOM verification run saw one segfault, but the isolated
-  test, 10-repeat run, and second full suite passed.
 - Keep further parser/source-model changes incremental and regression-backed; do not revive the archived DOM migration
   queue for ordinary feature work.
 
@@ -228,8 +226,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   as `InspectorPanel` must be linked through every static library that compiles consumers of those symbols, not only
   through the main executable or a single test runner.
 - Keep UI smoke tests deterministic across platform event-loop timing differences.
-- When touching source-driven map scene refresh, repeat `MapEditorDragUndoRedoSmokeTest` to guard delayed refresh
-  selection restoration for cursor-derived line/area ownership such as `endline` and `endarea`.
+- When touching source-driven map scene refresh, synchronize tests through the explicit refresh-completion signal and repeat
+  `MapEditorDragUndoRedoSmokeTest` to guard delayed refresh selection restoration for cursor-derived line/area ownership
+  such as `endline` and `endarea`.
 - Keep explicit user confirmation before every `git commit`.
 
 ### UI Cleanup

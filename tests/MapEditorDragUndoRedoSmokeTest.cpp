@@ -2670,6 +2670,21 @@ int runDragUndoRedoSmoke()
 
     const QString mixedUndoMarker = QStringLiteral("# mixed-undo-marker");
     const QString baselineBeforeMixedUndo = mapTab->text();
+    bool mixedUndoSourceRefreshCompleted = false;
+    QEventLoop mixedUndoSourceRefreshLoop;
+    QTimer mixedUndoSourceRefreshTimeout;
+    mixedUndoSourceRefreshTimeout.setSingleShot(true);
+    QObject::connect(mapTab,
+                     &MapEditorTab::sourceDrivenMapRefreshCompleted,
+                     &mixedUndoSourceRefreshLoop,
+                     [&mixedUndoSourceRefreshCompleted, &mixedUndoSourceRefreshLoop]() {
+                         mixedUndoSourceRefreshCompleted = true;
+                         mixedUndoSourceRefreshLoop.quit();
+                     });
+    QObject::connect(&mixedUndoSourceRefreshTimeout,
+                     &QTimer::timeout,
+                     &mixedUndoSourceRefreshLoop,
+                     &QEventLoop::quit);
     textEditor->goToLineColumn(18, 9);
     pumpEvents();
     sourceEditor->setFocus(Qt::OtherFocusReason);
@@ -2683,6 +2698,14 @@ int runDragUndoRedoSmoke()
     const QString textAfterTextUndoEntry = mapTab->text();
     if (!expect(textAfterTextUndoEntry.contains(mixedUndoMarker),
                 "Mixed undo arbitration test should include marker text after text-side edit.")) {
+        return 1;
+    }
+    if (!mixedUndoSourceRefreshCompleted) {
+        mixedUndoSourceRefreshTimeout.start(2000);
+        mixedUndoSourceRefreshLoop.exec();
+    }
+    if (!expect(mixedUndoSourceRefreshCompleted,
+                "Mixed undo arbitration test should wait for the marker text map projection.")) {
         return 1;
     }
 
