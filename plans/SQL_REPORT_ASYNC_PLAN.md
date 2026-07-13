@@ -4,7 +4,7 @@ Date: 2026-07-13
 
 Review findings: P1-2 and the report-specific part of P2-1.
 
-Status: active after monotonic scanner results.
+Status: active; S1 complete, S2 is next.
 
 Scope: move Therion SQL import and read-only report queries behind a worker-owned SQLite connection with request
 supersession, real interruption, bounded execution, and safe tab teardown. Preset persistence and CSV file output move
@@ -28,7 +28,7 @@ out of the widget only after the worker lifecycle is stable.
 - Do not treat a UI timer or an atomic flag alone as cancellation of a currently executing SQLite statement.
 - Do not refactor all settings/dialog/file workflows in the application.
 
-## S1 — Prove The Worker-Owned Database Contract
+## S1 — Prove The Worker-Owned Database Contract — Complete
 
 Allowed scope:
 
@@ -54,6 +54,13 @@ Acceptance:
 - the worker has no QWidget or dialog dependency.
 
 Stop condition: any design requiring a connection created on the GUI thread or returned to the GUI thread is rejected.
+
+Outcome (2026-07-13): `TherionSqlReportWorker` now accepts value import/query requests and emits value results with
+request/source identity, execution policy, schema/table DTOs, error code/message, and cancellation state. It constructs
+and owns `TherionSqlReportDatabase` only in its affinity thread. The database records its construction thread, asserts
+all SQL access against it, and closes/removes named connections after local queries are destroyed. App/service QTests
+cover worker-thread lifecycle events, valid import/query, source mismatch, malformed transactional rollback, recovery,
+and warning-free deterministic teardown. The tab is intentionally unchanged and remains S2 scope.
 
 ## S2 — Define Async Tab Load And Query Semantics
 

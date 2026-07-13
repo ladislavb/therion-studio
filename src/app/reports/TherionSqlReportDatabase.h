@@ -6,6 +6,10 @@
 #include <QStringList>
 #include <QVector>
 
+#include <functional>
+
+class QThread;
+
 namespace TherionStudio
 {
 
@@ -37,8 +41,22 @@ public:
     Q_DECLARE_TR_FUNCTIONS(TherionStudio::TherionSqlReportDatabase)
 
 public:
-    TherionSqlReportDatabase();
+    enum class ConnectionLifecycleEvent
+    {
+        Added,
+        Opened,
+        Closed,
+        Removed
+    };
+
+    using ConnectionLifecycleObserver = std::function<void(ConnectionLifecycleEvent)>;
+
+public:
+    explicit TherionSqlReportDatabase(ConnectionLifecycleObserver lifecycleObserver = {});
     ~TherionSqlReportDatabase();
+
+    TherionSqlReportDatabase(const TherionSqlReportDatabase &) = delete;
+    TherionSqlReportDatabase &operator=(const TherionSqlReportDatabase &) = delete;
 
     bool isOpen() const;
     QString filePath() const;
@@ -60,12 +78,18 @@ private:
     static QStringList expectedTableNames();
 
     void close();
+    bool importStatements(const QStringList &statements,
+                          TherionSqlReportImportResult *result,
+                          QString *errorMessage);
     bool openMemoryDatabase(QString *errorMessage);
     bool validateExpectedSchema(QStringList *missingTables) const;
+    void verifyOwnerThread() const;
 
     QString connectionName_;
     QString filePath_;
     QSqlDatabase database_;
+    QThread *ownerThread_ = nullptr;
+    ConnectionLifecycleObserver lifecycleObserver_;
 };
 
 } // namespace TherionStudio

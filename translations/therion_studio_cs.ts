@@ -7606,6 +7606,11 @@ subtype blocks</translation>
         <translation>Není otevřen žádný SQL export Therionu.</translation>
     </message>
     <message>
+        <location filename="../src/app/reports/TherionSqlReportWorker.cpp" line="72"/>
+        <source>The query does not belong to the currently loaded SQL export.</source>
+        <translation>Dotaz nepatří k aktuálně načtenému SQL exportu.</translation>
+    </message>
+    <message>
         <location filename="../src/app/reports/TherionSqlReportDatabase.cpp" line="406"/>
         <source>The SQL export contains an unterminated string literal.</source>
         <translation>SQL export obsahuje neukončený řetězcový literál.</translation>

@@ -111,6 +111,22 @@ TH2 map-editor source mutations shall route through the shared atomic map-source
 
 New Raw, Blocks, Map, inspector, sidebar, and project workflows that mutate source text should route through `TextEditorSourceTransactionController` or its successor shared source-change service. Temporary exceptions must be narrow, documented, and covered by focused tests.
 
+## SQL Report Execution
+
+SQL report import and query execution target a dedicated worker-thread boundary:
+
+- `TherionSqlReportWorker` owns `TherionSqlReportDatabase` and creates it only after the worker has entered its affinity
+  thread.
+- The SQLite connection is created, queried, closed, and removed on that same thread; widgets shall never receive or
+  retain `QSqlDatabase` or `QSqlQuery` values.
+- Import and query requests/results cross the boundary as immutable value DTOs carrying request and source identity,
+  execution policy, schema/table data, and explicit error/cancellation state.
+- Connection teardown occurs only after statement-local query objects have been destroyed.
+
+The worker contract and thread-affinity tests exist, but `TherionSqlReportTab` remains a transitional synchronous caller
+until the S2 workflow migration is complete. Do not treat the SQL responsiveness finding as resolved or add a second
+connection-sharing path during that transition.
+
 ## Validation Architecture
 
 Validation should be conservative and catalog-backed.

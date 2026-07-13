@@ -295,6 +295,8 @@ set(THERION_APP_SOURCES
     src/app/reports/TherionSqlReportPresetStore.h
     src/app/reports/TherionSqlReportTab.cpp
     src/app/reports/TherionSqlReportTab.h
+    src/app/reports/TherionSqlReportWorker.cpp
+    src/app/reports/TherionSqlReportWorker.h
     ${THERION_INSPECTOR_PANEL_SOURCES}
     src/app/three_d_viewer/ThreeDViewerTab.cpp
     src/app/three_d_viewer/ThreeDViewerTab.h
@@ -1340,6 +1342,7 @@ qt_add_executable(MainWindowServiceQTests
     tests/MainWindowSessionWindowRestoreServiceTest.cpp
     tests/MainWindowStructureNameOverridesServiceTest.cpp
     tests/TherionSqlReportDatabaseTest.cpp
+    tests/TherionSqlReportWorkerTest.cpp
     src/app/MainWindowHelpDocument.cpp
     src/app/MainWindowHelpDocument.h)
 

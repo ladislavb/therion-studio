@@ -12,8 +12,11 @@
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QSqlRecord>
+#include <QThread>
 #include <QUuid>
 #include <QVariant>
+
+#include <utility>
 
 namespace TherionStudio
 {
@@ -137,8 +140,10 @@ QVector<TherionSqlReportDefinition> loadPresetDefinitionsFromResource()
 }
 }
 
-TherionSqlReportDatabase::TherionSqlReportDatabase()
+TherionSqlReportDatabase::TherionSqlReportDatabase(ConnectionLifecycleObserver lifecycleObserver)
     : connectionName_(QStringLiteral("therion-sql-report-%1").arg(QUuid::createUuid().toString(QUuid::WithoutBraces)))
+    , ownerThread_(QThread::currentThread())
+    , lifecycleObserver_(std::move(lifecycleObserver))
 {
 }
 
@@ -149,6 +154,7 @@ TherionSqlReportDatabase::~TherionSqlReportDatabase()
 
 bool TherionSqlReportDatabase::isOpen() const
 {
+    verifyOwnerThread();
     return database_.isValid() && database_.isOpen();
 }
 
@@ -167,11 +173,13 @@ QString TherionSqlReportDatabase::displayName() const
 
 QStringList TherionSqlReportDatabase::tableNames() const
 {
+    verifyOwnerThread();
     return isOpen() ? database_.tables(QSql::Tables) : QStringList();
 }
 
 QStringList TherionSqlReportDatabase::tableColumns(const QString &tableName) const
 {
+    verifyOwnerThread();
     QStringList columns;
     if (!isOpen()) {
         return columns;
@@ -207,17 +215,31 @@ QVector<TherionSqlReportDefinition> TherionSqlReportDatabase::predefinedReports(
 
 void TherionSqlReportDatabase::close()
 {
+    verifyOwnerThread();
     if (database_.isValid()) {
         database_.close();
+        if (lifecycleObserver_) {
+            lifecycleObserver_(ConnectionLifecycleEvent::Closed);
+        }
         database_ = QSqlDatabase();
     }
-    QSqlDatabase::removeDatabase(connectionName_);
+    if (QSqlDatabase::contains(connectionName_)) {
+        QSqlDatabase::removeDatabase(connectionName_);
+        if (lifecycleObserver_) {
+            lifecycleObserver_(ConnectionLifecycleEvent::Removed);
+        }
+    }
+    filePath_.clear();
 }
 
 bool TherionSqlReportDatabase::openMemoryDatabase(QString *errorMessage)
 {
+    verifyOwnerThread();
     close();
     database_ = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), connectionName_);
+    if (lifecycleObserver_) {
+        lifecycleObserver_(ConnectionLifecycleEvent::Added);
+    }
     database_.setDatabaseName(QStringLiteral(":memory:"));
     if (!database_.open()) {
         if (errorMessage != nullptr) {
@@ -226,11 +248,15 @@ bool TherionSqlReportDatabase::openMemoryDatabase(QString *errorMessage)
         }
         return false;
     }
+    if (lifecycleObserver_) {
+        lifecycleObserver_(ConnectionLifecycleEvent::Opened);
+    }
     return true;
 }
 
 TherionSqlReportImportResult TherionSqlReportDatabase::importFile(const QString &path)
 {
+    verifyOwnerThread();
     TherionSqlReportImportResult result;
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -259,32 +285,10 @@ TherionSqlReportImportResult TherionSqlReportDatabase::importFile(const QString 
         return result;
     }
 
-    QSqlQuery query(database_);
-    for (const QString &statement : statements) {
-        if (statement.trimmed().isEmpty()) {
-            continue;
-        }
-        if (!isAllowedImportStatement(statement, &errorMessage)) {
-            database_.rollback();
-            result.errorMessage = errorMessage;
-            close();
-            return result;
-        }
-        const QString prefix = normalizedStatementPrefix(statement);
-        if (prefix == QStringLiteral("BEGIN")
-            || prefix == QStringLiteral("COMMIT")
-            || prefix == QStringLiteral("END")) {
-            continue;
-        }
-        if (!query.exec(statement)) {
-            database_.rollback();
-            result.errorMessage = tr("Could not import SQL statement %1: %2")
-                                      .arg(result.importedStatementCount + 1)
-                                      .arg(query.lastError().text());
-            close();
-            return result;
-        }
-        ++result.importedStatementCount;
+    if (!importStatements(statements, &result, &errorMessage)) {
+        result.errorMessage = errorMessage;
+        close();
+        return result;
     }
 
     if (!database_.commit()) {
@@ -312,6 +316,7 @@ TherionSqlReportTable TherionSqlReportDatabase::executeReportQuery(const QString
                                                                    QString *errorMessage,
                                                                    int rowLimit) const
 {
+    verifyOwnerThread();
     TherionSqlReportTable table;
     if (!isOpen()) {
         if (errorMessage != nullptr) {
@@ -354,6 +359,7 @@ TherionSqlReportTable TherionSqlReportDatabase::executeCustomQuery(const QString
                                                                    QString *errorMessage,
                                                                    int rowLimit) const
 {
+    verifyOwnerThread();
     QString validationError;
     if (!isReadOnlySelectStatement(query, &validationError)) {
         if (errorMessage != nullptr) {
@@ -484,6 +490,7 @@ bool TherionSqlReportDatabase::isReadOnlySelectStatement(const QString &statemen
 
 bool TherionSqlReportDatabase::validateExpectedSchema(QStringList *missingTables) const
 {
+    verifyOwnerThread();
     const QStringList actualTables = tableNames();
     QStringList normalizedTables;
     normalizedTables.reserve(actualTables.size());
@@ -501,6 +508,47 @@ bool TherionSqlReportDatabase::validateExpectedSchema(QStringList *missingTables
         *missingTables = missing;
     }
     return missing.isEmpty();
+}
+
+bool TherionSqlReportDatabase::importStatements(const QStringList &statements,
+                                                TherionSqlReportImportResult *result,
+                                                QString *errorMessage)
+{
+    Q_ASSERT(result != nullptr);
+    QSqlQuery query(database_);
+    for (const QString &statement : statements) {
+        if (statement.trimmed().isEmpty()) {
+            continue;
+        }
+        if (!isAllowedImportStatement(statement, errorMessage)) {
+            database_.rollback();
+            return false;
+        }
+        const QString prefix = normalizedStatementPrefix(statement);
+        if (prefix == QStringLiteral("BEGIN")
+            || prefix == QStringLiteral("COMMIT")
+            || prefix == QStringLiteral("END")) {
+            continue;
+        }
+        if (!query.exec(statement)) {
+            database_.rollback();
+            if (errorMessage != nullptr) {
+                *errorMessage = tr("Could not import SQL statement %1: %2")
+                                    .arg(result->importedStatementCount + 1)
+                                    .arg(query.lastError().text());
+            }
+            return false;
+        }
+        ++result->importedStatementCount;
+    }
+    return true;
+}
+
+void TherionSqlReportDatabase::verifyOwnerThread() const
+{
+    Q_ASSERT_X(QThread::currentThread() == ownerThread_,
+               "TherionSqlReportDatabase",
+               "SQLite connection accessed outside its owner thread");
 }
 
 } // namespace TherionStudio

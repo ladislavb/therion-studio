@@ -100,6 +100,10 @@ Verification:
 
 ### P1-2 — SQL Import and Queries Can Block the UI Indefinitely
 
+Progress (2026-07-13): S1 added and verified the worker-owned, thread-affine SQLite contract and value request/result
+DTOs. The production tab has not moved to that boundary yet; supersession, interruption, and bounded teardown remain
+open in S2-S4, so this finding is not resolved.
+
 Evidence:
 
 - `src/app/reports/TherionSqlReportTab.cpp:134-150` calls `database_.importFile()` synchronously from the widget load
