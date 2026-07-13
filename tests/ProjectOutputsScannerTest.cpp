@@ -12,6 +12,7 @@
 #include <QTimer>
 
 #include <atomic>
+#include <memory>
 
 using TherionStudio::ProjectOutputsScanner;
 
@@ -37,6 +38,7 @@ private slots:
     void keepsDuplicateNamesDistinctAndClassifiesArtifacts();
     void emptyProjectRootReportsOpenProjectState();
     void publishesOnlyLatestPendingRequest();
+    void teardownDoesNotPublishCompletedWorker();
 };
 
 void ProjectOutputsScannerTest::keepsDuplicateNamesDistinctAndClassifiesArtifacts()
@@ -180,6 +182,43 @@ void ProjectOutputsScannerTest::publishesOnlyLatestPendingRequest()
     QCOMPARE(publishedResults.constFirst().requestSerial, quint64(3));
     QCOMPARE(publishedResults.constFirst().projectRootPath, QStringLiteral("project-c"));
     QVERIFY(publishedResults.constFirst().errorMessage.isEmpty());
+}
+
+void ProjectOutputsScannerTest::teardownDoesNotPublishCompletedWorker()
+{
+    QSemaphore workerStarted;
+    QSemaphore releaseWorker;
+    QSemaphore workerFinished;
+    int publishedResultCount = 0;
+
+    auto scanner = std::make_unique<ProjectOutputsScanner>(
+        [&](const QString &projectRootPath, quint64 requestSerial) {
+            workerStarted.release();
+            releaseWorker.acquire();
+            ProjectOutputsScanner::Result result;
+            result.requestSerial = requestSerial;
+            result.projectRootPath = projectRootPath;
+            workerFinished.release();
+            return result;
+        });
+    auto releaseWorkerGuard = qScopeGuard([&]() { releaseWorker.release(); });
+    scanner->setDebounceIntervalMs(0);
+    connect(scanner.get(),
+            &ProjectOutputsScanner::scanFinished,
+            scanner.get(),
+            [&](const ProjectOutputsScanner::Result &) {
+                ++publishedResultCount;
+            });
+
+    scanner->requestScan(QStringLiteral("project"));
+    QTRY_COMPARE_WITH_TIMEOUT(workerStarted.available(), 1, 2000);
+    workerStarted.acquire();
+    releaseWorker.release();
+    releaseWorkerGuard.dismiss();
+    QVERIFY(workerFinished.tryAcquire(1, 2000));
+    scanner.reset();
+    QCoreApplication::processEvents(QEventLoop::AllEvents);
+    QCOMPARE(publishedResultCount, 0);
 }
 
 int runProjectOutputsScannerTest(int argc, char **argv)

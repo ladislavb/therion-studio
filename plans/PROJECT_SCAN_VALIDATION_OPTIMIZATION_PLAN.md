@@ -258,8 +258,8 @@ Slice 2A - ProjectStructureIndex Snapshot Input - Done
 Slice 2B - ProjectStructureScanner Snapshot Collection - Done
 
 - Updated `ProjectStructureScanner` to collect `ProjectSourceSnapshot` and pass `ProjectStructureIndexSourceSet` to the index path.
-- Preserved existing result shape, debounce, and queued replacement behavior. Publication of an already running stale
-  result is not suppressed yet; that review finding is tracked in `PROJECT_ASYNC_COORDINATION_PLAN.md` A1-A3.
+- Preserved debounce and queued replacement behavior. `PROJECT_ASYNC_COORDINATION_PLAN.md` A1-A3 subsequently added
+  request-acceptance serials, stale-result suppression, presentation guards, and deterministic supersession coverage.
 - Diagnostics timing remains pending:
   - source collection ms
   - projection/index ms
@@ -463,12 +463,11 @@ Do not remove until:
 
 ## Recommended Slice Queue
 
-1. Complete `PROJECT_ASYNC_COORDINATION_PLAN.md` A1-A3 so Structure and Outputs never publish superseded results.
-2. Complete `PROJECT_ASYNC_COORDINATION_PLAN.md` W1-W4 so recursive watcher discovery leaves the GUI thread.
-3. Slice 3C: add an explicit Structure/Validation compatibility test over equivalent source snapshot identity.
-4. Slice 6A: define stable validation finding identity for cheaper UI updates.
-5. Slice 6B: short-circuit no-change Validation UI publication.
-6. Slice 7A only after measurements show project-index rebuild is the next bottleneck.
+1. Complete `PROJECT_ASYNC_COORDINATION_PLAN.md` W1-W4 so recursive watcher discovery leaves the GUI thread.
+2. Slice 3C: add an explicit Structure/Validation compatibility test over equivalent source snapshot identity.
+3. Slice 6A: define stable validation finding identity for cheaper UI updates.
+4. Slice 6B: short-circuit no-change Validation UI publication.
+5. Slice 7A only after measurements show project-index rebuild is the next bottleneck.
 
 ## Acceptance Criteria
 

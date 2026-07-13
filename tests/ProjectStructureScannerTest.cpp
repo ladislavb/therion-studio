@@ -1,33 +1,21 @@
-#include "../src/app/ProjectStructureScanner.h"
 #include "../src/app/ProjectScanCacheService.h"
+#include "../src/app/ProjectStructureScanner.h"
 
-#include <QCoreApplication>
 #include <QDir>
-#include <QEventLoop>
-#include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
-#include <QTemporaryDir>
-#include <QSemaphore>
 #include <QScopeGuard>
-#include <QTimer>
+#include <QSemaphore>
+#include <QTemporaryDir>
+#include <QTest>
 
 #include <atomic>
-#include <functional>
-#include <iostream>
+#include <memory>
 
 using namespace TherionStudio;
 
 namespace
 {
-bool expect(bool condition, const char *message)
-{
-    if (!condition) {
-        std::cerr << message << '\n';
-    }
-    return condition;
-}
-
 bool writeTextFile(const QString &filePath, const QString &contents)
 {
     QFile file(filePath);
@@ -43,111 +31,69 @@ QString canonicalOrAbsolutePath(const QString &path)
     const QString canonicalPath = info.canonicalFilePath();
     return canonicalPath.isEmpty() ? info.absoluteFilePath() : canonicalPath;
 }
+}
 
-struct ScanWaitResult
+class ProjectStructureScannerTest final : public QObject
 {
-    bool received = false;
-    ProjectStructureScanner::Result result;
+    Q_OBJECT
+
+private slots:
+    void scansFilesystemProject();
+    void prefersInMemoryProjectContents();
+    void reusesSharedProjectIndexCache();
+    void publishesOnlyLatestPendingRequest();
+    void teardownDoesNotPublishCompletedWorker();
 };
 
-ScanWaitResult waitForScan(ProjectStructureScanner &scanner)
-{
-    ScanWaitResult waitResult;
-    QEventLoop loop;
-    QTimer timeout;
-    timeout.setSingleShot(true);
-    timeout.setInterval(5000);
-
-    QObject::connect(&scanner,
-                     &ProjectStructureScanner::scanFinished,
-                     &loop,
-                     [&](const ProjectStructureScanner::Result &result) {
-                         waitResult.received = true;
-                         waitResult.result = result;
-                         loop.quit();
-                     });
-    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
-
-    timeout.start();
-    loop.exec();
-    return waitResult;
-}
-
-bool waitUntil(const std::function<bool()> &condition, int timeoutMs = 5000)
-{
-    QElapsedTimer timer;
-    timer.start();
-    while (!condition() && timer.elapsed() < timeoutMs) {
-        QCoreApplication::processEvents(QEventLoop::AllEvents);
-    }
-    return condition();
-}
-
-int runFilesystemScanTest()
+void ProjectStructureScannerTest::scansFilesystemProject()
 {
     QTemporaryDir tempDir;
-    if (!expect(tempDir.isValid(), "Temporary project directory creation failed.")) {
-        return 1;
-    }
+    QVERIFY(tempDir.isValid());
 
     const QString rootFile = QDir(tempDir.path()).filePath(QStringLiteral("root.th"));
-    if (!expect(writeTextFile(rootFile,
-                              QStringLiteral(
-                                  "survey scanner\n"
-                                  "  centreline\n"
-                                  "  endcentreline\n"
-                                  "endsurvey scanner\n")),
-                "Temporary Therion source file could not be written.")) {
-        return 1;
-    }
+    QVERIFY(writeTextFile(rootFile,
+                          QStringLiteral(
+                              "survey scanner\n"
+                              "  centreline\n"
+                              "  endcentreline\n"
+                              "endsurvey scanner\n")));
 
     ProjectStructureScanner scanner;
     scanner.setDebounceIntervalMs(0);
+
+    ProjectStructureScanner::Result result;
+    bool received = false;
+    connect(&scanner,
+            &ProjectStructureScanner::scanFinished,
+            &scanner,
+            [&](const ProjectStructureScanner::Result &nextResult) {
+                result = nextResult;
+                received = true;
+            });
+
     scanner.requestScan(tempDir.path(), {});
+    QTRY_VERIFY_WITH_TIMEOUT(received, 5000);
+    QCOMPARE(result.requestSerial, quint64(1));
+    QCOMPARE(result.projectRootPath, tempDir.path());
+    QVERIFY(result.errorMessage.isEmpty());
+    QVERIFY(result.entries.size() >= 2);
 
-    const ScanWaitResult waitResult = waitForScan(scanner);
-    if (!expect(waitResult.received, "ProjectStructureScanner did not emit scanFinished before timeout.")) {
-        return 1;
-    }
-    if (!expect(waitResult.result.requestSerial == 1, "First scan request serial should be 1.")) {
-        return 1;
-    }
-    if (!expect(waitResult.result.projectRootPath == tempDir.path(), "Scan result project root path mismatch.")) {
-        return 1;
-    }
-    if (!expect(waitResult.result.errorMessage.isEmpty(), "Filesystem scan should not report an error.")) {
-        return 1;
-    }
-    if (!expect(waitResult.result.entries.size() >= 2, "Filesystem scan should find survey and centreline entries.")) {
-        return 1;
-    }
-
-    const ProjectStructureEntry &surveyEntry = waitResult.result.entries.at(0);
-    if (!expect(surveyEntry.category == QStringLiteral("Surveys")
-                    && surveyEntry.name == QStringLiteral("scanner")
-                    && canonicalOrAbsolutePath(surveyEntry.sourceFile) == canonicalOrAbsolutePath(rootFile),
-                "Filesystem scan survey entry is incorrect.")) {
-        return 1;
-    }
-
-    return 0;
+    const ProjectStructureEntry &surveyEntry = result.entries.constFirst();
+    QCOMPARE(surveyEntry.category, QStringLiteral("Surveys"));
+    QCOMPARE(surveyEntry.name, QStringLiteral("scanner"));
+    QCOMPARE(canonicalOrAbsolutePath(surveyEntry.sourceFile), canonicalOrAbsolutePath(rootFile));
 }
 
-int runInMemoryScanTest()
+void ProjectStructureScannerTest::prefersInMemoryProjectContents()
 {
     QTemporaryDir tempDir;
-    if (!expect(tempDir.isValid(), "Temporary project directory creation failed.")) {
-        return 1;
-    }
+    QVERIFY(tempDir.isValid());
 
     const QString unsavedFilePath = QDir(tempDir.path()).filePath(QStringLiteral("unsaved.th"));
-    if (!expect(writeTextFile(unsavedFilePath,
-                              QStringLiteral(
-                                  "survey stale\n"
-                                  "endsurvey stale\n")),
-                "Temporary on-disk source placeholder could not be written.")) {
-        return 1;
-    }
+    QVERIFY(writeTextFile(unsavedFilePath,
+                          QStringLiteral(
+                              "survey stale\n"
+                              "endsurvey stale\n")));
 
     QHash<QString, QString> inMemoryContents;
     inMemoryContents.insert(canonicalOrAbsolutePath(unsavedFilePath),
@@ -158,24 +104,25 @@ int runInMemoryScanTest()
 
     ProjectStructureScanner scanner;
     scanner.setDebounceIntervalMs(0);
-    scanner.requestScan(tempDir.path(), inMemoryContents);
 
-    const ScanWaitResult waitResult = waitForScan(scanner);
-    if (!expect(waitResult.received, "In-memory scan did not emit scanFinished before timeout.")) {
-        return 1;
-    }
-    if (!expect(waitResult.result.requestSerial == 1, "In-memory first scan request serial should be 1.")) {
-        return 1;
-    }
-    if (!expect(waitResult.result.errorMessage.isEmpty(), "In-memory scan should not report an error.")) {
-        return 1;
-    }
-    if (!expect(!waitResult.result.entries.isEmpty(), "In-memory scan should find entries.")) {
-        return 1;
-    }
+    ProjectStructureScanner::Result result;
+    bool received = false;
+    connect(&scanner,
+            &ProjectStructureScanner::scanFinished,
+            &scanner,
+            [&](const ProjectStructureScanner::Result &nextResult) {
+                result = nextResult;
+                received = true;
+            });
+
+    scanner.requestScan(tempDir.path(), inMemoryContents);
+    QTRY_VERIFY_WITH_TIMEOUT(received, 5000);
+    QCOMPARE(result.requestSerial, quint64(1));
+    QVERIFY(result.errorMessage.isEmpty());
+    QVERIFY(!result.entries.isEmpty());
 
     bool foundMemorySurvey = false;
-    for (const ProjectStructureEntry &entry : waitResult.result.entries) {
+    for (const ProjectStructureEntry &entry : result.entries) {
         if (entry.category == QStringLiteral("Surveys")
             && entry.name == QStringLiteral("memory")
             && canonicalOrAbsolutePath(entry.sourceFile) == canonicalOrAbsolutePath(unsavedFilePath)) {
@@ -183,74 +130,60 @@ int runInMemoryScanTest()
             break;
         }
     }
-    if (!expect(foundMemorySurvey, "In-memory scan survey entry is incorrect.")) {
-        return 1;
-    }
-
-    return 0;
+    QVERIFY(foundMemorySurvey);
 }
 
-int runSharedProjectIndexCacheTest()
+void ProjectStructureScannerTest::reusesSharedProjectIndexCache()
 {
     QTemporaryDir tempDir;
-    if (!expect(tempDir.isValid(), "Temporary project directory creation failed.")) {
-        return 1;
-    }
+    QVERIFY(tempDir.isValid());
 
     const QString rootFile = QDir(tempDir.path()).filePath(QStringLiteral("root.th"));
-    if (!expect(writeTextFile(rootFile,
-                              QStringLiteral(
-                                  "survey cached\n"
-                                  "  centreline\n"
-                                  "  endcentreline\n"
-                                  "endsurvey cached\n")),
-                "Temporary cached Therion source file could not be written.")) {
-        return 1;
-    }
+    QVERIFY(writeTextFile(rootFile,
+                          QStringLiteral(
+                              "survey cached\n"
+                              "  centreline\n"
+                              "  endcentreline\n"
+                              "endsurvey cached\n")));
 
     const auto cacheService = std::make_shared<ProjectScanCacheService>();
     ProjectStructureScanner firstScanner(cacheService);
     firstScanner.setDebounceIntervalMs(0);
-    firstScanner.requestScan(tempDir.path(), {});
 
-    const ScanWaitResult firstResult = waitForScan(firstScanner);
-    if (!expect(firstResult.received, "First shared-cache structure scan did not finish.")) {
-        return 1;
-    }
-    if (!expect(!firstResult.result.projectIndexSnapshotCacheHit,
-                "First structure scan should build the project index snapshot.")) {
-        return 1;
-    }
-    if (!expect(!firstResult.result.projectSourceSnapshotCacheHit,
-                "First structure scan should collect the project source snapshot.")) {
-        return 1;
-    }
+    ProjectStructureScanner::Result firstResult;
+    bool firstReceived = false;
+    connect(&firstScanner,
+            &ProjectStructureScanner::scanFinished,
+            &firstScanner,
+            [&](const ProjectStructureScanner::Result &result) {
+                firstResult = result;
+                firstReceived = true;
+            });
+    firstScanner.requestScan(tempDir.path(), {});
+    QTRY_VERIFY_WITH_TIMEOUT(firstReceived, 5000);
+    QVERIFY(!firstResult.projectIndexSnapshotCacheHit);
+    QVERIFY(!firstResult.projectSourceSnapshotCacheHit);
 
     ProjectStructureScanner secondScanner(cacheService);
     secondScanner.setDebounceIntervalMs(0);
+
+    ProjectStructureScanner::Result secondResult;
+    bool secondReceived = false;
+    connect(&secondScanner,
+            &ProjectStructureScanner::scanFinished,
+            &secondScanner,
+            [&](const ProjectStructureScanner::Result &result) {
+                secondResult = result;
+                secondReceived = true;
+            });
     secondScanner.requestScan(tempDir.path(), {});
-
-    const ScanWaitResult secondResult = waitForScan(secondScanner);
-    if (!expect(secondResult.received, "Second shared-cache structure scan did not finish.")) {
-        return 1;
-    }
-    if (!expect(secondResult.result.projectIndexSnapshotCacheHit,
-                "Second structure scan should reuse the shared project index snapshot cache.")) {
-        return 1;
-    }
-    if (!expect(secondResult.result.projectSourceSnapshotCacheHit,
-                "Second structure scan should reuse the shared project source snapshot cache.")) {
-        return 1;
-    }
-    if (!expect(secondResult.result.entries.size() == firstResult.result.entries.size(),
-                "Cached structure scan should preserve structure entries.")) {
-        return 1;
-    }
-
-    return 0;
+    QTRY_VERIFY_WITH_TIMEOUT(secondReceived, 5000);
+    QVERIFY(secondResult.projectIndexSnapshotCacheHit);
+    QVERIFY(secondResult.projectSourceSnapshotCacheHit);
+    QCOMPARE(secondResult.entries.size(), firstResult.entries.size());
 }
 
-int runLatestRequestSupersessionTest()
+void ProjectStructureScannerTest::publishesOnlyLatestPendingRequest()
 {
     QSemaphore firstScanStarted;
     QSemaphore releaseFirstScan;
@@ -276,82 +209,83 @@ int runLatestRequestSupersessionTest()
     scanner.setDebounceIntervalMs(0);
 
     QVector<ProjectStructureScanner::Result> publishedResults;
-    QObject::connect(&scanner,
-                     &ProjectStructureScanner::scanFinished,
-                     &scanner,
-                     [&](const ProjectStructureScanner::Result &result) {
-                         publishedResults.append(result);
-                     });
+    connect(&scanner,
+            &ProjectStructureScanner::scanFinished,
+            &scanner,
+            [&](const ProjectStructureScanner::Result &result) {
+                publishedResults.append(result);
+            });
 
     scanner.requestScan(QStringLiteral("same-project"), {});
-    if (!expect(waitUntil([&]() { return firstScanStarted.available() == 1; }),
-                "First deterministic structure scan did not start.")) {
-        return 1;
-    }
+    QTRY_COMPARE_WITH_TIMEOUT(firstScanStarted.available(), 1, 2000);
     firstScanStarted.acquire();
 
     scanner.requestScan(QStringLiteral("same-project"), {});
     ProjectStructureScanner::Result firstIdentity;
     firstIdentity.requestSerial = 1;
     firstIdentity.projectRootPath = QStringLiteral("same-project");
-    if (!expect(!scanner.isLatestRequestResult(firstIdentity),
-                "Same-root replacement should reject the previous structure result identity.")) {
-        return 1;
-    }
+    QVERIFY(!scanner.isLatestRequestResult(firstIdentity));
     ProjectStructureScanner::Result secondIdentity;
     secondIdentity.requestSerial = 2;
     secondIdentity.projectRootPath = QStringLiteral("same-project");
-    if (!expect(scanner.isLatestRequestResult(secondIdentity),
-                "Latest same-root structure result identity should remain current.")) {
-        return 1;
-    }
+    QVERIFY(scanner.isLatestRequestResult(secondIdentity));
     QCoreApplication::processEvents(QEventLoop::AllEvents);
     scanner.requestScan(QStringLiteral("project-c"), {});
-    if (!expect(!scanner.isLatestRequestResult(secondIdentity),
-                "Project-root replacement should reject the previous structure result identity.")) {
-        return 1;
-    }
+    QVERIFY(!scanner.isLatestRequestResult(secondIdentity));
     releaseFirstScan.release();
     releaseFirstScanGuard.dismiss();
 
-    if (!expect(waitUntil([&]() { return publishedResults.size() == 1; }),
-                "Latest structure scan result was not published.")) {
-        return 1;
-    }
-    if (!expect(scanCallCount.load() == 2,
-                "Only the running and latest pending structure requests should execute.")) {
-        return 1;
-    }
-    if (!expect(publishedResults.constFirst().requestSerial == 3
-                    && publishedResults.constFirst().projectRootPath == QStringLiteral("project-c"),
-                "Structure scanner should publish only the latest accepted request.")) {
-        return 1;
-    }
-    if (!expect(publishedResults.constFirst().errorMessage.isEmpty(),
-                "A superseded structure error must not replace the latest result.")) {
-        return 1;
-    }
-
-    return 0;
-}
+    QTRY_COMPARE_WITH_TIMEOUT(publishedResults.size(), 1, 2000);
+    QCOMPARE(scanCallCount.load(), 2);
+    QCOMPARE(publishedResults.constFirst().requestSerial, quint64(3));
+    QCOMPARE(publishedResults.constFirst().projectRootPath, QStringLiteral("project-c"));
+    QVERIFY(publishedResults.constFirst().errorMessage.isEmpty());
 }
 
-int main(int argc, char **argv)
+void ProjectStructureScannerTest::teardownDoesNotPublishCompletedWorker()
 {
-    QCoreApplication app(argc, argv);
+    QSemaphore workerStarted;
+    QSemaphore releaseWorker;
+    QSemaphore workerFinished;
+    int publishedResultCount = 0;
 
-    if (runFilesystemScanTest() != 0) {
-        return 1;
-    }
-    if (runInMemoryScanTest() != 0) {
-        return 1;
-    }
-    if (runSharedProjectIndexCacheTest() != 0) {
-        return 1;
-    }
-    if (runLatestRequestSupersessionTest() != 0) {
-        return 1;
-    }
+    auto scanner = std::make_unique<ProjectStructureScanner>(
+        [&](const QString &projectRootPath,
+            const QString &,
+            const QHash<QString, QString> &,
+            quint64 requestSerial) {
+            workerStarted.release();
+            releaseWorker.acquire();
+            ProjectStructureScanner::Result result;
+            result.requestSerial = requestSerial;
+            result.projectRootPath = projectRootPath;
+            workerFinished.release();
+            return result;
+        });
+    auto releaseWorkerGuard = qScopeGuard([&]() { releaseWorker.release(); });
+    scanner->setDebounceIntervalMs(0);
+    connect(scanner.get(),
+            &ProjectStructureScanner::scanFinished,
+            scanner.get(),
+            [&](const ProjectStructureScanner::Result &) {
+                ++publishedResultCount;
+            });
 
-    return 0;
+    scanner->requestScan(QStringLiteral("project"), {});
+    QTRY_COMPARE_WITH_TIMEOUT(workerStarted.available(), 1, 2000);
+    workerStarted.acquire();
+    releaseWorker.release();
+    releaseWorkerGuard.dismiss();
+    QVERIFY(workerFinished.tryAcquire(1, 2000));
+    scanner.reset();
+    QCoreApplication::processEvents(QEventLoop::AllEvents);
+    QCOMPARE(publishedResultCount, 0);
 }
+
+int runProjectStructureScannerTest(int argc, char **argv)
+{
+    ProjectStructureScannerTest test;
+    return QTest::qExec(&test, argc, argv);
+}
+
+#include "ProjectStructureScannerTest.moc"

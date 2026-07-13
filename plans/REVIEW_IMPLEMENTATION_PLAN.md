@@ -31,7 +31,7 @@ localization, and acceptance-criteria updates in the same slice.
 | Review finding | Owning plan | First executable slice | Dependency |
 | --- | --- | --- | --- |
 | P1-1 non-hermetic core runner | `TEST_HERMETICITY_PLAN.md` | H1-H3 complete | resolved 2026-07-13 |
-| P1-3 stale Structure/Outputs results | `PROJECT_ASYNC_COORDINATION_PLAN.md` | A1 request serial contract | hermetic baseline |
+| P1-3 stale Structure/Outputs results | `PROJECT_ASYNC_COORDINATION_PLAN.md` | A1-A3 complete | resolved 2026-07-13 |
 | P1-2 blocking SQL import/query | `SQL_REPORT_ASYNC_PLAN.md` | S1 worker-owned database contract | hermetic baseline |
 | P1-5 UI-thread project watcher walk | `PROJECT_ASYNC_COORDINATION_PLAN.md` | W1 pure watch inventory | A1-A3 recommended first |
 | P1-7 localization extraction blind spot | `LOCALIZATION_EXTRACTION_PLAN.md` | L1 fix known visible literals | none; separate commit chain |
@@ -63,7 +63,7 @@ Exit gate:
 - a checkout with a partial `sample_data/` passes the mandatory suite;
 - opt-in corpus coverage reports per-fixture skips without changing mandatory results.
 
-### Gate 2 — Make Worker Results Monotonic
+### Gate 2 — Make Worker Results Monotonic — Completed 2026-07-13
 
 Complete `PROJECT_ASYNC_COORDINATION_PLAN.md` A1-A3 for Structure and Outputs before widening project scan caches or
 enabling more automatic work.
@@ -73,6 +73,10 @@ Exit gate:
 - request B submitted while A is running prevents A from being published;
 - latest same-root and changed-root requests are both covered;
 - teardown does not publish into destroyed consumers.
+
+Result: Structure and Outputs assign serials at request acceptance, suppress stale worker completions, guard the
+presentation boundary by serial and normalized project root, and cover same-root, changed-root, stale-error,
+latest-pending, and teardown cases in the shared app/service QTest runner.
 
 ### Gate 3 — Remove Unbounded UI-Thread Work
 

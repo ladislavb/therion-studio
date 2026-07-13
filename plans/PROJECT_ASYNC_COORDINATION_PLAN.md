@@ -4,7 +4,7 @@ Date: 2026-07-13
 
 Review findings: P1-3, P1-5.
 
-Status: active; A1-A2 complete, A3 is next.
+Status: active; A1-A3 complete, W1 is queued after SQL S1-S4.
 
 Scope: make Structure/Outputs result publication monotonic and move recursive project-watch inventory discovery off the
 GUI thread. This plan does not redesign project source snapshots, validation caches, or platform watcher policy.
@@ -85,7 +85,7 @@ to match the current project, including the empty-project state. Focused identit
 project-root replacement, stale errors remain suppressed, and an empty Outputs request now reports the intended
 open-project state instead of resolving the empty path to the process working directory.
 
-## A3 — Scanner Verification And Touched-Test Migration
+## A3 — Scanner Verification And Touched-Test Migration — Complete
 
 - Migrate the touched hand-rolled `ProjectStructureScannerTest` to the appropriate app/service QTest runner if that
   runner boundary exists; otherwise retain isolation and document why.
@@ -94,6 +94,15 @@ open-project state instead of resolving the empty path to the process working di
 - Run Structure and Outputs navigation/opening smoke paths.
 
 Exit gate for A-series: no superseded Structure or Outputs result is observable by consumers.
+
+Outcome (2026-07-13): `ProjectStructureScannerTest` now uses QTest and runs beside Outputs in the existing
+`MainWindowServiceQTests` app/service boundary; the redundant standalone executable was removed. Both scanners cover
+same-root and changed-root supersession, latest-pending execution, stale errors, empty Outputs state, shared Structure
+cache behavior, and teardown before completion delivery. The aggregate runner passed 20 consecutive release runs, and
+the project lifecycle/orchestration, Structure index, 3D viewer, and SQL database tests provide the available automated
+navigation/opening smoke coverage. Direct visual sidebar activation remains part of the normal manual release smoke pass.
+
+A-series exit gate: complete.
 
 ## W1 — Extract Pure Project Watch Inventory
 

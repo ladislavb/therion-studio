@@ -5,9 +5,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ## Current Focus
 
 1. `2026.7.2` post-DOM stabilization and next feature selection.
-2. Finish `PROJECT_ASYNC_COORDINATION_PLAN.md` A3: scanner-side suppression and presentation-boundary identity checks
-   are in place; migrate the touched Structure scanner test to the app/service QTest boundary and run the final
-   navigation/repetition gate before SQL report UI-thread work.
+2. Start `SQL_REPORT_ASYNC_PLAN.md` S1 after the completed Structure/Outputs A-series; keep project watcher W1-W4 queued
+   behind SQL S1-S4 as a separate worker/thread-affinity commit chain.
 3. Real-project smoke testing for Raw, Blocks, Map, Validation, Structure, and Compiler navigation after DOM closure.
 4. Plan-driven follow-ups for map partial refresh, validation/cache tuning, GUI cleanup, SVG backgrounds, reporting, LiDAR design, and 3D viewer refinement.
 

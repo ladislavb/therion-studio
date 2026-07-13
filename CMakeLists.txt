@@ -1266,9 +1266,6 @@ target_link_libraries(MapEditorLineExtensionPlannerTest PRIVATE Qt6::Widgets Qt6
 therion_add_core_unit_test(SessionStoreTest
     tests/SessionStoreTest.cpp)
 
-therion_add_app_unit_test(ProjectStructureScannerTest
-    tests/ProjectStructureScannerTest.cpp)
-
 therion_add_app_unit_test(ProjectSourceSnapshotTest
     tests/ProjectSourceSnapshotTest.cpp)
 target_link_libraries(ProjectSourceSnapshotTest PRIVATE Qt6::Test)
@@ -1334,6 +1331,7 @@ qt_add_executable(MainWindowServiceQTests
     tests/MainWindowRecentFilesServiceTest.cpp
     tests/MainWindowRecentProjectsServiceTest.cpp
     tests/ProjectOutputsScannerTest.cpp
+    tests/ProjectStructureScannerTest.cpp
     tests/MainWindowSessionDocumentServiceTest.cpp
     tests/MainWindowSessionProjectServiceTest.cpp
     tests/MainWindowSessionRestoreOrchestrationServiceTest.cpp
@@ -1642,7 +1640,6 @@ set(THERION_UNIT_TEST_TARGETS
     TextEditorDocumentControllerTest
     TextEditorDocumentServiceQTests
     TextEditorTabInteractionControllerTest
-    ProjectStructureScannerTest
     ProjectSourceSnapshotTest
     ProjectSearchScannerTest
     ProjectValidationScannerTest

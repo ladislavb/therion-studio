@@ -18,14 +18,14 @@ asynchronous and cancellation-aware, production dependencies are explicitly inje
 and the stable editor directory layout is enforced. No confirmed P0 source-corruption or security defect was found in
 this review.
 
-The remaining risks have shifted from parser convergence to runtime coordination and ownership:
+The remaining risks have shifted from parser convergence to runtime coordination and ownership. The Structure/Outputs
+supersession finding identified by this review was resolved on 2026-07-13; the remaining open risks are:
 
 1. SQL report import and user queries can block the UI thread without cancellation;
-2. Structure and Outputs workers publish superseded results before their queued replacement runs;
-3. Map refresh still performs a synchronous full scene rebuild and repeatedly copies cached projections by value;
-4. recursive project watcher setup runs on the UI thread;
-5. Map style/background resource caches remain hidden static state in presentation code;
-6. localization checks do not detect visible strings that never enter Qt translation extraction.
+2. Map refresh still performs a synchronous full scene rebuild and repeatedly copies cached projections by value;
+3. recursive project watcher setup runs on the UI thread;
+4. Map style/background resource caches remain hidden static state in presentation code;
+5. localization checks do not detect visible strings that never enter Qt translation extraction.
 
 These are focused follow-ups, not reasons to reopen the DOM migration or start a broad renderer rewrite. The safest
 sequence is to fix worker result generations and SQL responsiveness, then move Map resource ownership and refresh work
@@ -126,6 +126,8 @@ Recommendation:
 
 ### P1-3 — Structure and Outputs Publish Superseded Worker Results
 
+Status: resolved 2026-07-13.
+
 Evidence:
 
 - `src/app/ProjectStructureScanner.cpp:38-46` replaces the pending request, and `:54-63` only records that another scan
@@ -148,6 +150,15 @@ Recommendation:
 - Add a monotonically increasing request serial and suppress results older than the latest request.
 - Pass cancellation/supersession checks into Structure indexing and file discovery where practical.
 - Add tests where request B arrives while request A is running and assert that A is never published.
+
+Resolution:
+
+- Structure and Outputs now assign request serials when requests are accepted, publish only the latest result, and start
+  only the latest queued replacement.
+- Presentation handlers reject stale serials and mismatched normalized project roots before changing models, messages,
+  or console output.
+- Shared app/service QTests cover same-root and changed-root replacement, stale errors, latest-pending execution, empty
+  Outputs state, and teardown before completion delivery; the aggregate runner passes repeated release execution.
 
 ### P1-4 — Map Refresh Still Has a Synchronous Full-Rebuild Boundary
 
@@ -335,7 +346,7 @@ These are not priority work by themselves:
 1. **Restore a hermetic test baseline — completed**
    - fix the optional `.lox` fixture contract;
    - keep `unit`, `ui`, corpus, performance, and packaging responsibilities explicitly labeled.
-2. **Make asynchronous results monotonic**
+2. **Make asynchronous results monotonic — completed 2026-07-13**
    - add request serial suppression to Structure and Outputs;
    - add focused supersession tests.
 3. **Protect UI responsiveness**
@@ -388,6 +399,6 @@ production caller, focused tests, and exit gate are complete.
 
 ## Final Recommendation
 
-Keep the unified source architecture closed and stable. The next release-quality gains come from making asynchronous
-results monotonic, removing UI-thread SQL/project traversal, and moving hidden Map resource state to explicit bounded
-services. Only after those boundaries are in place should Map partial refresh be widened.
+Keep the unified source architecture closed and stable. With Structure/Outputs publication now monotonic, the next
+release-quality gains come from removing UI-thread SQL/project traversal and moving hidden Map resource state to
+explicit bounded services. Only after those boundaries are in place should Map partial refresh be widened.
