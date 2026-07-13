@@ -24,6 +24,7 @@
 #include <QTreeView>
 
 #include <functional>
+#include <optional>
 #include <utility>
 
 namespace TherionStudio
@@ -149,11 +150,20 @@ void MapEditorInspectorObjectController::rebuildInspectorObjectsTree()
         return;
     }
 
-    const QVector<TherionParsedLine> parsedLines = context_.parsedLinesForCurrentDocument();
     const QVector<TherionSourceLogicalCommand> logicalCommands = context_.logicalSource.logicalCommandsForCurrentDocument
         ? context_.logicalSource.logicalCommandsForCurrentDocument()
         : QVector<TherionSourceLogicalCommand>();
-    const QVector<ProjectStructureEntry> entries = ProjectStructureIndex::scanTh2Objects(th2Path, parsedLines);
+    std::optional<Th2GeometryProjection> geometryProjection;
+    if (context_.logicalSource.geometryProjectionForCurrentDocument) {
+        geometryProjection = context_.logicalSource.geometryProjectionForCurrentDocument();
+    }
+    const bool hasLogicalSource = context_.logicalSource.logicalCommandsForCurrentDocument != nullptr;
+    const QVector<TherionParsedLine> parsedLines = hasLogicalSource
+        ? QVector<TherionParsedLine>()
+        : context_.parsedLinesForCurrentDocument();
+    const QVector<ProjectStructureEntry> entries = hasLogicalSource
+        ? ProjectStructureIndex::scanTh2Objects(th2Path, logicalCommands)
+        : ProjectStructureIndex::scanTh2Objects(th2Path, parsedLines);
     if (entries.isEmpty()) {
         auto *placeholderItem = new QStandardItem(tr("No TH2 scraps, points, lines, or areas were found in the current document"));
         placeholderItem->setEditable(false);
@@ -162,9 +172,17 @@ void MapEditorInspectorObjectController::rebuildInspectorObjectsTree()
     }
 
     QHash<int, TherionParsedLine> parsedLinesByLineNumber;
-    for (const TherionParsedLine &parsedLine : parsedLines) {
-        if (parsedLine.lineNumber > 0) {
-            parsedLinesByLineNumber.insert(parsedLine.lineNumber, parsedLine);
+    if (hasLogicalSource) {
+        for (const TherionSourceLogicalCommand &command : logicalCommands) {
+            if (command.startLineNumber > 0) {
+                parsedLinesByLineNumber.insert(command.startLineNumber, command.parsed);
+            }
+        }
+    } else {
+        for (const TherionParsedLine &parsedLine : parsedLines) {
+            if (parsedLine.lineNumber > 0) {
+                parsedLinesByLineNumber.insert(parsedLine.lineNumber, parsedLine);
+            }
         }
     }
 
@@ -222,8 +240,13 @@ void MapEditorInspectorObjectController::rebuildInspectorObjectsTree()
         deleteItem->setData(entry.lineNumber, kInspectorSourceLineRole);
         deleteItem->setData(entry.category, kInspectorObjectCategoryRole);
         if (entry.lineNumber > 0) {
-            const QVector<MapEditorAreaReference> areaReferences =
-                mapEditorAreaReferencesForBorderLine(logicalCommands, entry.lineNumber);
+            QVector<MapEditorAreaReference> areaReferences;
+            if (geometryProjection.has_value()) {
+                areaReferences = mapEditorAreaReferencesForBorderLine(geometryProjection.value(), entry.lineNumber);
+            }
+            if (areaReferences.isEmpty()) {
+                areaReferences = mapEditorAreaReferencesForBorderLine(logicalCommands, entry.lineNumber);
+            }
             const bool deleteBlockedByAreaReference = !areaReferences.isEmpty();
             deleteItem->setIcon(inspectorActionIcon(QStringLiteral("trash-2")));
             deleteItem->setData(deleteBlockedByAreaReference, kInspectorObjectDeleteBlockedRole);

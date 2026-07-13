@@ -5,6 +5,7 @@
 #include "../TextEditorCommandMetadata.h"
 #include "../../../core/TherionCommandLineModel.h"
 #include "../../../core/TherionCommandSyntax.h"
+#include "../../../core/TherionCommandSyntax.h"
 #include "../../../core/TherionDocumentParser.h"
 
 #include <QFormLayout>
@@ -162,17 +163,12 @@ void BlockEditorOptionArgsController::refreshOptionArgumentEditors()
         argumentLabels = argumentLabels.mid(0, fixedArity);
     }
 
-    QStringList valueTokens;
     const QString valueText = (context_.optionsTable->item(row, 1) != nullptr
                                    ? context_.optionsTable->item(row, 1)->text()
                                    : QString())
                                   .trimmed();
-    if (!valueText.isEmpty()) {
-        valueTokens = TherionDocumentParser::tokenizeLine(valueText);
-        if (valueTokens.isEmpty()) {
-            valueTokens.append(valueText);
-        }
-    }
+    const QString rawArityToken = context_.commandMetadata->commandOptionValueArityTokens.value(optionKey);
+    const QStringList valueTokens = parseOptionValuesFromEditor(valueText, rawArityToken, fixedArity);
 
     clearEditors();
     *context_.optionArgsSyncing = true;

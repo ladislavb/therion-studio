@@ -3,7 +3,6 @@
 #include "ValidationSeverityStyle.h"
 #include "../core/TherionCommandLineModel.h"
 #include "../core/TherionCommandSyntax.h"
-#include "../core/TherionDocumentParser.h"
 #include "../core/TherionTokenRules.h"
 
 #include <QColor>
@@ -306,7 +305,10 @@ void TherionSyntaxHighlighter::highlightBlock(const QString &text)
 {
     setFormat(0, text.length(), baseTextFormat_);
 
-    const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(text);
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(text);
+    const TherionParsedLine parsedLine = sourceDocument.lines().isEmpty()
+        ? TherionParsedLine{}
+        : sourceDocument.lines().first().sourceLine.parsed;
     const QString directive = parsedLine.directive.trimmed().toLower();
     const bool knownCommand = commandTokens_.contains(directive);
     const QSet<QString> commandAllowedValues = commandAllowedValues_.value(directive);

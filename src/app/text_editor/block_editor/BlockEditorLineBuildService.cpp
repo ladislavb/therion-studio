@@ -9,6 +9,7 @@
 
 #include "../../../core/TherionCommandSyntax.h"
 #include "../../../core/TherionDocumentParser.h"
+#include "../../../core/TherionSourceDocument.h"
 
 #include <QLineEdit>
 #include <QRegularExpression>
@@ -95,8 +96,11 @@ bool BlockEditorLineBuildService::buildUpdatedLine(QString *updatedLine, QString
         return false;
     }
 
-    const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(logicalLine.text,
-                                                                           logicalLine.startLine);
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(source.text());
+    const TherionSourceDocumentLine *sourceLine = sourceDocument.lineAtLineNumber(logicalLine.startLine);
+    const TherionParsedLine parsedLine = sourceLine != nullptr
+        ? sourceLine->sourceLine.parsed
+        : TherionParsedLine{};
     const bool commentOnlyLine = normalizedKind == QStringLiteral("comment")
         && isFullLineComment(parsedLine);
     if (parsedLine.tokens.isEmpty()) {

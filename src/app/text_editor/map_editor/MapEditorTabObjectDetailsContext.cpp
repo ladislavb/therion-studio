@@ -300,12 +300,27 @@ std::optional<InspectorObjectQuickFields> MapEditorTab::pendingInsertQuickFields
 
 std::optional<InspectorScrapContext> MapEditorTab::pendingInsertTargetScrapContext() const
 {
-    const QVector<TherionParsedLine> parsedLines = parsedLinesForCurrentDocument();
+    const bool hasLogicalSource = logicalSourceContext().logicalCommandsForCurrentDocument != nullptr;
+    const QVector<TherionSourceLogicalCommand> logicalCommands = hasLogicalSource
+        ? logicalCommandsForCurrentDocument()
+        : QVector<TherionSourceLogicalCommand>();
+    const QVector<TherionParsedLine> parsedLines = hasLogicalSource
+        ? QVector<TherionParsedLine>()
+        : parsedLinesForCurrentDocument();
     const QString explicitTarget = interactiveDrawState_.pendingTargetScrapIdentifier_.trimmed();
     if (!explicitTarget.isEmpty()) {
-        for (const TherionParsedLine &parsedLine : parsedLines) {
-            if (parsedLine.directive == QStringLiteral("scrap")
-                && parsedLine.tokens.value(1).compare(explicitTarget, Qt::CaseInsensitive) == 0) {
+        if (hasLogicalSource) {
+            for (const InspectorScrapContext &context : inspectorScrapContexts(logicalCommands)) {
+                if (context.identifier.compare(explicitTarget, Qt::CaseInsensitive) == 0) {
+                    return context;
+                }
+            }
+        } else {
+            for (const TherionParsedLine &parsedLine : parsedLines) {
+                if (parsedLine.directive != QStringLiteral("scrap")
+                    || parsedLine.tokens.value(1).compare(explicitTarget, Qt::CaseInsensitive) != 0) {
+                    continue;
+                }
                 InspectorScrapContext context;
                 context.identifier = parsedLine.tokens.value(1);
                 context.lineNumber = parsedLine.lineNumber;
@@ -320,12 +335,16 @@ std::optional<InspectorScrapContext> MapEditorTab::pendingInsertTargetScrapConte
 
     if (objectSelectionState_.selectedObjectLineNumber_ > 0) {
         if (const std::optional<InspectorScrapContext> selectionContext =
-                inspectorScrapContextForSourceLine(parsedLines, objectSelectionState_.selectedObjectLineNumber_)) {
+                hasLogicalSource
+                    ? inspectorScrapContextForSourceLine(logicalCommands, objectSelectionState_.selectedObjectLineNumber_)
+                    : inspectorScrapContextForSourceLine(parsedLines, objectSelectionState_.selectedObjectLineNumber_)) {
             return selectionContext;
         }
     }
 
-    return inspectorDraftInsertionScrapContext(parsedLines);
+    return hasLogicalSource
+        ? inspectorDraftInsertionScrapContext(logicalCommands)
+        : inspectorDraftInsertionScrapContext(parsedLines);
 }
 
 void MapEditorTab::setPendingInsertTargetScrapIdentifier(const QString &identifier)

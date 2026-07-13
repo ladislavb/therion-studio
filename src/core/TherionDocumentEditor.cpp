@@ -2,6 +2,7 @@
 
 #include "TherionCommandSyntax.h"
 #include "TherionDocumentParser.h"
+#include "TherionSourceDocument.h"
 #include "TherionStringUtils.h"
 #include "TherionTokenRules.h"
 
@@ -160,8 +161,9 @@ bool insertPhysicalSourceLines(QString *contents,
         return true;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(*contents);
-    if (insertionLineIndex < 0 || insertionLineIndex > sourceDocument.lines.size()) {
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(*contents);
+    const TherionParsedSourceDocument &parsedDocument = sourceDocument.parsedDocument();
+    if (insertionLineIndex < 0 || insertionLineIndex > parsedDocument.lines.size()) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "Insertion source range could not be resolved.");
         }
@@ -169,11 +171,11 @@ bool insertPhysicalSourceLines(QString *contents,
     }
 
     QString lineEnding;
-    if (insertionLineIndex > 0 && insertionLineIndex - 1 < sourceDocument.lines.size()) {
-        lineEnding = sourceDocument.lines.at(insertionLineIndex - 1).lineEnding;
+    if (insertionLineIndex > 0 && insertionLineIndex - 1 < parsedDocument.lines.size()) {
+        lineEnding = parsedDocument.lines.at(insertionLineIndex - 1).lineEnding;
     }
-    if (lineEnding.isEmpty() && insertionLineIndex < sourceDocument.lines.size()) {
-        lineEnding = sourceDocument.lines.at(insertionLineIndex).lineEnding;
+    if (lineEnding.isEmpty() && insertionLineIndex < parsedDocument.lines.size()) {
+        lineEnding = parsedDocument.lines.at(insertionLineIndex).lineEnding;
     }
     if (lineEnding.isEmpty()) {
         lineEnding = TherionSourceText::detectedLineEnding(*contents);
@@ -185,8 +187,8 @@ bool insertPhysicalSourceLines(QString *contents,
         insertedText += lineEnding;
     }
 
-    const int insertOffset = insertionLineIndex < sourceDocument.lines.size()
-        ? sourceDocument.lines.at(insertionLineIndex).startOffset
+    const int insertOffset = insertionLineIndex < parsedDocument.lines.size()
+        ? parsedDocument.lines.at(insertionLineIndex).startOffset
         : contents->size();
     contents->insert(insertOffset, insertedText);
     return true;
@@ -206,8 +208,9 @@ bool physicalSourceLineInsertionEdit(const QString &contents,
         return true;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(contents);
-    if (insertionLineIndex < 0 || insertionLineIndex > sourceDocument.lines.size()) {
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
+    const TherionParsedSourceDocument &parsedDocument = sourceDocument.parsedDocument();
+    if (insertionLineIndex < 0 || insertionLineIndex > parsedDocument.lines.size()) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "Insertion source range could not be resolved.");
         }
@@ -215,11 +218,11 @@ bool physicalSourceLineInsertionEdit(const QString &contents,
     }
 
     QString lineEnding;
-    if (insertionLineIndex > 0 && insertionLineIndex - 1 < sourceDocument.lines.size()) {
-        lineEnding = sourceDocument.lines.at(insertionLineIndex - 1).lineEnding;
+    if (insertionLineIndex > 0 && insertionLineIndex - 1 < parsedDocument.lines.size()) {
+        lineEnding = parsedDocument.lines.at(insertionLineIndex - 1).lineEnding;
     }
-    if (lineEnding.isEmpty() && insertionLineIndex < sourceDocument.lines.size()) {
-        lineEnding = sourceDocument.lines.at(insertionLineIndex).lineEnding;
+    if (lineEnding.isEmpty() && insertionLineIndex < parsedDocument.lines.size()) {
+        lineEnding = parsedDocument.lines.at(insertionLineIndex).lineEnding;
     }
     if (lineEnding.isEmpty()) {
         lineEnding = TherionSourceText::detectedLineEnding(contents);
@@ -231,8 +234,8 @@ bool physicalSourceLineInsertionEdit(const QString &contents,
         insertedText += lineEnding;
     }
 
-    const int insertOffset = insertionLineIndex < sourceDocument.lines.size()
-        ? sourceDocument.lines.at(insertionLineIndex).startOffset
+    const int insertOffset = insertionLineIndex < parsedDocument.lines.size()
+        ? parsedDocument.lines.at(insertionLineIndex).startOffset
         : static_cast<int>(contents.size());
     *edit = TherionSourceTextEdit{
         insertOffset,
@@ -330,15 +333,15 @@ QString generatedIdentifier(const QString &prefix, const QSet<QString> &existing
     return QStringLiteral("%1-%2").arg(normalizedPrefix).arg(suffix);
 }
 
-int matchingScrapStartIndex(const QStringList &lines, int endscrapIndex)
+int matchingScrapStartIndex(const TherionParsedSourceDocument &sourceDocument, int endscrapIndex)
 {
-    if (endscrapIndex < 0 || endscrapIndex >= lines.size()) {
+    if (endscrapIndex < 0 || endscrapIndex >= sourceDocument.lines.size()) {
         return -1;
     }
 
     int depth = 0;
     for (int index = endscrapIndex; index >= 0; --index) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(index), index + 1);
+        const TherionParsedLine &parsedLine = sourceDocument.lines.at(index).parsed;
         if (parsedLine.directive == QStringLiteral("endscrap")) {
             ++depth;
             continue;
@@ -355,16 +358,40 @@ int matchingScrapStartIndex(const QStringList &lines, int endscrapIndex)
     return -1;
 }
 
-QSet<QString> identifiersInsideScrap(const QStringList &lines, int scrapStartIndex, int endscrapIndex)
+int matchingEndscrapIndex(const TherionParsedSourceDocument &sourceDocument, int scrapStartIndex)
+{
+    if (scrapStartIndex < 0 || scrapStartIndex >= sourceDocument.lines.size()) {
+        return -1;
+    }
+
+    int depth = 0;
+    for (int index = scrapStartIndex; index < sourceDocument.lines.size(); ++index) {
+        const TherionParsedLine &parsedLine = sourceDocument.lines.at(index).parsed;
+        if (parsedLine.directive == QStringLiteral("scrap")) {
+            ++depth;
+            continue;
+        }
+        if (parsedLine.directive != QStringLiteral("endscrap")) {
+            continue;
+        }
+        --depth;
+        if (depth == 0) {
+            return index;
+        }
+    }
+
+    return -1;
+}
+
+QSet<QString> identifiersInsideScrap(const TherionParsedSourceDocument &sourceDocument, int scrapStartIndex, int endscrapIndex)
 {
     QSet<QString> identifiers;
-    if (scrapStartIndex < 0 || endscrapIndex <= scrapStartIndex || endscrapIndex > lines.size()) {
+    if (scrapStartIndex < 0 || endscrapIndex <= scrapStartIndex || endscrapIndex > sourceDocument.lines.size()) {
         return identifiers;
     }
 
     for (int index = scrapStartIndex + 1; index < endscrapIndex; ++index) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(index), index + 1);
-        collectIdentifiersFromTokens(parsedLine.tokens, &identifiers);
+        collectIdentifiersFromTokens(sourceDocument.lines.at(index).parsed.tokens, &identifiers);
     }
 
     return identifiers;
@@ -659,6 +686,12 @@ bool removeTokenAtTokenIndex(QString *lineText,
     return true;
 }
 
+TherionParsedLine parseMutableLineText(const QString &lineText)
+{
+    // Source-edit helpers reparse one mutated physical line before applying token-level rewrites.
+    return TherionDocumentParser::parseLine(lineText);
+}
+
 bool isSingleTokenOptionWithValue(const QString &token)
 {
     const QString trimmed = token.trimmed();
@@ -689,7 +722,7 @@ bool removeMalformedMapObjectOptionTokens(QString *lineText)
     }
 
     for (;;) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(*lineText);
+        const TherionParsedLine parsedLine = parseMutableLineText(*lineText);
         int removeTokenIndex = -1;
         for (int index = 2; index < parsedLine.tokens.size(); ++index) {
             if (!isSingleTokenOptionWithValue(parsedLine.tokens.at(index))) {
@@ -736,15 +769,15 @@ struct LinePointOptionTarget
 
 QVector<QPair<int, int>> coordinateTokenPairsForLine(const TherionParsedLine &parsedLine, int startTokenIndex);
 
-std::optional<LinePointOptionTarget> linePointOptionTarget(QStringList *lines,
+std::optional<LinePointOptionTarget> linePointOptionTarget(const TherionParsedSourceDocument &sourceDocument,
                                                           int blockStartLineIndex,
                                                           int blockEndLineIndex,
                                                           int sourceVertexIndex,
                                                           const QString &canonicalOption)
 {
-    if (lines == nullptr
-        || blockStartLineIndex < 0
+    if (blockStartLineIndex < 0
         || blockEndLineIndex <= blockStartLineIndex
+        || blockEndLineIndex > sourceDocument.lines.size()
         || sourceVertexIndex < 0) {
         return std::nullopt;
     }
@@ -753,7 +786,7 @@ std::optional<LinePointOptionTarget> linePointOptionTarget(QStringList *lines,
     int coordinateLineIndex = -1;
     int lastCoordinateTokenIndex = -1;
     for (int rowIndex = blockStartLineIndex; rowIndex < blockEndLineIndex; ++rowIndex) {
-        const TherionParsedLine rowLine = TherionDocumentParser::parseLine(lines->at(rowIndex), rowIndex + 1);
+        const TherionParsedLine &rowLine = sourceDocument.lines.at(rowIndex).parsed;
         const int startTokenIndex = rowIndex == blockStartLineIndex ? 1 : 0;
         const QVector<QPair<int, int>> pairs = coordinateTokenPairsForLine(rowLine, startTokenIndex);
         for (const QPair<int, int> &pair : pairs) {
@@ -774,7 +807,7 @@ std::optional<LinePointOptionTarget> linePointOptionTarget(QStringList *lines,
 
     int optionBlockEndLineIndex = blockEndLineIndex;
     for (int rowIndex = coordinateLineIndex + 1; rowIndex < blockEndLineIndex; ++rowIndex) {
-        const TherionParsedLine rowLine = TherionDocumentParser::parseLine(lines->at(rowIndex), rowIndex + 1);
+        const TherionParsedLine &rowLine = sourceDocument.lines.at(rowIndex).parsed;
         if (!coordinateTokenPairsForLine(rowLine, 0).isEmpty()) {
             optionBlockEndLineIndex = rowIndex;
             break;
@@ -787,7 +820,7 @@ std::optional<LinePointOptionTarget> linePointOptionTarget(QStringList *lines,
     target.lastCoordinateTokenIndex = lastCoordinateTokenIndex;
 
     for (int rowIndex = coordinateLineIndex; rowIndex < optionBlockEndLineIndex; ++rowIndex) {
-        const TherionParsedLine rowLine = TherionDocumentParser::parseLine(lines->at(rowIndex), rowIndex + 1);
+        const TherionParsedLine &rowLine = sourceDocument.lines.at(rowIndex).parsed;
         const int startTokenIndex = rowIndex == blockStartLineIndex ? 1 : 0;
         for (int tokenIndex = startTokenIndex; tokenIndex < rowLine.tokens.size(); ++tokenIndex) {
             if (!isLinePointOptionToken(rowLine.tokens.at(tokenIndex), canonicalOption)) {
@@ -845,13 +878,15 @@ bool linePointNumericOptionRewriteEdits(const QString &contents,
         return false;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(contents);
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
+    const TherionParsedSourceDocument &parsedDocument = sourceDocument.parsedDocument();
     QStringList lines;
-    lines.reserve(sourceDocument.lines.size());
-    for (const TherionParsedSourceLine &sourceLine : sourceDocument.lines) {
+    lines.reserve(parsedDocument.lines.size());
+    for (const TherionParsedSourceLine &sourceLine : parsedDocument.lines) {
         lines.append(sourceLine.text);
     }
-    if (lineNumber > lines.size()) {
+    const TherionSourceDocumentLine *blockStartSourceLine = sourceDocument.lineAtLineNumber(lineNumber);
+    if (blockStartSourceLine == nullptr) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line no longer exists.");
         }
@@ -859,7 +894,7 @@ bool linePointNumericOptionRewriteEdits(const QString &contents,
     }
 
     const int blockStartLineIndex = lineNumber - 1;
-    const TherionParsedLine startLine = TherionDocumentParser::parseLine(lines.at(blockStartLineIndex), lineNumber);
+    const TherionParsedLine &startLine = parsedDocument.lines.at(blockStartLineIndex).parsed;
     if (startLine.directive != QStringLiteral("line")) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line is not a writable line block.");
@@ -868,8 +903,8 @@ bool linePointNumericOptionRewriteEdits(const QString &contents,
     }
 
     int blockEndLineIndex = -1;
-    for (int candidateIndex = blockStartLineIndex + 1; candidateIndex < lines.size(); ++candidateIndex) {
-        const TherionParsedLine candidateLine = TherionDocumentParser::parseLine(lines.at(candidateIndex), candidateIndex + 1);
+    for (int candidateIndex = blockStartLineIndex + 1; candidateIndex < parsedDocument.lines.size(); ++candidateIndex) {
+        const TherionParsedLine &candidateLine = parsedDocument.lines.at(candidateIndex).parsed;
         if (candidateLine.directive == QStringLiteral("endline")) {
             blockEndLineIndex = candidateIndex;
             break;
@@ -883,7 +918,7 @@ bool linePointNumericOptionRewriteEdits(const QString &contents,
     }
 
     const std::optional<LinePointOptionTarget> target =
-        linePointOptionTarget(&lines, blockStartLineIndex, blockEndLineIndex, sourceVertexIndex, normalizedOption);
+        linePointOptionTarget(parsedDocument, blockStartLineIndex, blockEndLineIndex, sourceVertexIndex, normalizedOption);
     if (!target.has_value()) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line block does not contain the requested vertex.");
@@ -897,7 +932,7 @@ bool linePointNumericOptionRewriteEdits(const QString &contents,
             return true;
         }
         QString lineText = lines.at(existing.lineIndex);
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lineText, existing.lineIndex + 1);
+        const TherionParsedLine &parsedLine = parsedDocument.lines.at(existing.lineIndex).parsed;
         if (!removeOptionAtTokenIndex(&lineText, parsedLine, existing.optionTokenIndex)) {
             if (errorMessage != nullptr) {
                 *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "Line-point option could not be removed.");
@@ -906,14 +941,14 @@ bool linePointNumericOptionRewriteEdits(const QString &contents,
         }
         if (lineText.trimmed().isEmpty()
             && coordinateTokenPairsForLine(parsedLine, existing.lineIndex == blockStartLineIndex ? 1 : 0).isEmpty()) {
-            const TherionParsedSourceLine &sourceLine = sourceDocument.lines.at(existing.lineIndex);
+            const TherionParsedSourceLine &sourceLine = parsedDocument.lines.at(existing.lineIndex);
             edits->append(TherionSourceTextEdit{
                 sourceLine.startOffset,
                 sourceLine.textLength + sourceLine.lineEndingLength,
                 QString(),
             });
         } else {
-            const TherionParsedSourceLine &sourceLine = sourceDocument.lines.at(existing.lineIndex);
+            const TherionParsedSourceLine &sourceLine = parsedDocument.lines.at(existing.lineIndex);
             if (lineText != sourceLine.text) {
                 edits->append(TherionSourceTextEdit{
                     sourceLine.startOffset,
@@ -930,7 +965,7 @@ bool linePointNumericOptionRewriteEdits(const QString &contents,
         : formatLinePointSize(value);
     if (existing.lineIndex >= 0) {
         QString lineText = lines.at(existing.lineIndex);
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lineText, existing.lineIndex + 1);
+        const TherionParsedLine &parsedLine = parsedDocument.lines.at(existing.lineIndex).parsed;
         if (existing.valueTokenIndex >= 0 && existing.valueTokenIndex < parsedLine.tokenSpans.size()) {
             const TherionParsedToken valueToken = parsedLine.tokenSpans.at(existing.valueTokenIndex);
             if (valueToken.start < 0
@@ -961,7 +996,7 @@ bool linePointNumericOptionRewriteEdits(const QString &contents,
             lineText.insert(optionToken.start + optionToken.length,
                             QStringLiteral(" %1").arg(formattedValue));
         }
-        const TherionParsedSourceLine &sourceLine = sourceDocument.lines.at(existing.lineIndex);
+        const TherionParsedSourceLine &sourceLine = parsedDocument.lines.at(existing.lineIndex);
         if (lineText != sourceLine.text) {
             edits->append(TherionSourceTextEdit{
                 sourceLine.startOffset,
@@ -978,20 +1013,20 @@ bool linePointNumericOptionRewriteEdits(const QString &contents,
     const QString indent = indentMatch.hasMatch() && !indentMatch.captured(0).isEmpty()
         ? indentMatch.captured(0)
         : QStringLiteral("  ");
-    if (target->optionBlockEndLineIndex < 0 || target->optionBlockEndLineIndex >= sourceDocument.lines.size()) {
+    if (target->optionBlockEndLineIndex < 0 || target->optionBlockEndLineIndex >= parsedDocument.lines.size()) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "Line-point option insertion range could not be rewritten.");
         }
         return false;
     }
-    QString insertionLineEnding = sourceDocument.lines.value(target->coordinateLineIndex).lineEnding;
+    QString insertionLineEnding = parsedDocument.lines.value(target->coordinateLineIndex).lineEnding;
     if (insertionLineEnding.isEmpty()) {
         insertionLineEnding = TherionSourceText::detectedLineEnding(contents);
     }
     const QString insertedLine = QStringLiteral("%1%2 %3%4")
                                      .arg(indent, linePointOptionOutputToken(normalizedOption), formattedValue, insertionLineEnding);
     edits->append(TherionSourceTextEdit{
-        sourceDocument.lines.at(target->optionBlockEndLineIndex).startOffset,
+        parsedDocument.lines.at(target->optionBlockEndLineIndex).startOffset,
         0,
         insertedLine,
     });
@@ -1036,7 +1071,7 @@ bool upsertSingleValueOption(QString *lineText, const QString &optionName, const
     const QString normalizedOption = optionName.trimmed().startsWith(QLatin1Char('-'))
         ? optionName.trimmed()
         : QStringLiteral("-%1").arg(optionName.trimmed());
-    TherionParsedLine parsedLine = TherionDocumentParser::parseLine(*lineText);
+    TherionParsedLine parsedLine = parseMutableLineText(*lineText);
     const int existingOptionIndex = optionTokenIndex(parsedLine, normalizedOption);
     const QString serializedValue = serializedInlineToken(value);
     if (serializedValue.isEmpty()) {
@@ -1082,7 +1117,7 @@ bool upsertMapObjectValueOption(QString *lineText, const QString &value)
         return false;
     }
 
-    TherionParsedLine parsedLine = TherionDocumentParser::parseLine(*lineText);
+    TherionParsedLine parsedLine = parseMutableLineText(*lineText);
     const int existingOptionIndex = optionTokenIndex(parsedLine, QStringLiteral("-value"));
     const QString trimmedValue = value.trimmed();
     const QString serializedValue = trimmedValue.isEmpty()
@@ -1352,42 +1387,16 @@ QString uniqueObjectIdentifier(const QString &baseIdentifier, const QSet<QString
     }
 }
 
-int lastEndscrapLineIndex(const QStringList &lines)
+int lastEndscrapLineIndex(const TherionParsedSourceDocument &sourceDocument)
 {
     int foundIndex = -1;
-    for (int index = 0; index < lines.size(); ++index) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(index), index + 1);
-        if (parsedLine.directive == QStringLiteral("endscrap")) {
+    for (int index = 0; index < sourceDocument.lines.size(); ++index) {
+        if (sourceDocument.lines.at(index).parsed.directive == QStringLiteral("endscrap")) {
             foundIndex = index;
         }
     }
 
     return foundIndex;
-}
-
-int matchingEndscrapIndex(const QStringList &lines, int scrapStartIndex)
-{
-    if (scrapStartIndex < 0 || scrapStartIndex >= lines.size()) {
-        return -1;
-    }
-
-    int depth = 0;
-    for (int index = scrapStartIndex; index < lines.size(); ++index) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(index), index + 1);
-        if (parsedLine.directive == QStringLiteral("scrap")) {
-            ++depth;
-            continue;
-        }
-        if (parsedLine.directive != QStringLiteral("endscrap")) {
-            continue;
-        }
-        --depth;
-        if (depth == 0) {
-            return index;
-        }
-    }
-
-    return -1;
 }
 
 struct UnclosedMapBlock
@@ -1397,11 +1406,11 @@ struct UnclosedMapBlock
     int lineNumber = 0;
 };
 
-UnclosedMapBlock firstUnclosedMapBlock(const QStringList &lines)
+UnclosedMapBlock firstUnclosedMapBlock(const TherionParsedSourceDocument &sourceDocument)
 {
     QVector<UnclosedMapBlock> openBlocks;
-    for (int index = 0; index < lines.size(); ++index) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(index), index + 1);
+    for (int index = 0; index < sourceDocument.lines.size(); ++index) {
+        const TherionParsedLine &parsedLine = sourceDocument.lines.at(index).parsed;
         if (parsedLine.directive == QStringLiteral("scrap")) {
             openBlocks.append(UnclosedMapBlock{
                 QStringLiteral("scrap"),
@@ -1452,9 +1461,9 @@ UnclosedMapBlock firstUnclosedMapBlock(const QStringList &lines)
     return openBlocks.isEmpty() ? UnclosedMapBlock{} : openBlocks.constLast();
 }
 
-bool rejectDraftInsertionIntoUnclosedScrap(const QStringList &lines, QString *errorMessage)
+bool rejectDraftInsertionIntoUnclosedScrap(const TherionParsedSourceDocument &sourceDocument, QString *errorMessage)
 {
-    const UnclosedMapBlock unclosedBlock = firstUnclosedMapBlock(lines);
+    const UnclosedMapBlock unclosedBlock = firstUnclosedMapBlock(sourceDocument);
     if (unclosedBlock.lineNumber <= 0) {
         return false;
     }
@@ -1469,32 +1478,32 @@ bool rejectDraftInsertionIntoUnclosedScrap(const QStringList &lines, QString *er
     return true;
 }
 
-int endscrapLineIndexForScrapIdentifier(const QStringList &lines, const QString &scrapIdentifier)
+int endscrapLineIndexForScrapIdentifier(const TherionParsedSourceDocument &sourceDocument, const QString &scrapIdentifier)
 {
     const QString normalizedIdentifier = scrapIdentifier.trimmed();
     if (normalizedIdentifier.isEmpty()) {
         return -1;
     }
 
-    for (int index = 0; index < lines.size(); ++index) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(index), index + 1);
+    for (int index = 0; index < sourceDocument.lines.size(); ++index) {
+        const TherionParsedLine &parsedLine = sourceDocument.lines.at(index).parsed;
         if (parsedLine.directive != QStringLiteral("scrap")
             || parsedLine.tokens.value(1).compare(normalizedIdentifier, Qt::CaseInsensitive) != 0) {
             continue;
         }
-        return matchingEndscrapIndex(lines, index);
+        return matchingEndscrapIndex(sourceDocument, index);
     }
 
     return -1;
 }
 
-int draftInsertionEndscrapLineIndex(const QStringList &lines,
+int draftInsertionEndscrapLineIndex(const TherionParsedSourceDocument &sourceDocument,
                                     const TherionDraftObjectOptions &objectOptions,
                                     QString *errorMessage)
 {
     const QString targetScrapIdentifier = objectOptions.targetScrapIdentifier.trimmed();
     if (!targetScrapIdentifier.isEmpty()) {
-        const int targetedIndex = endscrapLineIndexForScrapIdentifier(lines, targetScrapIdentifier);
+        const int targetedIndex = endscrapLineIndexForScrapIdentifier(sourceDocument, targetScrapIdentifier);
         if (targetedIndex >= 0) {
             return targetedIndex;
         }
@@ -1506,7 +1515,7 @@ int draftInsertionEndscrapLineIndex(const QStringList &lines,
         return -1;
     }
 
-    return lastEndscrapLineIndex(lines);
+    return lastEndscrapLineIndex(sourceDocument);
 }
 
 }
@@ -1578,15 +1587,16 @@ bool TherionDocumentEditor::structureEntryNameRewriteEdits(const QString &conten
         return false;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(contents);
-    if (lineNumber > sourceDocument.lines.size()) {
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
+    const TherionSourceDocumentLine *sourceDocumentLine = sourceDocument.lineAtLineNumber(lineNumber);
+    if (sourceDocumentLine == nullptr) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line no longer exists.");
         }
         return false;
     }
 
-    const TherionParsedSourceLine &sourceLine = sourceDocument.lines.at(lineNumber - 1);
+    const TherionParsedSourceLine &sourceLine = sourceDocumentLine->sourceLine;
     const QString &lineText = sourceLine.text;
     const TherionParsedLine &parsedLine = sourceLine.parsed;
     if (parsedLine.tokens.isEmpty()) {
@@ -1637,7 +1647,7 @@ bool TherionDocumentEditor::appendScrapBlockEdits(const QString &contents,
     edits->clear();
 
     const QString lineEnding = contents.contains(QStringLiteral("\r\n")) ? QStringLiteral("\r\n") : QStringLiteral("\n");
-    const QVector<TherionParsedLine> parsedLines = TherionDocumentParser::parseTokenLines(contents);
+    const QVector<TherionParsedLine> parsedLines = TherionSourceDocument::fromText(contents).tokenLines();
 
     QSet<QString> existingNames;
     for (const TherionParsedLine &parsedLine : parsedLines) {
@@ -1733,11 +1743,12 @@ bool TherionDocumentEditor::appendDraftGeometryEdits(const QString &contents,
     }
 
     QString updated = contents;
-    const QStringList originalLines = splitLinesTrimmingCarriageReturns(updated);
-    if (rejectDraftInsertionIntoUnclosedScrap(originalLines, errorMessage)) {
+    const TherionSourceDocument originalSourceDocument = TherionSourceDocument::fromText(updated);
+    const TherionParsedSourceDocument &originalParsedDocument = originalSourceDocument.parsedDocument();
+    if (rejectDraftInsertionIntoUnclosedScrap(originalParsedDocument, errorMessage)) {
         return false;
     }
-    const bool needsFallbackScrap = draftInsertionEndscrapLineIndex(originalLines, objectOptions, nullptr) < 0
+    const bool needsFallbackScrap = draftInsertionEndscrapLineIndex(originalParsedDocument, objectOptions, nullptr) < 0
         && objectOptions.targetScrapIdentifier.trimmed().isEmpty();
     if (needsFallbackScrap) {
         QVector<TherionSourceTextEdit> fallbackEdits;
@@ -1747,8 +1758,9 @@ bool TherionDocumentEditor::appendDraftGeometryEdits(const QString &contents,
         }
     }
 
-    QStringList lines = splitLinesTrimmingCarriageReturns(updated);
-    int insertionIndex = draftInsertionEndscrapLineIndex(lines, objectOptions, errorMessage);
+    const TherionSourceDocument updatedSourceDocument = TherionSourceDocument::fromText(updated);
+    const TherionParsedSourceDocument &updatedParsedDocument = updatedSourceDocument.parsedDocument();
+    int insertionIndex = draftInsertionEndscrapLineIndex(updatedParsedDocument, objectOptions, errorMessage);
 
     if (insertionIndex < 0 && needsFallbackScrap) {
         if (errorMessage != nullptr) {
@@ -1780,14 +1792,14 @@ bool TherionDocumentEditor::appendDraftGeometryEdits(const QString &contents,
         }
         geometryLines.append(QStringLiteral("  endline"));
     } else {
-        const int scrapStartIndex = matchingScrapStartIndex(lines, insertionIndex);
+        const int scrapStartIndex = matchingScrapStartIndex(updatedParsedDocument, insertionIndex);
         if (scrapStartIndex < 0) {
             if (errorMessage != nullptr) {
                 *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "Unable to resolve scrap boundaries for area insertion.");
             }
             return false;
         }
-        const QSet<QString> existingIdentifiers = identifiersInsideScrap(lines, scrapStartIndex, insertionIndex);
+        const QSet<QString> existingIdentifiers = identifiersInsideScrap(updatedParsedDocument, scrapStartIndex, insertionIndex);
         const QString borderIdentifier = generatedIdentifier(QStringLiteral("line"), existingIdentifiers);
 
         geometryLines.append(QStringLiteral("  line border -id %1 -close on").arg(borderIdentifier));
@@ -1860,11 +1872,12 @@ bool TherionDocumentEditor::appendDraftLineGeometryEdits(const QString &contents
     }
 
     QString updated = contents;
-    const QStringList originalLines = splitLinesTrimmingCarriageReturns(updated);
-    if (rejectDraftInsertionIntoUnclosedScrap(originalLines, errorMessage)) {
+    const TherionSourceDocument originalSourceDocument = TherionSourceDocument::fromText(updated);
+    const TherionParsedSourceDocument &originalParsedDocument = originalSourceDocument.parsedDocument();
+    if (rejectDraftInsertionIntoUnclosedScrap(originalParsedDocument, errorMessage)) {
         return false;
     }
-    const bool needsFallbackScrap = draftInsertionEndscrapLineIndex(originalLines, objectOptions, nullptr) < 0
+    const bool needsFallbackScrap = draftInsertionEndscrapLineIndex(originalParsedDocument, objectOptions, nullptr) < 0
         && objectOptions.targetScrapIdentifier.trimmed().isEmpty();
     if (needsFallbackScrap) {
         QVector<TherionSourceTextEdit> fallbackEdits;
@@ -1874,8 +1887,9 @@ bool TherionDocumentEditor::appendDraftLineGeometryEdits(const QString &contents
         }
     }
 
-    QStringList lines = splitLinesTrimmingCarriageReturns(updated);
-    int insertionIndex = draftInsertionEndscrapLineIndex(lines, objectOptions, errorMessage);
+    const TherionSourceDocument updatedSourceDocument = TherionSourceDocument::fromText(updated);
+    const TherionParsedSourceDocument &updatedParsedDocument = updatedSourceDocument.parsedDocument();
+    int insertionIndex = draftInsertionEndscrapLineIndex(updatedParsedDocument, objectOptions, errorMessage);
 
     if (insertionIndex < 0 && needsFallbackScrap) {
         if (errorMessage != nullptr) {
@@ -1955,11 +1969,12 @@ bool TherionDocumentEditor::appendDraftAreaGeometryEdits(const QString &contents
     }
 
     QString updated = contents;
-    const QStringList originalLines = splitLinesTrimmingCarriageReturns(updated);
-    if (rejectDraftInsertionIntoUnclosedScrap(originalLines, errorMessage)) {
+    const TherionSourceDocument originalSourceDocument = TherionSourceDocument::fromText(updated);
+    const TherionParsedSourceDocument &originalParsedDocument = originalSourceDocument.parsedDocument();
+    if (rejectDraftInsertionIntoUnclosedScrap(originalParsedDocument, errorMessage)) {
         return false;
     }
-    const bool needsFallbackScrap = draftInsertionEndscrapLineIndex(originalLines, objectOptions, nullptr) < 0
+    const bool needsFallbackScrap = draftInsertionEndscrapLineIndex(originalParsedDocument, objectOptions, nullptr) < 0
         && objectOptions.targetScrapIdentifier.trimmed().isEmpty();
     if (needsFallbackScrap) {
         QVector<TherionSourceTextEdit> fallbackEdits;
@@ -1969,8 +1984,9 @@ bool TherionDocumentEditor::appendDraftAreaGeometryEdits(const QString &contents
         }
     }
 
-    QStringList lines = splitLinesTrimmingCarriageReturns(updated);
-    int insertionIndex = draftInsertionEndscrapLineIndex(lines, objectOptions, errorMessage);
+    const TherionSourceDocument updatedSourceDocument = TherionSourceDocument::fromText(updated);
+    const TherionParsedSourceDocument &updatedParsedDocument = updatedSourceDocument.parsedDocument();
+    int insertionIndex = draftInsertionEndscrapLineIndex(updatedParsedDocument, objectOptions, errorMessage);
 
     if (insertionIndex < 0 && needsFallbackScrap) {
         if (errorMessage != nullptr) {
@@ -1981,14 +1997,14 @@ bool TherionDocumentEditor::appendDraftAreaGeometryEdits(const QString &contents
         return false;
     }
 
-    const int scrapStartIndex = matchingScrapStartIndex(lines, insertionIndex);
+    const int scrapStartIndex = matchingScrapStartIndex(updatedParsedDocument, insertionIndex);
     if (scrapStartIndex < 0) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "Unable to resolve scrap boundaries for area insertion.");
         }
         return false;
     }
-    const QSet<QString> existingIdentifiers = identifiersInsideScrap(lines, scrapStartIndex, insertionIndex);
+    const QSet<QString> existingIdentifiers = identifiersInsideScrap(updatedParsedDocument, scrapStartIndex, insertionIndex);
 
     const QString borderIdentifier = generatedIdentifier(QStringLiteral("line"), existingIdentifiers);
 
@@ -2049,21 +2065,23 @@ bool TherionDocumentEditor::appendReferencedAreaEdits(const QString &contents,
         return false;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(contents);
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
+    const TherionParsedSourceDocument &parsedDocument = sourceDocument.parsedDocument();
     QStringList lines;
-    lines.reserve(sourceDocument.lines.size());
-    for (const TherionParsedSourceLine &sourceLine : sourceDocument.lines) {
+    lines.reserve(parsedDocument.lines.size());
+    for (const TherionParsedSourceLine &sourceLine : parsedDocument.lines) {
         lines.append(sourceLine.text);
     }
     const int scrapStartIndex = scrapLineNumber - 1;
-    if (scrapStartIndex < 0 || scrapStartIndex >= lines.size()) {
+    const TherionSourceDocumentLine *scrapSourceLine = sourceDocument.lineAtLineNumber(scrapLineNumber);
+    if (scrapSourceLine == nullptr || scrapStartIndex < 0 || scrapStartIndex >= lines.size()) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "Smart Area target scrap no longer exists.");
         }
         return false;
     }
 
-    const TherionParsedLine scrapLine = TherionDocumentParser::parseLine(lines.at(scrapStartIndex), scrapLineNumber);
+    const TherionParsedLine &scrapLine = parsedDocument.lines.at(scrapStartIndex).parsed;
     if (scrapLine.directive != QStringLiteral("scrap")) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "Smart Area target is not a scrap.");
@@ -2071,7 +2089,7 @@ bool TherionDocumentEditor::appendReferencedAreaEdits(const QString &contents,
         return false;
     }
 
-    const int insertionIndex = matchingEndscrapIndex(lines, scrapStartIndex);
+    const int insertionIndex = matchingEndscrapIndex(parsedDocument, scrapStartIndex);
     if (insertionIndex < 0) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "Smart Area target scrap is missing endscrap.");
@@ -2079,7 +2097,7 @@ bool TherionDocumentEditor::appendReferencedAreaEdits(const QString &contents,
         return false;
     }
 
-    QSet<QString> existingIdentifiers = identifiersInsideScrap(lines, scrapStartIndex, insertionIndex);
+    QSet<QString> existingIdentifiers = identifiersInsideScrap(parsedDocument, scrapStartIndex, insertionIndex);
     QSet<int> seenLineNumbers;
     QStringList areaReferences;
     for (const TherionReferencedAreaBoundaryLine &boundaryLine : boundaryLines) {
@@ -2091,7 +2109,7 @@ bool TherionDocumentEditor::appendReferencedAreaEdits(const QString &contents,
         seenLineNumbers.insert(boundaryLine.lineNumber);
 
         QString lineText = lines.at(boundaryLine.lineNumber - 1);
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lineText, boundaryLine.lineNumber);
+        const TherionParsedLine &parsedLine = parsedDocument.lines.at(boundaryLine.lineNumber - 1).parsed;
         if (parsedLine.directive != QStringLiteral("line")) {
             if (errorMessage != nullptr) {
                 *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "Smart Area boundary no longer resolves to a line.");
@@ -2110,7 +2128,7 @@ bool TherionDocumentEditor::appendReferencedAreaEdits(const QString &contents,
                 return false;
             }
             lines[boundaryLine.lineNumber - 1] = lineText;
-            const TherionParsedSourceLine &boundarySourceLine = sourceDocument.lines.at(boundaryLine.lineNumber - 1);
+            const TherionParsedSourceLine &boundarySourceLine = parsedDocument.lines.at(boundaryLine.lineNumber - 1);
             edits->append(TherionSourceTextEdit{
                 boundarySourceLine.startOffset,
                 boundarySourceLine.textLength,
@@ -2138,11 +2156,11 @@ bool TherionDocumentEditor::appendReferencedAreaEdits(const QString &contents,
     areaLines.append(QStringLiteral("  endarea"));
 
     QString lineEnding;
-    if (insertionIndex > 0 && insertionIndex - 1 < sourceDocument.lines.size()) {
-        lineEnding = sourceDocument.lines.at(insertionIndex - 1).lineEnding;
+    if (insertionIndex > 0 && insertionIndex - 1 < parsedDocument.lines.size()) {
+        lineEnding = parsedDocument.lines.at(insertionIndex - 1).lineEnding;
     }
-    if (lineEnding.isEmpty() && insertionIndex < sourceDocument.lines.size()) {
-        lineEnding = sourceDocument.lines.at(insertionIndex).lineEnding;
+    if (lineEnding.isEmpty() && insertionIndex < parsedDocument.lines.size()) {
+        lineEnding = parsedDocument.lines.at(insertionIndex).lineEnding;
     }
     if (lineEnding.isEmpty()) {
         lineEnding = TherionSourceText::detectedLineEnding(contents);
@@ -2154,8 +2172,8 @@ bool TherionDocumentEditor::appendReferencedAreaEdits(const QString &contents,
         insertedText += lineEnding;
     }
 
-    const int insertOffset = insertionIndex < sourceDocument.lines.size()
-        ? sourceDocument.lines.at(insertionIndex).startOffset
+    const int insertOffset = insertionIndex < parsedDocument.lines.size()
+        ? parsedDocument.lines.at(insertionIndex).startOffset
         : contents.size();
     edits->append(TherionSourceTextEdit{
         insertOffset,
@@ -2191,15 +2209,16 @@ bool TherionDocumentEditor::pointCoordinateRewriteEdits(const QString &contents,
         return false;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(contents);
-    if (lineNumber > sourceDocument.lines.size()) {
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
+    const TherionSourceDocumentLine *sourceDocumentLine = sourceDocument.lineAtLineNumber(lineNumber);
+    if (sourceDocumentLine == nullptr) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line no longer exists.");
         }
         return false;
     }
 
-    const TherionParsedSourceLine &sourceLine = sourceDocument.lines.at(lineNumber - 1);
+    const TherionParsedSourceLine &sourceLine = sourceDocumentLine->sourceLine;
     const QString &lineText = sourceLine.text;
     const TherionParsedLine &parsedLine = sourceLine.parsed;
     if (parsedLine.directive != QStringLiteral("point") && parsedLine.directive != QStringLiteral("station")) {
@@ -2285,13 +2304,15 @@ bool TherionDocumentEditor::lineAreaVertexRewriteEdits(const QString &contents,
         return false;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(contents);
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
+    const TherionParsedSourceDocument &parsedDocument = sourceDocument.parsedDocument();
     QStringList lines;
-    lines.reserve(sourceDocument.lines.size());
-    for (const TherionParsedSourceLine &sourceLine : sourceDocument.lines) {
+    lines.reserve(parsedDocument.lines.size());
+    for (const TherionParsedSourceLine &sourceLine : parsedDocument.lines) {
         lines.append(sourceLine.text);
     }
-    if (lineNumber > lines.size()) {
+    const TherionSourceDocumentLine *blockStartSourceLine = sourceDocument.lineAtLineNumber(lineNumber);
+    if (blockStartSourceLine == nullptr) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line no longer exists.");
         }
@@ -2299,7 +2320,7 @@ bool TherionDocumentEditor::lineAreaVertexRewriteEdits(const QString &contents,
     }
 
     const int blockStartLineIndex = lineNumber - 1;
-    const TherionParsedLine startLine = TherionDocumentParser::parseLine(lines.at(blockStartLineIndex), lineNumber);
+    const TherionParsedLine &startLine = parsedDocument.lines.at(blockStartLineIndex).parsed;
     if (startLine.directive != normalizedKind) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line is not a writable %1 geometry block.").arg(normalizedKind);
@@ -2311,8 +2332,8 @@ bool TherionDocumentEditor::lineAreaVertexRewriteEdits(const QString &contents,
         ? QStringLiteral("endline")
         : QStringLiteral("endarea");
     int blockEndLineIndex = -1;
-    for (int candidateIndex = blockStartLineIndex + 1; candidateIndex < lines.size(); ++candidateIndex) {
-        const TherionParsedLine candidateLine = TherionDocumentParser::parseLine(lines.at(candidateIndex), candidateIndex + 1);
+    for (int candidateIndex = blockStartLineIndex + 1; candidateIndex < parsedDocument.lines.size(); ++candidateIndex) {
+        const TherionParsedLine &candidateLine = parsedDocument.lines.at(candidateIndex).parsed;
         if (candidateLine.directive == blockEndDirective) {
             blockEndLineIndex = candidateIndex;
             break;
@@ -2335,7 +2356,7 @@ bool TherionDocumentEditor::lineAreaVertexRewriteEdits(const QString &contents,
 
     QVector<CoordinateTokenReference> references;
     for (int lineIndex = blockStartLineIndex; lineIndex < blockEndLineIndex; ++lineIndex) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(lineIndex), lineIndex + 1);
+        const TherionParsedLine &parsedLine = parsedDocument.lines.at(lineIndex).parsed;
         const int startTokenIndex = lineIndex == blockStartLineIndex ? 1 : 0;
         const QVector<QPair<int, int>> pairs = coordinateTokenPairsForLine(parsedLine, startTokenIndex);
         for (const QPair<int, int> &pair : pairs) {
@@ -2389,14 +2410,14 @@ bool TherionDocumentEditor::lineAreaVertexRewriteEdits(const QString &contents,
     lineText.replace(reference.xToken.start,
                      reference.xToken.length,
                      formatCoordinateLikeExistingToken(oldXTokenText, point.x()));
-    if (reference.lineIndex >= sourceDocument.lines.size()) {
+    if (reference.lineIndex >= parsedDocument.lines.size()) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected %1 vertex source range could not be rewritten.").arg(normalizedKind);
         }
         return false;
     }
 
-    const TherionParsedSourceLine &sourceLine = sourceDocument.lines.at(reference.lineIndex);
+    const TherionParsedSourceLine &sourceLine = parsedDocument.lines.at(reference.lineIndex);
     edits->append(TherionSourceTextEdit{
         sourceLine.startOffset,
         sourceLine.textLength,
@@ -2436,15 +2457,16 @@ bool TherionDocumentEditor::lineOptionToggleRewriteEdits(const QString &contents
         return false;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(contents);
-    if (lineNumber > sourceDocument.lines.size()) {
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
+    const TherionSourceDocumentLine *sourceDocumentLine = sourceDocument.lineAtLineNumber(lineNumber);
+    if (sourceDocumentLine == nullptr) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line no longer exists.");
         }
         return false;
     }
 
-    const TherionParsedSourceLine &sourceLine = sourceDocument.lines.at(lineNumber - 1);
+    const TherionParsedSourceLine &sourceLine = sourceDocumentLine->sourceLine;
     QString lineText = sourceLine.text;
     const TherionParsedLine &parsedLine = sourceLine.parsed;
     if (parsedLine.directive != QStringLiteral("line")) {
@@ -2552,15 +2574,16 @@ bool TherionDocumentEditor::pointOrientationRewriteEdits(const QString &contents
         return false;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(contents);
-    if (lineNumber > sourceDocument.lines.size()) {
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
+    const TherionSourceDocumentLine *sourceDocumentLine = sourceDocument.lineAtLineNumber(lineNumber);
+    if (sourceDocumentLine == nullptr) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line no longer exists.");
         }
         return false;
     }
 
-    const TherionParsedSourceLine &sourceLine = sourceDocument.lines.at(lineNumber - 1);
+    const TherionParsedSourceLine &sourceLine = sourceDocumentLine->sourceLine;
     QString lineText = sourceLine.text;
     const TherionParsedLine &parsedLine = sourceLine.parsed;
     if (parsedLine.directive != QStringLiteral("point")
@@ -2685,15 +2708,16 @@ bool TherionDocumentEditor::mapObjectClipDisabledRewriteEdits(const QString &con
         return false;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(contents);
-    if (lineNumber > sourceDocument.lines.size()) {
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
+    const TherionSourceDocumentLine *sourceDocumentLine = sourceDocument.lineAtLineNumber(lineNumber);
+    if (sourceDocumentLine == nullptr) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line no longer exists.");
         }
         return false;
     }
 
-    const TherionParsedSourceLine &sourceLine = sourceDocument.lines.at(lineNumber - 1);
+    const TherionParsedSourceLine &sourceLine = sourceDocumentLine->sourceLine;
     QString lineText = sourceLine.text;
     const TherionParsedLine &parsedLine = sourceLine.parsed;
     if (parsedLine.directive != QStringLiteral("line")
@@ -2746,15 +2770,16 @@ bool TherionDocumentEditor::pointAlignRewriteEdits(const QString &contents,
         return false;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(contents);
-    if (lineNumber > sourceDocument.lines.size()) {
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
+    const TherionSourceDocumentLine *sourceDocumentLine = sourceDocument.lineAtLineNumber(lineNumber);
+    if (sourceDocumentLine == nullptr) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line no longer exists.");
         }
         return false;
     }
 
-    const TherionParsedSourceLine &sourceLine = sourceDocument.lines.at(lineNumber - 1);
+    const TherionParsedSourceLine &sourceLine = sourceDocumentLine->sourceLine;
     QString lineText = sourceLine.text;
     const TherionParsedLine &parsedLine = sourceLine.parsed;
     if (parsedLine.directive != QStringLiteral("point")) {
@@ -2847,15 +2872,16 @@ bool TherionDocumentEditor::scrapScaleRewriteEdits(const QString &contents,
         return false;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(contents);
-    if (lineNumber > sourceDocument.lines.size()) {
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
+    const TherionSourceDocumentLine *sourceDocumentLine = sourceDocument.lineAtLineNumber(lineNumber);
+    if (sourceDocumentLine == nullptr) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line no longer exists.");
         }
         return false;
     }
 
-    const TherionParsedSourceLine &sourceLine = sourceDocument.lines.at(lineNumber - 1);
+    const TherionParsedSourceLine &sourceLine = sourceDocumentLine->sourceLine;
     QString lineText = sourceLine.text;
     const TherionParsedLine &parsedLine = sourceLine.parsed;
     if (parsedLine.directive != QStringLiteral("scrap")) {
@@ -2924,15 +2950,16 @@ bool TherionDocumentEditor::scrapProjectionRewriteEdits(const QString &contents,
         return false;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(contents);
-    if (lineNumber > sourceDocument.lines.size()) {
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
+    const TherionSourceDocumentLine *sourceDocumentLine = sourceDocument.lineAtLineNumber(lineNumber);
+    if (sourceDocumentLine == nullptr) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line no longer exists.");
         }
         return false;
     }
 
-    const TherionParsedSourceLine &sourceLine = sourceDocument.lines.at(lineNumber - 1);
+    const TherionParsedSourceLine &sourceLine = sourceDocumentLine->sourceLine;
     QString lineText = sourceLine.text;
     const TherionParsedLine &parsedLine = sourceLine.parsed;
     if (parsedLine.directive != QStringLiteral("scrap")) {
@@ -3014,15 +3041,16 @@ bool TherionDocumentEditor::mapObjectQuickFieldsRewriteEdits(const QString &cont
         return false;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(contents);
-    if (lineNumber > sourceDocument.lines.size()) {
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
+    const TherionSourceDocumentLine *sourceDocumentLine = sourceDocument.lineAtLineNumber(lineNumber);
+    if (sourceDocumentLine == nullptr) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line no longer exists.");
         }
         return false;
     }
 
-    const TherionParsedSourceLine &sourceLine = sourceDocument.lines.at(lineNumber - 1);
+    const TherionParsedSourceLine &sourceLine = sourceDocumentLine->sourceLine;
     QString lineText = sourceLine.text;
     TherionParsedLine parsedLine = sourceLine.parsed;
     if (parsedLine.directive.isEmpty()) {
@@ -3181,15 +3209,16 @@ bool TherionDocumentEditor::mapObjectTextOptionRewriteEdits(const QString &conte
         return false;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(contents);
-    if (lineNumber > sourceDocument.lines.size()) {
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
+    const TherionSourceDocumentLine *sourceDocumentLine = sourceDocument.lineAtLineNumber(lineNumber);
+    if (sourceDocumentLine == nullptr) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line no longer exists.");
         }
         return false;
     }
 
-    const TherionParsedSourceLine &sourceLine = sourceDocument.lines.at(lineNumber - 1);
+    const TherionParsedSourceLine &sourceLine = sourceDocumentLine->sourceLine;
     QString lineText = sourceLine.text;
     const TherionParsedLine &parsedLine = sourceLine.parsed;
     const QString directive = parsedLine.directive;
@@ -3258,15 +3287,16 @@ bool TherionDocumentEditor::mapObjectValueOptionRewriteEdits(const QString &cont
         return false;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(contents);
-    if (lineNumber > sourceDocument.lines.size()) {
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
+    const TherionSourceDocumentLine *sourceDocumentLine = sourceDocument.lineAtLineNumber(lineNumber);
+    if (sourceDocumentLine == nullptr) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line no longer exists.");
         }
         return false;
     }
 
-    const TherionParsedSourceLine &sourceLine = sourceDocument.lines.at(lineNumber - 1);
+    const TherionParsedSourceLine &sourceLine = sourceDocumentLine->sourceLine;
     QString lineText = sourceLine.text;
     const TherionParsedLine &parsedLine = sourceLine.parsed;
     if (parsedLine.directive != QStringLiteral("point")) {
@@ -3337,13 +3367,15 @@ bool TherionDocumentEditor::lineCoordinateRowsRewriteEdits(const QString &conten
         return false;
     }
 
-    const TherionParsedSourceDocument sourceDocument = TherionDocumentParser::parseSourceDocument(contents);
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
+    const TherionParsedSourceDocument &parsedDocument = sourceDocument.parsedDocument();
     QStringList lines;
-    lines.reserve(sourceDocument.lines.size());
-    for (const TherionParsedSourceLine &sourceLine : sourceDocument.lines) {
+    lines.reserve(parsedDocument.lines.size());
+    for (const TherionParsedSourceLine &sourceLine : parsedDocument.lines) {
         lines.append(sourceLine.text);
     }
-    if (lineNumber > lines.size()) {
+    const TherionSourceDocumentLine *blockStartSourceLine = sourceDocument.lineAtLineNumber(lineNumber);
+    if (blockStartSourceLine == nullptr) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line no longer exists.");
         }
@@ -3351,7 +3383,7 @@ bool TherionDocumentEditor::lineCoordinateRowsRewriteEdits(const QString &conten
     }
 
     const int blockStartLineIndex = lineNumber - 1;
-    const TherionParsedLine startLine = TherionDocumentParser::parseLine(lines.at(blockStartLineIndex), lineNumber);
+    const TherionParsedLine &startLine = parsedDocument.lines.at(blockStartLineIndex).parsed;
     if (startLine.directive != QStringLiteral("line")) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line is not a writable line block.");
@@ -3367,8 +3399,8 @@ bool TherionDocumentEditor::lineCoordinateRowsRewriteEdits(const QString &conten
     }
 
     int blockEndLineIndex = -1;
-    for (int candidateIndex = blockStartLineIndex + 1; candidateIndex < lines.size(); ++candidateIndex) {
-        const TherionParsedLine candidateLine = TherionDocumentParser::parseLine(lines.at(candidateIndex), candidateIndex + 1);
+    for (int candidateIndex = blockStartLineIndex + 1; candidateIndex < parsedDocument.lines.size(); ++candidateIndex) {
+        const TherionParsedLine &candidateLine = parsedDocument.lines.at(candidateIndex).parsed;
         if (candidateLine.directive == QStringLiteral("endline")) {
             blockEndLineIndex = candidateIndex;
             break;
@@ -3382,7 +3414,7 @@ bool TherionDocumentEditor::lineCoordinateRowsRewriteEdits(const QString &conten
     }
 
     for (int lineIndex = blockStartLineIndex + 1; lineIndex < blockEndLineIndex; ++lineIndex) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(lineIndex), lineIndex + 1);
+        const TherionParsedLine &parsedLine = parsedDocument.lines.at(lineIndex).parsed;
         if (parsedLine.tokens.isEmpty()) {
             continue;
         }
@@ -3406,20 +3438,20 @@ bool TherionDocumentEditor::lineCoordinateRowsRewriteEdits(const QString &conten
     }
     rewrittenBlock.append(lines.at(blockEndLineIndex));
 
-    if (blockStartLineIndex >= sourceDocument.lines.size() || blockEndLineIndex >= sourceDocument.lines.size()) {
+    if (blockStartLineIndex >= parsedDocument.lines.size() || blockEndLineIndex >= parsedDocument.lines.size()) {
         if (errorMessage != nullptr) {
             *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected line block source range could not be rewritten.");
         }
         return false;
     }
 
-    QString replacementLineEnding = sourceDocument.lines.at(blockStartLineIndex).lineEnding;
+    QString replacementLineEnding = parsedDocument.lines.at(blockStartLineIndex).lineEnding;
     if (replacementLineEnding.isEmpty()) {
         replacementLineEnding = TherionSourceText::detectedLineEnding(contents);
     }
     const QString replacementText = rewrittenBlock.join(replacementLineEnding);
-    const TherionParsedSourceLine &startSourceLine = sourceDocument.lines.at(blockStartLineIndex);
-    const TherionParsedSourceLine &endSourceLine = sourceDocument.lines.at(blockEndLineIndex);
+    const TherionParsedSourceLine &startSourceLine = parsedDocument.lines.at(blockStartLineIndex);
+    const TherionParsedSourceLine &endSourceLine = parsedDocument.lines.at(blockEndLineIndex);
     const int replaceStartOffset = startSourceLine.startOffset;
     const int replaceLength = (endSourceLine.startOffset + endSourceLine.textLength) - replaceStartOffset;
     edits->append(TherionSourceTextEdit{

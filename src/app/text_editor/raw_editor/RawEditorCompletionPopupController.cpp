@@ -17,8 +17,9 @@
 #include <QToolTip>
 
 #include "../../../core/TherionCommandSyntax.h"
+#include "../../../core/TherionFileTypes.h"
 #include "../../../core/TherionSourceLogicalDocument.h"
-#include "../../../core/TherionSourceSnapshotCache.h"
+#include "../TextEditorSourceSnapshotContext.h"
 
 #include <utility>
 
@@ -110,20 +111,22 @@ void RawEditorCompletionPopupController::triggerCompletionPopup()
             const QTextCursor cursor = context_.editor->textCursor();
             const QTextBlock block = cursor.block();
             if (block.isValid()) {
-                const int lineNumber = block.blockNumber() + 1;
                 const int cursorOffset = cursor.position();
-                TherionSourceDocumentMetadata metadata;
-                metadata.revisionId = context_.editor->document() != nullptr
-                    ? context_.editor->document()->revision()
-                    : 0;
+                const TherionStudio::TextEditorSourceSnapshotContext snapshotContext =
+                    TherionStudio::TextEditorSourceSnapshotContext::fromEditor(
+                    context_.editor,
+                    therionSourceDocumentTypeForFilePath(context_.filePath));
                 TherionSourceSnapshotCache fallbackSourceSnapshotCache;
-                const TherionSourceLogicalDocument *logicalDocument = nullptr;
-                if (context_.sourceSnapshotCache != nullptr) {
-                    logicalDocument = &context_.sourceSnapshotCache->logicalDocument(context_.editor->toPlainText(), metadata);
-                } else {
-                    logicalDocument = &fallbackSourceSnapshotCache.logicalDocument(context_.editor->toPlainText(), metadata);
+                const TherionSourceLogicalDocument *logicalDocument = context_.sourceSnapshotCache != nullptr
+                    ? &snapshotContext.logicalDocument(*context_.sourceSnapshotCache)
+                    : &snapshotContext.logicalDocument(fallbackSourceSnapshotCache);
+                const TherionSourceLogicalCommand *logicalCommand = logicalDocument->commandAtOffset(cursorOffset);
+                if (logicalCommand == nullptr && cursorOffset > 0) {
+                    const TherionSourceLogicalCommand *previousCommand = logicalDocument->commandAtOffset(cursorOffset - 1);
+                    if (previousCommand != nullptr && previousCommand->endOffset == cursorOffset) {
+                        logicalCommand = previousCommand;
+                    }
                 }
-                const TherionSourceLogicalCommand *logicalCommand = logicalDocument->commandAtPhysicalLine(lineNumber);
                 if (logicalCommand == nullptr) {
                     return;
                 }

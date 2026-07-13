@@ -57,7 +57,6 @@
 #include "../../../core/PocketTopoImport.h"
 #include "../../../core/TherionBackgroundMetadata.h"
 #include "../../../core/TherionCommandLineModel.h"
-#include "../../../core/TherionDocumentParser.h"
 #include "../../../core/TherionSourceText.h"
 #include "../../../core/TherionTokenRules.h"
 #include "../../../core/TherionXviParser.h"
@@ -101,12 +100,6 @@ struct PocketTopoGeneratedXvi
 {
     QString path;
     XviDocument document;
-};
-
-struct XviBackgroundInsertionPlacement
-{
-    QPointF basePosition;
-    QString rootStationName;
 };
 
 XviSketchStrokeStyle xviSketchStrokeStyleForToken(const QString &token)
@@ -529,183 +522,6 @@ std::optional<PocketTopoGeneratedXvi> generatePocketTopoXvi(QWidget *parent,
     }
 
     return PocketTopoGeneratedXvi{QFileInfo(xviPath).absoluteFilePath(), document};
-}
-
-QString canonicalStationToken(QString token)
-{
-    token = token.trimmed();
-    while (token.endsWith(QLatin1Char('.'))) {
-        token.chop(1);
-    }
-    return token;
-}
-
-QString unqualifiedStationToken(const QString &token)
-{
-    const QString canonical = canonicalStationToken(token);
-    const int namespaceSeparator = canonical.indexOf(QLatin1Char('@'));
-    if (namespaceSeparator <= 0) {
-        return canonical;
-    }
-    return canonical.left(namespaceSeparator);
-}
-
-QString pointTypeTokenFromParsedLine(const TherionParsedLine &parsedLine)
-{
-    if (parsedLine.directive != QStringLiteral("point")) {
-        return QString();
-    }
-
-    int numericCoordinateTokens = 0;
-    for (int index = 1; index < parsedLine.tokens.size(); ++index) {
-        const QString token = parsedLine.tokens.at(index).trimmed();
-        if (token.isEmpty()) {
-            continue;
-        }
-        if (TherionTokenRules::tokenStartsOption(token)) {
-            break;
-        }
-        if (TherionTokenRules::isNumericToken(token)) {
-            ++numericCoordinateTokens;
-            continue;
-        }
-        if (numericCoordinateTokens < 2) {
-            continue;
-        }
-        return token.toLower();
-    }
-
-    return QString();
-}
-
-QString stationNameFromPointLine(const TherionParsedLine &parsedLine)
-{
-    const QString optionName = commandOptionValue(parsedLine.tokens, QStringLiteral("-name")).trimmed();
-    if (!optionName.isEmpty()) {
-        return optionName;
-    }
-
-    if (pointTypeTokenFromParsedLine(parsedLine) != QStringLiteral("station")) {
-        return QString();
-    }
-
-    bool sawStationType = false;
-    for (int index = 1; index < parsedLine.tokens.size(); ++index) {
-        const QString token = parsedLine.tokens.at(index).trimmed();
-        if (token.isEmpty()) {
-            continue;
-        }
-        if (TherionTokenRules::tokenStartsOption(token)) {
-            break;
-        }
-        if (!sawStationType) {
-            if (token.toLower() == QStringLiteral("station")) {
-                sawStationType = true;
-            }
-            continue;
-        }
-        if (!TherionTokenRules::isNumericToken(token)) {
-            return token;
-        }
-    }
-    return QString();
-}
-
-std::optional<QPointF> pointPositionFromParsedLine(const TherionParsedLine &parsedLine)
-{
-    if (parsedLine.directive != QStringLiteral("point")) {
-        return std::nullopt;
-    }
-
-    QVector<qreal> coordinates;
-    coordinates.reserve(2);
-    for (int index = 1; index < parsedLine.tokens.size(); ++index) {
-        const QString token = parsedLine.tokens.at(index).trimmed();
-        if (token.isEmpty()) {
-            continue;
-        }
-        if (TherionTokenRules::tokenStartsOption(token)) {
-            break;
-        }
-        if (!TherionTokenRules::isNumericToken(token)) {
-            continue;
-        }
-        bool ok = false;
-        const qreal value = token.toDouble(&ok);
-        if (!ok) {
-            continue;
-        }
-        coordinates.append(value);
-        if (coordinates.size() == 2) {
-            return QPointF(coordinates.at(0), coordinates.at(1));
-        }
-    }
-    return std::nullopt;
-}
-
-const TherionXviStation *matchingXviStation(const XviDocument &xviDocument, const QString &stationName)
-{
-    const QString requested = stationName.trimmed();
-    if (requested.isEmpty()) {
-        return nullptr;
-    }
-
-    for (const TherionXviStation &station : xviDocument.stationEntries) {
-        if (station.name == requested) {
-            return &station;
-        }
-    }
-
-    const QString canonicalRequested = canonicalStationToken(requested);
-    for (const TherionXviStation &station : xviDocument.stationEntries) {
-        if (canonicalStationToken(station.name) == canonicalRequested) {
-            return &station;
-        }
-    }
-
-    const QString unqualifiedRequested = unqualifiedStationToken(requested);
-    const TherionXviStation *match = nullptr;
-    for (const TherionXviStation &station : xviDocument.stationEntries) {
-        if (unqualifiedStationToken(station.name) != unqualifiedRequested) {
-            continue;
-        }
-        if (match != nullptr) {
-            return nullptr;
-        }
-        match = &station;
-    }
-    return match;
-}
-
-XviBackgroundInsertionPlacement pocketTopoXviInsertionPlacement(const XviDocument &xviDocument,
-                                                                const QString &documentText)
-{
-    for (const QString &line : TherionSourceText::splitTextLines(documentText)) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(line);
-        if (pointTypeTokenFromParsedLine(parsedLine) != QStringLiteral("station")) {
-            continue;
-        }
-
-        const QString stationName = stationNameFromPointLine(parsedLine);
-        const TherionXviStation *xviStation = matchingXviStation(xviDocument, stationName);
-        if (xviStation == nullptr) {
-            continue;
-        }
-
-        const std::optional<QPointF> position = pointPositionFromParsedLine(parsedLine);
-        if (!position.has_value()) {
-            continue;
-        }
-
-        return XviBackgroundInsertionPlacement{position.value(), xviStation->name};
-    }
-
-    if (!xviDocument.stationEntries.isEmpty()) {
-        const TherionXviStation &station = xviDocument.stationEntries.constFirst();
-        return XviBackgroundInsertionPlacement{QPointF(0.0, 0.0), station.name};
-    }
-
-    return XviBackgroundInsertionPlacement{QPointF(0.0, 0.0), QString()};
 }
 
 QString backgroundImageDialogInitialDirectory(const QString &documentPath, const QString &projectRootPath)
@@ -1916,9 +1732,14 @@ void MapEditorTab::browseAndAddBackgroundImages()
                 xviDocument = generatedXviDocument.value();
             }
             const QString absoluteXviPath = QFileInfo(xviPath).absoluteFilePath();
+            QVector<XviStationPlacementEntry> xviStationEntries;
+            xviStationEntries.reserve(xviDocument.stationEntries.size());
+            for (const TherionXviStation &station : xviDocument.stationEntries) {
+                xviStationEntries.append(XviStationPlacementEntry{station.name, station.position});
+            }
             const XviBackgroundInsertionPlacement insertionPlacement =
                 pocketTopoImport && textEditor_ != nullptr
-                    ? pocketTopoXviInsertionPlacement(xviDocument, textEditor_->text())
+                    ? resolvePocketTopoXviInsertionPlacement(xviStationEntries, textEditor_->text())
                     : XviBackgroundInsertionPlacement{QPointF(0.0, 0.0), QString()};
             if (!createAndAppendXviBackgroundItem(mapScene_,
                                                   &backgroundImageItems_,
@@ -2304,8 +2125,25 @@ QRectF MapEditorTab::mapBackgroundFitBounds() const
     return combinedBounds;
 }
 
+void MapEditorTab::updateEmptyDocumentGuideVisibility()
+{
+    if (mapScene_ == nullptr) {
+        return;
+    }
+
+    const bool showGuides = !mapBackgroundFitBounds().isValid();
+    const QList<QGraphicsItem *> sceneItems = mapScene_->items();
+    for (QGraphicsItem *item : sceneItems) {
+        if (item != nullptr && item->data(kMapSceneEmptyDocumentGuideRole).toBool()) {
+            item->setVisible(showGuides);
+        }
+    }
+}
+
 void MapEditorTab::refreshBackgroundLayerControls()
 {
+    updateEmptyDocumentGuideVisibility();
+    updateMapSceneScrollBounds();
     updatingBackgroundLayerControls_ = true;
     setSelectedBackgroundLayerIndexInternal(selectedBackgroundLayerIndex_);
     updatingBackgroundLayerControls_ = false;
@@ -2314,6 +2152,8 @@ void MapEditorTab::refreshBackgroundLayerControls()
 
 void MapEditorTab::refreshBackgroundLayerPropertyControls()
 {
+    updateEmptyDocumentGuideVisibility();
+    updateMapSceneScrollBounds();
     updatingBackgroundLayerControls_ = true;
     setSelectedBackgroundLayerIndexInternal(selectedBackgroundLayerIndex_);
     updatingBackgroundLayerControls_ = false;
@@ -2854,6 +2694,13 @@ void MapEditorTab::loadBackgroundLayersFromSession()
 
         const XtherionBackgroundReference *metadataReference = findMetadataReferenceForPath(layerPath, metadataByPath, metadataByFileName);
         const bool hasMetadata = metadataReference != nullptr;
+        // Session state may customize a source-declared background, but it
+        // must not silently introduce a drawing reference that the TH2 file
+        // itself does not contain. Such a layer has no portable placement or
+        // source-coordinate contract.
+        if (!hasMetadata) {
+            continue;
+        }
 
         if (layerPath.endsWith(QStringLiteral(".xvi"), Qt::CaseInsensitive)) {
             XviDocument xviDocument;
@@ -3393,8 +3240,13 @@ QRectF MapEditorTab::xtherionAutoAreaAdjustRect() const
     }
 
     if (textEditor_ != nullptr) {
-        const QVector<TherionParsedLine> parsedLines = TherionDocumentParser::parseTokenLines(textEditor_->text());
-        const QVector<MapGeometryFeature> features = collectGeometryFeatures(parsedLines);
+        const MapEditorLogicalSourceContext logicalSource = logicalSourceContext();
+        const QVector<TherionSourceLogicalCommand> logicalCommands = logicalSource.logicalCommandsForCurrentDocument
+            ? logicalSource.logicalCommandsForCurrentDocument()
+            : QVector<TherionSourceLogicalCommand>();
+        const QVector<MapGeometryFeature> features = logicalSource.logicalCommandsForCurrentDocument
+            ? collectGeometryFeatures(geometryProjectionForCurrentDocument(), logicalCommands)
+            : collectGeometryFeatures(parsedLinesForCurrentDocument());
         if (!features.isEmpty()) {
             includeRect(geometryBoundsForFeatures(features));
         }

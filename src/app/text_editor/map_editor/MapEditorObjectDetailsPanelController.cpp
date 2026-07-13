@@ -72,21 +72,40 @@ std::optional<TherionSourceLogicalCommand> logicalCommandForLine(const QVector<T
     return std::nullopt;
 }
 
-std::optional<MapGeometryFeature> lineFeatureForLine(const QVector<TherionSourceLogicalCommand> &commands,
+std::optional<MapGeometryFeature> lineFeatureForLine(const MapEditorLogicalSourceContext &logicalSource,
+                                                     const QVector<TherionSourceLogicalCommand> &commands,
                                                      int lineNumber)
 {
     if (lineNumber <= 0) {
         return std::nullopt;
     }
 
+    if (logicalSource.geometryProjectionForCurrentDocument) {
+        const Th2GeometryProjection projection = logicalSource.geometryProjectionForCurrentDocument();
+        if (const std::optional<MapGeometryFeature> feature = lineFeatureForLineNumber(projection, commands, lineNumber);
+            feature.has_value()) {
+            return feature;
+        }
+    }
+
     return lineFeatureForLineNumber(commands, lineNumber);
 }
 
-QVector<MapEditorAreaReference> areaReferencesForBorderLine(const QVector<TherionSourceLogicalCommand> &commands,
+QVector<MapEditorAreaReference> areaReferencesForBorderLine(const MapEditorLogicalSourceContext &logicalSource,
+                                                            const QVector<TherionSourceLogicalCommand> &commands,
                                                             int lineNumber)
 {
     if (lineNumber <= 0) {
         return {};
+    }
+
+    if (logicalSource.geometryProjectionForCurrentDocument) {
+        const Th2GeometryProjection projection = logicalSource.geometryProjectionForCurrentDocument();
+        if (const QVector<MapEditorAreaReference> references =
+                mapEditorAreaReferencesForBorderLine(projection, lineNumber);
+            !references.isEmpty()) {
+            return references;
+        }
     }
 
     return mapEditorAreaReferencesForBorderLine(commands, lineNumber);
@@ -203,6 +222,16 @@ void updateRecentPendingSymbolButtons(const MapEditorObjectDetailsContext &conte
 QString metadataForSourceLine(const QVector<TherionParsedLine> &parsedLines, int lineNumber)
 {
     const std::optional<InspectorScrapContext> scrapContext = inspectorScrapContextForSourceLine(parsedLines,
+                                                                                                  lineNumber);
+    return QCoreApplication::translate("TherionStudio::MapEditorObjectDetailsPanelController",
+                                       "Source line %1%2")
+        .arg(lineNumber)
+        .arg(scrapContextMetadataSuffix(scrapContext));
+}
+
+QString metadataForSourceLine(const QVector<TherionSourceLogicalCommand> &commands, int lineNumber)
+{
+    const std::optional<InspectorScrapContext> scrapContext = inspectorScrapContextForSourceLine(commands,
                                                                                                   lineNumber);
     return QCoreApplication::translate("TherionStudio::MapEditorObjectDetailsPanelController",
                                        "Source line %1%2")
@@ -559,6 +588,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
                 pendingLinePointAvailable && context_.pendingInsertLinePointSegmentSubtype
                     ? context_.pendingInsertLinePointSegmentSubtype()
                     : QString();
+            // Pending insert previews parse synthetic command snippets before source text exists.
             const TherionParsedLine pendingPointParsedLine =
                 TherionDocumentParser::parseLine(QStringLiteral("point 0 0 %1").arg(pendingFields->type.trimmed()));
             const TherionParsedLine pendingLineParsedLine =
@@ -599,10 +629,15 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
             context_.scrapProjectionLabel->setVisible(projectionFieldVisible);
             context_.quickTypeLabel->setVisible(typeFieldsVisible);
             context_.quickSubtypeLabel->setVisible(typeFieldsVisible);
-            const QVector<TherionParsedLine> parsedLines = context_.parsedLinesForCurrentDocument
-                ? context_.parsedLinesForCurrentDocument()
-                : QVector<TherionParsedLine>();
-            const QVector<InspectorScrapContext> scrapContexts = inspectorScrapContexts(parsedLines);
+            const QVector<TherionSourceLogicalCommand> logicalCommands =
+                context_.logicalSource.logicalCommandsForCurrentDocument
+                    ? context_.logicalSource.logicalCommandsForCurrentDocument()
+                    : QVector<TherionSourceLogicalCommand>();
+            const QVector<InspectorScrapContext> scrapContexts = context_.logicalSource.logicalCommandsForCurrentDocument
+                ? inspectorScrapContexts(logicalCommands)
+                : inspectorScrapContexts(context_.parsedLinesForCurrentDocument
+                      ? context_.parsedLinesForCurrentDocument()
+                      : QVector<TherionParsedLine>());
             const bool targetScrapVisible = commandKind != QStringLiteral("scrap") && !scrapContexts.isEmpty();
             context_.metadataLabel->setVisible(commandKind != QStringLiteral("scrap") && !targetScrapVisible);
             context_.metadataLabel->setText(metadataForPendingInsert(targetScrapContext));
@@ -798,19 +833,21 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
     context_.vertexTitleLabel->setText(effectiveKind == QStringLiteral("line")
                                            ? tr("Line Point")
                                            : tr("Options"));
-    const QVector<TherionParsedLine> parsedLines = context_.parsedLinesForCurrentDocument
-        ? context_.parsedLinesForCurrentDocument()
-        : QVector<TherionParsedLine>();
     const QVector<TherionSourceLogicalCommand> logicalCommands = context_.logicalSource.logicalCommandsForCurrentDocument
         ? context_.logicalSource.logicalCommandsForCurrentDocument()
         : QVector<TherionSourceLogicalCommand>();
-    context_.metadataLabel->setText(metadataForSourceLine(parsedLines, effectiveLineNumber));
+    context_.metadataLabel->setText(context_.logicalSource.logicalCommandsForCurrentDocument
+                                        ? metadataForSourceLine(logicalCommands, effectiveLineNumber)
+                                        : metadataForSourceLine(context_.parsedLinesForCurrentDocument
+                                              ? context_.parsedLinesForCurrentDocument()
+                                              : QVector<TherionParsedLine>(),
+                                          effectiveLineNumber));
     context_.metadataLabel->setStyleSheet(metadataLabelStyleSheet(false));
     QVector<MapEditorAreaReference> areaReferences;
     if (context_.textEditor != nullptr
         && effectiveLineNumber > 0
         && effectiveKind == QStringLiteral("line")) {
-        areaReferences = areaReferencesForBorderLine(logicalCommands, effectiveLineNumber);
+        areaReferences = areaReferencesForBorderLine(context_.logicalSource, logicalCommands, effectiveLineNumber);
     }
     const bool deleteBlockedByAreaReference = !areaReferences.isEmpty();
     context_.deleteButton->setEnabled(effectiveLineNumber > 0 && !deleteBlockedByAreaReference);
@@ -915,7 +952,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
         bool firstVertex = false;
         bool lastVertex = false;
         if (const std::optional<MapGeometryFeature> lineFeature =
-                lineFeatureForLine(logicalCommands, *context_.selectedObjectLineNumber);
+                lineFeatureForLine(context_.logicalSource, logicalCommands, *context_.selectedObjectLineNumber);
             lineFeature.has_value() && lineFeature->kind == MapGeometryFeature::Kind::Line) {
             const int lineVertexIndex = lineVertexIndexForSourceVertex(lineFeature.value(), *context_.selectedObjectVertexIndex);
             firstVertex = lineVertexIndex == 0;
@@ -976,7 +1013,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
     }
     if (lineOptionsVisible) {
         if (const std::optional<MapGeometryFeature> lineFeature =
-                lineFeatureForLine(logicalCommands, *context_.selectedObjectLineNumber);
+                lineFeatureForLine(context_.logicalSource, logicalCommands, *context_.selectedObjectLineNumber);
             *context_.selectedObjectKind == QStringLiteral("line")
             && lineFeature.has_value()
             && lineFeature->kind == MapGeometryFeature::Kind::Line) {
@@ -1083,7 +1120,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
             }
         } else if (*context_.selectedObjectKind == QStringLiteral("line") && *context_.selectedObjectVertexIndex >= 0) {
             if (const std::optional<MapGeometryFeature> lineFeature =
-                    lineFeatureForLine(logicalCommands, *context_.selectedObjectLineNumber);
+                    lineFeatureForLine(context_.logicalSource, logicalCommands, *context_.selectedObjectLineNumber);
                 lineFeature.has_value() && lineFeature->kind == MapGeometryFeature::Kind::Line) {
                 const int lineVertexIndex =
                     lineVertexIndexForSourceVertex(lineFeature.value(), *context_.selectedObjectVertexIndex);

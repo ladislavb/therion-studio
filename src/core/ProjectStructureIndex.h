@@ -11,6 +11,7 @@
 namespace TherionStudio
 {
 struct TherionParsedLine;
+struct TherionSourceLogicalCommand;
 class TherionSourceLogicalDocument;
 
 enum class ProjectStructureEntryKind
@@ -126,6 +127,8 @@ public:
     static QVector<ProjectStructureEntry> scanTh2Objects(const QString &sourceFile, const QString &text);
     static QVector<ProjectStructureEntry> scanTh2Objects(const QString &sourceFile,
                                                          const QVector<TherionParsedLine> &parsedLines);
+    static QVector<ProjectStructureEntry> scanTh2Objects(const QString &sourceFile,
+                                                         const QVector<TherionSourceLogicalCommand> &commands);
     static QString structureEntryNodeKey(const ProjectStructureEntry &entry);
 };
 }

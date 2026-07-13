@@ -441,6 +441,7 @@ TherionSourceLogicalDocument TherionSourceLogicalDocument::fromSourceDocument(
             }
         }
 
+        // Logical source construction owns the canonical parseLine call for merged command text.
         command.parsed = TherionDocumentParser::parseLine(command.text, command.startLineNumber);
         command.normalizedDirective = normalizedTherionDirectiveToken(command.parsed.directive);
         if (command.parsed.tokens.isEmpty()) {

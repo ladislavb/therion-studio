@@ -310,6 +310,7 @@ private:
     void setCurrentDetachedMapContextHelpCollapsed(bool collapsed);
     void triggerUndoForActiveDocument();
     void triggerRedoForActiveDocument();
+    void triggerFormatDocumentForActiveDocument();
     void triggerValidateDocumentForActiveDocument();
     void triggerRawModeForActiveDocument();
     void triggerSecondaryEditorModeForActiveDocument();
@@ -467,6 +468,7 @@ private:
     QToolButton *workspaceExportCsvButton_ = nullptr;
     QToolButton *workspaceUndoButton_ = nullptr;
     QToolButton *workspaceRedoButton_ = nullptr;
+    QToolButton *workspaceFormatDocumentButton_ = nullptr;
     QToolButton *workspaceCompileCurrentConfigButton_ = nullptr;
     QToolButton *workspaceZoomInButton_ = nullptr;
     QToolButton *workspaceZoomOutButton_ = nullptr;
@@ -491,6 +493,7 @@ private:
     QToolButton *workspaceAreaButton_ = nullptr;
     QToolButton *workspaceSmartAreaButton_ = nullptr;
     QFrame *workspaceEditSeparator_ = nullptr;
+    QFrame *workspaceFormatSeparator_ = nullptr;
     QFrame *workspaceHistorySeparator_ = nullptr;
     QFrame *workspaceCompileSeparator_ = nullptr;
     QFrame *workspaceZoomSeparator_ = nullptr;

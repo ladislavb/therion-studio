@@ -6,6 +6,7 @@
 
 namespace TherionStudio
 {
+class Th2GeometryProjection;
 struct TherionSourceLogicalCommand;
 
 struct MapEditorAreaReference
@@ -17,7 +18,10 @@ struct MapEditorAreaReference
 
 QSet<int> mapEditorBorderLineNumbersForArea(const QString &text, int areaLineNumber);
 QSet<int> mapEditorBorderLineNumbersForArea(const QVector<TherionSourceLogicalCommand> &commands, int areaLineNumber);
+QSet<int> mapEditorBorderLineNumbersForArea(const Th2GeometryProjection &projection, int areaLineNumber);
 QVector<MapEditorAreaReference> mapEditorAreaReferencesForBorderLine(const QString &text, int borderLineNumber);
 QVector<MapEditorAreaReference> mapEditorAreaReferencesForBorderLine(const QVector<TherionSourceLogicalCommand> &commands,
+                                                                     int borderLineNumber);
+QVector<MapEditorAreaReference> mapEditorAreaReferencesForBorderLine(const Th2GeometryProjection &projection,
                                                                      int borderLineNumber);
 }

@@ -67,8 +67,13 @@ QString scrapScaleExpression(const InspectorScrapScale &scale);
 InspectorScrapScale defaultInspectorScrapScale(const QRectF &sourceBounds);
 std::optional<InspectorScrapContext> inspectorScrapContextForSourceLine(const QVector<TherionParsedLine> &parsedLines,
                                                                         int lineNumber);
+std::optional<InspectorScrapContext> inspectorScrapContextForSourceLine(
+    const QVector<TherionSourceLogicalCommand> &commands,
+    int lineNumber);
 InspectorScrapContext inspectorDraftInsertionScrapContext(const QVector<TherionParsedLine> &parsedLines);
+InspectorScrapContext inspectorDraftInsertionScrapContext(const QVector<TherionSourceLogicalCommand> &commands);
 QVector<InspectorScrapContext> inspectorScrapContexts(const QVector<TherionParsedLine> &parsedLines);
+QVector<InspectorScrapContext> inspectorScrapContexts(const QVector<TherionSourceLogicalCommand> &commands);
 QString inspectorMapObjectIconName(const ProjectStructureEntry &entry);
 QString inspectorMapObjectItemText(const ProjectStructureEntry &entry, const TherionParsedLine *parsedLine);
 QIcon inspectorActionIcon(const QString &iconName);

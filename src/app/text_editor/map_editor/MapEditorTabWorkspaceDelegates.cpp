@@ -6,6 +6,7 @@
 #include <QLayout>
 #include <QPushButton>
 #include <QSplitter>
+#include <QTimer>
 
 #include "../TextEditorTab.h"
 
@@ -27,6 +28,14 @@ bool MapEditorTab::loadFile(const QString &filePath, QString *errorMessage)
     const bool loaded = textEditor_->loadFile(filePath, errorMessage);
     if (!loaded) {
         return false;
+    }
+
+    // TextEditorTab emits documentTextChanged while loading, which schedules
+    // the normal debounced source-edit refresh. The load workflow performs an
+    // explicit scene refresh below, so leaving that timer active would rebuild
+    // the scene again after callers have already started interacting with it.
+    if (sourceDrivenMapRefreshTimer_ != nullptr) {
+        sourceDrivenMapRefreshTimer_->stop();
     }
 
     resetUndoOwnerState();
@@ -202,6 +211,15 @@ void MapEditorTab::refreshWorkspaceModeUi()
 
 void MapEditorTab::handleTextEditorCurrentLineChanged(int lineNumber)
 {
+    // A map source transaction moves the text cursor to the inserted or
+    // rewritten command.  Treating that internal cursor change as user text
+    // navigation would select and center the command, overriding the viewport
+    // preserved by the map scene refresh.
+    if (mapCommandApplyInProgress_ || mapViewportPreservationInProgress_) {
+        emit currentLineChanged(lineNumber);
+        return;
+    }
+
     if (selectionSyncState_.pendingNavigationLineNumber_ > 0
         && selectionSyncState_.pendingNavigationLineNumber_ != lineNumber) {
         selectionSyncState_.pendingNavigationLineNumber_ = 0;
@@ -218,7 +236,9 @@ void MapEditorTab::handleTextEditorCurrentLineChanged(int lineNumber)
 
 void MapEditorTab::handleTextEditorCursorPositionChanged(int lineNumber, int columnNumber)
 {
-    if (selectionSyncState_.textNavigationInProgress_) {
+    if (mapCommandApplyInProgress_
+        || mapViewportPreservationInProgress_
+        || selectionSyncState_.textNavigationInProgress_) {
         return;
     }
 

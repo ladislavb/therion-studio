@@ -4,6 +4,7 @@
 
 #include "ContextHelpController.h"
 #include "ContextHelpInspector.h"
+#include "TextEditorSourceSnapshotContext.h"
 #include "InspectorPanel.h"
 #include "TextEditorCommandMetadata.h"
 #include "block_editor/BlockEditorDirectiveRules.h"
@@ -286,7 +287,14 @@ QStringList TextEditorContextHelpController::helpCandidateTokens() const
     }
 
     const TherionSourceLogicalDocument &logicalDocument = logicalDocumentForEditor();
-    const TherionSourceLogicalCommand *command = logicalDocument.commandAtPhysicalLine(block.blockNumber() + 1);
+    const int cursorOffset = cursor.position();
+    const TherionSourceLogicalCommand *command = logicalDocument.commandAtOffset(cursorOffset);
+    if (command == nullptr && cursorOffset > 0) {
+        const TherionSourceLogicalCommand *previousCommand = logicalDocument.commandAtOffset(cursorOffset - 1);
+        if (previousCommand != nullptr && previousCommand->endOffset == cursorOffset) {
+            command = previousCommand;
+        }
+    }
     if (command != nullptr && !command->parsed.directive.isEmpty() && command->parsed.directive != directToken.toLower()) {
         appendUniqueCaseInsensitive(candidates, command->parsed.directive);
         if (context_.normalizedDirectiveToken && context_.openingDirectiveForClosingToken) {
@@ -319,10 +327,18 @@ QString TextEditorContextHelpController::currentHelpTokenForCursor() const
         return QString();
     }
 
-    const QTextBlock block = cursor.block();
-    const TherionSourceLogicalDocument &logicalDocument = logicalDocumentForEditor();
-    const TherionSourceLogicalTokenRange *tokenRange =
-        logicalDocument.tokenAtPhysicalPosition(block.blockNumber() + 1, cursor.positionInBlock() + 1);
+    const TherionStudio::TextEditorSourceSnapshotContext snapshotContext =
+        TherionStudio::TextEditorSourceSnapshotContext::fromEditor(editor());
+    const TherionSourceLogicalDocument &logicalDocument = snapshotContext.logicalDocument(sourceSnapshotCache_);
+    const int cursorOffset = cursor.position();
+    const TherionSourceLogicalTokenRange *tokenRange = logicalDocument.tokenAtOffset(cursorOffset);
+    if (tokenRange == nullptr && cursorOffset > 0) {
+        const TherionSourceLogicalTokenRange *previousTokenRange = logicalDocument.tokenAtOffset(cursorOffset - 1);
+        if (previousTokenRange != nullptr
+            && previousTokenRange->physicalRange.startOffset + previousTokenRange->physicalRange.length == cursorOffset) {
+            tokenRange = previousTokenRange;
+        }
+    }
     if (tokenRange != nullptr) {
         return tokenRange->text.toLower();
     }
@@ -456,8 +472,8 @@ const TherionSourceLogicalDocument &TextEditorContextHelpController::logicalDocu
         return sourceSnapshotCache_.logicalDocument(emptyDocument);
     }
 
-    TherionSourceDocumentMetadata metadata;
-    metadata.revisionId = editor()->document()->revision();
-    return sourceSnapshotCache_.logicalDocument(editor()->toPlainText(), metadata);
+    const TherionStudio::TextEditorSourceSnapshotContext snapshotContext =
+        TherionStudio::TextEditorSourceSnapshotContext::fromEditor(editor());
+    return snapshotContext.logicalDocument(sourceSnapshotCache_);
 }
 }

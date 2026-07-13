@@ -24,6 +24,9 @@ class QWidget;
 
 namespace TherionStudio
 {
+class Th2GeometryProjection;
+struct TherionSourceLogicalCommand;
+
 constexpr int kMapItemRole = Qt::UserRole + 120;
 constexpr int kMapItemGeometryValue = 1;
 constexpr int kMapSceneLineNumberRole = Qt::UserRole + 121;
@@ -34,6 +37,43 @@ constexpr int kMapSceneInteractionHoverRole = Qt::UserRole + 125;
 constexpr int kMapScenePendingPrimarySelectionRole = Qt::UserRole + 126;
 constexpr int kMapSceneInteractionSelectionRole = Qt::UserRole + 127;
 constexpr int kMapSceneFocusedVertexRole = Qt::UserRole + 128;
+// These items are only useful while a visual map has neither geometry nor a
+// visible background. Background loading follows the initial scene render, so
+// the items must be toggleable without rebuilding the scene.
+constexpr int kMapSceneEmptyDocumentGuideRole = Qt::UserRole + 129;
+
+constexpr qreal kMapEditorCanvasFrameInset = 24.0;
+constexpr qreal kMapEditorCanvasPreviewInset = 20.0;
+
+inline QRectF mapEditorCanvasSceneFrame()
+{
+    return QRectF(0.0, 0.0, 1200.0, 900.0);
+}
+
+inline QRectF mapEditorCanvasPreviewBounds()
+{
+    const QRectF geometryCanvas = mapEditorCanvasSceneFrame().adjusted(kMapEditorCanvasFrameInset,
+                                                                         kMapEditorCanvasFrameInset,
+                                                                         -kMapEditorCanvasFrameInset,
+                                                                         -kMapEditorCanvasFrameInset);
+    return geometryCanvas.adjusted(kMapEditorCanvasPreviewInset,
+                                   kMapEditorCanvasPreviewInset,
+                                   -kMapEditorCanvasPreviewInset,
+                                   -kMapEditorCanvasPreviewInset);
+}
+
+inline QRectF mapEditorScrollableSceneRect(const QRectF &backgroundBounds)
+{
+    QRectF scrollableBounds = mapEditorCanvasSceneFrame();
+    if (backgroundBounds.isValid()) {
+        scrollableBounds = scrollableBounds.united(
+            backgroundBounds.adjusted(-kMapEditorCanvasFrameInset,
+                                      -kMapEditorCanvasFrameInset,
+                                      kMapEditorCanvasFrameInset,
+                                      kMapEditorCanvasFrameInset));
+    }
+    return scrollableBounds;
+}
 
 enum MapSceneSelectionSubtype
 {
@@ -243,6 +283,7 @@ QString mapEntryTitleForLine(const TherionParsedLine &parsedLine);
 QString mapEntrySubtitleForLine(const TherionParsedLine &parsedLine);
 QColor mapEntryAccentForCategory(const QString &category);
 QVector<MapSceneEntry> collectMapSceneEntries(const QVector<TherionParsedLine> &parsedLines);
+QVector<MapSceneEntry> collectMapSceneEntries(const QVector<TherionSourceLogicalCommand> &commands);
 
 QRectF geometryBoundsForFeatures(const QVector<MapGeometryFeature> &features);
 std::optional<qreal> sourceUnitsPerMeterFromScrapScale(const QStringList &tokens);
@@ -250,6 +291,8 @@ CoordinateTransform coordinateTransformFromScrapScale(const QStringList &tokens)
 QPointF mapGeometryPointToPreview(const QPointF &point, const QRectF &sourceBounds, const QRectF &targetBounds);
 QPointF mapGeometryPreviewToSource(const QPointF &point, const QRectF &sourceBounds, const QRectF &targetBounds);
 QVector<MapGeometryFeature> collectGeometryFeatures(const QVector<TherionParsedLine> &parsedLines);
+QVector<MapGeometryFeature> collectGeometryFeatures(const Th2GeometryProjection &projection,
+                                                    const QVector<TherionSourceLogicalCommand> &commands);
 bool insertLineVertexByDeCasteljau(QVector<MapGeometryFeature::TH2LineVertex> *lineVertices,
                                    int segmentStartIndex,
                                    qreal t,

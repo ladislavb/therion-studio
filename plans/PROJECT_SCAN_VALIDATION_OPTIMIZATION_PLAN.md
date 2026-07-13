@@ -2,9 +2,11 @@
 
 Date: 2026-06-30
 
-Scope: continue the Unified Source DOM migration into project-level source snapshots first, then use those snapshots to remove duplicate Structure/Validation scans, cache per-file validation, and prepare later incremental project-index diagnostics.
+Status: initial project source snapshot/cache ownership slices are implemented. Keep this plan as a follow-up guide for
+live validation performance, cache widening, and incremental project-index diagnostics.
 
-This plan replaces an optimization-first approach with a DOM-first sequence. The performance goal remains important, but the first implementation slices should establish shared project source/projection boundaries so later scan and validation optimizations are not built around legacy ad hoc file discovery and reparsing.
+Scope: build on the shared source snapshot and project scan cache architecture to reduce duplicate Structure/Validation
+work, cache unchanged validation results, and prepare later incremental project-index diagnostics.
 
 ## Current Findings
 
@@ -12,15 +14,18 @@ This plan replaces an optimization-first approach with a DOM-first sequence. The
 - Validation uses `ProjectValidationScanner`, which now collects `ProjectSourceSnapshot` inputs once and uses them for local validation and project-index diagnostics.
 - `ProjectStructureIndex::scanProjectIndex(ProjectStructureIndexSourceSet)` can build an index without rediscovering or rereading project files.
 - Legacy `ProjectStructureIndex::scanProjectIndex(projectRoot, ...)` entry points still perform their own recursive `QDirIterator` discovery for callers that do not yet have snapshots.
-- `ProjectValidationScanner` owns a per-run `TherionSourceSnapshotCache`; it does not persist across scans.
-- `ProjectStructureIndex` already uses `TherionSourceSnapshotCache` / `TherionSourceLogicalDocument` internally for several parsing passes, but the cache lifetime is one project-index scan.
+- `ProjectScanCacheService` owns retained project source and project-index snapshot caches shared by Structure and
+  Validation at the application workflow boundary.
+- Project validation retains source/logical projections and per-file validation findings for repeated unchanged scans.
+- `ProjectStructureIndex` uses `TherionSourceSnapshotCache` / `TherionSourceLogicalDocument` internally for parsing
+  passes.
 - `TextEditorTab::validateDocument()` has a document-revision keyed cache for the currently opened document, but project validation does not reuse that cache.
-- Structure and Validation can still compute equivalent project source snapshots and project indexes independently when they run close together; shared cache ownership is the next remaining duplication to remove.
+- Alternating automatic triggers can still stress cache windows and Validation UI updates; fresh diagnostics should guide
+  any next optimization slice.
 - Automatic project validation is disabled by default; manual validation is preferred until live diagnostics become incremental, cancellable, and cheap for nested projects.
 
-## DOM-First Goals
+## Goals
 
-- Introduce a shared project source snapshot boundary before adding broad scanner caches.
 - Represent project files and open in-memory overrides as stable source snapshot inputs that can feed `TherionSourceDocument` / `TherionSourceLogicalDocument`.
 - Make Structure, Validation, Search, and later Map/project reference consumers derive from the same source snapshot model.
 - Avoid duplicate project index scans between Structure and Validation as a consequence of shared project snapshots.
@@ -39,9 +44,9 @@ This plan replaces an optimization-first approach with a DOM-first sequence. The
 - Do not cache diagnostics without a content/catalog/source-type key.
 - Do not solve Map/TH2 geometry projection in this plan; that remains covered by the Unified Source DOM and Map partial refresh plans.
 
-## Relationship To Unified Source DOM
+## Relationship To Shared Source Model
 
-This plan is the detailed execution track for the Unified Source DOM plan's Structure/project-index/diagnostics phase.
+This plan is a follow-up performance and cache plan over the current shared source model.
 
 The intended dependency direction is:
 
@@ -65,15 +70,18 @@ Validation now collects project source snapshots once, uses them for local valid
 
 ### Duplication B - Structure And Validation Independent Scans
 
-Structure and Validation each own their own scanner, debounce timer, worker, and project-index construction path.
+Status: resolved for retained source and project-index snapshot ownership through `ProjectScanCacheService`.
 
-DOM-first target: Structure and Validation request projections from the same project source snapshot service when project root, preferred config, in-memory contents, catalog key, and disk state match.
+Follow-up target: widen or tune retained cache windows only when logs show unchanged project source or project-index
+projections are still being rebuilt.
 
 ### Duplication C - Repeated Per-File Validation
 
-Repeated validation requests validate all files even when only one open file changed.
+Status: repeated validation scans reuse per-file findings when source snapshot keys, catalog keys, and known project file
+sets are unchanged.
 
-DOM-first target: cache local per-file logical source projections and validation findings by source snapshot key and catalog key.
+Follow-up target: make live validation cheaper for nested projects before restoring automatic full-project validation as
+the recommended/default mode.
 
 ## Core Types To Introduce
 

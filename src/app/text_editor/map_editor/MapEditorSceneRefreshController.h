@@ -9,6 +9,7 @@
 
 #include <functional>
 
+#include "MapEditorLogicalSourceContext.h"
 #include "MapEditorObjectDetailsLogic.h"
 
 class QGraphicsItem;
@@ -36,6 +37,7 @@ struct MapEditorSceneRefreshContext
     bool *fitBackgroundRequested = nullptr;
     quint64 *lineVertexSelectionRestoreGeneration = nullptr;
     const MapEditorOrientationApplicabilityByCommand *orientationApplicabilityByCommand = nullptr;
+    MapEditorLogicalSourceContext logicalSource;
 
     std::function<QString()> documentText;
     std::function<QVector<TherionParsedLine>()> parsedLinesForCurrentDocument;
@@ -84,6 +86,7 @@ public:
 
 private:
     QGraphicsScene *scene() const;
+    void updateSceneRectForBackgroundBounds();
     const MapEditorOrientationApplicabilityByCommand &orientationApplicabilityByCommand() const;
     void refreshMapScenePreservingUndoStack(bool preserveViewport);
 

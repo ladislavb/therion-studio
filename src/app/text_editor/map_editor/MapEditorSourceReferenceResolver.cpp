@@ -1,8 +1,9 @@
 #include "MapEditorSourceReferenceResolver.h"
 
 #include "MapEditorSceneInternals.h"
-#include "../../../core/TherionDocumentParser.h"
+#include "../../../core/Th2GeometryProjection.h"
 #include "../../../core/TherionSourceLogicalDocument.h"
+#include "../../../core/TherionSourceDocument.h"
 #include "../../../core/TherionTokenRules.h"
 
 #include <cmath>
@@ -10,9 +11,22 @@
 
 namespace TherionStudio
 {
+namespace
+{
+QVector<TherionParsedLine> parsedLinesForLogicalCommands(const QVector<TherionSourceLogicalCommand> &commands)
+{
+    QVector<TherionParsedLine> parsedLines;
+    parsedLines.reserve(commands.size());
+    for (const TherionSourceLogicalCommand &command : commands) {
+        parsedLines.append(command.parsed);
+    }
+    return parsedLines;
+}
+}
+
 std::optional<MapGeometryFeature> lineFeatureForLineNumber(const QString &documentText, int lineNumber)
 {
-    return lineFeatureForLineNumber(TherionDocumentParser::parseTokenLines(documentText), lineNumber);
+    return lineFeatureForLineNumber(TherionSourceDocument::fromText(documentText).tokenLines(), lineNumber);
 }
 
 std::optional<MapGeometryFeature> lineFeatureForLineNumber(const QVector<TherionParsedLine> &parsedLines, int lineNumber)
@@ -44,6 +58,22 @@ std::optional<MapGeometryFeature> lineFeatureForLineNumber(const QVector<Therion
     return std::nullopt;
 }
 
+std::optional<MapGeometryFeature> lineFeatureForLineNumber(const Th2GeometryProjection &projection,
+                                                           const QVector<TherionSourceLogicalCommand> &commands,
+                                                           int lineNumber)
+{
+    if (lineNumber <= 0) {
+        return std::nullopt;
+    }
+
+    const Th2LineObject *lineObject = projection.lineAtLineNumber(lineNumber);
+    if (lineObject == nullptr || !lineObject->command.sourceRange.isValid()) {
+        return std::nullopt;
+    }
+
+    return lineFeatureForLineNumber(commands, lineObject->command.sourceRange.startLineNumber);
+}
+
 std::optional<MapGeometryFeature> geometryFeatureForLineNumber(const QVector<TherionSourceLogicalCommand> &commands,
                                                                int lineNumber,
                                                                MapGeometryFeature::Kind expectedKind)
@@ -52,11 +82,7 @@ std::optional<MapGeometryFeature> geometryFeatureForLineNumber(const QVector<The
         return std::nullopt;
     }
 
-    QVector<TherionParsedLine> parsedLines;
-    parsedLines.reserve(commands.size());
-    for (const TherionSourceLogicalCommand &command : commands) {
-        parsedLines.append(command.parsed);
-    }
+    const QVector<TherionParsedLine> parsedLines = parsedLinesForLogicalCommands(commands);
     const QVector<MapGeometryFeature> features = collectGeometryFeatures(parsedLines);
     for (const MapGeometryFeature &feature : features) {
         if (feature.kind == expectedKind && feature.lineNumber == lineNumber) {
@@ -457,6 +483,40 @@ CursorGeometrySelection cursorGeometrySelectionForTextCursor(const QVector<Theri
     return selection;
 }
 
+CursorGeometrySelection cursorGeometrySelectionForTextCursor(const QVector<TherionSourceLogicalCommand> &commands,
+                                                             int cursorLine,
+                                                             int cursorColumn)
+{
+    return cursorGeometrySelectionForTextCursor(parsedLinesForLogicalCommands(commands), cursorLine, cursorColumn);
+}
+
+QString mapObjectKindForSourceLine(const Th2GeometryProjection &projection, int lineNumber)
+{
+    if (lineNumber <= 0) {
+        return QString();
+    }
+
+    const Th2GeometryObjectRef objectRef = projection.objectRefAtLineNumber(lineNumber);
+    if (!objectRef.isValid()) {
+        return QString();
+    }
+
+    switch (objectRef.kind) {
+    case Th2GeometryObjectKind::Point:
+        return QStringLiteral("point");
+    case Th2GeometryObjectKind::Line:
+        return QStringLiteral("line");
+    case Th2GeometryObjectKind::Area:
+        return QStringLiteral("area");
+    case Th2GeometryObjectKind::Scrap:
+        return QStringLiteral("scrap");
+    case Th2GeometryObjectKind::Map:
+    case Th2GeometryObjectKind::Background:
+        break;
+    }
+    return QString();
+}
+
 std::optional<SourceVertexTextReference> sourceVertexTextReferenceForSelection(const QVector<TherionParsedLine> &parsedLines,
                                                                                int featureLineNumber,
                                                                                const QString &geometryKind,
@@ -542,6 +602,18 @@ std::optional<SourceVertexTextReference> sourceVertexTextReferenceForSelection(c
     return std::nullopt;
 }
 
+std::optional<SourceVertexTextReference> sourceVertexTextReferenceForSelection(
+    const QVector<TherionSourceLogicalCommand> &commands,
+    int featureLineNumber,
+    const QString &geometryKind,
+    int sourceVertexIndex)
+{
+    return sourceVertexTextReferenceForSelection(parsedLinesForLogicalCommands(commands),
+                                                 featureLineNumber,
+                                                 geometryKind,
+                                                 sourceVertexIndex);
+}
+
 std::optional<QSet<int>> scrapObjectLinesForCursor(const QVector<TherionParsedLine> &parsedLines,
                                                    int cursorLine)
 {
@@ -598,6 +670,12 @@ std::optional<QSet<int>> scrapObjectLinesForCursor(const QVector<TherionParsedLi
     return std::nullopt;
 }
 
+std::optional<QSet<int>> scrapObjectLinesForCursor(const QVector<TherionSourceLogicalCommand> &commands,
+                                                   int cursorLine)
+{
+    return scrapObjectLinesForCursor(parsedLinesForLogicalCommands(commands), cursorLine);
+}
+
 std::optional<int> sourcePointLineNumberForSelection(const QVector<TherionParsedLine> &parsedLines,
                                                      const QPointF &sourcePoint)
 {
@@ -619,6 +697,31 @@ std::optional<int> sourcePointLineNumberForSelection(const QVector<TherionParsed
         if (distance < bestDistance) {
             bestDistance = distance;
             bestLineNumber = parsedLine.lineNumber;
+        }
+    }
+
+    if (bestLineNumber > 0 && bestDistance <= 0.5) {
+        return bestLineNumber;
+    }
+
+    return std::nullopt;
+}
+
+std::optional<int> sourcePointLineNumberForSelection(const Th2GeometryProjection &projection,
+                                                     const QPointF &sourcePoint)
+{
+    int bestLineNumber = 0;
+    qreal bestDistance = std::numeric_limits<qreal>::max();
+    for (const Th2PointObject &point : projection.points()) {
+        if (!point.hasPosition || point.command.sourceRange.startLineNumber <= 0) {
+            continue;
+        }
+
+        const QPointF delta = point.position - sourcePoint;
+        const qreal distance = std::hypot(delta.x(), delta.y());
+        if (distance < bestDistance) {
+            bestDistance = distance;
+            bestLineNumber = point.command.sourceRange.startLineNumber;
         }
     }
 

@@ -5,6 +5,8 @@
 
 #include <functional>
 
+#include "../../../core/TherionSourceSnapshotCache.h"
+
 class QComboBox;
 class QGraphicsScene;
 class QLineEdit;
@@ -52,5 +54,7 @@ private:
     bool isCompatibleChildKindForBlocks(const QString &parentKind, const QString &childKind) const;
     bool isCommandAllowedForDocument(const QString &commandToken) const;
     QString tr(const char *text) const;
+
+    mutable TherionSourceSnapshotCache sourceSnapshotCache_;
 };
 }

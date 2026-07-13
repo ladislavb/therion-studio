@@ -2,8 +2,10 @@
 
 int runCommandCatalogStoreTest(int argc, char **argv);
 int runPocketTopoImportTest(int argc, char **argv);
+int runTh2GeometryProjectionTest(int argc, char **argv);
 int runTherionSourceTextTest(int argc, char **argv);
 int runTherionSourceDocumentTest(int argc, char **argv);
+int runTherionSourceFormatterTest(int argc, char **argv);
 int runTherionSourceLogicalDocumentTest(int argc, char **argv);
 int runTherionSourceSnapshotCacheTest(int argc, char **argv);
 int runTherionTokenRulesTest(int argc, char **argv);
@@ -21,6 +23,7 @@ int main(int argc, char **argv)
     int status = 0;
     status |= runCommandCatalogStoreTest(argc, argv);
     status |= runPocketTopoImportTest(argc, argv);
+    status |= runTh2GeometryProjectionTest(argc, argv);
     status |= runTherionFileTypesTest(argc, argv);
     status |= runThreeDViewerCameraTest(argc, argv);
     status |= runThreeDViewerLoxLoaderTest(argc, argv);
@@ -29,6 +32,7 @@ int main(int argc, char **argv)
     status |= runTherionDocumentEditorDraftInsertionTest(argc, argv);
     status |= runTherionSourceTextTest(argc, argv);
     status |= runTherionSourceDocumentTest(argc, argv);
+    status |= runTherionSourceFormatterTest(argc, argv);
     status |= runTherionSourceLogicalDocumentTest(argc, argv);
     status |= runTherionSourceSnapshotCacheTest(argc, argv);
     status |= runTherionSourceValidatorFixTest(argc, argv);

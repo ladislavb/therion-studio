@@ -230,6 +230,7 @@ bool optionArityForbidsValue(const QString &rawArityToken)
 
 QStringList parseOptionValuesFromEditor(const QString &rawValue, const QString &rawArityToken, int fixedArity)
 {
+    // Core command syntax tokenizes editor-provided option-value snippets without reparsing documents.
     const QString value = rawValue.trimmed();
     if (value.isEmpty()) {
         return {};

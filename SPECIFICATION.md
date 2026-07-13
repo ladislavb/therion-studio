@@ -364,7 +364,8 @@ The rules below define the expected day-to-day interaction model. If a later req
 - The editor shall display 1-based source line numbers in a left gutter that stays synchronized with document scroll position.
 - For active document tabs, the application shall show a full-width document command toolbar directly above the tab strip.
 - The document command toolbar shall include, from the left, `Save`, a visual separator, `Undo` and `Redo`.
-- `Save`, `Undo`, and `Redo` in the document command toolbar shall be represented as icon-only controls with accessible names/tooltips.
+- While a Therion source document is in its Raw workspace, the document command toolbar shall also expose `Format Document` after `Redo`; it shall be represented as an icon-only control with an accessible name and tooltip.
+- `Save`, `Undo`, `Redo`, and `Format Document` in the document command toolbar shall be represented as icon-only controls with accessible names/tooltips.
 - Main-window document command toolbars shall not draw their own bottom border; separation below the toolbar shall come from the native tab/content frame or the embedded editor content separator.
 - Main-window document chrome shall use one continuous left divider between sidebar content and the editor area; the document command toolbar, file tabs, and document content shall align to that divider without duplicate embedded-canvas left borders.
 - Main-window file tabs shall use native platform tab rendering and shall sit on the `QTabWidget` editor/canvas frame without custom tab-bar geometry overrides.
@@ -374,6 +375,7 @@ The rules below define the expected day-to-day interaction model. If a later req
 - For `.th` and Therion config documents, the `Raw`/`Blocks` mode selector shall be shown in this document command toolbar instead of a dedicated in-content mode row.
 - The Settings dialog shall allow choosing the default editor mode for newly opened `.th` and Therion config documents: `Raw` or `Blocks`; the default shall be `Raw`.
 - The default text-editor mode preference shall apply only when opening a new `.th` or Therion config tab and shall not modify document source merely because the tab initially opens in Blocks mode.
+- `Format Document` shall be an explicit, single undoable source transaction. It shall normalize only leading indentation of structurally parsed Therion rows to one literal tab per open block depth, preserve blank rows, comments and their content, code-block body rows, original line endings, and document encoding, and shall not run automatically when opening, saving, switching modes, or editing a document.
 - The application shall show the active document's current text encoding as a compact status-bar value tied to the active document context.
 - When the active document is open in the map editor, the status area shall reserve the leftmost, expanding status-bar position for the current map workflow instruction, such as selection guidance, active drawing-mode steps, draft completion keys, and recent map-edit status messages.
 - Text, Blocks, and TH2 Visual inspector surfaces shall provide a `File` inspector view with a document panel titled by the active file name; the panel shall show the active document's full path, a copy-path action, on-disk size, last-modified timestamp, current text encoding, and any non-UTF-8 conversion warning/action.
@@ -484,6 +486,8 @@ The rules below define the expected day-to-day interaction model. If a later req
 - The map magnifier shall be enabled by default and shall be user-toggleable through the `View -> Show Map Magnifier` / `Hide Map Magnifier` menu action. This preference shall be stored as UI/session state and shall not modify the TH2 source document.
 - Background image position, X/Y scale, rotation, opacity, gamma, and visibility shall be editable per session.
 - Background layers shall support insertion, selection, visibility toggles, opacity adjustment, gamma adjustment, persisted positioning, and persisted advanced transforms where the source metadata format can represent them.
+- Session state may restore local display settings only for a background layer declared by the current TH2 source metadata; it shall not silently introduce a visible background reference that is absent from the TH2 document.
+- The map viewport shall permit panning to every visible background layer edge, including a layer moved, scaled, or rotated beyond the base map canvas; expanding the scrollable extent shall not change the map/source coordinate projection.
 - Adding a raster background image from the TH2 Visual map editor shall write XTherion-compatible `##XTHERION## xth_me_image_insert` metadata to the TH2 source, using document-relative paths where possible.
 - Adding a PocketTopo Therion export (`.txt`) from the TH2 Visual map editor's background workflow shall prompt for XVI scale, resolution, grid spacing, and plan or extended-elevation projection; convert the selected PocketTopo projection data into a generated `.xvi` file beside the export using `_p` or `_e` naming; add the generated `.xvi` as the background layer; and write XTherion-compatible `##XTHERION## xth_me_image_insert` metadata to the TH2 source.
 - Adding an SVG background from the TH2 Visual map editor shall write Mapiah-compatible `##MAPIAH## image_insert_v1` metadata with `format=svg`, document-relative paths where possible, transform fields, intrinsic size, and source viewBox fields derived from the SVG root metadata.
@@ -502,7 +506,7 @@ The rules below define the expected day-to-day interaction model. If a later req
 - The `Backgrounds` inspector shall not expose separate editor-generated map-grid controls; reference grid content shall come from background layers such as `.xvi` files.
 - The map editor shall read Therion scrap `-scale` in numeric, unit, ratio, and 8/9-parameter calibration forms so manual scale calibration and geometry transforms remain compatible with Therion and XTherion-authored files.
 - Manual edits to a selected scrap scale shall write XTherion-compatible 8-parameter `-scale [x1 y1 x2 y2 rx1 ry1 rx2 ry2 unit]` metadata and shall preserve other scrap options/comments where practical.
-- Background sketch or image layers shall be restorable when reopening the document.
+- Background sketch or image layers declared by TH2 source metadata shall be restorable when reopening the document.
 - `.xvi` vector background references shall render as background layers when present.
 - `.xvi` vector background rendering shall draw embedded `XVIgrid` lines as background content when present.
 - The map editor shall not expose a dedicated touch-controls toolbar mode; mouse, touchpad, Magic Mouse, pinch, stylus, and platform touch gestures shall use automatic input-policy handling.

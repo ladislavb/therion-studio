@@ -26,6 +26,7 @@
 #include "MapEditorSmartAreaPlanner.h"
 #include "MapEditorUndoArbitrationService.h"
 #include "../../../core/CommandCatalogStore.h"
+#include "../../../core/Th2GeometryProjection.h"
 #include "../../../core/TherionDocumentEditor.h"
 #include "../../../core/TherionDocumentParser.h"
 #include "../../../core/TherionSourceLogicalDocument.h"
@@ -157,6 +158,7 @@ public:
     bool applyValidationFixes(const QVector<TherionSourceDiagnosticFix> &fixes);
     void triggerUndo();
     void triggerRedo();
+    void triggerFormatDocument();
     void triggerZoomIn();
     void triggerZoomOut();
     void triggerFit();
@@ -270,6 +272,7 @@ signals:
     void dirtyStateChanged(bool dirty);
     void currentLineChanged(int lineNumber);
     void documentTextChanged();
+    void sourceDrivenMapRefreshCompleted();
     void backgroundLayersChanged();
     void backgroundLayerPropertiesChanged();
     void modeStatusChanged();
@@ -505,6 +508,7 @@ private:
     QVector<TherionParsedLine> parsedLinesForCurrentDocument() const;
     MapEditorLogicalSourceContext logicalSourceContext() const;
     QVector<TherionSourceLogicalCommand> logicalCommandsForCurrentDocument() const;
+    Th2GeometryProjection geometryProjectionForCurrentDocument() const;
     QRectF mapSourceBoundsForCurrentDocument() const;
     std::optional<QRectF> initialAreaAdjustRectForDraftInsertion() const;
     QRectF sourceBoundsForInteractiveDraft() const;
@@ -556,12 +560,14 @@ private:
     void loadBackgroundImageSourceAsync(QGraphicsPixmapItem *item);
     void refreshBackgroundLayerControls();
     void refreshBackgroundLayerPropertyControls();
+    void updateMapSceneScrollBounds();
     void applyBackgroundLayerStackingOrder();
     void saveBackgroundLayersToSession() const;
     void loadBackgroundLayersFromSession();
     void loadBackgroundLayersFromDocumentMetadata();
     void syncAutoBackgroundLayersFromCurrentDocument();
     void reprojectMetadataBackgroundLayersForCurrentDocument();
+    void updateEmptyDocumentGuideVisibility();
     QRectF xtherionAutoAreaAdjustRect() const;
     void syncBackgroundLayerXtherionMetadata(QGraphicsPixmapItem *item, const QString &label, bool preserveExistingPlacement = false);
     bool syncBackgroundLayerXtherionGammaMetadata(QGraphicsPixmapItem *item, const QString &label);
@@ -811,6 +817,7 @@ private:
     QString toolbarStatusNote_;
     bool updatingSelection_ = false;
     bool updatingBackgroundLayerControls_ = false;
+    bool mapViewportPreservationInProgress_ = false;
     bool autoFitEnabled_ = true;
     qreal zoomFactor_ = 1.0;
     bool fitBackgroundRequested_ = false;
@@ -823,6 +830,9 @@ private:
     mutable bool cachedLogicalCommandsValid_ = false;
     mutable int cachedLogicalCommandsRevision_ = -1;
     mutable QVector<TherionSourceLogicalCommand> cachedLogicalCommands_;
+    mutable bool cachedGeometryProjectionValid_ = false;
+    mutable int cachedGeometryProjectionRevision_ = -1;
+    mutable Th2GeometryProjection cachedGeometryProjection_;
     bool mapPanActive_ = false;
     bool mapPanMoved_ = false;
     bool mapSpacePanKeyDown_ = false;

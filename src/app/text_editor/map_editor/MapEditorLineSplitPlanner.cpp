@@ -1,7 +1,7 @@
 #include "MapEditorLineSplitPlanner.h"
 
 #include "../../../core/TherionCommandLineModel.h"
-#include "../../../core/TherionDocumentParser.h"
+#include "../../../core/TherionSourceDocument.h"
 #include "../../../core/TherionSourceText.h"
 #include "../../../core/TherionStringUtils.h"
 
@@ -15,7 +15,7 @@ namespace
 QSet<QString> lineIdentifiersInDocument(const QString &text)
 {
     QSet<QString> identifiers;
-    const QVector<TherionParsedLine> parsedLines = TherionDocumentParser::parseTokenLines(text);
+    const QVector<TherionParsedLine> parsedLines = TherionSourceDocument::fromText(text).tokenLines();
     for (const TherionParsedLine &parsedLine : parsedLines) {
         if (parsedLine.directive != QStringLiteral("line")) {
             continue;
@@ -144,7 +144,20 @@ bool rewriteAreaReferenceLine(QString *lineText,
     return changed;
 }
 
-bool rewriteAreaBorderReferences(QStringList *lines, const QString &originalLineId, const QString &splitLineId)
+const TherionParsedLine *parsedLineAt(const QVector<TherionParsedLine> &parsedLines, int lineNumber)
+{
+    for (const TherionParsedLine &parsedLine : parsedLines) {
+        if (parsedLine.lineNumber == lineNumber) {
+            return &parsedLine;
+        }
+    }
+    return nullptr;
+}
+
+bool rewriteAreaBorderReferences(QStringList *lines,
+                                 const QVector<TherionParsedLine> &parsedLines,
+                                 const QString &originalLineId,
+                                 const QString &splitLineId)
 {
     if (lines == nullptr || originalLineId.isEmpty() || splitLineId.isEmpty()) {
         return false;
@@ -152,8 +165,11 @@ bool rewriteAreaBorderReferences(QStringList *lines, const QString &originalLine
 
     bool inArea = false;
     bool changed = false;
-    for (int lineIndex = 0; lineIndex < lines->size(); ++lineIndex) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines->at(lineIndex), lineIndex + 1);
+    for (const TherionParsedLine &parsedLine : parsedLines) {
+        const int lineIndex = parsedLine.lineNumber - 1;
+        if (lineIndex < 0 || lineIndex >= lines->size()) {
+            continue;
+        }
         if (!inArea) {
             if (parsedLine.directive == QStringLiteral("area")) {
                 inArea = true;
@@ -175,15 +191,14 @@ bool rewriteAreaBorderReferences(QStringList *lines, const QString &originalLine
     return changed;
 }
 
-bool documentHasAreaReferencesForLineId(const QStringList &lines, const QString &lineId)
+bool documentHasAreaReferencesForLineId(const QVector<TherionParsedLine> &parsedLines, const QString &lineId)
 {
     if (lineId.isEmpty()) {
         return false;
     }
 
     bool inArea = false;
-    for (int lineIndex = 0; lineIndex < lines.size(); ++lineIndex) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(lineIndex), lineIndex + 1);
+    for (const TherionParsedLine &parsedLine : parsedLines) {
         if (!inArea) {
             if (parsedLine.directive == QStringLiteral("area")) {
                 inArea = true;
@@ -229,8 +244,9 @@ MapEditorLineSplitPlan MapEditorLineSplitPlanner::planSplit(const QString &text,
     }
 
     const int blockStartLineIndex = lineNumber - 1;
-    const TherionParsedLine startLine = TherionDocumentParser::parseLine(lines.at(blockStartLineIndex), lineNumber);
-    if (startLine.directive != QStringLiteral("line")) {
+    const QVector<TherionParsedLine> parsedLines = TherionSourceDocument::fromText(text).tokenLines();
+    const TherionParsedLine *startLine = parsedLineAt(parsedLines, lineNumber);
+    if (startLine == nullptr || startLine->directive != QStringLiteral("line")) {
         plan.errorMessage = QCoreApplication::translate("TherionStudio::MapEditorLineSplitPlanner",
                                                         "Selected source line is not a line block.");
         return plan;
@@ -238,8 +254,8 @@ MapEditorLineSplitPlan MapEditorLineSplitPlanner::planSplit(const QString &text,
 
     int blockEndLineIndex = -1;
     for (int candidateIndex = blockStartLineIndex + 1; candidateIndex < lines.size(); ++candidateIndex) {
-        const TherionParsedLine candidateLine = TherionDocumentParser::parseLine(lines.at(candidateIndex), candidateIndex + 1);
-        if (candidateLine.directive == QStringLiteral("endline")) {
+        const TherionParsedLine *candidateLine = parsedLineAt(parsedLines, candidateIndex + 1);
+        if (candidateLine != nullptr && candidateLine->directive == QStringLiteral("endline")) {
             blockEndLineIndex = candidateIndex;
             break;
         }
@@ -250,14 +266,14 @@ MapEditorLineSplitPlan MapEditorLineSplitPlanner::planSplit(const QString &text,
         return plan;
     }
 
-    const QString originalId = commandOptionValue(startLine.tokens, QStringLiteral("-id")).trimmed();
+    const QString originalId = commandOptionValue(startLine->tokens, QStringLiteral("-id")).trimmed();
     plan.originalLineId = originalId;
     QString splitLineId;
     QString secondStartLine = lines.at(blockStartLineIndex);
     if (!originalId.isEmpty()) {
         QSet<QString> existingIds = lineIdentifiersInDocument(text);
         splitLineId = uniqueSplitLineIdentifier(originalId, existingIds);
-        secondStartLine = lineStartWithReplacementIdentifier(secondStartLine, startLine, splitLineId);
+        secondStartLine = lineStartWithReplacementIdentifier(secondStartLine, *startLine, splitLineId);
     }
 
     QStringList rewrittenBlock = lineBlockForRows(lines.at(blockStartLineIndex),
@@ -275,15 +291,19 @@ MapEditorLineSplitPlan MapEditorLineSplitPlanner::planSplit(const QString &text,
         lines.insert(blockStartLineIndex, rewrittenBlock.at(index));
     }
 
-    if (!originalId.isEmpty() && !splitLineId.isEmpty() && documentHasAreaReferencesForLineId(lines, originalId)) {
-        plan.areaReferencesUpdated = rewriteAreaBorderReferences(&lines, originalId, splitLineId);
+    const QString lineEnding = TherionSourceText::detectedLineEnding(text);
+    const QVector<TherionParsedLine> rewrittenParsedLines = TherionSourceDocument::fromText(lines.join(lineEnding)).tokenLines();
+    if (!originalId.isEmpty()
+        && !splitLineId.isEmpty()
+        && documentHasAreaReferencesForLineId(rewrittenParsedLines, originalId)) {
+        plan.areaReferencesUpdated = rewriteAreaBorderReferences(&lines, rewrittenParsedLines, originalId, splitLineId);
         plan.splitLineId = splitLineId;
     } else {
         plan.areaReferencesUpdated = false;
         plan.splitLineId = splitLineId;
     }
 
-    plan.updatedText = lines.join(TherionSourceText::detectedLineEnding(text));
+    plan.updatedText = lines.join(lineEnding);
     plan.resolved = true;
     plan.changed = plan.updatedText != text;
     return plan;

@@ -4,7 +4,8 @@ Date: 2026-06-30
 
 Scope: reduce post-edit map latency by refreshing only the affected TH2 geometry item group when it is safe, while keeping full scene refresh as the correctness fallback.
 
-This plan is a Map scene/rendering performance plan. It should stay compatible with the Unified Source DOM direction by accepting already-built geometry projections at narrow boundaries instead of baking document reparsing into renderer APIs.
+This plan is a Map scene/rendering performance plan. It should stay compatible with the shared source model by accepting
+already-built geometry projections at narrow boundaries instead of baking document reparsing into renderer APIs.
 
 ## Current State
 
@@ -27,7 +28,7 @@ This plan is a Map scene/rendering performance plan. It should stay compatible w
 
 ## Non-Goals
 
-- Do not migrate Map geometry parsing to the DOM in this plan.
+- Do not rewrite the Map source projection architecture in this plan.
 - Do not remove `MapEditorTab::parsedLinesForCurrentDocument()` or token-line compatibility APIs.
 - Do not rewrite the whole map renderer.
 - Do not partial-refresh area fills, scrap clipping, referenced areas, backgrounds, drafts, cards, or Structure/Validation projections in the first implementation.
@@ -45,7 +46,7 @@ refreshSingleGeometryFeature(const MapGeometryFeature &feature,
 
 The first implementation may still obtain `MapGeometryFeature` from existing token-line helpers, but the refresh/render API should not require document text or line-number reparsing internally.
 
-Future DOM migration should be able to replace the feature source with a cached TH2 geometry projection:
+The current shared source model can provide the feature source through a cached TH2 geometry projection:
 
 ```text
 TherionSourceDocument revision -> TH2 geometry projection -> MapGeometryFeature -> single-feature render

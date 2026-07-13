@@ -1,6 +1,8 @@
 #include "../src/app/ValidationResultsMarkdownExporter.h"
 
 #include <QtTest/QtTest>
+#include <QDir>
+#include <QTemporaryDir>
 #include <QTimeZone>
 
 namespace
@@ -33,16 +35,19 @@ class ValidationResultsMarkdownExporterTest final : public QObject
 private slots:
     void exportsGroupedProjectReport()
     {
-        const QString projectRoot = QStringLiteral("/tmp/cave");
+        QTemporaryDir projectDirectory;
+        QVERIFY(projectDirectory.isValid());
+        const QString projectRoot = projectDirectory.path();
+        const QDir projectRootDirectory(projectRoot);
         QVector<TherionStudio::ProjectValidationScanner::Finding> findings;
-        findings.append(finding(QStringLiteral("/tmp/cave/maps/a.th2"),
+        findings.append(finding(projectRootDirectory.filePath(QStringLiteral("maps/a.th2")),
                                 TherionStudio::TherionSourceDiagnosticSeverity::Warning,
                                 12,
                                 QStringLiteral("Portable path separator"),
                                 QStringLiteral("Path uses backslash separators."),
                                 QStringLiteral("input .\\data\\a.th"),
                                 QStringLiteral("input ./data/a.th")));
-        findings.append(finding(QStringLiteral("/tmp/cave/thconfig"),
+        findings.append(finding(projectRootDirectory.filePath(QStringLiteral("thconfig")),
                                 TherionStudio::TherionSourceDiagnosticSeverity::Error,
                                 3,
                                 QStringLiteral("Missing referenced source file"),
@@ -66,8 +71,8 @@ private slots:
         QVERIFY(markdown.contains(QStringLiteral("- Errors: 1")));
         QVERIFY(markdown.contains(QStringLiteral("- Warnings: 1")));
         QVERIFY(markdown.contains(QStringLiteral("Result limit was reached")));
-        QVERIFY(markdown.contains(QStringLiteral("## maps/a.th2")));
-        QVERIFY(markdown.contains(QStringLiteral("## thconfig")));
+        QVERIFY(markdown.contains(QStringLiteral("## %1").arg(QDir::toNativeSeparators(QStringLiteral("maps/a.th2")))));
+        QVERIFY(markdown.contains(QStringLiteral("## %1").arg(QDir::toNativeSeparators(QStringLiteral("thconfig")))));
         QVERIFY(markdown.contains(QStringLiteral("### Line 12: Warning: Portable path separator")));
         QVERIFY(markdown.contains(QStringLiteral("```therion\ninput .\\data\\a.th\n```")));
         QVERIFY(markdown.contains(QStringLiteral("```therion\ninput ./data/a.th\n```")));

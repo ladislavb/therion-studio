@@ -30,6 +30,7 @@
 
 #include "../../../core/TherionCommandSyntax.h"
 #include "../../../core/TherionDocumentParser.h"
+#include "../../../core/TherionSourceDocument.h"
 
 #include <algorithm>
 #include <functional>
@@ -119,16 +120,16 @@ void installDataRowCompleter(QLineEdit *lineEdit, const QStringList &values)
     lineEdit->setCompleter(completer);
 }
 
-QStringList parseDataFields(const QString &columnsText, const QStringList &dataStyleValues)
+QStringList parseDataFields(const QStringList &tokens, const QStringList &dataStyleValues)
 {
-    QStringList tokens = TherionStudio::TherionDocumentParser::tokenizeLine(columnsText.trimmed());
     if (tokens.isEmpty()) {
         return {};
     }
-    if (tokens.size() > 1 && dataStyleValues.contains(tokens.first(), Qt::CaseInsensitive)) {
-        tokens.removeFirst();
+    QStringList fields = tokens;
+    if (fields.size() > 1 && dataStyleValues.contains(fields.first(), Qt::CaseInsensitive)) {
+        fields.removeFirst();
     }
-    return tokens;
+    return fields;
 }
 
 struct MixedRowEntry
@@ -300,7 +301,16 @@ std::optional<BlockEditorDataBlockDialogResult> BlockEditorDataBlockDialog::conf
         return std::nullopt;
     }
 
-    const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(lineNumber - 1), lineNumber);
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(lines.join(QLatin1Char('\n')));
+    const auto parsedLineForLine = [&sourceDocument](int currentLine) -> TherionParsedLine {
+        if (const TherionSourceDocumentLine *sourceLine = sourceDocument.lineAtLineNumber(currentLine);
+            sourceLine != nullptr) {
+            return sourceLine->sourceLine.parsed;
+        }
+        return TherionParsedLine{};
+    };
+
+    const TherionParsedLine parsedLine = parsedLineForLine(lineNumber);
     if (parsedLine.tokens.isEmpty()) {
         return std::nullopt;
     }
@@ -315,7 +325,7 @@ std::optional<BlockEditorDataBlockDialogResult> BlockEditorDataBlockDialog::conf
     int dataScopeStartLine = -1;
     int dataScopeDepth = 0;
     for (int currentLine = lineNumber; currentLine >= 1; --currentLine) {
-        const TherionParsedLine currentParsedLine = TherionDocumentParser::parseLine(lines.at(currentLine - 1), currentLine);
+        const TherionParsedLine currentParsedLine = parsedLineForLine(currentLine);
         const QString directive = normalizeDirective(currentParsedLine.directive);
         if (directive == dataScopeClosing) {
             ++dataScopeDepth;
@@ -347,7 +357,7 @@ std::optional<BlockEditorDataBlockDialogResult> BlockEditorDataBlockDialog::conf
 
     int dataBodyLastLine = dataScopeEndLine - 1;
     for (int currentLine = lineNumber + 1; currentLine <= dataScopeEndLine - 1; ++currentLine) {
-        const TherionParsedLine currentParsedLine = TherionDocumentParser::parseLine(lines.at(currentLine - 1), currentLine);
+        const TherionParsedLine currentParsedLine = parsedLineForLine(currentLine);
         const QString directive = normalizeDirective(currentParsedLine.directive);
         if (directive.isEmpty() || directive == QStringLiteral("extend")) {
             continue;
@@ -363,16 +373,13 @@ std::optional<BlockEditorDataBlockDialogResult> BlockEditorDataBlockDialog::conf
         dataBodyLastLine = lineNumber;
     }
 
-    const QString currentColumns = parsedLine.tokens.size() > 1
-        ? parsedLine.tokens.mid(1).join(QLatin1Char(' '))
-        : QString();
     const QRegularExpression indentPattern(QStringLiteral(R"(^[ \t]*)"));
     const auto dataIndentMatch = indentPattern.match(lines.at(lineNumber - 1));
     const QString dataIndent = dataIndentMatch.hasMatch() ? dataIndentMatch.captured(0) : QString();
     const QString rowIndent = dataIndent + QStringLiteral("  ");
 
     const QStringList dataStyleValues = context_.commandMetadata->commandArgumentValueTokens.value(commandArgumentValueKey(QStringLiteral("data"), 0));
-    const QStringList currentFieldNames = parseDataFields(currentColumns, dataStyleValues);
+    const QStringList currentFieldNames = parseDataFields(parsedLine.tokens.mid(1), dataStyleValues);
     const int currentFieldCount = currentFieldNames.size();
 
     QStringList directiveSuggestions = context_.commandMetadata->contextCommandTokens.value(dataScope);
@@ -398,7 +405,7 @@ std::optional<BlockEditorDataBlockDialogResult> BlockEditorDataBlockDialog::conf
     bool schemaMismatchDetected = false;
     for (int currentLine = lineNumber + 1; currentLine <= dataBodyLastLine; ++currentLine) {
         const QString rowLine = lines.at(currentLine - 1);
-        const TherionParsedLine parsedRow = TherionDocumentParser::parseLine(rowLine, currentLine);
+        const TherionParsedLine parsedRow = parsedLineForLine(currentLine);
         QString rowText = parsedRow.commentStart >= 0 ? rowLine.left(parsedRow.commentStart) : rowLine;
         if (rowText.startsWith(rowIndent)) {
             rowText = rowText.mid(rowIndent.size());

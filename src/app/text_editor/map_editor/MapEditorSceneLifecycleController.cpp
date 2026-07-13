@@ -110,6 +110,7 @@ void MapEditorSceneLifecycleController::clearBackgroundImageItems()
 
     context_.backgroundImageItems->clear();
     *context_.selectedBackgroundLayerIndex = -1;
+    updateSceneRectForBackgroundBounds();
     context_.refreshBackgroundLayerControls();
 }
 
@@ -147,7 +148,21 @@ void MapEditorSceneLifecycleController::restoreBackgroundImageItems()
 
     context_.applyBackgroundLayerStackingOrder();
     context_.setSelectedBackgroundLayerIndexInternal(*context_.selectedBackgroundLayerIndex);
+    updateSceneRectForBackgroundBounds();
     context_.refreshBackgroundLayerControls();
+}
+
+void MapEditorSceneLifecycleController::updateSceneRectForBackgroundBounds()
+{
+    QGraphicsScene *mapScene = scene();
+    if (mapScene == nullptr) {
+        return;
+    }
+
+    const QRectF backgroundBounds = context_.mapBackgroundFitBounds
+        ? context_.mapBackgroundFitBounds()
+        : QRectF();
+    mapScene->setSceneRect(mapEditorScrollableSceneRect(backgroundBounds));
 }
 
 void MapEditorSceneLifecycleController::fitMapToView(bool includeBackgroundImages, bool updateCommandSurface)
@@ -159,15 +174,11 @@ void MapEditorSceneLifecycleController::fitMapToView(bool includeBackgroundImage
 
     QRectF fitBounds = mapGeometryFitBounds();
     const QRectF backgroundBounds = context_.mapBackgroundFitBounds();
-    if (backgroundBounds.isValid() && (includeBackgroundImages || !fitBounds.isValid())) {
+    if (backgroundBounds.isValid() && includeBackgroundImages) {
         fitBounds = fitBounds.isValid() ? fitBounds.united(backgroundBounds) : backgroundBounds;
     }
     if (!fitBounds.isValid()) {
-        if (mapScene->items().isEmpty()) {
-            return;
-        }
-
-        fitBounds = mapScene->itemsBoundingRect();
+        fitBounds = mapEditorCanvasSceneFrame();
     }
 
     context_.view->resetTransform();
@@ -254,18 +265,10 @@ QRectF MapEditorSceneLifecycleController::mapGeometryFitBounds() const
 
 QRectF MapEditorSceneLifecycleController::mapPreviewBounds() const
 {
-    QGraphicsScene *mapScene = scene();
-    if (mapScene == nullptr) {
+    if (scene() == nullptr) {
         return QRectF();
     }
-
-    const QRectF sceneFrame = mapScene->sceneRect();
-    if (sceneFrame.width() <= 80.0 || sceneFrame.height() <= 80.0) {
-        return QRectF();
-    }
-
-    const QRectF geometryCanvas = sceneFrame.adjusted(24.0, 24.0, -24.0, -24.0);
-    return geometryCanvas.adjusted(20.0, 20.0, -20.0, -20.0);
+    return mapEditorCanvasPreviewBounds();
 }
 
 void MapEditorSceneLifecycleController::adjustMapZoom(qreal factor)

@@ -1,4 +1,6 @@
 #include "../src/app/text_editor/map_editor/MapEditorAreaReferenceResolver.h"
+#include "../src/core/Th2GeometryProjection.h"
+#include "../src/core/TherionSourceDocument.h"
 #include "../src/core/TherionSourceLogicalDocument.h"
 
 #include <QtTest/QtTest>
@@ -16,6 +18,7 @@ private slots:
     void reportsMultipleAreaReferences();
     void preservesLineNumbersThroughLosslessProjection();
     void resolvesAreaReferencesFromLogicalCommands();
+    void resolvesAreaReferencesFromTh2Projection();
 };
 
 void MapEditorAreaReferenceResolverTest::resolvesAreaBodyReferencesToBorderLines()
@@ -120,6 +123,47 @@ void MapEditorAreaReferenceResolverTest::resolvesAreaReferencesFromLogicalComman
     QCOMPARE(logicalReferences.first().areaLineNumber, 10);
     QCOMPARE(logicalReferences.first().areaLabel, QStringLiteral("water (a1)"));
     QCOMPARE(logicalReferences.first().borderLineId, QStringLiteral("wall-left"));
+}
+
+void MapEditorAreaReferenceResolverTest::resolvesAreaReferencesFromTh2Projection()
+{
+    const QString text = QStringLiteral(
+        "# header\r\n"
+        "\r\n"
+        "scrap s1 -projection plan\r\n"
+        "line border -id wall-left -close on\r\n"
+        "  0 0\r\n"
+        "endline\r\n"
+        "line border -id wall-right -close on\r\n"
+        "  10 0\r\n"
+        "endline\r\n"
+        "area water -id a1\r\n"
+        "  wall-left wall-right\r\n"
+        "endarea\r\n"
+        "endscrap\r\n");
+
+    TherionSourceDocumentMetadata metadata;
+    metadata.sourceType = TherionSourceDocumentType::TherionMap;
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(text, metadata);
+    const TherionSourceLogicalDocument logicalDocument =
+        TherionSourceLogicalDocument::fromSourceDocument(sourceDocument);
+    const Th2GeometryProjection projection =
+        Th2GeometryProjection::fromDocuments(sourceDocument, logicalDocument);
+
+    const QSet<int> logicalBorderLines = mapEditorBorderLineNumbersForArea(logicalDocument.commands(), 10);
+    const QSet<int> projectedBorderLines = mapEditorBorderLineNumbersForArea(projection, 10);
+    QCOMPARE(projectedBorderLines, logicalBorderLines);
+    QVERIFY(projectedBorderLines.contains(4));
+    QVERIFY(projectedBorderLines.contains(7));
+
+    const QVector<MapEditorAreaReference> logicalReferences =
+        mapEditorAreaReferencesForBorderLine(logicalDocument.commands(), 4);
+    const QVector<MapEditorAreaReference> projectedReferences =
+        mapEditorAreaReferencesForBorderLine(projection, 4);
+    QCOMPARE(projectedReferences.size(), logicalReferences.size());
+    QCOMPARE(projectedReferences.first().areaLineNumber, 10);
+    QCOMPARE(projectedReferences.first().areaLabel, QStringLiteral("water (a1)"));
+    QCOMPARE(projectedReferences.first().borderLineId, QStringLiteral("wall-left"));
 }
 }
 

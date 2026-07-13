@@ -86,6 +86,8 @@ set(THERION_CORE_SOURCES
     src/core/TherionXviParser.cpp
     src/core/TherionXviParser.h
     src/core/TherionFileTypes.h
+    src/core/Th2GeometryProjection.cpp
+    src/core/Th2GeometryProjection.h
     src/core/ThreeDViewerCamera.cpp
     src/core/ThreeDViewerCamera.h
     src/core/ThreeDViewerLoxLoader.cpp
@@ -101,6 +103,8 @@ set(THERION_CORE_SOURCES
     src/core/TherionDocumentEditor.h
     src/core/TherionSourceDocument.cpp
     src/core/TherionSourceDocument.h
+    src/core/TherionSourceFormatter.cpp
+    src/core/TherionSourceFormatter.h
     src/core/TherionSourceLogicalDocument.cpp
     src/core/TherionSourceLogicalDocument.h
     src/core/TherionSourceReferenceResolver.cpp
@@ -483,6 +487,8 @@ set(THERION_TEXT_EDITOR_SHARED_SOURCES
     src/app/text_editor/TextEditorDocumentPersistenceStateService.h
     src/app/text_editor/TextEditorDocumentWorkflowController.cpp
     src/app/text_editor/TextEditorDocumentWorkflowController.h
+    src/app/text_editor/TextEditorSourceSnapshotContext.cpp
+    src/app/text_editor/TextEditorSourceSnapshotContext.h
     src/app/text_editor/TextEditorTabInteractionController.cpp
     src/app/text_editor/TextEditorTabInteractionController.h
     src/app/text_editor/TextEditorEncodingController.cpp
@@ -774,6 +780,7 @@ set(THERION_STUDIO_RESOURCE_FILES
     resources/icons/lucide/square.svg
     resources/icons/lucide/square-dashed-mouse-pointer.svg
     resources/icons/lucide/square-plus.svg
+    resources/icons/lucide/text-quote.svg
     resources/icons/lucide/toy-brick.svg
     resources/icons/lucide/trash-2.svg
     resources/icons/lucide/undo-2.svg
@@ -1033,6 +1040,7 @@ therion_add_core_qtest_runner(TherionCoreQTests
     tests/core/CoreQTestMain.cpp
     tests/CommandCatalogStoreTest.cpp
     tests/PocketTopoImportTest.cpp
+    tests/core/Th2GeometryProjectionTest.cpp
     tests/core/ThreeDViewerCameraTest.cpp
     tests/core/TherionFileTypesTest.cpp
     tests/core/ThreeDViewerLoxLoaderTest.cpp
@@ -1040,6 +1048,7 @@ therion_add_core_qtest_runner(TherionCoreQTests
     tests/core/ThreeDViewerSceneStatisticsTest.cpp
     tests/core/TherionDocumentEditorDraftInsertionTest.cpp
     tests/core/TherionSourceDocumentTest.cpp
+    tests/core/TherionSourceFormatterTest.cpp
     tests/core/TherionSourceLogicalDocumentTest.cpp
     tests/core/TherionSourceSnapshotCacheTest.cpp
     tests/core/TherionSourceValidatorFixTest.cpp
@@ -1339,7 +1348,7 @@ qt_add_executable(BlockEditorApplyExecutorTest
     src/app/text_editor/block_editor/BlockEditorSourceText.cpp
     src/app/text_editor/block_editor/BlockEditorSourceText.h)
 
-target_link_libraries(BlockEditorApplyExecutorTest PRIVATE Qt6::Widgets)
+target_link_libraries(BlockEditorApplyExecutorTest PRIVATE therion_core Qt6::Widgets)
 
 qt_add_executable(BlockEditorLogicQTests
     tests/BlockEditorLogicQTestMain.cpp
@@ -1380,7 +1389,9 @@ qt_add_executable(BlockEditorToolboxControllerTest
     src/app/text_editor/block_editor/BlockEditorSourceText.cpp
     src/app/text_editor/block_editor/BlockEditorSourceText.h
     src/app/text_editor/block_editor/BlockEditorToolboxController.cpp
-    src/app/text_editor/block_editor/BlockEditorToolboxController.h)
+    src/app/text_editor/block_editor/BlockEditorToolboxController.h
+    src/app/text_editor/TextEditorSourceSnapshotContext.cpp
+    src/app/text_editor/TextEditorSourceSnapshotContext.h)
 
 target_link_libraries(BlockEditorToolboxControllerTest PRIVATE therion_core Qt6::Widgets Qt6::Svg)
 

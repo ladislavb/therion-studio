@@ -3,7 +3,6 @@
 #include "BlockEditorDirectiveRules.h"
 #include "BlockEditorSourceText.h"
 
-#include "../../../core/TherionDocumentParser.h"
 #include "../../../core/TherionSourceLogicalDocument.h"
 #include "../../../core/TherionSourceSnapshotCache.h"
 
@@ -147,9 +146,10 @@ BlockEditorDocumentOutline BlockEditorDocumentOutlineBuilder::buildFromContents(
 
                 int dataBodyLastLine = dataScopeEndLine - 1;
                 for (int scanLine = currentLineNumber + 1; scanLine <= dataScopeEndLine - 1; ++scanLine) {
-                    const TherionParsedLine scanParsedLine = TherionDocumentParser::parseLine(outline.lines.at(scanLine - 1),
-                                                                                               scanLine);
-                    const QString scanDirective = normalizeDirective(scanParsedLine.directive);
+                    const TherionSourceLogicalCommand *scanCommand = logicalDocument.commandAtPhysicalLine(scanLine);
+                    const QString scanDirective = scanCommand != nullptr
+                        ? normalizeDirective(scanCommand->parsed.directive)
+                        : QString();
                     if (scanDirective.isEmpty() || scanDirective == QStringLiteral("extend")) {
                         continue;
                     }

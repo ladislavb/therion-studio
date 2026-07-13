@@ -1,5 +1,6 @@
 #include "MapEditorTab.h"
 
+#include "MapEditorSourceReferenceResolver.h"
 #include "MapEditorViewportInputContext.h"
 #include "../TextEditorTab.h"
 
@@ -157,13 +158,7 @@ MapEditorViewportInputContext MapEditorTab::viewportInputContext()
                 normalizedKind = QStringLiteral("area");
             }
             if (normalizedKind.isEmpty()) {
-                const QVector<TherionParsedLine> parsedLines = parsedLinesForCurrentDocument();
-                for (const TherionParsedLine &parsedLine : parsedLines) {
-                    if (parsedLine.lineNumber == lineNumber) {
-                        normalizedKind = objectKindForDirective(parsedLine.directive);
-                        break;
-                    }
-                }
+                normalizedKind = mapObjectKindForSourceLine(geometryProjectionForCurrentDocument(), lineNumber);
             }
             if (normalizedKind.isEmpty()) {
                 normalizedKind = QStringLiteral("object");

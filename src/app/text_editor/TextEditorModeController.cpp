@@ -3,8 +3,8 @@
 #include "block_editor/BlockEditorDirectiveRules.h"
 #include "block_editor/BlockEditorSourceText.h"
 
-#include "../../core/TherionDocumentParser.h"
 #include "../../core/TherionFileTypes.h"
+#include "../../core/TherionSourceDocument.h"
 
 #include <QFileInfo>
 #include <QPlainTextEdit>
@@ -109,12 +109,13 @@ bool TextEditorModeController::ensureEncodingRootDirectiveForBlocks()
     const QString desiredEncodingLine =
         QStringLiteral("encoding %1").arg(encodingName.toLower());
 
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(contents);
     QStringList normalizedLines;
     normalizedLines.reserve(lines.size() + 1);
     normalizedLines.append(desiredEncodingLine);
     for (int lineIndex = 0; lineIndex < lines.size(); ++lineIndex) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(lineIndex), lineIndex + 1);
-        if (isEncodingDirective(parsedLine.directive)) {
+        const TherionSourceDocumentLine *sourceLine = sourceDocument.lineAtLineNumber(lineIndex + 1);
+        if (sourceLine != nullptr && isEncodingDirective(sourceLine->sourceLine.parsed.directive)) {
             continue;
         }
         normalizedLines.append(lines.at(lineIndex));

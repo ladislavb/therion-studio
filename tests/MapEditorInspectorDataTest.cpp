@@ -231,7 +231,7 @@ int runInjectedCatalogTest()
 
 int runScrapContextMetadataTest()
 {
-    const QVector<TherionParsedLine> parsedLines = TherionDocumentParser::parseTokenLines(QStringLiteral(
+    const QString text = QStringLiteral(
         "scrap first\n"
         "point 0 0 station -name a1\n"
         "endscrap\n"
@@ -240,7 +240,12 @@ int runScrapContextMetadataTest()
         "  0 0\n"
         "  1 1\n"
         "endline\n"
-        "endscrap\n"));
+        "endscrap\n");
+    const QVector<TherionParsedLine> parsedLines = TherionDocumentParser::parseTokenLines(text);
+    TherionSourceDocumentMetadata metadata;
+    metadata.sourceType = TherionSourceDocumentType::TherionMap;
+    const TherionSourceLogicalDocument logicalDocument =
+        TherionSourceLogicalDocument::fromText(text, metadata);
 
     const std::optional<InspectorScrapContext> firstScrap = inspectorScrapContextForSourceLine(parsedLines, 2);
     if (!expect(firstScrap.has_value() && firstScrap->identifier == QStringLiteral("first"),
@@ -268,7 +273,31 @@ int runScrapContextMetadataTest()
         return 1;
     }
 
-    const InspectorScrapContext createdScrap = inspectorDraftInsertionScrapContext({});
+    const std::optional<InspectorScrapContext> logicalSecondScrap =
+        inspectorScrapContextForSourceLine(logicalDocument.commands(), 5);
+    if (!expect(logicalSecondScrap.has_value() && logicalSecondScrap->identifier == secondScrap->identifier,
+                "Logical-command scrap context lookup should match parsed-line lookup.")) {
+        return 1;
+    }
+
+    const InspectorScrapContext logicalInsertionScrap =
+        inspectorDraftInsertionScrapContext(logicalDocument.commands());
+    if (!expect(logicalInsertionScrap.identifier == insertionScrap.identifier
+                    && logicalInsertionScrap.willBeCreated == insertionScrap.willBeCreated,
+                "Logical-command pending insertion scrap should match parsed-line lookup.")) {
+        return 1;
+    }
+
+    const QVector<InspectorScrapContext> logicalScrapContexts =
+        inspectorScrapContexts(logicalDocument.commands());
+    if (!expect(logicalScrapContexts.size() == scrapContexts.size()
+                    && logicalScrapContexts.at(0).identifier == scrapContexts.at(0).identifier
+                    && logicalScrapContexts.at(1).identifier == scrapContexts.at(1).identifier,
+                "Logical-command scrap choices should match parsed-line choices.")) {
+        return 1;
+    }
+
+    const InspectorScrapContext createdScrap = inspectorDraftInsertionScrapContext(QVector<TherionParsedLine>{});
     if (!expect(createdScrap.identifier == QStringLiteral("scrap-1") && createdScrap.willBeCreated,
                 "Pending draft insertion should report the generated scrap when no scrap exists.")) {
         return 1;

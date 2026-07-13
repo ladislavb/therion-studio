@@ -1,7 +1,10 @@
 #include "../src/app/text_editor/map_editor/MapEditorSceneSupport.h"
 #include "../src/app/text_editor/map_editor/MapEditorSmartAreaPlanner.h"
+#include "../src/core/Th2GeometryProjection.h"
 #include "../src/core/TherionDocumentEditor.h"
 #include "../src/core/TherionDocumentParser.h"
+#include "../src/core/TherionSourceDocument.h"
+#include "../src/core/TherionSourceLogicalDocument.h"
 
 #include <QApplication>
 #include <QGraphicsPathItem>
@@ -169,6 +172,103 @@ int runPointTypeAndLabelOptionParsingTest()
     if (!expect(lineLabel->optionValues.value(QStringLiteral("text")) == QStringLiteral("stream<br>label"),
                 "Expected line label -text option to be available for style-driven labels.")) {
         return 1;
+    }
+
+    return 0;
+}
+
+int runProjectionGeometryFeatureAdapterParityTest()
+{
+    const QString text = QStringLiteral(
+        "scrap s1 -projection plan\n"
+        "point 10 20 station -name P1\n"
+        "line wall -id wall-1 -close on\n"
+        "  0 0\n"
+        "  10 0\n"
+        "  10 10\n"
+        "endline\n"
+        "area water -id a1\n"
+        "  wall-1\n"
+        "endarea\n"
+        "endscrap\n");
+
+    const QVector<TherionParsedLine> parsedLines = TherionDocumentParser::parseTokenLines(text);
+    const QVector<MapGeometryFeature> parsedFeatures = collectGeometryFeatures(parsedLines);
+
+    TherionSourceDocumentMetadata metadata;
+    metadata.sourceType = TherionSourceDocumentType::TherionMap;
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(text, metadata);
+    const TherionSourceLogicalDocument logicalDocument =
+        TherionSourceLogicalDocument::fromSourceDocument(sourceDocument);
+    const Th2GeometryProjection projection =
+        Th2GeometryProjection::fromDocuments(sourceDocument, logicalDocument);
+    const QVector<MapGeometryFeature> projectedFeatures =
+        collectGeometryFeatures(projection, logicalDocument.commands());
+
+    if (!expect(projectedFeatures.size() == parsedFeatures.size(),
+                "Expected projection geometry feature adapter to preserve feature count.")) {
+        return 1;
+    }
+    for (int index = 0; index < parsedFeatures.size(); ++index) {
+        const MapGeometryFeature &parsed = parsedFeatures.at(index);
+        const MapGeometryFeature &projected = projectedFeatures.at(index);
+        if (!expect(projected.kind == parsed.kind && projected.lineNumber == parsed.lineNumber,
+                    "Expected projection geometry feature adapter to preserve kind and source line order.")) {
+            return 1;
+        }
+        if (!expect(projected.vertices.size() == parsed.vertices.size()
+                        && projected.lineVertices.size() == parsed.lineVertices.size(),
+                    "Expected projection geometry feature adapter to preserve geometry vertex counts.")) {
+            return 1;
+        }
+        if (!expect(projected.optionValues == parsed.optionValues,
+                    "Expected projection geometry feature adapter to preserve option values.")) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int runLogicalMapSceneEntryAdapterParityTest()
+{
+    const QString text = QStringLiteral(
+        "scrap s1 -projection plan\n"
+        "point 10 20 station -name P1\n"
+        "line wall -id wall-1 -close on\n"
+        "  0 0\n"
+        "  10 0\n"
+        "  10 10\n"
+        "endline\n"
+        "area water -id a1\n"
+        "  wall-1\n"
+        "endarea\n"
+        "endscrap\n");
+
+    const QVector<TherionParsedLine> parsedLines = TherionDocumentParser::parseTokenLines(text);
+    const QVector<MapSceneEntry> parsedEntries = collectMapSceneEntries(parsedLines);
+
+    TherionSourceDocumentMetadata metadata;
+    metadata.sourceType = TherionSourceDocumentType::TherionMap;
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(text, metadata);
+    const TherionSourceLogicalDocument logicalDocument =
+        TherionSourceLogicalDocument::fromSourceDocument(sourceDocument);
+    const QVector<MapSceneEntry> logicalEntries = collectMapSceneEntries(logicalDocument.commands());
+
+    if (!expect(logicalEntries.size() == parsedEntries.size(),
+                "Expected logical map scene entry adapter to preserve entry count.")) {
+        return 1;
+    }
+
+    for (int index = 0; index < parsedEntries.size(); ++index) {
+        const MapSceneEntry &parsed = parsedEntries.at(index);
+        const MapSceneEntry &logical = logicalEntries.at(index);
+        if (!expect(logical.lineNumber == parsed.lineNumber
+                        && logical.category == parsed.category
+                        && logical.title == parsed.title
+                        && logical.subtitle == parsed.subtitle,
+                    "Expected logical map scene entry adapter to preserve scene entry content.")) {
+            return 1;
+        }
     }
 
     return 0;
@@ -2373,6 +2473,12 @@ int main(int argc, char **argv)
     QApplication app(argc, argv);
 
     if (const int rc = runPointTypeAndLabelOptionParsingTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runProjectionGeometryFeatureAdapterParityTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runLogicalMapSceneEntryAdapterParityTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runBezierSegmentParsingTest(); rc != 0) {

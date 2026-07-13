@@ -8,6 +8,7 @@
 
 #include "../../../core/TherionBackgroundMetadata.h"
 #include "../../../core/TherionDocumentParser.h"
+#include "../../../core/TherionSourceDocument.h"
 #include "../../../core/TherionSourceLogicalDocument.h"
 #include "../../../platform/DiagnosticLogging.h"
 
@@ -53,7 +54,10 @@ QVector<TherionParsedLine> MapEditorTab::parsedLinesForCurrentDocument() const
         return cachedParsedLines_;
     }
 
-    cachedParsedLines_ = TherionDocumentParser::parseTokenLines(textEditor_->text());
+    TherionSourceDocumentMetadata metadata;
+    metadata.sourceType = TherionSourceDocumentType::TherionMap;
+    metadata.revisionId = currentRevision;
+    cachedParsedLines_ = TherionSourceDocument::fromText(textEditor_->text(), metadata).tokenLines();
     cachedParsedLinesRevision_ = currentRevision;
     cachedParsedLinesValid_ = true;
     return cachedParsedLines_;
@@ -64,6 +68,9 @@ MapEditorLogicalSourceContext MapEditorTab::logicalSourceContext() const
     return MapEditorLogicalSourceContext{
         .logicalCommandsForCurrentDocument = [this]() {
             return logicalCommandsForCurrentDocument();
+        },
+        .geometryProjectionForCurrentDocument = [this]() {
+            return geometryProjectionForCurrentDocument();
         },
     };
 }
@@ -88,6 +95,33 @@ QVector<TherionSourceLogicalCommand> MapEditorTab::logicalCommandsForCurrentDocu
     cachedLogicalCommandsRevision_ = currentRevision;
     cachedLogicalCommandsValid_ = true;
     return cachedLogicalCommands_;
+}
+
+Th2GeometryProjection MapEditorTab::geometryProjectionForCurrentDocument() const
+{
+    if (textEditor_ == nullptr) {
+        return {};
+    }
+
+    const int currentRevision = textEditor_->documentRevision();
+    if (cachedGeometryProjectionValid_ && cachedGeometryProjectionRevision_ == currentRevision) {
+        return cachedGeometryProjection_;
+    }
+
+    TherionSourceDocumentMetadata metadata;
+    metadata.sourceType = TherionSourceDocumentType::TherionMap;
+    metadata.revisionId = currentRevision;
+    const TherionSourceDocument sourceDocument =
+        TherionSourceDocument::fromText(textEditor_->text(), metadata);
+    const TherionSourceLogicalDocument logicalDocument =
+        TherionSourceLogicalDocument::fromSourceDocument(sourceDocument);
+    cachedLogicalCommands_ = logicalDocument.commands();
+    cachedLogicalCommandsRevision_ = currentRevision;
+    cachedLogicalCommandsValid_ = true;
+    cachedGeometryProjection_ = Th2GeometryProjection::fromDocuments(sourceDocument, logicalDocument);
+    cachedGeometryProjectionRevision_ = currentRevision;
+    cachedGeometryProjectionValid_ = true;
+    return cachedGeometryProjection_;
 }
 
 std::optional<MapEditorInteractiveLineControlHandleRef> MapEditorTab::interactiveLineControlAt(
@@ -200,6 +234,7 @@ void MapEditorTab::captureInteractiveLineAnchor(const QPointF &anchorScenePoint,
                                                 const std::optional<QPointF> &dragScenePoint)
 {
     const QString pendingCommand = interactiveDrawState_.pendingInsertFields_.commandKind.trimmed().toLower();
+    // Pending insert previews parse a synthetic line command before source text exists.
     const TherionParsedLine pendingLineParsedLine =
         TherionDocumentParser::parseLine(QStringLiteral("line %1").arg(interactiveDrawState_.pendingInsertFields_.type.trimmed()));
     const bool pendingLinePointOrientationSupported = pendingCommand == QStringLiteral("line")
@@ -389,7 +424,13 @@ bool MapEditorTab::previewSmartAreaAt(const QPointF &scenePosition)
     }
 
     const QPointF sourcePoint = sourcePointFromScenePosition(scenePosition);
-    const QVector<MapGeometryFeature> features = collectGeometryFeatures(parsedLinesForCurrentDocument());
+    const MapEditorLogicalSourceContext logicalSource = logicalSourceContext();
+    const QVector<TherionSourceLogicalCommand> logicalCommands = logicalSource.logicalCommandsForCurrentDocument
+        ? logicalSource.logicalCommandsForCurrentDocument()
+        : QVector<TherionSourceLogicalCommand>();
+    const QVector<MapGeometryFeature> features = logicalSource.logicalCommandsForCurrentDocument
+        ? collectGeometryFeatures(geometryProjectionForCurrentDocument(), logicalCommands)
+        : collectGeometryFeatures(parsedLinesForCurrentDocument());
     const QVector<MapEditorSmartAreaCandidate> candidates = mapEditorSmartAreaCandidatesAt(features, sourcePoint);
     if (candidates.isEmpty()) {
         if (interactiveDrawState_.previewPath_ != nullptr) {

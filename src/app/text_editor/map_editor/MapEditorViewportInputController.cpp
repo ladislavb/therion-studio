@@ -831,6 +831,18 @@ QGraphicsItem *preferredMapClickHitItemForViewportPosition(MapEditorViewportInpu
         return directVertexItem;
     }
 
+    // Resolve the current pointer position before consulting the cached hover
+    // presentation. A filled area is authoritative when the pointer is inside
+    // it, especially near a shared area border at high zoom; otherwise retain
+    // the highlighted path so its pending selection metadata remains stable
+    // when a primary press follows a hover event.
+    QGraphicsItem *currentHitItem =
+        preferredMapHitItemForViewportPosition(context, viewportPosition, false);
+    if (currentHitItem != nullptr
+        && currentHitItem->data(kMapSceneSelectionSubtypeRole).toInt() == kMapSceneSelectionSubtypeAreaFill) {
+        return currentHitItem;
+    }
+
     if (QGraphicsItem *hoverItem = preferredHoveredPathHitItemForViewportPosition(context, viewportPosition)) {
         const QPointF scenePosition = context.view->mapToScene(viewportPosition);
         resetPendingClickSelection(context, scenePosition);
@@ -838,7 +850,7 @@ QGraphicsItem *preferredMapClickHitItemForViewportPosition(MapEditorViewportInpu
         return hoverItem;
     }
 
-    return preferredMapHitItemForViewportPosition(context, viewportPosition, false);
+    return currentHitItem;
 }
 
 bool isSameMapObjectInteractionGroup(const QGraphicsItem *item, const QGraphicsItem *referenceItem)

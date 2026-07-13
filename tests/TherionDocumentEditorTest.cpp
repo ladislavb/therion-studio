@@ -296,6 +296,27 @@ int runRewritePreservesOtherContentTest()
         return 1;
     }
 
+    const QString crlfRenamePlannerContents = QStringLiteral("survey old-survey\r\nmap old-map # keep\r\n");
+    QVector<TherionSourceTextEdit> crlfRenameEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::structureEntryNameRewriteEdits(crlfRenamePlannerContents,
+                                                                       2,
+                                                                       QStringLiteral("Maps"),
+                                                                       QStringLiteral("crlf map"),
+                                                                       &crlfRenameEdits,
+                                                                       &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int crlfRenameStartOffset = crlfRenamePlannerContents.indexOf(QStringLiteral("old-map"));
+    if (!expect(crlfRenameEdits.size() == 1
+                    && crlfRenameEdits.at(0).startOffset == crlfRenameStartOffset
+                    && crlfRenameEdits.at(0).length == QStringLiteral("old-map").size()
+                    && crlfRenameEdits.at(0).replacementText == QStringLiteral("\"crlf map\""),
+                "structureEntryNameRewriteEdits should preserve exact CRLF token-range offsets.")) {
+        return 1;
+    }
+
     if (!expect(rewriteStructureEntryName(&contents, 1, QStringLiteral("Surveys"), QStringLiteral("new-survey"), &errorMessage), errorMessage.toUtf8().constData())) {
         return 1;
     }
@@ -1304,7 +1325,32 @@ int runRewritePointCoordinatesTest()
         return 1;
     }
 
-    contents = QStringLiteral("survey s\r\npoint station 10 20 station -name mixed\nendsurvey\r");
+    const QString mixedLineEndingPointContents =
+        QStringLiteral("survey s\r\npoint station 10 20 station -name mixed\nendsurvey\r");
+    contents = mixedLineEndingPointContents;
+    QVector<TherionSourceTextEdit> mixedLineEndingEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::pointCoordinateRewriteEdits(mixedLineEndingPointContents,
+                                                                    2,
+                                                                    QPointF(30.25, -40.5),
+                                                                    &mixedLineEndingEdits,
+                                                                    &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int mixedLineEndingXOffset = mixedLineEndingPointContents.indexOf(QStringLiteral("10"));
+    const int mixedLineEndingYOffset = mixedLineEndingPointContents.indexOf(QStringLiteral("20"));
+    if (!expect(mixedLineEndingEdits.size() == 2
+                    && mixedLineEndingEdits.at(0).startOffset == mixedLineEndingXOffset
+                    && mixedLineEndingEdits.at(0).length == QStringLiteral("10").size()
+                    && mixedLineEndingEdits.at(0).replacementText == QStringLiteral("30.250")
+                    && mixedLineEndingEdits.at(1).startOffset == mixedLineEndingYOffset
+                    && mixedLineEndingEdits.at(1).length == QStringLiteral("20").size()
+                    && mixedLineEndingEdits.at(1).replacementText == QStringLiteral("-40.500"),
+                "pointCoordinateRewriteEdits should preserve exact mixed-line-ending coordinate offsets.")) {
+        return 1;
+    }
+
     errorMessage.clear();
     if (!expect(rewritePointCoordinates(&contents, 2, QPointF(30.25, -40.5), &errorMessage),
                 errorMessage.toUtf8().constData())) {
@@ -1825,6 +1871,30 @@ int runRewriteLineOptionToggleTest()
         return 1;
     }
 
+    const QString secondLineToggleContents = QStringLiteral("scrap s1\r\n"
+                                                           "line wall -reverse off # keep\r\n"
+                                                           "endline\r\n"
+                                                           "endscrap\r\n");
+    QVector<TherionSourceTextEdit> secondLineToggleEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::lineOptionToggleRewriteEdits(secondLineToggleContents,
+                                                                    2,
+                                                                    QStringLiteral("-reverse"),
+                                                                    true,
+                                                                    &secondLineToggleEdits,
+                                                                    &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int secondLineToggleStartOffset = secondLineToggleContents.indexOf(QStringLiteral("line wall -reverse off # keep"));
+    if (!expect(secondLineToggleEdits.size() == 1
+                    && secondLineToggleEdits.at(0).startOffset == secondLineToggleStartOffset
+                    && secondLineToggleEdits.at(0).length == QStringLiteral("line wall -reverse off # keep").size()
+                    && secondLineToggleEdits.at(0).replacementText == QStringLiteral("line wall -reverse on # keep"),
+                "lineOptionToggleRewriteEdits should expose exact source ranges for non-first physical lines.")) {
+        return 1;
+    }
+
     contents = QStringLiteral("line wall -close on -reverse off\n");
     errorMessage.clear();
     if (!expect(rewriteLineOptionToggle(&contents, 1, QStringLiteral("reverse"), true, &errorMessage),
@@ -2242,6 +2312,29 @@ int runRewriteOrientationOptionsTest()
         return 1;
     }
 
+    const QString secondLineOrientationContents = QStringLiteral("scrap s1\r\n"
+                                                                "point 10 20 station -name a3 # keep\r\n"
+                                                                "endscrap\r\n");
+    QVector<TherionSourceTextEdit> secondLineOrientationEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::pointOrientationRewriteEdits(secondLineOrientationContents,
+                                                                    2,
+                                                                    true,
+                                                                    90.0,
+                                                                    &secondLineOrientationEdits,
+                                                                    &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int secondLineOrientationStartOffset = secondLineOrientationContents.indexOf(QStringLiteral("point 10 20 station -name a3 # keep"));
+    if (!expect(secondLineOrientationEdits.size() == 1
+                    && secondLineOrientationEdits.at(0).startOffset == secondLineOrientationStartOffset
+                    && secondLineOrientationEdits.at(0).length == QStringLiteral("point 10 20 station -name a3 # keep").size()
+                    && secondLineOrientationEdits.at(0).replacementText == QStringLiteral("point 10 20 station -name a3 -orientation 90 # keep"),
+                "pointOrientationRewriteEdits should expose exact source ranges for non-first physical lines.")) {
+        return 1;
+    }
+
     contents = QStringLiteral("line slope\n"
                               "  10 20 -orientation 45\n"
                               "  30 40\n"
@@ -2346,6 +2439,32 @@ int runRewriteOrientationOptionsTest()
                     && linePointLeftSizeEdits.at(0).length == 0
                     && linePointLeftSizeEdits.at(0).replacementText == QStringLiteral("  l-size 40.0\n"),
                 "linePointLeftSizeRewriteEdits should expose the insertion point for standalone line-point option rows.")) {
+        return 1;
+    }
+
+    const QString secondLineLeftSizeContents = QStringLiteral("encoding utf-8\r\n"
+                                                             "line slope\n"
+                                                             "  10 20\r"
+                                                             "  30 40\n"
+                                                             "endline\r");
+    QVector<TherionSourceTextEdit> secondLineLeftSizeEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::linePointLeftSizeRewriteEdits(secondLineLeftSizeContents,
+                                                                     2,
+                                                                     0,
+                                                                     true,
+                                                                     40.0,
+                                                                     &secondLineLeftSizeEdits,
+                                                                     &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int secondLineLeftSizeStartOffset = secondLineLeftSizeContents.indexOf(QStringLiteral("  30 40\n"));
+    if (!expect(secondLineLeftSizeEdits.size() == 1
+                    && secondLineLeftSizeEdits.at(0).startOffset == secondLineLeftSizeStartOffset
+                    && secondLineLeftSizeEdits.at(0).length == 0
+                    && secondLineLeftSizeEdits.at(0).replacementText == QStringLiteral("  l-size 40.0\r"),
+                "linePointLeftSizeRewriteEdits should expose exact insertion ranges for non-first physical line blocks.")) {
         return 1;
     }
 
@@ -2486,6 +2605,29 @@ int runRewriteOrientationOptionsTest()
         return 1;
     }
 
+    const QString secondLineClipContents = QStringLiteral("scrap s1\r\n"
+                                                         "line wall # keep\r\n"
+                                                         "endline\r\n"
+                                                         "endscrap\r\n");
+    QVector<TherionSourceTextEdit> secondLineClipEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::mapObjectClipDisabledRewriteEdits(secondLineClipContents,
+                                                                         2,
+                                                                         true,
+                                                                         &secondLineClipEdits,
+                                                                         &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int secondLineClipStartOffset = secondLineClipContents.indexOf(QStringLiteral("line wall # keep"));
+    if (!expect(secondLineClipEdits.size() == 1
+                    && secondLineClipEdits.at(0).startOffset == secondLineClipStartOffset
+                    && secondLineClipEdits.at(0).length == QStringLiteral("line wall # keep").size()
+                    && secondLineClipEdits.at(0).replacementText == QStringLiteral("line wall -clip off # keep"),
+                "mapObjectClipDisabledRewriteEdits should expose exact source ranges for non-first physical lines.")) {
+        return 1;
+    }
+
     contents = QStringLiteral("point 10 20 label -text hello\n");
     errorMessage.clear();
     if (!expect(rewritePointAlign(&contents, 1, QStringLiteral("top-left"), &errorMessage),
@@ -2494,6 +2636,28 @@ int runRewriteOrientationOptionsTest()
     }
     if (!expect(contents == QStringLiteral("point 10 20 label -text hello -align top-left\n"),
                 "rewritePointAlign should append point align values.")) {
+        return 1;
+    }
+
+    const QString secondLineAlignContents = QStringLiteral("scrap s1\r\n"
+                                                          "point 10 20 label -text hello # keep\r\n"
+                                                          "endscrap\r\n");
+    QVector<TherionSourceTextEdit> secondLineAlignEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::pointAlignRewriteEdits(secondLineAlignContents,
+                                                              2,
+                                                              QStringLiteral("bottom-right"),
+                                                              &secondLineAlignEdits,
+                                                              &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int secondLineAlignStartOffset = secondLineAlignContents.indexOf(QStringLiteral("point 10 20 label -text hello # keep"));
+    if (!expect(secondLineAlignEdits.size() == 1
+                    && secondLineAlignEdits.at(0).startOffset == secondLineAlignStartOffset
+                    && secondLineAlignEdits.at(0).length == QStringLiteral("point 10 20 label -text hello # keep").size()
+                    && secondLineAlignEdits.at(0).replacementText == QStringLiteral("point 10 20 label -text hello -align bottom-right # keep"),
+                "pointAlignRewriteEdits should expose exact source ranges for non-first physical lines.")) {
         return 1;
     }
 
@@ -2530,6 +2694,28 @@ int runRewriteScrapScaleTest()
                     && scaleEdits.at(0).length == 25
                     && scaleEdits.at(0).replacementText == QStringLiteral("scrap s1 -projection plan -scale [0 0 100 0 0 0 10 0 m]"),
                 "scrapScaleRewriteEdits should expose the command-line source range for scrap scale edits.")) {
+        return 1;
+    }
+
+    const QString secondLineScaleContents = QStringLiteral("encoding utf-8\r\n"
+                                                          "scrap s2 -projection plan # keep\r\n"
+                                                          "endscrap\r\n");
+    QVector<TherionSourceTextEdit> secondLineScaleEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::scrapScaleRewriteEdits(secondLineScaleContents,
+                                                              2,
+                                                              QStringLiteral("[1 2 3 4 5 6 7 8 m]"),
+                                                              &secondLineScaleEdits,
+                                                              &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int secondLineScaleStartOffset = secondLineScaleContents.indexOf(QStringLiteral("scrap s2 -projection plan # keep"));
+    if (!expect(secondLineScaleEdits.size() == 1
+                    && secondLineScaleEdits.at(0).startOffset == secondLineScaleStartOffset
+                    && secondLineScaleEdits.at(0).length == QStringLiteral("scrap s2 -projection plan # keep").size()
+                    && secondLineScaleEdits.at(0).replacementText == QStringLiteral("scrap s2 -projection plan -scale [1 2 3 4 5 6 7 8 m] # keep"),
+                "scrapScaleRewriteEdits should expose exact source ranges for non-first physical lines.")) {
         return 1;
     }
 
@@ -2644,6 +2830,33 @@ int runRewriteMapObjectQuickFieldsTest()
                     && quickFieldEdits.at(0).length == 34
                     && quickFieldEdits.at(0).replacementText == QStringLiteral("line border -id line-1 -close on -subtype invisible # keep"),
                 "mapObjectQuickFieldsRewriteEdits should expose the command-line source range for quick field edits.")) {
+        return 1;
+    }
+
+    const QString secondLineQuickFieldContents = QStringLiteral("scrap s1\r\n"
+                                                               "line wall -id old # keep\r\n"
+                                                               "endline\r\n"
+                                                               "endscrap\r\n");
+    QVector<TherionSourceTextEdit> secondLineQuickFieldEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::mapObjectQuickFieldsRewriteEdits(secondLineQuickFieldContents,
+                                                                        2,
+                                                                        QStringLiteral("border"),
+                                                                        QStringLiteral("temporary"),
+                                                                        QStringLiteral("line-2"),
+                                                                        QString(),
+                                                                        false,
+                                                                        &secondLineQuickFieldEdits,
+                                                                        &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int secondLineQuickFieldStartOffset = secondLineQuickFieldContents.indexOf(QStringLiteral("line wall -id old # keep"));
+    if (!expect(secondLineQuickFieldEdits.size() == 1
+                    && secondLineQuickFieldEdits.at(0).startOffset == secondLineQuickFieldStartOffset
+                    && secondLineQuickFieldEdits.at(0).length == QStringLiteral("line wall -id old # keep").size()
+                    && secondLineQuickFieldEdits.at(0).replacementText == QStringLiteral("line border -id line-2 -subtype temporary # keep"),
+                "mapObjectQuickFieldsRewriteEdits should expose exact source ranges for non-first physical lines.")) {
         return 1;
     }
 
@@ -2881,6 +3094,29 @@ int runRewriteMapObjectQuickFieldsTest()
         return 1;
     }
 
+    const QString secondLineTextContents = QStringLiteral("scrap s1\r\n"
+                                                         "line label # keep\r\n"
+                                                         "endline\r\n"
+                                                         "endscrap\r\n");
+    QVector<TherionSourceTextEdit> secondLineTextEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::mapObjectTextOptionRewriteEdits(secondLineTextContents,
+                                                                       2,
+                                                                       QStringLiteral("Side passage"),
+                                                                       &secondLineTextEdits,
+                                                                       &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int secondLineTextStartOffset = secondLineTextContents.indexOf(QStringLiteral("line label # keep"));
+    if (!expect(secondLineTextEdits.size() == 1
+                    && secondLineTextEdits.at(0).startOffset == secondLineTextStartOffset
+                    && secondLineTextEdits.at(0).length == QStringLiteral("line label # keep").size()
+                    && secondLineTextEdits.at(0).replacementText == QStringLiteral("line label -text \"Side passage\" # keep"),
+                "mapObjectTextOptionRewriteEdits should expose exact source ranges for non-first physical lines.")) {
+        return 1;
+    }
+
     errorMessage.clear();
     if (!expect(rewriteMapObjectTextOption(&contents,
                                                                   1,
@@ -2983,6 +3219,28 @@ int runRewriteMapObjectQuickFieldsTest()
         return 1;
     }
 
+    const QString secondLineValueContents = QStringLiteral("scrap s1\r\n"
+                                                          "point 10 20 altitude # keep\r\n"
+                                                          "endscrap\r\n");
+    QVector<TherionSourceTextEdit> secondLineValueEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::mapObjectValueOptionRewriteEdits(secondLineValueContents,
+                                                                        2,
+                                                                        QStringLiteral("[fix 1200]"),
+                                                                        &secondLineValueEdits,
+                                                                        &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int secondLineValueStartOffset = secondLineValueContents.indexOf(QStringLiteral("point 10 20 altitude # keep"));
+    if (!expect(secondLineValueEdits.size() == 1
+                    && secondLineValueEdits.at(0).startOffset == secondLineValueStartOffset
+                    && secondLineValueEdits.at(0).length == QStringLiteral("point 10 20 altitude # keep").size()
+                    && secondLineValueEdits.at(0).replacementText == QStringLiteral("point 10 20 altitude -value [fix 1200] # keep"),
+                "mapObjectValueOptionRewriteEdits should expose exact source ranges for non-first physical lines.")) {
+        return 1;
+    }
+
     errorMessage.clear();
     if (!expect(rewriteMapObjectValueOption(&contents,
                                                                    1,
@@ -3059,6 +3317,28 @@ int runRewriteScrapProjectionTest()
                     && projectionEdits.at(0).length == 15
                     && projectionEdits.at(0).replacementText == QStringLiteral("scrap s1 -projection plan # keep"),
                 "scrapProjectionRewriteEdits should expose the command-line source range for inserted projection edits.")) {
+        return 1;
+    }
+
+    const QString secondLineProjectionContents = QStringLiteral("encoding utf-8\r\n"
+                                                               "scrap s2 # keep\r\n"
+                                                               "endscrap\r\n");
+    QVector<TherionSourceTextEdit> secondLineProjectionEdits;
+    errorMessage.clear();
+    if (!expect(TherionDocumentEditor::scrapProjectionRewriteEdits(secondLineProjectionContents,
+                                                                   2,
+                                                                   QStringLiteral("extended"),
+                                                                   &secondLineProjectionEdits,
+                                                                   &errorMessage),
+                errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    const int secondLineProjectionStartOffset = secondLineProjectionContents.indexOf(QStringLiteral("scrap s2 # keep"));
+    if (!expect(secondLineProjectionEdits.size() == 1
+                    && secondLineProjectionEdits.at(0).startOffset == secondLineProjectionStartOffset
+                    && secondLineProjectionEdits.at(0).length == QStringLiteral("scrap s2 # keep").size()
+                    && secondLineProjectionEdits.at(0).replacementText == QStringLiteral("scrap s2 -projection extended # keep"),
+                "scrapProjectionRewriteEdits should expose exact source ranges for non-first physical lines.")) {
         return 1;
     }
 

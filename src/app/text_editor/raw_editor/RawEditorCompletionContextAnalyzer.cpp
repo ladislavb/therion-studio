@@ -9,7 +9,7 @@
 #include <QTextCursor>
 
 #include "../../../core/TherionSourceLogicalDocument.h"
-#include "../../../core/TherionSourceSnapshotCache.h"
+#include "../TextEditorSourceSnapshotContext.h"
 
 #include <utility>
 
@@ -96,32 +96,6 @@ QString normalizedCompletionContextToken(const QString &token)
     return QString();
 }
 
-TherionStudio::TherionSourceDocumentMetadata sourceDocumentMetadataForEditor(const QPlainTextEdit *editor)
-{
-    TherionStudio::TherionSourceDocumentMetadata metadata;
-    metadata.revisionId = editor != nullptr && editor->document() != nullptr
-        ? editor->document()->revision()
-        : 0;
-    return metadata;
-}
-
-template <typename Handler>
-auto withLogicalDocumentForEditor(const QPlainTextEdit *editor,
-                                  TherionStudio::TherionSourceSnapshotCache *sourceSnapshotCache,
-                                  Handler handler)
-{
-    const QString sourceText = editor == nullptr ? QString() : editor->toPlainText();
-    const TherionStudio::TherionSourceDocumentMetadata metadata = sourceDocumentMetadataForEditor(editor);
-    if (sourceSnapshotCache != nullptr) {
-        return handler(sourceSnapshotCache->logicalDocument(sourceText, metadata));
-    }
-
-    TherionStudio::TherionSourceSnapshotCache localSourceSnapshotCache;
-    const TherionStudio::TherionSourceLogicalDocument logicalDocument =
-        localSourceSnapshotCache.logicalDocument(sourceText, metadata);
-    return handler(logicalDocument);
-}
-
 void removeMatchingOpenDirective(QStringList *scopeStack, const QString &openingDirective)
 {
     if (scopeStack == nullptr || openingDirective.isEmpty()) {
@@ -200,35 +174,37 @@ QString RawEditorCompletionContextAnalyzer::currentCompletionPrefix() const
     const int cursorOffset = cursor.position();
     const int lineNumber = block.blockNumber() + 1;
 
-    return withLogicalDocumentForEditor(context_.editor,
-                                        context_.sourceSnapshotCache,
-                                        [blockText, cursorColumn, cursorOffset, lineNumber](const TherionSourceLogicalDocument &logicalDocument) {
-                                            const TherionSourceLogicalTokenRange *tokenRange =
-                                                logicalDocument.tokenAtOffset(cursorOffset);
-                                            if (tokenRange == nullptr && cursorOffset > 0) {
-                                                const TherionSourceLogicalTokenRange *previousTokenRange =
-                                                    logicalDocument.tokenAtOffset(cursorOffset - 1);
-                                                if (previousTokenRange != nullptr) {
-                                                    const TherionSourcePhysicalRange &previousRange =
-                                                        previousTokenRange->physicalRange;
-                                                    const int previousEndOffset =
-                                                        previousRange.startOffset + previousRange.length;
-                                                    if (previousEndOffset == cursorOffset) {
-                                                        tokenRange = previousTokenRange;
-                                                    }
-                                                }
-                                            }
+    const TherionStudio::TextEditorSourceSnapshotContext snapshotContext =
+        TherionStudio::TextEditorSourceSnapshotContext::fromEditor(context_.editor);
+    return snapshotContext.withLogicalDocument(context_.sourceSnapshotCache,
+                                               [blockText, cursorColumn, cursorOffset, lineNumber](
+                                                   const TherionSourceLogicalDocument &logicalDocument) {
+                                                   const TherionSourceLogicalTokenRange *tokenRange =
+                                                       logicalDocument.tokenAtOffset(cursorOffset);
+                                                   if (tokenRange == nullptr && cursorOffset > 0) {
+                                                       const TherionSourceLogicalTokenRange *previousTokenRange =
+                                                           logicalDocument.tokenAtOffset(cursorOffset - 1);
+                                                       if (previousTokenRange != nullptr) {
+                                                           const TherionSourcePhysicalRange &previousRange =
+                                                               previousTokenRange->physicalRange;
+                                                           const int previousEndOffset =
+                                                               previousRange.startOffset + previousRange.length;
+                                                           if (previousEndOffset == cursorOffset) {
+                                                               tokenRange = previousTokenRange;
+                                                           }
+                                                       }
+                                                   }
 
-                                            if (tokenRange != nullptr
-                                                && tokenRange->type != TherionTokenType::Comment
-                                                && tokenRange->physicalRange.lineNumber == lineNumber) {
-                                                return completionPrefixWithinTokenRange(blockText,
-                                                                                       cursorColumn,
-                                                                                       *tokenRange);
-                                            }
+                                                   if (tokenRange != nullptr
+                                                       && tokenRange->type != TherionTokenType::Comment
+                                                       && tokenRange->physicalRange.lineNumber == lineNumber) {
+                                                       return completionPrefixWithinTokenRange(blockText,
+                                                                                              cursorColumn,
+                                                                                              *tokenRange);
+                                                   }
 
-                                            return completionPrefixAroundCursor(blockText, cursorColumn);
-                                        });
+                                                   return completionPrefixAroundCursor(blockText, cursorColumn);
+                                               });
 }
 
 QStringList RawEditorCompletionContextAnalyzer::activeCompletionScopeStack() const
@@ -245,15 +221,17 @@ QStringList RawEditorCompletionContextAnalyzer::activeCompletionScopeStack() con
         return scopeStack;
     }
 
-    return withLogicalDocumentForEditor(context_.editor,
-                                        context_.sourceSnapshotCache,
-                                        [this, currentBlockNumber](const TherionSourceLogicalDocument &logicalDocument) {
-                                            return scopeStackBeforeLine(logicalDocument.commands(),
-                                                                        currentBlockNumber + 1,
-                                                                        context_.normalizedDirectiveToken,
-                                                                        context_.openingDirectiveForClosingToken,
-                                                                        context_.isContainerDirectiveInstance);
-                                        });
+    const TherionStudio::TextEditorSourceSnapshotContext snapshotContext =
+        TherionStudio::TextEditorSourceSnapshotContext::fromEditor(context_.editor);
+    return snapshotContext.withLogicalDocument(context_.sourceSnapshotCache,
+                                               [this, currentBlockNumber](
+                                                   const TherionSourceLogicalDocument &logicalDocument) {
+                                                   return scopeStackBeforeLine(logicalDocument.commands(),
+                                                                               currentBlockNumber + 1,
+                                                                               context_.normalizedDirectiveToken,
+                                                                               context_.openingDirectiveForClosingToken,
+                                                                               context_.isContainerDirectiveInstance);
+                                               });
 }
 
 QString RawEditorCompletionContextAnalyzer::currentCompletionCommand() const
@@ -268,31 +246,43 @@ QString RawEditorCompletionContextAnalyzer::currentCompletionCommand() const
         return QString();
     }
 
-    return withLogicalDocumentForEditor(context_.editor,
-                                        context_.sourceSnapshotCache,
-                                        [this, &block](const TherionSourceLogicalDocument &logicalDocument) {
-                                            const TherionSourceLogicalCommand *command =
-                                                logicalDocument.commandAtPhysicalLine(block.blockNumber() + 1);
-                                            if (command == nullptr || command->parsed.tokens.isEmpty()) {
-                                                return QString();
-                                            }
+    const TherionStudio::TextEditorSourceSnapshotContext snapshotContext =
+        TherionStudio::TextEditorSourceSnapshotContext::fromEditor(context_.editor);
+    return snapshotContext.withLogicalDocument(context_.sourceSnapshotCache,
+                                               [this, &block](const TherionSourceLogicalDocument &logicalDocument) {
+                                                   const int cursorOffset = context_.editor->textCursor().position();
+                                                   const TherionSourceLogicalCommand *command =
+                                                       logicalDocument.commandAtOffset(cursorOffset);
+                                                   if (command == nullptr && cursorOffset > 0) {
+                                                       const TherionSourceLogicalCommand *previousCommand =
+                                                           logicalDocument.commandAtOffset(cursorOffset - 1);
+                                                       if (previousCommand != nullptr
+                                                           && previousCommand->endOffset == cursorOffset) {
+                                                           command = previousCommand;
+                                                       }
+                                                   }
+                                                   if (command == nullptr || command->parsed.tokens.isEmpty()) {
+                                                       return QString();
+                                                   }
 
-                                            const QString directive = context_.normalizedDirectiveToken(command->parsed.directive.toLower());
-                                            if (metadata().commandCompletionTokens.contains(directive, Qt::CaseInsensitive)
-                                                || metadata().commandOptionTokens.contains(directive)
-                                                || metadata().commandValueTokens.contains(directive)) {
-                                                return directive;
-                                            }
+                                                   const QString directive =
+                                                       context_.normalizedDirectiveToken(command->parsed.directive.toLower());
+                                                   if (metadata().commandCompletionTokens.contains(directive, Qt::CaseInsensitive)
+                                                       || metadata().commandOptionTokens.contains(directive)
+                                                       || metadata().commandValueTokens.contains(directive)) {
+                                                       return directive;
+                                                   }
 
-                                            const QStringList scopeStack = activeCompletionScopeStack();
-                                            for (int index = scopeStack.size() - 1; index >= 0; --index) {
-                                                const QString scopeDirective = scopeStack.at(index);
-                                                if (metadata().commandCompletionTokens.contains(scopeDirective, Qt::CaseInsensitive)) {
-                                                    return scopeDirective;
-                                                }
-                                            }
-                                            return QString();
-                                        });
+                                                   const QStringList scopeStack = activeCompletionScopeStack();
+                                                   for (int index = scopeStack.size() - 1; index >= 0; --index) {
+                                                       const QString scopeDirective = scopeStack.at(index);
+                                                       if (metadata().commandCompletionTokens.contains(scopeDirective,
+                                                                                                      Qt::CaseInsensitive)) {
+                                                           return scopeDirective;
+                                                       }
+                                                   }
+                                                   return QString();
+                                               });
 }
 
 QString RawEditorCompletionContextAnalyzer::currentCompletionScopeLabel() const

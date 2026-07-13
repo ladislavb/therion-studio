@@ -21,6 +21,8 @@
 
 #include "../../../core/TherionDocumentParser.h"
 #include "../../../core/TherionCommandLineModel.h"
+#include "../../../core/Th2GeometryProjection.h"
+#include "../../../core/TherionSourceLogicalDocument.h"
 #include "../../../core/TherionTokenRules.h"
 
 #include <algorithm>
@@ -2088,6 +2090,16 @@ QVector<MapSceneEntry> collectMapSceneEntries(const QVector<TherionParsedLine> &
     return entries;
 }
 
+QVector<MapSceneEntry> collectMapSceneEntries(const QVector<TherionSourceLogicalCommand> &commands)
+{
+    QVector<TherionParsedLine> parsedLines;
+    parsedLines.reserve(commands.size());
+    for (const TherionSourceLogicalCommand &command : commands) {
+        parsedLines.append(command.parsed);
+    }
+    return collectMapSceneEntries(parsedLines);
+}
+
 void renderMapWorkspaceScene(QGraphicsScene *scene,
                              const QString &documentPath,
                              const QVector<MapSceneEntry> &entries,
@@ -2130,14 +2142,21 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
     };
 
     const MapCanvasTheme canvasTheme = mapCanvasThemeForScene(scene);
-    const QRectF sceneFrame(0, 0, 1200, 900);
+    const QRectF sceneFrame = mapEditorCanvasSceneFrame();
     scene->setSceneRect(sceneFrame);
-    const QRectF geometryCanvas = sceneFrame.adjusted(24.0, 24.0, -24.0, -24.0);
+    const QRectF geometryCanvas = sceneFrame.adjusted(kMapEditorCanvasFrameInset,
+                                                       kMapEditorCanvasFrameInset,
+                                                       -kMapEditorCanvasFrameInset,
+                                                       -kMapEditorCanvasFrameInset);
     if (showEmptyDocumentGuides || !geometryFeatures.isEmpty()) {
-        makeMouseTransparent(scene->addRect(geometryCanvas, QPen(canvasTheme.canvasBorder, 1.2), QBrush(canvasTheme.canvasFill)));
+        QGraphicsRectItem *canvasItem =
+            makeMouseTransparent(scene->addRect(geometryCanvas, QPen(canvasTheme.canvasBorder, 1.2), QBrush(canvasTheme.canvasFill)));
+        if (canvasItem != nullptr && geometryFeatures.isEmpty()) {
+            canvasItem->setData(kMapSceneEmptyDocumentGuideRole, true);
+        }
     }
 
-    const QRectF previewBounds = geometryCanvas.adjusted(20.0, 20.0, -20.0, -20.0);
+    const QRectF previewBounds = mapEditorCanvasPreviewBounds();
     const QRectF sourceBounds = (sourceBoundsOverride.has_value() && sourceBoundsOverride->isValid())
         ? sourceBoundsOverride.value()
         : geometryBoundsForFeatures(geometryFeatures);
@@ -2154,6 +2173,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
 
     if (geometryFeatures.isEmpty() && showEmptyDocumentGuides) {
         auto *emptyGeometryItem = makeMouseTransparent(scene->addText(QObject::tr("No parseable point, line, or area geometry was found in this document yet."), QFont(QStringLiteral("Menlo"), 11)));
+        emptyGeometryItem->setData(kMapSceneEmptyDocumentGuideRole, true);
         emptyGeometryItem->setDefaultTextColor(canvasTheme.mutedText);
         emptyGeometryItem->setPos(previewBounds.left() + 16.0, previewBounds.top() + 16.0);
     } else {
@@ -3398,6 +3418,58 @@ QVector<MapGeometryFeature> collectGeometryFeatures(const QVector<TherionParsedL
     flushCurrentFeature();
     resolvePendingReferencedAreas();
 
+    return features;
+}
+
+QVector<MapGeometryFeature> collectGeometryFeatures(const Th2GeometryProjection &projection,
+                                                    const QVector<TherionSourceLogicalCommand> &commands)
+{
+    QVector<TherionParsedLine> parsedLines;
+    parsedLines.reserve(commands.size());
+    for (const TherionSourceLogicalCommand &command : commands) {
+        parsedLines.append(command.parsed);
+    }
+
+    QHash<int, QVector<MapGeometryFeature>> featuresByLine;
+    for (const MapGeometryFeature &feature : collectGeometryFeatures(parsedLines)) {
+        featuresByLine[feature.lineNumber].append(feature);
+    }
+
+    struct ProjectedFeatureRef
+    {
+        int lineNumber = 0;
+        MapGeometryFeature::Kind kind = MapGeometryFeature::Kind::Point;
+    };
+
+    QVector<ProjectedFeatureRef> projectedRefs;
+    projectedRefs.reserve(projection.points().size() + projection.lines().size() + projection.areas().size());
+    for (const Th2PointObject &point : projection.points()) {
+        projectedRefs.append({point.command.sourceRange.startLineNumber, MapGeometryFeature::Kind::Point});
+    }
+    for (const Th2LineObject &line : projection.lines()) {
+        projectedRefs.append({line.command.sourceRange.startLineNumber, MapGeometryFeature::Kind::Line});
+    }
+    for (const Th2AreaObject &area : projection.areas()) {
+        projectedRefs.append({area.command.sourceRange.startLineNumber, MapGeometryFeature::Kind::Area});
+    }
+    std::sort(projectedRefs.begin(), projectedRefs.end(), [](const ProjectedFeatureRef &a, const ProjectedFeatureRef &b) {
+        return a.lineNumber < b.lineNumber;
+    });
+
+    QVector<MapGeometryFeature> features;
+    features.reserve(projectedRefs.size());
+    for (const ProjectedFeatureRef &ref : std::as_const(projectedRefs)) {
+        if (ref.lineNumber <= 0) {
+            continue;
+        }
+        const QVector<MapGeometryFeature> candidates = featuresByLine.value(ref.lineNumber);
+        for (const MapGeometryFeature &candidate : candidates) {
+            if (candidate.kind == ref.kind) {
+                features.append(candidate);
+                break;
+            }
+        }
+    }
     return features;
 }
 

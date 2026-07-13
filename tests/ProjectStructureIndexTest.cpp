@@ -1,5 +1,6 @@
 #include "../src/core/ProjectStructureIndex.h"
 #include "../src/core/TherionDocumentParser.h"
+#include "../src/core/TherionSourceLogicalDocument.h"
 
 #include <QDir>
 #include <QFile>
@@ -1454,6 +1455,26 @@ int runTh2ObjectIndexGroupingTest()
     }
     if (!expect(parsedLineEntries.at(1).objectId == entries.at(1).objectId,
                 "The parsed-line TH2 object scan should preserve stable object IDs.")) {
+        return 1;
+    }
+
+    TherionSourceDocumentMetadata metadata;
+    metadata.sourceType = TherionSourceDocumentType::TherionMap;
+    const TherionSourceLogicalDocument logicalDocument = TherionSourceLogicalDocument::fromText(QStringLiteral(
+        "scrap s1\n"
+        "point 0 0 station -name a1\n"
+        "point 1 1 station -name a2\n"
+        "endscrap\n"),
+        metadata);
+    const QVector<ProjectStructureEntry> logicalEntries = ProjectStructureIndex::scanTh2Objects(
+        QStringLiteral("/tmp/example.th2"),
+        logicalDocument.commands());
+    if (!expect(logicalEntries.size() == entries.size(),
+                "The logical-command TH2 object scan should match the text-based scan entry count.")) {
+        return 1;
+    }
+    if (!expect(logicalEntries.at(1).objectId == entries.at(1).objectId,
+                "The logical-command TH2 object scan should preserve stable object IDs.")) {
         return 1;
     }
 

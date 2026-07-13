@@ -133,5 +133,6 @@ void MapEditorTab::applySourceDrivenMapRefresh()
     }
     rebuildInspectorObjectsTree();
     applyPendingNavigationSelection(true);
+    emit sourceDrivenMapRefreshCompleted();
 }
 }

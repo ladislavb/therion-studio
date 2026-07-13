@@ -2304,6 +2304,13 @@ QVector<ProjectStructureEntry> ProjectStructureIndex::scanTh2Objects(const QStri
     return scanTh2ObjectsFromLogicalCommands(sourceFile, commands);
 }
 
+QVector<ProjectStructureEntry> ProjectStructureIndex::scanTh2Objects(
+    const QString &sourceFile,
+    const QVector<TherionSourceLogicalCommand> &commands)
+{
+    return scanTh2ObjectsFromLogicalCommands(sourceFile, commands);
+}
+
 QString ProjectStructureIndex::structureEntryNodeKey(const ProjectStructureEntry &entry)
 {
     if (!entry.objectId.isEmpty()) {

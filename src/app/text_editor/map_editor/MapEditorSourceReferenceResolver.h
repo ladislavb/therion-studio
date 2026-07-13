@@ -14,6 +14,7 @@ namespace TherionStudio
 {
 struct TherionParsedLine;
 struct TherionSourceLogicalCommand;
+class Th2GeometryProjection;
 
 struct SourceVertexTextReference
 {
@@ -36,6 +37,9 @@ std::optional<MapGeometryFeature> lineFeatureForLineNumber(const QString &docume
 std::optional<MapGeometryFeature> lineFeatureForLineNumber(const QVector<TherionParsedLine> &parsedLines, int lineNumber);
 std::optional<MapGeometryFeature> lineFeatureForLineNumber(const QVector<TherionSourceLogicalCommand> &commands,
                                                            int lineNumber);
+std::optional<MapGeometryFeature> lineFeatureForLineNumber(const Th2GeometryProjection &projection,
+                                                           const QVector<TherionSourceLogicalCommand> &commands,
+                                                           int lineNumber);
 std::optional<MapGeometryFeature> geometryFeatureForLineNumber(const QVector<TherionSourceLogicalCommand> &commands,
                                                                int lineNumber,
                                                                MapGeometryFeature::Kind expectedKind);
@@ -45,12 +49,25 @@ QStringList coordinateRowsForLineVertices(const QVector<MapGeometryFeature::TH2L
 CursorGeometrySelection cursorGeometrySelectionForTextCursor(const QVector<TherionParsedLine> &parsedLines,
                                                              int cursorLine,
                                                              int cursorColumn);
+CursorGeometrySelection cursorGeometrySelectionForTextCursor(const QVector<TherionSourceLogicalCommand> &commands,
+                                                             int cursorLine,
+                                                             int cursorColumn);
+QString mapObjectKindForSourceLine(const Th2GeometryProjection &projection, int lineNumber);
 std::optional<SourceVertexTextReference> sourceVertexTextReferenceForSelection(const QVector<TherionParsedLine> &parsedLines,
                                                                                int featureLineNumber,
                                                                                const QString &geometryKind,
                                                                                int sourceVertexIndex);
+std::optional<SourceVertexTextReference> sourceVertexTextReferenceForSelection(
+    const QVector<TherionSourceLogicalCommand> &commands,
+    int featureLineNumber,
+    const QString &geometryKind,
+    int sourceVertexIndex);
 std::optional<QSet<int>> scrapObjectLinesForCursor(const QVector<TherionParsedLine> &parsedLines,
                                                    int cursorLine);
+std::optional<QSet<int>> scrapObjectLinesForCursor(const QVector<TherionSourceLogicalCommand> &commands,
+                                                   int cursorLine);
 std::optional<int> sourcePointLineNumberForSelection(const QVector<TherionParsedLine> &parsedLines,
+                                                     const QPointF &sourcePoint);
+std::optional<int> sourcePointLineNumberForSelection(const Th2GeometryProjection &projection,
                                                      const QPointF &sourcePoint);
 }

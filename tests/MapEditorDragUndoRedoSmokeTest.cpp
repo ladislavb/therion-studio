@@ -1195,6 +1195,21 @@ QSet<int> selectedSourceLineNumbers(QGraphicsScene *scene)
     return lineNumbers;
 }
 
+bool waitForSelectedSourceLineNumbers(QGraphicsScene *scene,
+                                      const QSet<int> &expectedLineNumbers,
+                                      int timeoutMs = 1000)
+{
+    const qint64 deadline = QDateTime::currentMSecsSinceEpoch() + timeoutMs;
+    while (QDateTime::currentMSecsSinceEpoch() <= deadline) {
+        pumpEvents();
+        if (selectedSourceLineNumbers(scene) == expectedLineNumbers) {
+            return true;
+        }
+        QThread::msleep(5);
+    }
+    return selectedSourceLineNumbers(scene) == expectedLineNumbers;
+}
+
 
 void sendMouse(QWidget *widget,
                QEvent::Type type,
@@ -2368,12 +2383,18 @@ int runAreaBorderHitSelectionSmoke()
     mapView->centerOn(areaFillItem);
     pumpEvents();
 
+    linePathItem = findPathItemForLine(mapView->scene(), 4);
+    areaFillItem = findPathItemForLine(mapView->scene(), 11, kMapSceneSelectionSubtypeAreaFill);
+    if (!expect(linePathItem != nullptr && areaFillItem != nullptr,
+                "Area scene items should remain available after initial viewport positioning.")) {
+        return 1;
+    }
+
     const QPointF borderScenePoint = linePathItem->mapToScene(linePathItem->path().pointAtPercent(0.25));
     const QPoint borderViewportPoint = mapView->mapFromScene(borderScenePoint);
     sendMouse(mapView->viewport(), QEvent::MouseButtonPress, borderViewportPoint, Qt::LeftButton, Qt::LeftButton);
     sendMouse(mapView->viewport(), QEvent::MouseButtonRelease, borderViewportPoint, Qt::LeftButton, Qt::NoButton);
-    pumpEvents();
-    if (!expect(selectedSourceLineNumbers(mapView->scene()) == QSet<int>({4}),
+    if (!expect(waitForSelectedSourceLineNumbers(mapView->scene(), QSet<int>({4})),
                 "Clicking a referenced area border should select the owning line object.")) {
         return 1;
     }
@@ -2383,6 +2404,13 @@ int runAreaBorderHitSelectionSmoke()
     }
     if (!expect(!objectsTree->selectionModel()->selectedRows().isEmpty(),
                 "Map-object selection should select the corresponding row in the Objects inspector.")) {
+        return 1;
+    }
+
+    linePathItem = findPathItemForLine(mapView->scene(), 4);
+    areaFillItem = findPathItemForLine(mapView->scene(), 11, kMapSceneSelectionSubtypeAreaFill);
+    if (!expect(linePathItem != nullptr && areaFillItem != nullptr,
+                "Area scene items should remain available after border selection.")) {
         return 1;
     }
 
@@ -2401,7 +2429,7 @@ int runAreaBorderHitSelectionSmoke()
     const QPoint nearBorderFillViewportPoint = mapView->mapFromScene(nearBorderFillScenePoint);
     sendMouse(mapView->viewport(), QEvent::MouseButtonPress, nearBorderFillViewportPoint, Qt::LeftButton, Qt::LeftButton);
     sendMouse(mapView->viewport(), QEvent::MouseButtonRelease, nearBorderFillViewportPoint, Qt::LeftButton, Qt::NoButton);
-    pumpEvents();
+    waitForSelectedSourceLineNumbers(mapView->scene(), QSet<int>({11}));
     const QSet<int> nearBorderSelection = selectedSourceLineNumbers(mapView->scene());
     if (!expect(nearBorderSelection == QSet<int>({11}),
                 "Clicking inside an area near its border at high zoom should select the area, not the border line.")) {
@@ -2420,12 +2448,16 @@ int runAreaBorderHitSelectionSmoke()
     mapTab->goToLine(4);
     pumpEvents();
 
+    areaFillItem = findPathItemForLine(mapView->scene(), 11, kMapSceneSelectionSubtypeAreaFill);
+    if (!expect(areaFillItem != nullptr,
+                "Area fill path should remain available after source navigation.")) {
+        return 1;
+    }
     const QPointF fillScenePoint = areaFillItem->mapToScene(areaFillItem->path().boundingRect().center());
     const QPoint fillViewportPoint = mapView->mapFromScene(fillScenePoint);
     sendMouse(mapView->viewport(), QEvent::MouseButtonPress, fillViewportPoint, Qt::LeftButton, Qt::LeftButton);
     sendMouse(mapView->viewport(), QEvent::MouseButtonRelease, fillViewportPoint, Qt::LeftButton, Qt::NoButton);
-    pumpEvents();
-    if (!expect(selectedSourceLineNumbers(mapView->scene()) == QSet<int>({11}),
+    if (!expect(waitForSelectedSourceLineNumbers(mapView->scene(), QSet<int>({11})),
                 "Clicking inside a referenced area fill should select the area object.")) {
         return 1;
     }
@@ -2638,6 +2670,21 @@ int runDragUndoRedoSmoke()
 
     const QString mixedUndoMarker = QStringLiteral("# mixed-undo-marker");
     const QString baselineBeforeMixedUndo = mapTab->text();
+    bool mixedUndoSourceRefreshCompleted = false;
+    QEventLoop mixedUndoSourceRefreshLoop;
+    QTimer mixedUndoSourceRefreshTimeout;
+    mixedUndoSourceRefreshTimeout.setSingleShot(true);
+    QObject::connect(mapTab,
+                     &MapEditorTab::sourceDrivenMapRefreshCompleted,
+                     &mixedUndoSourceRefreshLoop,
+                     [&mixedUndoSourceRefreshCompleted, &mixedUndoSourceRefreshLoop]() {
+                         mixedUndoSourceRefreshCompleted = true;
+                         mixedUndoSourceRefreshLoop.quit();
+                     });
+    QObject::connect(&mixedUndoSourceRefreshTimeout,
+                     &QTimer::timeout,
+                     &mixedUndoSourceRefreshLoop,
+                     &QEventLoop::quit);
     textEditor->goToLineColumn(18, 9);
     pumpEvents();
     sourceEditor->setFocus(Qt::OtherFocusReason);
@@ -2651,6 +2698,14 @@ int runDragUndoRedoSmoke()
     const QString textAfterTextUndoEntry = mapTab->text();
     if (!expect(textAfterTextUndoEntry.contains(mixedUndoMarker),
                 "Mixed undo arbitration test should include marker text after text-side edit.")) {
+        return 1;
+    }
+    if (!mixedUndoSourceRefreshCompleted) {
+        mixedUndoSourceRefreshTimeout.start(2000);
+        mixedUndoSourceRefreshLoop.exec();
+    }
+    if (!expect(mixedUndoSourceRefreshCompleted,
+                "Mixed undo arbitration test should wait for the marker text map projection.")) {
         return 1;
     }
 
@@ -2864,14 +2919,22 @@ int runDragUndoRedoSmoke()
     const int lineDirectivesBefore = countDirectiveLines(textBeforeInteractiveDrawing, QStringLiteral("line"));
     const int areaDirectivesBefore = countDirectiveLines(textBeforeInteractiveDrawing, QStringLiteral("area"));
     const QPoint viewportCenter = mapView->viewport()->rect().center();
+    const QPoint offCenterPointInsertPosition = viewportCenter + QPoint(96, -64);
     const QString textBeforePointInsert = mapTab->text();
+    const QPointF sceneCenterBeforePointInsert = mapView->mapToScene(mapView->viewport()->rect().center());
     mapTab->triggerAddPoint();
     pumpEvents();
-    sendMouse(mapView->viewport(), QEvent::MouseButtonPress, viewportCenter, Qt::LeftButton, Qt::LeftButton);
-    sendMouse(mapView->viewport(), QEvent::MouseButtonRelease, viewportCenter, Qt::LeftButton, Qt::NoButton);
-    pumpEvents();
+    sendMouse(mapView->viewport(), QEvent::MouseButtonPress, offCenterPointInsertPosition, Qt::LeftButton, Qt::LeftButton);
+    sendMouse(mapView->viewport(), QEvent::MouseButtonRelease, offCenterPointInsertPosition, Qt::LeftButton, Qt::NoButton);
+    waitForMs(200);
     if (!expect(countDirectiveLines(mapTab->text(), QStringLiteral("point")) == pointDirectivesBefore + 1,
                 "Point mode click-to-place should insert one new point directive.")) {
+        return 1;
+    }
+    const QPointF sceneCenterAfterPointInsert = mapView->mapToScene(mapView->viewport()->rect().center());
+    const QPointF pointInsertSceneCenterDelta = sceneCenterAfterPointInsert - sceneCenterBeforePointInsert;
+    if (!expect(std::hypot(pointInsertSceneCenterDelta.x(), pointInsertSceneCenterDelta.y()) < 3.0,
+                "Inserting an off-center point should not recenter the map viewport on that point.")) {
         return 1;
     }
     const QString textAfterPointInsert = mapTab->text();

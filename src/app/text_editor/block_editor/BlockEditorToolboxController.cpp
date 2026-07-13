@@ -2,11 +2,13 @@
 
 #include "BlockEditorCanvasItem.h"
 #include "BlockEditorDirectiveRules.h"
-#include "BlockEditorSourceText.h"
 #include "../TextEditorCommandMetadata.h"
+#include "../TextEditorSourceSnapshotContext.h"
 
 #include "../../../core/TherionDocumentParser.h"
 #include "../../../core/TherionFileTypes.h"
+#include "../../../core/TherionSourceLogicalDocument.h"
+#include "../../../core/TherionSourceSnapshotCache.h"
 
 #include <QComboBox>
 #include <QCoreApplication>
@@ -414,12 +416,18 @@ QString BlockEditorToolboxController::selectedBlockInsertionContextToken() const
         return QStringLiteral("none");
     }
 
+    const TherionStudio::TextEditorSourceSnapshotContext snapshotContext =
+        TherionStudio::TextEditorSourceSnapshotContext::fromEditor(editor());
+    const TherionSourceLogicalDocument &logicalDocument = snapshotContext.logicalDocument(sourceSnapshotCache_);
+
     QStringList stack;
-    const QStringList lines = blockEditorNormalizedSourceLines(editor()->toPlainText());
-    const int lastLine = qMin(selectedBlock->lineNumber() - 1, lines.size());
-    for (int lineIndex = 0; lineIndex < lastLine; ++lineIndex) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(lines.at(lineIndex), lineIndex + 1);
-        const QString directive = normalizeDirective(parsedLine.directive);
+    const int lastLine = selectedBlock->lineNumber();
+    for (const TherionSourceLogicalCommand &command : logicalDocument.commands()) {
+        if (command.startLineNumber >= lastLine) {
+            break;
+        }
+
+        const QString directive = normalizeDirective(command.parsed.directive);
         if (directive.isEmpty()) {
             continue;
         }
@@ -435,7 +443,7 @@ QString BlockEditorToolboxController::selectedBlockInsertionContextToken() const
             continue;
         }
 
-        if (isContainerDirectiveInstance(directive, parsedLine)) {
+        if (isContainerDirectiveInstance(directive, command.parsed)) {
             stack.append(directive);
         }
     }

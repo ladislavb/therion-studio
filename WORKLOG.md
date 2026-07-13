@@ -4,22 +4,25 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Current Focus
 
-1. `2026.7.2` development planning and first implementation slices after `2026.7.1`.
-2. Unified Source DOM consumer migration in small, tested slices.
-3. Project source snapshot and validation/cache reuse work for repeated project scans.
-4. Plan-driven follow-ups for map partial refresh, GUI cleanup, SVG backgrounds, reporting, and 3D viewer refinement.
+1. `2026.7.2` post-DOM stabilization and next feature selection.
+2. Real-project smoke testing for Raw, Blocks, Map, Validation, Structure, and Compiler navigation after DOM closure.
+3. Track the one-off `MapEditorDragUndoRedoSmokeTest` segfault signal from the first full verification run.
+4. Plan-driven follow-ups for map partial refresh, validation/cache tuning, GUI cleanup, SVG backgrounds, reporting, LiDAR design, and 3D viewer refinement.
 
 ## Active Work
 
 ### 2026.7.2 Planning
 
-- Treat Unified Source DOM completion as the primary `2026.7.2` release theme. Use
-  `plans/UNIFIED_SOURCE_DOM_PLAN.md` as the ordered migration backlog and keep each implementation commit to one
-  Raw/Blocks/Map/Structure/Validation/transaction slice.
+- Treat Unified Source DOM implementation as closed for `2026.7.2`; the completed M0-M9 plan is archived at
+  `plans/archive/UNIFIED_SOURCE_DOM_PLAN.md`. Future parser/source-model work should treat the DOM as the current
+  architecture and extend it through focused regressions rather than reviving the migration queue.
+- Raw source workspaces now expose an explicit `Format Document` toolbar action with a `text-quote` icon. It uses the shared source document
+  structure to normalize leading indentation to literal tabs in one undo step while preserving code bodies, blank rows,
+  line endings, and encoding; formatting remains opt-in rather than an opening/save side effect.
 - Keep SQL reporting improvements scoped to incremental follow-ups such as saved presets, filtering, summaries/charts, or
-  direct database-export workflows after the active DOM slice is not at risk.
-- Keep LiDAR/point-cloud processing as design/backlog work until the DOM migration has a stable Map/TH2 projection
-  boundary; do not start heavy point-cloud implementation during the DOM completion push.
+  direct database-export workflows.
+- Keep LiDAR/point-cloud processing as design/backlog work until the Map/TH2 projection boundary has a concrete import,
+  registration, and 2D projection design.
 
 ### 2026.7.1 Stabilization Notes
 
@@ -94,62 +97,22 @@ Active planning only. Completed history belongs in archive files. Stable archite
   summaries/charts, or a direct Therion `export database` action before expanding the SQL viewer into a broader analysis
   workspace.
 
-### Unified Source DOM / Transactions
+### Post-DOM Stabilization
 
-- Use `plans/UNIFIED_SOURCE_DOM_PLAN.md` as the detailed slice queue.
-- Raw completion prefix detection now uses shared logical token ranges for parsed cursor tokens while preserving the
-  existing completion-character filtering for path and partial-token behavior; keep this covered in
-  `TextEditorRawEditorQTests`.
-- Blocks canvas data-body scanning now uses shared logical commands when deciding where data rows end, so continuation
-  rows after a data body do not get reparsed as standalone raw lines.
-- Blocks details selection loading now reads selected logical commands from a source snapshot when populating read-only
-  fields and option rows for continued commands.
-- Blocks logical-line consumers now share a DOM-aware parsed-line helper that prefers cached
-  `TherionSourceLogicalDocument` commands and source-document physical lines before falling back to legacy synthetic-line
-  parsing.
-- Map details panel line-action, line-option, and line-point read-only feature lookups now consume
-  `TherionSourceLogicalDocument` commands through `MapEditorSourceReferenceResolver` instead of reparsing the full editor
-  text for each lookup.
-- Map area-reference lookups now have logical-command resolver overloads, and the object-details delete guard reads the
-  "Used by area" state from the shared logical source projection instead of reparsing editor text directly.
-- Map selection and inspector-object area-reference consumers now receive revision-cached logical commands from
-  `MapEditorTab` instead of reparsing editor text for border-line highlighting and delete-blocked state.
-- The object-details delete guard now uses the same logical-command area-reference resolver before mutating source text,
-  avoiding the last map area-reference lookup that reparsed editor text directly.
-- The object-details panel now reuses the map tab's revision-cached logical commands for read-only selected-command,
-  line-feature, area-reference, quick-field, and scrap-scale lookups instead of creating local source snapshot caches per
-  field refresh.
-- Line-extension start now resolves the selected endpoint feature from the map tab's revision-cached logical commands,
-  while the commit path still uses explicit before/after source text for the rewrite transaction.
-- Canvas line-vertex owner selection restore now resolves line features from the map tab's revision-cached logical commands
-  instead of reparsing editor text during restore.
-- Canvas partial-refresh feature resolution after a source edit now also uses revision-cached logical commands; rewrite
-  planning paths still use explicit before/after source text snapshots.
-- Map controller contexts now share a small `MapEditorLogicalSourceContext` for revision-cached logical command access
-  instead of each owning an identical callback field.
-- Map canvas source-transaction test contexts now provide the same logical-source callback shape as production contexts,
-  keeping partial-refresh regression coverage aligned with the shared logical-source path.
-- Map partial-refresh regression coverage now verifies that vertex index entries point to live scene items for the
-  refreshed line after one-line item replacement.
-- Next implementation slice: pause DOM migration and switch to the next `2026.7.1` performance/UX item, or start a
-  dedicated TH2 geometry projection design slice before touching rewrite planners.
-- Keep Therion namespace/reference changes behind `docs/THERION_COMPATIBILITY.md` coverage, especially
-  `object@child.parent` qualified-reference order.
-- Keep source transaction ownership work incremental: one caller or workflow per commit, with explicit result handling,
-  undo label, revision behavior, projection invalidation, dirty-state behavior, and selection/cursor restoration.
-- Source transaction diagnostics now split undo timing into command creation, `QUndoStack::push`, and guard overhead so
-  map vertex-move logs can identify whether remaining latency is snapshot allocation or undo-stack insertion.
-- Map undo-stack index changes now update the command surface once through the undo-owner handler instead of also using a
-  duplicate direct command-surface connection during every map undo push.
-- Do not delete token-line compatibility APIs until Map geometry and legacy tests have replacement coverage.
+- Keep the shared source model architecture guarded by `scripts/check_structure_constraints.py`; new direct
+  `TherionDocumentParser` production calls should remain limited to the documented core/synthetic exception list.
+- Run real-project smoke passes before broadening source-model behavior again: Raw completion/help/validation, Blocks
+  nested/data/continued commands, Map selection/inspector/create/delete/move/split/backgrounds, Structure, Validation,
+  and Compiler diagnostic navigation.
+- Keep further parser/source-model changes incremental and regression-backed; do not revive the archived DOM migration
+  queue for ordinary feature work.
 
 ### Validation And Catalog Metadata
 
 - Treat full-project validation as an explicit/manual workflow by default; use the Settings toggle only when projects are
   small enough or the user wants live full-project diagnostics.
-- Use `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md` for the DOM-first project source snapshot slice queue; current
-  findings show Structure and Validation now share snapshot-compatible collection/index input paths, while repeated
-  requests still need explicit cache ownership.
+- Use `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md` only for future validation/cache follow-ups; Structure and
+  Validation already share snapshot-compatible collection/index input paths and explicit cache ownership.
 - `ProjectSourceProjectionCache` now provides the first focused per-run source/logical projection cache for project source
   snapshots with observable reuse stats.
 - `ProjectValidationScanner` local per-file validation now uses `ProjectSourceProjectionCache` for source and
@@ -207,6 +170,12 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ### Map Input And Partial Refresh
 
+- Map scene scrolling now expands around visible background layer bounds while keeping the base map/source projection fixed, so a moved, scaled, or rotated raster/SVG/XVI layer can be panned to every edge instead of being cut off at the original canvas rectangle; asynchronously loaded backgrounds also suppress stale empty-map guides once they become visible.
+- Map `Fit` now falls back to the fixed canvas when a document has no geometry; backgrounds are included only by the explicit `Fit With Background` action, avoiding a scrollbar-resize loop in empty maps with asynchronously loaded backgrounds.
+- Map primary clicks now keep highlighted-path pending metadata for overlapping line hits while treating an actual area-fill hit as authoritative near shared borders, preserving both Bezier handle activation and high-zoom area selection.
+- Map file loading now cancels the debounced source-edit refresh before performing its explicit scene refresh, preventing a delayed duplicate rebuild from invalidating freshly exposed scene items during early interaction; cross-platform smoke fixtures reacquire scene items after event-loop boundaries and use native temporary project roots.
+- Background session state now only supplements layers declared in the current TH2 metadata; it can no longer silently restore a session-only drawing reference into an empty or unrelated TH2 document.
+- Map point insertion now captures the original scene rectangle and exact scrollbar values before its source transaction, then reapplies them after every deferred projection and selection update; the values therefore retain their original scene-coordinate meaning and avoid both the old large remap jump and high-zoom rounding drift. Transitional viewport repaints remain suppressed until the preserved state is restored. The interactive drag/undo smoke test covers the regression.
 - Keep `plans/MAP_PARTIAL_REFRESH_PLAN.md` as the detailed slice queue for widening one-line map partial refresh.
 - Use `MapEditorLargeScenePerformanceSmokeTest` as the local generated large-map harness when comparing map refresh
   changes; it targets roughly 2k parsed lines and 6k scene items without relying on external cave data.
@@ -257,8 +226,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   as `InspectorPanel` must be linked through every static library that compiles consumers of those symbols, not only
   through the main executable or a single test runner.
 - Keep UI smoke tests deterministic across platform event-loop timing differences.
-- When touching source-driven map scene refresh, repeat `MapEditorDragUndoRedoSmokeTest` to guard delayed refresh
-  selection restoration for cursor-derived line/area ownership such as `endline` and `endarea`.
+- When touching source-driven map scene refresh, synchronize tests through the explicit refresh-completion signal and repeat
+  `MapEditorDragUndoRedoSmokeTest` to guard delayed refresh selection restoration for cursor-derived line/area ownership
+  such as `endline` and `endarea`.
 - Keep explicit user confirmation before every `git commit`.
 
 ### UI Cleanup
@@ -296,8 +266,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Complete safe one-line map partial refresh according to `plans/MAP_PARTIAL_REFRESH_PLAN.md` after release stabilization.
 - Optional Structure graph view for relationships such as `preview`, `revise`, `join`, `equate`, relationship status, and station-network edges.
 - Compiler-confirmed project-index comparison once lightweight indexing is no longer sufficient.
-- Add project-index snapshot cache ownership and per-file validation cache according to
-  `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md`.
+- Broaden retained project validation cache coverage only if fresh logs show repeated scans still rebuilding unchanged
+  source or project-index projections.
 - Restore automatic full-project validation as the recommended/default mode only after live diagnostics are incremental,
   cancellable, and UI-cheap for nested projects.
 - Add a manual `Help -> Check for Updates...` workflow only after deciding how to handle networking without destabilizing

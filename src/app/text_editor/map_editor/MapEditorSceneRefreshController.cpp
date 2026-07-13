@@ -4,7 +4,7 @@
 #include "MapEditorSceneInternals.h"
 #include "MapEditorSceneSupport.h"
 #include "MapEditorSourceReferenceResolver.h"
-#include "../../../core/TherionDocumentParser.h"
+#include "../../../core/TherionSourceDocument.h"
 #include "../../../platform/DiagnosticLogging.h"
 
 #include <QGraphicsScene>
@@ -61,6 +61,19 @@ MapEditorSceneRefreshController::MapEditorSceneRefreshController(MapEditorSceneR
 QGraphicsScene *MapEditorSceneRefreshController::scene() const
 {
     return context_.scene != nullptr ? *context_.scene : nullptr;
+}
+
+void MapEditorSceneRefreshController::updateSceneRectForBackgroundBounds()
+{
+    QGraphicsScene *mapScene = scene();
+    if (mapScene == nullptr) {
+        return;
+    }
+
+    const QRectF backgroundBounds = context_.mapBackgroundFitBounds
+        ? context_.mapBackgroundFitBounds()
+        : QRectF();
+    mapScene->setSceneRect(mapEditorScrollableSceneRect(backgroundBounds));
 }
 
 bool restoreSceneRefreshSelection(const MapEditorSceneRefreshContext &context)
@@ -121,6 +134,7 @@ bool restoreSceneRefreshSelection(const MapEditorSceneRefreshContext &context)
 }
 
 int fallbackSceneRefreshSelectionLine(const MapEditorSceneRefreshContext &context,
+                                      const QVector<TherionSourceLogicalCommand> &commands,
                                       const QVector<TherionParsedLine> &parsedLines)
 {
     const int cursorLine = context.currentLineNumber ? context.currentLineNumber() : 0;
@@ -129,8 +143,9 @@ int fallbackSceneRefreshSelectionLine(const MapEditorSceneRefreshContext &contex
         return 0;
     }
 
-    const CursorGeometrySelection cursorSelection =
-        cursorGeometrySelectionForTextCursor(parsedLines, cursorLine, cursorColumn);
+    const CursorGeometrySelection cursorSelection = !commands.isEmpty()
+        ? cursorGeometrySelectionForTextCursor(commands, cursorLine, cursorColumn)
+        : cursorGeometrySelectionForTextCursor(parsedLines, cursorLine, cursorColumn);
     return cursorSelection.featureLineNumber > 0
         ? cursorSelection.featureLineNumber
         : cursorLine;
@@ -203,6 +218,7 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
     const QTransform preservedTransform = canPreserveViewport
         ? context_.view->transform()
         : QTransform();
+    const QRectF preservedSceneRect = canPreserveViewport ? mapScene->sceneRect() : QRectF();
     const QPointF preservedCenter = canPreserveViewport
         ? context_.view->mapToScene(context_.view->viewport()->rect().center())
         : QPointF();
@@ -228,15 +244,42 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
     context_.clearMapScene();
     const qint64 clearMs = logTiming ? stageTimer.restart() : 0;
 
-    const QVector<TherionParsedLine> parsedLines = context_.parsedLinesForCurrentDocument
-        ? context_.parsedLinesForCurrentDocument()
-        : TherionDocumentParser::parseTokenLines(context_.documentText());
+    const QVector<TherionSourceLogicalCommand> logicalCommands =
+        context_.logicalSource.logicalCommandsForCurrentDocument
+            ? context_.logicalSource.logicalCommandsForCurrentDocument()
+            : QVector<TherionSourceLogicalCommand>();
+    const bool hasLogicalSource = context_.logicalSource.logicalCommandsForCurrentDocument != nullptr;
+    std::optional<QVector<TherionParsedLine>> parsedLines;
+    auto parsedLinesForRefresh = [&]() -> const QVector<TherionParsedLine> & {
+        if (!parsedLines.has_value()) {
+            parsedLines = context_.parsedLinesForCurrentDocument
+                ? context_.parsedLinesForCurrentDocument()
+                : TherionSourceDocument::fromText(context_.documentText()).tokenLines();
+        }
+        return parsedLines.value();
+    };
     const qint64 parseMs = logTiming ? stageTimer.restart() : 0;
-    const QVector<MapSceneEntry> entries = collectMapSceneEntries(parsedLines);
-    QVector<MapGeometryFeature> geometryFeatures = collectGeometryFeatures(parsedLines);
+    const QVector<MapSceneEntry> entries = hasLogicalSource
+        ? collectMapSceneEntries(logicalCommands)
+        : collectMapSceneEntries(parsedLinesForRefresh());
+    QVector<MapGeometryFeature> geometryFeatures;
+    if (context_.logicalSource.geometryProjectionForCurrentDocument
+        && hasLogicalSource) {
+        const Th2GeometryProjection geometryProjection =
+            context_.logicalSource.geometryProjectionForCurrentDocument();
+        geometryFeatures = collectGeometryFeatures(geometryProjection, logicalCommands);
+    } else {
+        geometryFeatures = collectGeometryFeatures(parsedLinesForRefresh());
+    }
     QHash<int, TherionParsedLine> parsedLinesByLineNumber;
-    for (const TherionParsedLine &parsedLine : parsedLines) {
-        parsedLinesByLineNumber.insert(parsedLine.lineNumber, parsedLine);
+    if (hasLogicalSource) {
+        for (const TherionSourceLogicalCommand &command : logicalCommands) {
+            parsedLinesByLineNumber.insert(command.parsed.lineNumber, command.parsed);
+        }
+    } else {
+        for (const TherionParsedLine &parsedLine : parsedLinesForRefresh()) {
+            parsedLinesByLineNumber.insert(parsedLine.lineNumber, parsedLine);
+        }
     }
     for (MapGeometryFeature &feature : geometryFeatures) {
         if (feature.kind != MapGeometryFeature::Kind::Point) {
@@ -278,16 +321,27 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
     context_.restoreBackgroundImageItems();
     context_.reprojectMetadataBackgroundLayersForCurrentDocument();
     context_.restoreDraftGeometryItems();
+    if (!canPreserveViewport) {
+        updateSceneRectForBackgroundBounds();
+    }
     const qint64 backgroundMs = logTiming ? stageTimer.restart() : 0;
     const bool restoredSelection = restoreSceneRefreshSelection(context_);
     if (!restoredSelection) {
-        context_.selectMapLine(fallbackSceneRefreshSelectionLine(context_, parsedLines), !preserveViewport);
+        context_.selectMapLine(fallbackSceneRefreshSelectionLine(
+                                   context_,
+                                   logicalCommands,
+                                   hasLogicalSource ? QVector<TherionParsedLine>{} : parsedLinesForRefresh()),
+                               !preserveViewport);
     }
     const qint64 selectionMs = logTiming ? stageTimer.restart() : 0;
     context_.applyInspectorObjectVisibility();
     context_.updateGeometrySelectionPresentation();
     const qint64 presentationMs = logTiming ? stageTimer.restart() : 0;
     if (canPreserveViewport) {
+        // Retaining the original scene rect means the exact scrollbar values
+        // still refer to the same scene coordinates. This avoids both the
+        // large remap jump and the high-zoom rounding drift of centerOn().
+        mapScene->setSceneRect(preservedSceneRect);
         context_.view->setTransform(preservedTransform);
         if (preservedHorizontalScrollBar != nullptr && preservedVerticalScrollBar != nullptr) {
             preservedHorizontalScrollBar->setValue(qBound(preservedHorizontalScrollBar->minimum(),
@@ -325,7 +379,7 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
                    .arg(preserveViewport ? 1 : 0)
                    .arg(beforeItemCount)
                    .arg(afterItemCount)
-                   .arg(parsedLines.size())
+                   .arg(parsedLines.has_value() ? parsedLines->size() : 0)
                    .arg(entries.size())
                    .arg(geometryFeatures.size())
                    .arg(restoredSelection ? 1 : 0)

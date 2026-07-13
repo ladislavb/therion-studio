@@ -53,6 +53,7 @@ public:
     void clearBackgroundImageItems();
     void restoreDraftGeometryItems();
     void restoreBackgroundImageItems();
+    void updateSceneRectForBackgroundBounds();
     void fitMapToView(bool includeBackgroundImages, bool updateCommandSurface = true);
     void syncZoomFactorFromView();
     void applyZoomAtViewportPosition(qreal factor, const QPointF &viewportPosition);

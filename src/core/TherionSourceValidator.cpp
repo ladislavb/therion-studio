@@ -458,12 +458,18 @@ QString optionDeduplicationKey(const QString &optionToken, const QStringList &va
         + values.join(QLatin1Char('\n'));
 }
 
+TherionParsedLine parseValidatorSyntheticLine(const QString &lineText)
+{
+    // Validator fix previews and block-frame diagnostics intentionally reparse one synthetic line.
+    return TherionDocumentParser::parseLine(lineText);
+}
+
 QString objectIdScopeKey(const QVector<TherionSourceBlockFrame> &blockStack)
 {
     QStringList parts;
     parts.reserve(blockStack.size());
     for (const TherionSourceBlockFrame &frame : blockStack) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(frame.lineText);
+        const TherionParsedLine parsedLine = parseValidatorSyntheticLine(frame.lineText);
         QString id;
         if (parsedLine.tokens.size() > 1) {
             id = parsedLine.tokens.at(1).trimmed();
@@ -477,7 +483,7 @@ QString scrapObjectScopeKey(const QVector<TherionSourceBlockFrame> &blockStack)
 {
     QStringList parts;
     for (const TherionSourceBlockFrame &frame : blockStack) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(frame.lineText);
+        const TherionParsedLine parsedLine = parseValidatorSyntheticLine(frame.lineText);
         QString id;
         if (parsedLine.tokens.size() > 1) {
             id = parsedLine.tokens.at(1).trimmed();
@@ -741,7 +747,7 @@ QString cleanupInvalidSubtypeValues(const QString &lineText,
 
     QString updated = lineText;
     for (;;) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(updated);
+        const TherionParsedLine parsedLine = parseValidatorSyntheticLine(updated);
         const ParsedCommandOptions commandOptions = parseCommandOptions(parsedLine.directive,
                                                                         parsedLine.tokens,
                                                                         {},
@@ -824,7 +830,7 @@ QString cleanupDuplicateOptions(const QString &lineText,
 
     QString updated = lineText;
     for (;;) {
-        const TherionParsedLine parsedLine = TherionDocumentParser::parseLine(updated);
+        const TherionParsedLine parsedLine = parseValidatorSyntheticLine(updated);
         const ParsedCommandOptions commandOptions = parseCommandOptions(parsedLine.directive,
                                                                         parsedLine.tokens,
                                                                         {},
