@@ -5,8 +5,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ## Current Focus
 
 1. `2026.7.2` post-DOM stabilization and next feature selection.
-2. Continue `SQL_REPORT_ASYNC_PLAN.md` with S3: import/query dispatch and stale-result suppression are now asynchronous,
-   while real SQLite interruption and deadline feasibility still need cross-platform proof. Keep watcher W1-W4 queued behind SQL
+2. Decide the S3 dependency boundary in `SQL_REPORT_ASYNC_PLAN.md`: import/query dispatch and stale-result suppression
+   are asynchronous, but Qt QSQLITE has no cancellation hook and portable interruption requires a directly owned SQLite
+   adapter or an explicit decision to leave P1-2 open. Keep watcher W1-W4 queued behind SQL
    S1-S4 as a separate worker/thread-affinity chain.
 3. Real-project smoke testing for Raw, Blocks, Map, Validation, Structure, and Compiler navigation after DOM closure.
 4. Plan-driven follow-ups for map partial refresh, validation/cache tuning, GUI cleanup, SVG backgrounds, reporting, LiDAR design, and 3D viewer refinement.
@@ -264,6 +265,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Blocked / Needs Input
 
+- SQL report interruption/deadline: Qt QSQLITE reports `CancelQuery` unsupported, and its native handle cannot safely be
+  passed to an independently linked SQLite library across all packaged platforms. Recommended next step is an explicit
+  decision whether to add a versioned direct-SQLite adapter/dependency for the isolated report subsystem.
 - Old Therion/Metapost crash fixture: parked until a reproducible project or minimal fixture is available.
 - Stylus/Sidecar behavior: needs hardware-specific manual validation.
 

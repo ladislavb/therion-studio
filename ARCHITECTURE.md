@@ -129,6 +129,9 @@ SQL report import and query execution target a dedicated worker-thread boundary:
 The async tab workflow suppresses superseded results and keeps closing bounded by disconnecting UI publication before
 the worker drains. It does not yet interrupt a SQLite statement already executing; real interruption and deadline policy
 remain S3 scope, so the SQL responsiveness finding stays open until that slice is verified on packaged platforms.
+Qt's QSQLITE driver currently reports query cancellation as unsupported. Native-handle interruption shall not be added
+unless the application can guarantee that every packaged platform calls the same SQLite library instance that owns the
+connection; linking an unrelated SQLite library and passing it the plugin-owned handle is not an accepted seam.
 
 ## Validation Architecture
 

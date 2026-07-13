@@ -100,20 +100,21 @@ Verification:
 
 ### P1-2 — SQL Import and Queries Can Block the UI Indefinitely
 
-Progress (2026-07-13): S1 added and verified the worker-owned, thread-affine SQLite contract and value request/result
-DTOs. The production tab has not moved to that boundary yet; supersession, interruption, and bounded teardown remain
-open in S2-S4, so this finding is not resolved.
+Progress (2026-07-13): S1-S2 added the worker-owned, thread-affine SQLite contract, moved the production tab to an
+explicitly injected async session, and verified stale-result suppression, event-loop responsiveness, and bounded UI
+teardown. S3 feasibility confirmed that Qt QSQLITE does not support `QSqlDriver::CancelQuery`; a portable native
+interruption/deadline path requires an explicit direct-SQLite dependency decision. This finding remains open.
 
 Evidence:
 
-- `src/app/reports/TherionSqlReportTab.cpp:134-150` calls `database_.importFile()` synchronously from the widget load
-  path.
-- `src/app/reports/TherionSqlReportDatabase.cpp:232-308` reads the entire file, splits all statements, and executes each
-  import statement in the calling thread.
-- `src/app/reports/TherionSqlReportTab.cpp:414-440` executes arbitrary accepted `SELECT`/`WITH` queries synchronously.
-- `src/app/reports/TherionSqlReportDatabase.cpp:311-350` has a result-row limit but no execution deadline, progress
-  handler, cancellation, or worker boundary. A computationally expensive or recursive query can freeze the application
-  before a row is returned.
+- `TherionSqlReportWorkerSession` now dispatches imports and queries to the connection-owning worker thread, so these
+  operations no longer freeze the UI event loop.
+- `TherionSqlReportTab` suppresses results whose request ID or source generation has been superseded and disconnects UI
+  publication before asynchronous teardown.
+- `TherionSqlReportDatabase` still has a result-row limit but no execution deadline or progress handler; the row cap
+  cannot stop computation before a row is returned.
+- Qt 6 QSQLITE reports `QSqlDriver::CancelQuery` as unsupported. Using `sqlite3_interrupt()` through the exposed native
+  handle is not portable unless the application owns and packages the exact SQLite library behind that handle.
 
 Impact:
 

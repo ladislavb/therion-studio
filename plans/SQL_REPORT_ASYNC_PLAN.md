@@ -4,7 +4,7 @@ Date: 2026-07-13
 
 Review findings: P1-2 and the report-specific part of P2-1.
 
-Status: active; S1-S2 complete, S3 is next.
+Status: active; S1-S2 complete, S3 feasibility hit a stop condition and needs an explicit dependency decision.
 
 Scope: move Therion SQL import and read-only report queries behind a worker-owned SQLite connection with request
 supersession, real interruption, bounded execution, and safe tab teardown. Preset persistence and CSV file output move
@@ -118,6 +118,34 @@ Stop conditions:
 
 If blocked, record the driver/platform evidence and keep the finding open. Do not claim cancellation based only on
 discarding a late result.
+
+Feasibility outcome (2026-07-13): blocked at the planned stop condition.
+
+- Qt's current QSQLITE implementation reports `QSqlDriver::CancelQuery` as unsupported and does not override the
+  thread-safe `QSqlDriver::cancelQuery()` hook. Calling that public Qt API therefore cannot interrupt a running query.
+- `QSqlDriver::handle()` can expose a `sqlite3*`, and SQLite documents `sqlite3_interrupt()` as safe from another thread
+  while the connection is guaranteed not to close. SQLite also exposes a progress handler suitable for deadlines.
+- Calling either native function still requires the exact SQLite ABI/library instance used by the loaded QSQLITE
+  plugin. The current macOS Homebrew plugin links `/usr/lib/libsqlite3.dylib`, Linux packages use distribution Qt/SQLite,
+  while official Windows Qt packages may compile bundled SQLite into `qsqlite.dll`. Linking a separate SQLite library
+  and passing it the plugin-owned pointer is not a portable or supportable contract.
+- Dynamically guessing or resolving symbols from the driver plugin is rejected because symbol visibility and library
+  identity are not guaranteed across packaged platforms.
+
+Decision required before implementation:
+
+1. Recommended: replace Qt SQL inside this isolated report subsystem with a directly owned SQLite C adapter and add one
+   explicitly versioned SQLite dependency/package path. This gives the worker a stable connection handle, progress
+   handler, interruption, deadlines, and deterministic tests, but requires a focused database-adapter migration and
+   packaging verification on all three platforms.
+2. Keep QSQLITE and accept stale-result suppression without real interruption. This avoids a dependency but leaves P1-2
+   and the plan exit gate open; it must not be described as cancellation.
+3. Build and ship a custom QSQLITE plugin with cancellation support. This depends on Qt SQL driver implementation details
+   and duplicates Qt deployment responsibility, so it is not recommended.
+
+Primary evidence: Qt 6 QSQLITE source (`QSQLiteDriver::hasFeature(CancelQuery) == false`), Qt's public
+`QSqlDriver::handle()`/`cancelQuery()` contracts, SQLite's `sqlite3_interrupt()` and `sqlite3_progress_handler()`
+contracts, local Qt 6.11.1 plugin linkage, and repository CI/package Qt installation paths.
 
 ## S4 — Progress And Recovery
 
