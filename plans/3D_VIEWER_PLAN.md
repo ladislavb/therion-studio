@@ -1,5 +1,8 @@
 # 3D Viewer Remaining Work Plan
 
+Reviewed: 2026-07-13. Scope remains valid, with completed Outputs integration and current viewer controls reflected
+below. Mandatory versus optional `.lox` fixture ownership is now defined by `plans/TEST_HERMETICITY_PLAN.md`.
+
 This plan tracks the remaining work for the read-only 3D `.lox` viewer in Therion Studio. The initial integration is no longer speculative: the loader, neutral scene model, Qt Quick scene-graph viewport, toolbar controls, inspector, overlays, measurement mode, and basic tests exist. Future work should refine the current implementation rather than restart the earlier discovery phases.
 
 The old Therion Loch sources in `therion/loch` remain useful as a behavioral reference for rendering conventions, overlays, and format semantics, but Therion Studio should continue using neutral `three_d_viewer` naming and should not import the Loch GUI architecture wholesale.
@@ -12,11 +15,17 @@ The old Therion Loch sources in `therion/loch` remain useful as a behavioral ref
 - Camera orbit, pan, zoom, fit, reset, orthogonal projection, top view, side view, manual blue-axis rotation, automatic Z-axis rotation, precise compass-heading/tilt controls, distance control, and focal-length control are owned by `ThreeDViewerCamera` / `ThreeDViewerViewportController` / viewport state.
 - The viewport is a Qt Quick `QQuickItem` scene-graph surface hosted in the existing Qt Widgets shell.
 - The viewer renders centerline, stations, labels, mesh groups, surfaces, a red scene bounding box, and Loch-style screen overlays.
-- The model coloring mode supports survey and depth palettes and applies consistently to meshes and centerline.
+- The model coloring mode supports altitude coloring and no-color mode and applies consistently to meshes and
+  centerline.
 - The measurement workflow is toolbar-driven with station hover highlighting and station-to-station distance, azimuth, and vertical difference output.
-- The viewport overlays cave length and cave depth computed from underground centerline shots while excluding surface, splay, duplicate, and surface geometry contributions, and shows the altitude legend only when model coloring is set to depth.
+- The viewport overlays cave length and cave depth computed from underground centerline shots while excluding surface,
+  splay, duplicate, and surface geometry contributions, and shows the altitude legend only when altitude coloring is
+  active.
 - The inspector is intentionally narrow: model-coloring control, camera/auto-rotation controls, and layer visibility toggles with clean layer names, no visible item counts, data-driven centerline sublayers defaulting to underground-only visibility, disjoint station sublayers only when multiple station classes are present, and one labels toggle. Station markers and labels are constrained to stations attached to currently visible centerline shots.
 - Focused QTest coverage exists for loader behavior, camera math, scene statistics, projection, inspector state/widget, layer model, viewport widget loading, and viewport controller behavior.
+- Scene Settings, black/white background selection, and PNG viewport export are implemented.
+- The project Outputs surface discovers and opens generated `.lox` artifacts; remaining integration work concerns
+  actionable stale/missing/failed artifact state, not basic discovery.
 
 ## Current Boundaries To Preserve
 
@@ -94,27 +103,32 @@ Next slices:
   - meshes without centerline coverage,
   - terrain surfaces and surface bitmap chunks.
 - Add assertions for station fully qualified names, survey titles, shot flags, and scene statistics on those fixtures.
-- The current sample `.lox` fixture matrix covers nested survey hierarchy, mesh groups, station flags, and surface/duplicate/splay shot flags. Terrain surface chunks are covered by a synthetic loader fixture; a real Therion-exported terrain fixture is still missing.
+- The optional sample `.lox` corpus covers nested survey hierarchy, mesh groups, station flags, and
+  surface/duplicate/splay shot flags when those ignored local files are present. It is not a mandatory hermetic baseline.
+  Terrain surface chunks are covered by a synthetic loader fixture; a real Therion-exported terrain fixture is still
+  optional/missing.
 - Decide whether surface bitmap chunks should be represented in the scene model or explicitly ignored with documented rationale.
 - Keep malformed-input coverage strict and ensure loader errors remain actionable.
 
 Next slices:
 
-- Add one real Therion-exported terrain fixture before changing surface rendering defaults.
+- Complete `TEST_HERMETICITY_PLAN.md` before adding more loader corpus assumptions.
+- Add one legally distributable or explicitly opt-in real Therion-exported terrain fixture before changing surface
+  rendering defaults.
 - Add a loader test that documents surface bitmap handling, even if the decision is to ignore bitmap chunks initially.
 - Keep synthetic malformed fixtures small and separate from real sample caves.
 
 ### 4. Project Workflow Integration
 
-- Add a project-aware way to find or open generated `.lox` artifacts from the active project once the runner/artifact workflow is stable.
+- Generated `.lox` discovery/opening from the active project is implemented through the Outputs surface.
 - Report missing, stale, unsupported, or failed `.lox` artifacts with actionable user-facing messages.
 - Avoid implicit compile/run side effects from opening the viewer; any compile integration should remain an explicit project action.
 - Consider optional camera/layer/coloring persistence only after the read-only workflow is stable and the persistence key is clear.
 
 Next slices:
 
-- Define the generated-artifact lookup contract first: selected config, expected output folder, stale-file signal, and user-facing action text.
-- Add artifact discovery in a service or project workflow controller, not in `ThreeDViewerTab`.
+- Extend the existing Outputs/artifact workflow with selected-config, expected-output, and stale-file identity only after
+  the contract is specified and covered outside `ThreeDViewerTab`.
 - Keep "compile then open" as an explicit command with visible status; opening an existing `.lox` should remain side-effect free.
 
 ### 5. Cross-Platform Graphics And Packaging
@@ -145,11 +159,14 @@ Next slices:
 
 ## Recommended Next Slices
 
-1. Add or generate a real Therion-exported `.lox` fixture that contains terrain surface chunks and, if available, surface bitmap chunks.
+1. Complete the committed minimal `.lox` fixture and optional-corpus split in `TEST_HERMETICITY_PLAN.md`.
 2. Add debug/log diagnostics for 3D load/render statistics so later performance reports have comparable numbers.
-3. Profile automatic station marker and label decluttering on dense real projects and add priority ranking only if important stations are hidden.
-4. Profile the current Qt Quick scene-graph renderer on a large real cave and record the first concrete bottleneck before refactoring.
-5. Specify generated-artifact discovery before implementing project-aware open-from-runner behavior.
+3. Add an opt-in real terrain/surface-bitmap fixture only with explicit provenance and per-fixture skip behavior.
+4. Profile automatic station marker and label decluttering on dense real projects and add priority ranking only if
+   important stations are hidden.
+5. Profile the current Qt Quick scene-graph renderer on a large real cave and record the first concrete bottleneck before
+   responsibility-based changes to `ThreeDViewerViewportItem.cpp`.
+6. Specify stale/missing generated-artifact reporting on top of the implemented Outputs discovery workflow.
 
 ## Verification Strategy
 

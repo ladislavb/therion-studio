@@ -1,316 +1,399 @@
 # Codex Repository Review
 
-Date: 2026-06-02
+Date: 2026-07-13
 
-Scope: static review of repository structure, dead-code candidates, duplicate code, maintainability, performance, battery impact, and the parser/write architecture for `.th`, `.th2`, and `thconfig` documents.
+Scope: repository-wide static architecture and maintainability review against `SPECIFICATION.md`, `ARCHITECTURE.md`,
+and `AGENTS.md`, with targeted inspection of source integrity, asynchronous workflows, Map rendering and editing,
+project scanning, persistence, localization, cross-platform behavior, and test infrastructure.
 
-This document is an active review record. Completed follow-ups should be removed from this file and tracked through code, tests, `ARCHITECTURE.md`, `WORKLOG.md`, or archive history as appropriate.
-
-Status update: 2026-07-12
-
-- Unified Source DOM migration M0-M9 is implemented and the completed plan is archived at
-  `plans/archive/UNIFIED_SOURCE_DOM_PLAN.md`.
-- `TherionSourceText`, `TherionSourceDocument`, `TherionSourceLogicalDocument`, `TherionSourceSnapshotCache`, and
-  `Th2GeometryProjection` provide the current shared source snapshot, logical command, and TH2 projection foundation.
-- New direct `TherionDocumentParser` production call sites are guarded by `scripts/check_structure_constraints.py`.
-- Map editor release stabilization has a separate Windows-input diagnostic/fix trail; do not fold broad map rendering
-  rewrites into release-stabilization work without new evidence.
-- This review should now be read as an architecture risk register. Detailed implementation slices belong in the focused plans and `WORKLOG.md`.
+This document is the active review record. It replaces the 2026-06-02 review and its 2026-07-12 migration status
+update. Completed migration history belongs in `plans/archive/UNIFIED_SOURCE_DOM_PLAN.md`; implementation work should
+be selected from the current findings below and tracked briefly in `WORKLOG.md`.
 
 ## Executive Summary
 
-Therion Studio now has one authoritative shared source model for Therion documents. The largest remaining architecture risk
-is no longer parser/model convergence, but keeping future source mutations, projection refreshes, and UI smoke workflows
-inside the shared transaction/projection boundaries.
+The repository has a substantially stronger foundation than the previous review described. The unified lossless
+source model is implemented, direct parser entry points and Map source mutations are guarded, project validation is
+asynchronous and cancellation-aware, production dependencies are explicitly injected into the main editor shells,
+and the stable editor directory layout is enforced. No confirmed P0 source-corruption or security defect was found in
+this review.
 
-For `2026.7.2`, avoid broad parser or renderer rewrites. Keep current behavior stable, use the existing guardrails, and
-treat source-model changes as focused maintenance or regression fixes.
+The main risks have shifted from parser convergence to runtime coordination and ownership:
+
+1. one unit runner is non-hermetic and currently fails in a checkout containing an incomplete optional sample corpus;
+2. SQL report import and user queries can block the UI thread without cancellation;
+3. Structure and Outputs workers publish superseded results before their queued replacement runs;
+4. Map refresh still performs a synchronous full scene rebuild and repeatedly copies cached projections by value;
+5. recursive project watcher setup runs on the UI thread;
+6. Map style/background resource caches remain hidden static state in presentation code;
+7. localization checks do not detect visible strings that never enter Qt translation extraction.
+
+These are focused follow-ups, not reasons to reopen the DOM migration or start a broad renderer rewrite. The safest
+sequence is to restore hermetic tests first, then fix worker result generations and SQL responsiveness, then move Map
+resource ownership and refresh work behind explicit revision-keyed services.
+
+## Review Method and Verification
+
+The review used:
+
+- the complete architecture and agent guardrails plus the functional/acceptance sections of `SPECIFICATION.md`;
+- repository structure and translation-unit size scans over 507 production C++ source/header files;
+- targeted source inspection of source transactions, Map refresh and background loading, project scan/cache workflows,
+  SQL reports, session/settings ownership, localization construction, process execution, and test runners;
+- `python3 scripts/check_structure_constraints.py` — passed;
+- `python3 scripts/check_localization.py` — passed for shipped Czech and Slovak catalogs, with the blind spot described
+  in P1-7;
+- Release CTest inventory — 67 tests: 48 `unit`, 19 `ui`;
+- `ctest --test-dir build-release -L unit --output-on-failure --timeout 120 -j 4` — 47 of 48 tests passed;
+  `TherionCoreQTests` failed because `ThreeDViewerLoxLoaderTest::loadsSampleLoxScene()` required a missing optional
+  sample file.
+
+This was a static review plus focused automated verification, not a claim that every specification acceptance
+criterion was manually exercised on all three platforms. Hardware-specific stylus/Sidecar behavior and packaging
+artifacts still require their dedicated verification paths.
+
+## Architecture Baseline That Is Working
+
+The following previous high-priority concerns are now closed or materially reduced:
+
+- `TherionSourceText`, `TherionSourceDocument`, `TherionSourceLogicalDocument`, `TherionSourceSnapshotCache`, and
+  `Th2GeometryProjection` form the shared source/projection baseline.
+- `scripts/check_structure_constraints.py` rejects unapproved direct parser calls, Map source-mutation bypasses,
+  directory regressions, missing CMake source wiring, and growth in selected shell translation units.
+- Map mutations route through `TextEditorSourceTransactionController` and the atomic snapshot helpers. Revision checks,
+  dirty-state updates, projection policies, and focused undo/redo coverage are present.
+- The earlier multi-attempt fixed-delay Map selection-retry finding is no longer supported by the current code. Current
+  selection recovery uses next-event-loop callbacks, callback QObject lifetime guards, and generation checks. New work
+  should still prefer explicit scene-generation completion over additional timer sequencing.
+- Project validation runs through `QtConcurrent`, suppresses superseded requests, shares explicit scan-cache ownership,
+  and reuses source/logical/index projections.
+- Therion execution uses `QProcess` with a program plus argument list, streams stdout/stderr asynchronously, rejects a
+  parallel run deterministically, and centralizes platform search paths.
+- Core/domain code does not include QtWidgets or QGraphics presentation types.
+- Shipped localization catalogs currently contain no unfinished Czech or Slovak entries according to the repository
+  localization checker.
 
 ## Priority Findings
 
-### P0 - Unified Lossless Source Model Baseline
+### P0
+
+No confirmed P0 finding was identified. Source rewrite and transaction work remains high-risk by nature, but the
+current guardrails and focused tests are evidence against treating it as an active release blocker without a concrete
+regression.
+
+### P1-1 — The Core Test Runner Is Not Hermetic
 
 Evidence:
 
-- `TherionSourceDocument`, `TherionSourceLogicalDocument`, and `Th2GeometryProjection` are the shared projection
-  boundaries for Raw, Blocks, Map, Structure, Validation, completion/help, and source rewrite planning.
-- Remaining direct parser calls are documented core/synthetic exceptions enforced by `scripts/check_structure_constraints.py`.
-- The completed migration history is archived in `plans/archive/UNIFIED_SOURCE_DOM_PLAN.md`.
+- `tests/core/ThreeDViewerLoxLoaderTest.cpp:16-26` considers the repository fixture root available when any
+  `sample_data` directory exists.
+- `tests/core/ThreeDViewerLoxLoaderTest.cpp:29-37` then constructs one fixed Babice path.
+- `tests/core/ThreeDViewerLoxLoaderTest.cpp:141-148` skips only when no sample-data root exists, but fails when the root
+  exists and that one optional file does not.
+- The focused unit run in this review failed exactly at that assertion, while the remaining 47 unit tests passed.
+- `sample_data/` is ignored by Git, so its content is not a reproducible test dependency.
 
-Risk:
+Impact:
 
-- Future changes can still regress if new UI or planner code bypasses source snapshots/projections or source transaction
-  helpers.
-- Compatibility fallback APIs can outlive their usefulness unless they remain guarded and tested.
-
-Recommended direction:
-
-- Keep raw text as the canonical persisted output.
-- Extend shared source/projection types when new behavior needs command, token, block, option, geometry, background, or
-  reference data.
-- Keep legacy token-line compatibility APIs narrow, tested, and outside new production UI code where practical.
-- Run structure guardrails and focused regression tests before treating source-model changes as complete.
-
-### P0 - Source Writes Are Not Yet One Cross-Editor Transaction
-
-Evidence:
-
-- Map source mutations increasingly route through the shared source transaction controller, but Raw, Blocks, Map, inspector, and source rewrite workflows do not yet submit every user-visible source mutation through one required service.
-- General source rewrites still involve `TherionDocumentEditor` rewrite methods and editor-specific controllers.
-- Undo ownership is still split between map `QUndoStack` and embedded text-editor undo state.
-
-Risk:
-
-- Undo/redo behavior can vary by editor path.
-- Snapshot creation, dirty-state updates, projection refreshes, selection restoration, and stale-revision handling can regress when new source mutation paths are added.
-- Mixed map/text edits remain harder to reason about than one durable document transaction timeline.
-
-Recommended direction:
-
-- Continue expanding `TextEditorSourceTransactionController` or its successor until Raw, Blocks, Map, inspector, validation fixes, imports, normalization, and geometry/background edits submit through one required source-edit path.
-- Every source mutation should submit a single request containing before/revision identity, target source range or replacement, undo label, dirty-state policy, projection refresh policy, and selection/cursor restoration intent.
-- The service should own revision checks, replacement, undo snapshot creation, dirty-state updates, parsed-cache invalidation, and post-change projection refresh.
-- Release-stabilization exceptions should stay narrow and tested. For example, map vertex moves now defer scene refresh after source transactions to avoid UI stalls; broader transaction redesign should remain separate.
-
-### P1 - Large Multi-Responsibility Files
-
-Largest active risk areas:
-
-- `src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp`
-- `src/core/TherionDocumentEditor.cpp`
-- `src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp`
-- `src/app/MainWindow.cpp`
-- `src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp`
-- `src/app/text_editor/map_editor/MapEditorSceneItems.cpp`
-- `src/core/ProjectStructureIndex.cpp`
-- `src/app/text_editor/map_editor/MapEditorObjectStyleCatalog.cpp`
-- `src/app/text_editor/map_editor/MapEditorSceneInternals.h`
-
-Risk:
-
-- These files still mix parsing, rendering, state coordination, source-write behavior, and UI concerns.
-- Changes are harder to review and easier to regress.
-- UI-layer business rules are more likely to creep back in.
-
-Recommended splits:
-
-- `TherionDocumentEditor.cpp`: source-range edits, object option rewrites, TH2 geometry rewrites, block rewrites, and append planners.
-- `MapEditorSceneRenderer.cpp`: geometry projection, point rendering, line rendering, area rendering, labels, editable overlays, and station-label policy.
-- `MapEditorBackgroundLayers.cpp`: metadata parser/writer, image cache/loading, placement model, inspector UI controller, and source rewrite adapter.
-- `ProjectStructureIndex.cpp`: config resolver, input graph scanner, namespace resolver, tree builder, and diagnostics.
-
-### P1 - Remaining Duplicate Interpretation Logic
-
-Evidence:
-
-- Command-line and option parsing are centralized in core for many paths, but option editing/serialization behavior still exists across Block details, Map object settings, and source rewriters.
-- Some line-ending, source-range, and geometry interpretation logic still lives close to renderer, planner, or UI code.
-- Renderers and inspectors still sometimes consume source text or token-line projections instead of already-parsed command/option data.
-
-Risk:
-
-- Syntax and option behavior can diverge between renderer, inspector, validator, structure index, and writer.
-- Fixes can require coordinated edits in several layers.
-
-Recommended direction:
-
-- Keep renderers, inspectors, validators, and structure projections consuming parsed command/option/source-range data instead of retokenizing.
-- Continue moving option serialization/editing behavior behind focused core command-line/source-model APIs.
-- Prefer extending `TherionSourceText`, `TherionTokenRules`, `TherionCommandLineModel`, and future source document/projection types over adding editor-local helpers.
-
-## Dead Code and Legacy Candidates
-
-### `BlockEditorConfigureController`
-
-Evidence:
-
-- `src/app/text_editor/block_editor/BlockEditorConfigureController.cpp` appears scoped to data-row editing despite its broader name.
-- `showCommandHelpOnly` is passed through but explicitly unused.
+- A developer with a partial real-project corpus gets a red unit suite while another checkout skips the same case.
+- Aggregate-runner failure obscures the status of otherwise hermetic core tests.
 
 Recommendation:
 
-- Rename/scope it to `BlockEditorDataRowsController` or fold it into the specific data-row action path.
-- Remove the unused `showCommandHelpOnly` parameter unless a real caller needs it.
+- Move a minimal legally distributable `.lox` fixture into `tests/fixtures/` and use it for mandatory loader coverage.
+- Keep broad real-project corpus coverage in a separate opt-in test/label that skips each missing fixture independently.
+- Add a regression test for the partial-corpus case so the aggregate core runner remains green.
 
-### Block Apply Naming
+### P1-2 — SQL Import and Queries Can Block the UI Indefinitely
 
 Evidence:
 
-- `BlockEditorApplyExecutor` and `BlockEditorApplyStateController` still exist.
-- The UI no longer has an explicit Apply button, but auto-commit paths still call apply-oriented code.
+- `src/app/reports/TherionSqlReportTab.cpp:134-150` calls `database_.importFile()` synchronously from the widget load
+  path.
+- `src/app/reports/TherionSqlReportDatabase.cpp:232-308` reads the entire file, splits all statements, and executes each
+  import statement in the calling thread.
+- `src/app/reports/TherionSqlReportTab.cpp:414-440` executes arbitrary accepted `SELECT`/`WITH` queries synchronously.
+- `src/app/reports/TherionSqlReportDatabase.cpp:311-350` has a result-row limit but no execution deadline, progress
+  handler, cancellation, or worker boundary. A computationally expensive or recursive query can freeze the application
+  before a row is returned.
+
+Impact:
+
+- Large Therion SQL exports or expensive custom reports violate the responsiveness requirements in the specification
+  and architecture.
+- Closing a tab or superseding a query cannot cancel work safely.
 
 Recommendation:
 
-- Treat this as stale naming, not dead code.
-- Rename toward the current behavior, for example `BlockEditorSelectionAutoCommitController`, when touching the area.
+- Give a report worker exclusive ownership of its SQLite connection; Qt SQL connections must remain thread-affine.
+- Make import/query requests generation-keyed and cancellable, surface progress/busy state, and suppress stale results.
+- Add a bounded query execution policy using SQLite interruption/progress support in addition to the existing row cap.
+- Test large imports, superseded queries, cancellation, tab teardown, and error recovery.
 
-### MainWindow Top-Level Files
+### P1-3 — Structure and Outputs Publish Superseded Worker Results
 
 Evidence:
 
-- `src/app/` still has many `MainWindow*` and `TherionRunner*` files at top level.
-- Some are proper shell/orchestration components, but this area is still large and active.
+- `src/app/ProjectStructureScanner.cpp:38-46` replaces the pending request, and `:54-63` only records that another scan
+  is queued while the current worker runs.
+- `src/app/ProjectStructureScanner.cpp:109-117` unconditionally emits the completed old result before starting the queued
+  replacement.
+- `src/app/ProjectOutputsScanner.cpp:119-148` and `:151-159` use the same pattern.
+- `src/app/MainWindowStructureBrowser.cpp:650-665` checks only the project root, not the latest requested generation.
+  A stale result for the same project can therefore replace newer in-memory Structure state temporarily.
+- Project validation already has the safer request-serial/supersession pattern and can be used as the local reference.
+
+Impact:
+
+- Rapid edits, target-config changes, or project mutations can make Structure/Outputs briefly move backward before the
+  next result arrives.
+- Slow scans waste work and make behavior timing-dependent.
 
 Recommendation:
 
-- Do not move files casually.
-- Continue extracting by workflow only when it reduces responsibility mixing and updates structure guardrails.
+- Add a monotonically increasing request serial and suppress results older than the latest request.
+- Pass cancellation/supersession checks into Structure indexing and file discovery where practical.
+- Add tests where request B arrives while request A is running and assert that A is never published.
 
-## Consolidation Opportunities
-
-### Inspector Infrastructure
-
-Keep moving Raw, Blocks, and Map inspector surfaces toward shared panel foundations:
-
-- one File inspector implementation where practical,
-- one Context Help implementation where practical,
-- one tab/pane layout implementation,
-- distinct content widgets only where the underlying workflow differs.
-
-### Command Option Editing
-
-The catalog-backed command option component should remain the shared option editor for:
-
-- Map object settings,
-- Block selected command options,
-- future command option dialogs.
-
-Avoid adding a second option parser or custom option table in Map or Blocks.
-
-### Style Metadata vs Renderer Heuristics
-
-Map style behavior should remain data-driven:
-
-- guide spine visibility,
-- editable line affordances,
-- station label LOD,
-- decoration visibility,
-- dark/light rendering choices.
-
-If a style needs editing-only guides, put the behavior in style metadata or a dedicated editor overlay policy, not hardcoded per type in renderer code.
-
-## Performance and Battery Findings
-
-### Full Document Parse and Full Scene Refresh
+### P1-4 — Map Refresh Still Has a Synchronous Full-Rebuild Boundary
 
 Evidence:
 
-- Map scene refresh still clears/rebuilds broad scene state.
-- Some parsed document caching exists, but derived map geometry, structure, background metadata, and source bounds projections are not yet consistently cached as independent revision-keyed products.
-- Recent DOM work adds shared physical/logical snapshots and offset lookup APIs, but Map geometry and scene refresh still depend heavily on token-line compatibility projections.
+- `src/app/text_editor/map_editor/MapEditorSceneRefreshController.cpp:198-245` captures viewport state and clears the
+  scene before rebuilding it.
+- `:247-319` collects logical commands and geometry and renders the complete scene synchronously on the UI thread.
+- `src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp:78-124` caches by document revision, but
+  `logicalCommandsForCurrentDocument()` and `geometryProjectionForCurrentDocument()` return complete projections by
+  value.
+- Selection and inspector paths invoke the value-returning projection callbacks repeatedly; partial point/line refresh
+  exists, but many text, inspector, area, and background paths still fall back to the full rebuild.
 
-Risk:
+Impact:
 
-- Large `.th2` files can cause UI-thread work on text-driven refreshes.
-- Full scene rebuilds are battery-expensive with raster backgrounds and labels.
-
-Recommendations:
-
-- Cache parsed document snapshots by document revision.
-- Cache derived projections separately: map geometry, structure tree, background metadata, and source bounds.
-- Debounce text-change driven map/structure refreshes.
-- Avoid clearing/rebuilding the entire scene when a single object or line changed.
-- Move expensive projection building to a worker where possible, then apply UI deltas on the main thread.
-
-### Raster Background Recompute Guardrails
-
-Evidence:
-
-- Future background-layer changes can still accidentally recompute expensive raster images from UI-facing paths.
-
-Recommendations:
-
-- Do not recompute background images during unrelated theme, appearance, selection, or layer-order updates.
-- Keep layer order in model state and render from that stable model.
-- Preserve stale-result checks for asynchronous raster work.
-
-### Deferred Retry Timers
-
-Evidence:
-
-- `MapEditorCanvasEditController` still uses delayed `QTimer::singleShot(...)` attempts after some source edits to restore scene selection once the scene has refreshed.
-
-Risk:
-
-- The retry sequence is timing-dependent and does repeated work whether or not the scene is already ready.
-- It can still fail on slow machines or under heavy load if the scene refresh completes after the final retry.
+- Cache hits avoid reparsing but not repeated projection handoffs, derived feature collection, item destruction, and
+  item recreation.
+- Full scene replacement increases UI latency, battery use, selection-restoration complexity, and stale raw-item risk.
 
 Recommendation:
 
-- Replace retry timers with an explicit scene refresh completion signal or callback.
-- Selection restoration should run once after the relevant scene generation is available.
-- Keep the recent deferred-refresh fix for vertex moves as a release stabilization measure, not as the final scene-refresh architecture.
+- Expose immutable revision-keyed projection handles/references instead of repeated value-returning callbacks.
+- Separate worker-safe projection construction from main-thread scene application.
+- Give every scene projection a generation ID and make selection/navigation restoration target that generation once.
+- Continue widening delta refresh only behind `MapEditorLargeScenePerformanceSmokeTest`; do not combine this with a broad
+  style-renderer rewrite.
 
-### Icons and Small Pixmaps
+### P1-5 — Recursive Project Watch Setup Runs on the UI Thread
 
 Evidence:
 
-- Lucide pixmap rendering appears in several UI areas.
-- Some cache exists, but rendering factories are duplicated.
+- `src/app/MainWindowProjectFileWatcher.cpp:86-116` recursively walks every project directory and collects every Therion
+  source file.
+- `:119-148` rebuilds all directory/file watches and signatures synchronously.
+- `:168-217` may rebuild the full watcher inventory again after a directory change.
+
+Impact:
+
+- Opening or mutating a large/deep project can block the main thread.
+- Watching every directory and source file can hit platform watcher limits and has no explicit partial-failure reporting.
+- This duplicates project traversal concerns inside the `MainWindow` presentation shell.
 
 Recommendation:
 
-- Keep one icon factory/cache service for Lucide pixmaps and action icons.
-- Cache by icon name, color, size, device-pixel ratio, and enabled/disabled state.
+- Move project watch inventory/discovery behind an application/infrastructure service and build it off the UI thread.
+- Apply generation-keyed watcher deltas on the main thread and report paths that could not be watched.
+- Measure large-tree startup and mutation behavior before choosing between recursive watches, bounded directory watches,
+  or a hybrid periodic reconciliation policy.
 
-### Structure Index
+### P1-6 — Map Catalog and Background Caches Are Hidden Static Presentation State
 
 Evidence:
 
-- `ProjectStructureIndex.cpp` parses inputs and builds a snapshot with config resolution, input graph, map/scrap references, and diagnostics.
+- `src/app/text_editor/map_editor/MapEditorObjectStyleCatalog.cpp:991-1020` reads bundled resources, environment settings,
+  user application-data overrides, and stores the result in a function-static catalog.
+- `src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp:2166` loads that global catalog from the renderer path instead
+  of receiving it from composition.
+- `src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp:265-299` owns an unbounded function-static XVI document
+  cache in a UI translation unit. Every lookup still reads and hashes the whole file before obtaining a cache hit.
+- Bounded raster caches exist in `MapEditorRasterBackgroundImage.cpp`, but they are also process-global mutable state
+  rather than explicit dependencies.
 
-Risk:
+Impact:
 
-- Project-wide indexing can become expensive on large projects.
+- Cache lifetime, memory bounds, invalidation, and test isolation are implicit.
+- The XVI cache grows for the life of the process and does not eliminate repeated file I/O/hashing.
+- UI-side resource/settings access conflicts directly with the composition and static-state guardrails.
 
-Recommendations:
+Recommendation:
 
-- Keep indexing asynchronous/cancellable.
-- Cache per-file parsed source snapshots by file path, mtime, and size.
-- Rebuild only affected graph branches after a file save.
-- Avoid running structure refresh on cursor/source-line movement when source content did not change.
+- Compose one style-catalog provider and one bounded background asset cache at application startup.
+- Inject immutable catalog data into Map rendering/preview contexts.
+- Key background entries by canonical identity plus size/mtime or content revision, use a memory-cost-aware LRU, and make
+  invalidation explicit on file changes.
+- Keep cache loading/parsing off the UI thread and add deterministic fake caches for tests.
 
-## Parser Architecture Recommendation
+### P1-7 — Localization Verification Misses Unextractable Visible Strings
 
-Introduce these layers incrementally:
+Evidence:
 
-1. `TherionSourceText`: lossless physical source lines, newline preservation, line offsets, and safe line-range replacement. Initial implementation exists.
-2. `TherionSourceDocument`: immutable parsed physical snapshot with document revision metadata, file type, encoding metadata, block state, line roles, and source ranges. Initial implementation exists.
-3. `TherionSourceLogicalDocument`: continuation-aware logical command projection with argument/option/token ranges, catalog metadata, and cursor offset lookup. Initial implementation exists.
-4. Projections: future `TherionBlockProjection`, `Th2GeometryProjection`, `TherionStructureProjection`, and `TherionSyntaxProjection` should build from the shared source/logical documents.
-5. Source change service: continue converging on `TextEditorSourceTransactionController` or a narrow successor for line-range rewrite, text replacement, undo snapshot, parsed cache invalidation, and selection restoration.
+- `src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp:1808-1826` returns a complete visible Map help page through
+  `QStringLiteral`, so it cannot be translated.
+- `src/app/text_editor/raw_editor/RawEditorCommandMetadataLoader.cpp:317-332` builds visible `Option`, `Description`,
+  `Value Arity`, and `Accepted Values` labels as literals; raw internal arity tokens are also exposed directly.
+- `src/app/ProjectTemplateService.cpp:63-151` and `:162-206` return user-facing project-creation failures as untranslated
+  literals.
+- `scripts/check_localization.py` validates entries already present in `.ts` files, but does not prove that all visible
+  source strings were passed through Qt translation APIs or that catalogs were freshly extracted.
 
-Migration path:
+Impact:
 
-1. Migrate low-risk Raw/Blocks/Validation/Structure consumers to the shared source/logical document APIs.
-2. Move one tested Map inspector/reference read-only path from token-line compatibility to logical commands.
-3. Define a standalone `Th2GeometryProjection` contract before moving geometry extraction out of `MapEditorSceneRenderer.cpp`.
-4. Move project structure parsing from remaining token-line compatibility paths onto the shared source document/projection model.
-5. Move all editor writes to a shared transaction service.
-6. Delete or rename legacy wrappers once all call sites use the new service and regression coverage exists.
+- Czech and Slovak builds can pass the localization gate while still displaying English-only core workflow text.
+- Stale `.ts` entries can mask source strings that stopped participating in extraction.
 
-## Release-Safe Improvements
+Recommendation:
 
-Before public release, prefer low-risk guardrails over broad rewrites:
+- Route visible service errors through a translatable presenter/error-code mapping or translated service context.
+- Translate help labels/templates while leaving Therion syntax and source-authored catalog text unchanged.
+- Add a CI extraction audit using `lupdate` into a temporary catalog and compare source keys/locations, plus a focused
+  denylist scan for known visible setter/help/error construction patterns.
 
-- Add regression tests for remaining parser/token rules, including negative numbers, exponent notation, quoted strings, comments, comment-only lines, line-point option rows, and `revise ... -stations ...`.
-- Add a smoke benchmark for opening a large `.th2` file and toggling dark/light mode.
-- Keep structure constraints guarding against UI-side source mutation bypasses.
-- For Windows map-input issues, use opt-in diagnostics and focused fixes from logs before starting broad Map/TH2 projection migrations.
+## Secondary Findings
 
-## Suggested Verification Strategy
+### P2-1 — Presentation Components Still Own External State and File I/O
 
-For each parser/source-write migration step:
+- `TherionSqlReportTab` owns `QSettings`, constructs its preset store, opens save dialogs, and writes CSV directly
+  (`src/app/reports/TherionSqlReportTab.h:6-67`, `TherionSqlReportTab.cpp:629-670`).
+- `MainWindowHelpDialog.cpp:84-99` reads application settings directly while resolving manual language.
+- `MapEditorBackgroundLayers.cpp` combines dialogs, file loading, parsing, asynchronous image work, session state,
+  graphics-item updates, and source transactions in one presentation translation unit.
 
-- Unit-test round-trip behavior with real sample `.th`, `.th2`, and `thconfig` files.
-- Assert that blank lines, comments, line endings, and encoding are preserved.
-- Assert one undo item per user operation.
-- Assert redo restores the same source text.
-- Test Map, Block, and Raw projections from the same parsed snapshot.
-- Run structure index tests against root `thconfig`, `thconfig.work`, multiple root configs, nested `input`, nested survey namespaces, and map/scrap references.
+Move persistence and file workflows behind injected services. Widgets should select intent and present results, not own
+storage adapters.
+
+### P2-2 — Map Undo Stores Full Document Snapshots
+
+`TextEditorSourceSnapshotCommand` stores complete before/after strings for every command
+(`src/app/text_editor/TextEditorSourceTransactionController.cpp:95-170`). Map undo is bounded to 200 commands
+(`src/app/text_editor/map_editor/MapEditorTabWorkspace.cpp:66-97`), but memory still scales with document size times
+history depth even when the initial edit is a narrow `TherionSourceTextEdit`.
+
+Keep the transaction contract, but evaluate reversible range edits or shared immutable snapshots with measured memory
+budgets. Preserve full snapshots as a safe fallback for structurally complex rewrites.
+
+### P2-3 — Large Files Still Mix Responsibilities
+
+Eight production files exceed 2,000 lines. The highest-risk examples are:
+
+- `MapEditorBackgroundLayers.cpp` — 3,904 lines;
+- `MapEditorSceneRenderer.cpp` — 3,476 lines;
+- `TherionDocumentEditor.cpp` — 3,464 lines;
+- `MapEditorViewportInputController.cpp` — 2,625 lines;
+- `MapEditorCanvasEditController.cpp` — 2,420 lines;
+- `ProjectStructureIndex.cpp` — 2,322 lines;
+- `ThreeDViewerViewportItem.cpp` — 2,230 lines;
+- `MainWindow.cpp` — 2,201 lines.
+
+Split only by proven responsibility boundaries. Highest leverage: background asset/cache/metadata/source adapter,
+scene geometry/style/overlay rendering, document edit planners by object family, and project graph scan/namespace
+resolution. Do not use line-count-only mechanical splits.
+
+### P2-4 — Test Architecture Migration Is Incomplete
+
+The repository has 130 test `.cpp` files and 64 explicit `main()` entry points. Several explicit mains are valid
+aggregate QTest runners or isolated UI/crash boundaries, but many legacy hand-rolled executables and very large test
+files remain. Five test translation units exceed 2,000 lines, led by `TherionDocumentEditorTest.cpp` and
+`MapEditorDragUndoRedoSmokeTest.cpp` above 3,500 lines.
+
+Continue incremental QTest migration when touching a test. Split large smoke executables by lifecycle/runtime boundary,
+not one executable per tiny class, and retain isolation for genuinely flaky, process-backed, or crash-containment cases.
+
+### P2-5 — Infrastructure Placement Does Not Fully Match the Documented Layers
+
+`SessionSettingsStore` is a real `QSettings` adapter in `src/core/SessionStore.*`, and `CommandCatalogStore::fromFile()`
+performs file I/O in `src/core/CommandCatalogStore.cpp`. The interfaces/value parsing are core-appropriate, but concrete
+settings and file adapters belong in infrastructure/platform composition according to `ARCHITECTURE.md`.
+
+Move concrete adapters only as a focused no-behavior-change refactor; avoid churning stable domain loaders merely to
+obtain a visually pure directory tree.
+
+### P2-6 — Active Planning Documentation Contains Completed History
+
+`WORKLOG.md` remains dominated by completed implementation notes despite its “active planning only” header. The known
+stale post-DOM Map segfault and fixed-delay selection-retry follow-ups were removed with this review, but the remaining
+release history still makes current priorities harder to identify than necessary.
+
+Condense current/open work into short sections and move release history to release notes or archive plans. The current
+review should remain the detailed architecture risk register.
+
+## Minor Cleanup Candidates
+
+These are not priority work by themselves:
+
+- `BlockEditorConfigureController::configureBlock()` still accepts and explicitly ignores `showCommandHelpOnly`
+  (`src/app/text_editor/block_editor/BlockEditorConfigureController.cpp:27-45`). Remove the parameter or implement a real
+  semantic caller when the area is next touched.
+- `BlockEditorApplyExecutor` and `BlockEditorApplyStateController` retain Apply-oriented names after the UI moved to
+  auto-commit. Rename only in a focused touched-area refactor.
+- Icon rendering remains duplicated in `LucideIconFactory`, `BlockEditorCanvasItem`, Structure, and Map inspector code.
+  Consolidate into one bounded DPR-aware factory when doing UI cleanup, without coupling it to source-model work.
+
+## Recommended Delivery Sequence
+
+1. **Restore a hermetic test baseline**
+   - fix the optional `.lox` fixture contract;
+   - keep `unit`, `ui`, corpus, performance, and packaging responsibilities explicitly labeled.
+2. **Make asynchronous results monotonic**
+   - add request serial suppression to Structure and Outputs;
+   - add focused supersession tests.
+3. **Protect UI responsiveness**
+   - move SQL import/query execution to a worker-owned connection with cancellation;
+   - move project watcher inventory traversal out of `MainWindow`.
+4. **Close localization extraction gaps**
+   - translate current literals;
+   - add a fresh-extraction CI audit.
+5. **Make Map resources explicit**
+   - inject the style catalog;
+   - replace static background caches with bounded services.
+6. **Reduce Map rebuild cost incrementally**
+   - immutable projection handles first;
+   - scene generation/completion next;
+   - measured delta refresh expansion last.
+7. **Continue opportunistic structure cleanup**
+   - split large files by responsibility;
+   - migrate touched tests and infrastructure adapters without mixing these changes with feature work.
+
+## Implementation Plan Map
+
+Concrete execution order, smaller-model operating rules, cross-plan dependencies, and the verified scope status of every
+active plan are maintained in `plans/REVIEW_IMPLEMENTATION_PLAN.md`.
+
+Focused implementation plans:
+
+- P1-1 / P2-4: `plans/TEST_HERMETICITY_PLAN.md`;
+- P1-3 and P1-5: `plans/PROJECT_ASYNC_COORDINATION_PLAN.md`;
+- P1-2 / report-specific P2-1: `plans/SQL_REPORT_ASYNC_PLAN.md`;
+- P1-7: `plans/LOCALIZATION_EXTRACTION_PLAN.md`;
+- P1-6 / P2-2: `plans/MAP_RUNTIME_OWNERSHIP_PLAN.md`;
+- P1-4: revised `plans/MAP_PARTIAL_REFRESH_PLAN.md`.
+
+These plans are intentionally independent commit chains. Completing a design seam does not close a finding until its
+production caller, focused tests, and exit gate are complete.
+
+## Verification Gates for Follow-up Work
+
+- Source/parser changes: round-trip `.th`, `.th2`, and config fixtures; CRLF/mixed line endings; comments/unknown
+  directives; encoding; source ranges; undo/redo.
+- Map refresh/cache changes: `MapEditorLargeScenePerformanceSmokeTest`, repeated parallel UI smoke runs, selection and
+  Bezier/area overlap cases, background visibility/load/transform, and stale generation teardown.
+- Project scanner changes: superseded same-root requests, target-config changes, in-memory unsaved text, external file
+  changes, cancellation, and cache invalidation.
+- SQL changes: large import, malformed export rollback, long-running query cancellation, tab close during work, stale
+  result suppression, and CSV output parity.
+- Localization changes: fresh `lupdate` extraction, Czech/Slovak completion and placeholder checks, plus runtime smoke of
+  Map help, project-template errors, and Raw option help.
+- Every implementation slice: `python3 scripts/check_structure_constraints.py`, focused tests, and `git diff --check`.
 
 ## Final Recommendation
 
-For release, keep the current implementation stable and avoid major parser rewrites. The biggest actionable pre-release work is to keep guardrail tests around source writes and known parser edge cases.
-
-For the next major development phase, make the unified lossless parser and shared source transaction service the central architecture objective. This will reduce duplicated code, improve undo/redo consistency, make Map/Block/Raw views coherent, and provide the best leverage for performance and battery improvements.
+Keep the unified source architecture closed and stable. The next release-quality gains come from making asynchronous
+results monotonic, removing UI-thread SQL/project traversal, restoring hermetic tests, and moving hidden Map resource
+state to explicit bounded services. Only after those boundaries are in place should Map partial refresh be widened.

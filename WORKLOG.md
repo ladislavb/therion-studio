@@ -5,8 +5,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ## Current Focus
 
 1. `2026.7.2` post-DOM stabilization and next feature selection.
-2. Real-project smoke testing for Raw, Blocks, Map, Validation, Structure, and Compiler navigation after DOM closure.
-3. Track the one-off `MapEditorDragUndoRedoSmokeTest` segfault signal from the first full verification run.
+2. Execute `plans/REVIEW_IMPLEMENTATION_PLAN.md`: restore a hermetic `.lox` test baseline, then address superseded
+   Structure/Outputs results and SQL report UI-thread work.
+3. Real-project smoke testing for Raw, Blocks, Map, Validation, Structure, and Compiler navigation after DOM closure.
 4. Plan-driven follow-ups for map partial refresh, validation/cache tuning, GUI cleanup, SVG backgrounds, reporting, LiDAR design, and 3D viewer refinement.
 
 ## Active Work
@@ -19,8 +20,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Raw source workspaces now expose an explicit `Format Document` toolbar action with a `text-quote` icon. It uses the shared source document
   structure to normalize leading indentation to literal tabs in one undo step while preserving code bodies, blank rows,
   line endings, and encoding; formatting remains opt-in rather than an opening/save side effect.
-- Keep SQL reporting improvements scoped to incremental follow-ups such as saved presets, filtering, summaries/charts, or
-  direct database-export workflows.
+- Defer new SQL reporting features until `plans/SQL_REPORT_ASYNC_PLAN.md` moves import/query execution behind a
+  cancellable worker-owned connection; keep preset/CSV ownership extraction as a later separate slice.
 - Keep LiDAR/point-cloud processing as design/backlog work until the Map/TH2 projection boundary has a concrete import,
   registration, and 2D projection design.
 
@@ -148,8 +149,6 @@ Active planning only. Completed history belongs in archive files. Stable archite
   suppresses superseded worker results instead of finishing and emitting stale scans.
 - Project validation now passes scanner cancellation into project-index scans, allowing superseded workers to abort before
   completing map/join/station/duplicate diagnostic passes and preventing canceled index snapshots from entering the cache.
-- The latest validation log confirms superseded project-index scans now stop earlier, while alternating automatic triggers
-  can still thrash the single-entry source/index snapshot cache.
 - Project scan caching now retains a small window of recent source and project-index snapshots so alternating automatic
   validation requests can reuse recently displaced scan results instead of rebuilding the full project index.
 - Follow-up validation logs confirmed alternating automatic save/change/file-watch triggers now usually hit source/index
@@ -212,6 +211,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ### Test And Structure Hygiene
 
+- Treat `plans/REVIEW_CODEX.md` (2026-07-13) as the current architecture risk register and
+  `plans/REVIEW_IMPLEMENTATION_PLAN.md` as its executable queue. Use exactly one numbered focused-plan slice per
+  implementation turn.
 - Use QTest for new C++ tests while keeping CTest as the runner.
 - Keep `tests/core/` and `TherionCoreQTests` as the baseline pattern for small core-only QTest cases.
 - Keep app/service/editor aggregate QTest runners grouped by dependency/runtime boundary rather than creating one
@@ -241,17 +243,18 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ### SVG Backgrounds
 
 - Follow `plans/SVG_BACKGROUND_PLAN.md` for remaining SVG background work.
-- Next implementation slice should audit current SVG labels, inspector Gamma state, Fit With Background behavior, and
-  failed-load reporting before adding new abstractions.
+- Next implementation slice should cover invalid SVG restore reporting while continuing to load valid sibling layers;
+  Gamma and Fit With Background are verified baseline behavior.
 - Preserve Mapiah `format=svg` semantics and existing background source transaction paths.
+- Keep general background cache/provider work in `plans/MAP_RUNTIME_OWNERSHIP_PLAN.md`.
 
 ### 3D Viewer
 
 - Follow `plans/3D_VIEWER_PLAN.md` for remaining work.
-- Current stabilization slice adds PNG image export from the current 3D viewport, explicit export resolution presets,
-  and black/white scene background selection.
-- Next implementation slice should add or identify a real Therion-exported `.lox` fixture with terrain surface chunks,
-  or add debug/log load/render statistics before renderer refactoring.
+- PNG export, export resolution presets, black/white scene background, Scene Settings, and Outputs `.lox` opening are
+  implemented baseline behavior.
+- Complete `plans/TEST_HERMETICITY_PLAN.md` before adding optional real terrain/surface-bitmap corpus coverage; then add
+  debug/log load/render statistics before renderer refactoring.
 - Keep the viewer read-only and keep `.lox` loading/model/statistics in core.
 - Decide whether to add Therion `.3d` model support to the 3D viewer or keep `.3d` outputs hidden from the Outputs pane.
 
@@ -262,8 +265,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Backlog
 
-- Replace remaining fixed-delay map selection-restore retry timers with explicit scene-refresh completion/generation callbacks.
-- Complete safe one-line map partial refresh according to `plans/MAP_PARTIAL_REFRESH_PLAN.md` after release stabilization.
+- Follow the revised Map order: explicit style ownership, immutable projection handle, scene generation, area dependency
+  gate, then measured partial-refresh widening.
 - Optional Structure graph view for relationships such as `preview`, `revise`, `join`, `equate`, relationship status, and station-network edges.
 - Compiler-confirmed project-index comparison once lightweight indexing is no longer sufficient.
 - Broaden retained project validation cache coverage only if fresh logs show repeated scans still rebuilding unchanged
@@ -275,7 +278,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   explicitly planned.
 - Broader Therion corpus regression tests for parsing, serialization, source rewrites, indexing, and map/text synchronization.
 - Add old-project integration fixtures for Therion/Metapost runner failures once a fixture exists.
-- Bounded `.xvi` cache policy for very large projects.
+- Replace static XVI/raster/SVG cache ownership through `plans/MAP_RUNTIME_OWNERSHIP_PLAN.md`, beginning with a bounded
+  typed cache policy and explicit invalidation tests.
 - Station marker/label priority ranking follow-up: tune automatic decluttering if dense projects hide important stations.
 - Make line guide-spine rendering explicit in style JSON (`guide_spine_visible`) and remove the fallback when catalog coverage allows it.
 - Apple Pencil/freehand stroke UX follow-up for hardware-specific pressure, hover, and tablet-driver behavior.

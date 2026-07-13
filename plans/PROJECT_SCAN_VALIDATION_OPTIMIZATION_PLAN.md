@@ -2,11 +2,17 @@
 
 Date: 2026-06-30
 
+Reviewed: 2026-07-13 against `plans/REVIEW_CODEX.md` and current implementation.
+
 Status: initial project source snapshot/cache ownership slices are implemented. Keep this plan as a follow-up guide for
 live validation performance, cache widening, and incremental project-index diagnostics.
 
 Scope: build on the shared source snapshot and project scan cache architecture to reduce duplicate Structure/Validation
 work, cache unchanged validation results, and prepare later incremental project-index diagnostics.
+
+Relationship to the review: this plan retains snapshot/cache and live-validation optimization. Superseded
+Structure/Outputs publication and asynchronous project watcher inventory are owned by
+`plans/PROJECT_ASYNC_COORDINATION_PLAN.md` and are prerequisites before widening automatic project work.
 
 ## Current Findings
 
@@ -83,7 +89,7 @@ sets are unchanged.
 Follow-up target: make live validation cheaper for nested projects before restoring automatic full-project validation as
 the recommended/default mode.
 
-## Core Types To Introduce
+## Core Types
 
 The exact names may change during implementation, but the responsibilities should stay narrow.
 
@@ -137,7 +143,8 @@ Rules:
 
 Owns DOM/logical projections by source key and catalog key.
 
-Initial implementation may be single-run or single-entry, but its API should be compatible with later persistent cache ownership.
+The implementation supports persistent reuse across validation requests and exposes immutable logical-document handles
+where consumers need stable projection lifetime.
 
 Responsibilities:
 
@@ -221,12 +228,12 @@ Slice 1B - Project Source Snapshot Collector - Done
   - size limit behavior compatible with current Validation
 - Kept this collector independent from Structure and Validation UI.
 
-Slice 1C - DOM Projection Access For Project Sources - Pending
+Slice 1C - DOM Projection Access For Project Sources - Done
 
-- Add a small `ProjectSourceProjectionCache` that can build `TherionSourceDocument` and `TherionSourceLogicalDocument` for a `ProjectSourceSnapshot`.
-- Start with a per-run cache if persistent ownership would make the first slice too large.
-- Make cache stats observable for tests/logging.
-- Add tests:
+- `ProjectSourceProjectionCache` builds/reuses `TherionSourceDocument` and `TherionSourceLogicalDocument` projections.
+- Validation owns a persistent shared cache instance rather than reconstructing projections for each file/request.
+- Cache stats are observable for tests/logging.
+- Existing tests cover:
   - unchanged source snapshot reuses projection within a run
   - changed in-memory text changes the key
   - catalog key changes only catalog-aware logical projection reuse
@@ -251,7 +258,8 @@ Slice 2A - ProjectStructureIndex Snapshot Input - Done
 Slice 2B - ProjectStructureScanner Snapshot Collection - Done
 
 - Updated `ProjectStructureScanner` to collect `ProjectSourceSnapshot` and pass `ProjectStructureIndexSourceSet` to the index path.
-- Preserved existing result shape and debounce/supersede behavior.
+- Preserved existing result shape, debounce, and queued replacement behavior. Publication of an already running stale
+  result is not suppressed yet; that review finding is tracked in `PROJECT_ASYNC_COORDINATION_PLAN.md` A1-A3.
 - Diagnostics timing remains pending:
   - source collection ms
   - projection/index ms
@@ -306,70 +314,61 @@ Verification:
 
 Goal: remove duplicate Structure/Validation project source collection and project index construction when inputs match.
 
-Slice 4A - Single-Entry Project Source Snapshot Service
+Slice 4A - Bounded Project Source Snapshot Service - Done
 
-- Add a focused service that owns the latest `ProjectSourceSnapshotSet`.
-- Start with a single-entry "last project source snapshot" cache.
-- Keep ownership outside `MainWindow`; `MainWindow` supplies project root, preferred config, and in-memory contents.
-- Log invalidation reason:
-  - project root changed
-  - preferred config changed
-  - in-memory content changed
-  - disk metadata/content changed
-  - file set changed
-  - no cached snapshot
+- `ProjectScanCacheService` owns a bounded recent window of project source snapshots.
+- `MainWindow` composes/shares the service while supplying root, preferred config, and in-memory contents.
+- Request keys cover project/config/content/file-set identity and cache behavior has focused tests.
 
-Slice 4B - Shared Project Index Snapshot
+Slice 4B - Shared Project Index Snapshot - Done
 
-- Extend the service to cache the `ProjectIndexSnapshot` derived from a source snapshot key.
-- Structure and Validation can reuse it when the source snapshot key and preferred config match.
-- Do not make the cache unbounded.
-- Keep worker/generation semantics explicit and testable.
+- The service caches bounded `ProjectIndexSnapshot` results by source request key.
+- Structure and Validation reuse the same index snapshot when source/config identity matches.
+- Scanner results expose source/index cache hits for tests and diagnostics.
 
-Slice 4C - Route Structure And Validation Through The Service
+Slice 4C - Route Structure And Validation Through The Service - Done
 
-- Structure requests the source/index projection from the shared service.
-- Validation requests the same source/index projection before local validation.
-- If both requests arrive close together, only one index projection should be needed for identical inputs.
-- Add diagnostic logs showing project-index cache hit/miss.
+- Structure and Validation request source/index projections through the shared service.
+- Existing tests cover reuse across scanner instances/consumers with identical inputs.
+- Further tuning requires timing/cache evidence rather than another ownership layer.
 
 Verification:
 
 - Existing scanner/controller tests.
-- New test proving two consumers with identical inputs reuse the same project index snapshot or at least avoid a second `scanProjectIndex()` call through instrumentation.
+- Existing cache-hit tests proving consumers with identical inputs reuse project source/index snapshots.
 
 ## Phase 5 - Per-File Local Validation Cache
 
 Goal: avoid revalidating unchanged files across repeated project validation runs after source snapshot keys exist.
 
-Slice 5A - Diagnostics-Only Cache Entry
+Slice 5A - Diagnostics-Only Cache Entry - Done
 
-- Add cache entries storing:
+- Project validation cache entries store:
   - per-file local diagnostics from `TherionSourceValidator`
   - source key
   - catalog key
   - validation algorithm version
-- Start diagnostics-only; cache source/logical documents through `ProjectSourceProjectionCache` separately.
+- Source/logical documents remain owned by `ProjectSourceProjectionCache` separately.
 
-Slice 5B - Reuse Unchanged Local Diagnostics
+Slice 5B - Reuse Unchanged Local Diagnostics - Done
 
-- During project validation, reuse local diagnostics when the key matches.
-- Revalidate only:
+- Project validation reuses local diagnostics when the key matches and revalidates only:
   - changed files
   - new files
   - deleted-file removals
   - files affected by catalog/source-type changes
 - Keep cross-file/project-index diagnostics separate and recomputed conservatively.
-- Add diagnostic logging:
+- Diagnostic logging reports cache hits/misses and timings.
 
 ```text
 project-validation-cache files=44 local_hits=43 local_misses=1 local_validate_ms=3
 ```
 
-Slice 5C - Open In-Memory Documents
+Slice 5C - Open In-Memory Documents - Done
 
-- Ensure in-memory editor text overrides disk text before computing the cache key.
-- Add tests:
+- In-memory editor text overrides disk text before computing the cache key.
+- Existing tests cover unchanged reuse, in-memory invalidation, and catalog/source identity changes.
+- Preserve tests for:
   - unchanged disk file reuses local diagnostics
   - changed in-memory text invalidates only that file
   - saving the same text does not duplicate findings
@@ -449,7 +448,8 @@ Goal: remove duplicate discovery/read/parse paths only after the DOM-backed proj
 
 Removal candidates:
 
-- `ProjectValidationScanner` private recursive file discovery.
+- Completed: `ProjectValidationScanner` consumes a `ProjectStructureIndexSourceSet` and no longer owns private recursive
+  file discovery.
 - Validation-only local text maps that duplicate project source snapshots.
 - `ProjectStructureIndex::scanProjectIndex()` entry points that force disk discovery when callers already have snapshots.
 - Per-run parsed caches that duplicate project-level source projection cache, once persistent cache coverage exists.
@@ -463,13 +463,12 @@ Do not remove until:
 
 ## Recommended Slice Queue
 
-1. Slice 4A: add single-entry project source snapshot service.
-2. Slice 4B: add shared project index snapshot reuse for Structure/Validation.
-3. Slice 1C: add project source DOM projection cache access, scoped to the shared service if practical.
-4. Slice 5A: add diagnostics-only per-file validation cache.
-5. Slice 5B: reuse unchanged local diagnostics and log hits/misses.
-6. Slice 6A: define stable validation finding identity for cheaper UI updates.
-7. Slice 7A: inventory dependency graph before incremental project-index implementation.
+1. Complete `PROJECT_ASYNC_COORDINATION_PLAN.md` A1-A3 so Structure and Outputs never publish superseded results.
+2. Complete `PROJECT_ASYNC_COORDINATION_PLAN.md` W1-W4 so recursive watcher discovery leaves the GUI thread.
+3. Slice 3C: add an explicit Structure/Validation compatibility test over equivalent source snapshot identity.
+4. Slice 6A: define stable validation finding identity for cheaper UI updates.
+5. Slice 6B: short-circuit no-change Validation UI publication.
+6. Slice 7A only after measurements show project-index rebuild is the next bottleneck.
 
 ## Acceptance Criteria
 

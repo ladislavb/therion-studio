@@ -1,6 +1,14 @@
 # GUI Cleanup Plan
 
+Reviewed: 2026-07-13. The visual/presentation scope remains valid. Search, Validation, Project Browser, Outputs, and
+Map Backgrounds already have more focused files than the original candidate list assumed; the queue below reflects the
+remaining boundaries.
+
 This plan describes how to separate visual styling and UI construction from application logic while keeping the current Qt Widgets application shippable. The immediate goal is cleaner Qt Widgets code with centralized styling and lower-risk UI changes. Qt Quick/QML is only a possible future view technology, so the cleanup should avoid locking application behavior into widget internals.
+
+Relationship to `REVIEW_CODEX.md`: P2-1/P2-3 justify touched-area presentation splits and P2-4 supports incremental
+test migration. P1 SQL, project watcher, localization, Map resource ownership, and Map refresh work remain in their
+focused plans; this file shall not absorb them as generic "GUI cleanup".
 
 ## Goals
 
@@ -213,18 +221,21 @@ Good examples to continue:
 - `MapEditorTabInspectorControllerDelegates.cpp`
 - `MainWindowTherionConsoleBuilder.cpp`
 - `MainWindowTherionConsoleWiring.cpp`
+- focused Search, Validation, Project Browser, and Outputs sidebar files
 
 Candidate splits:
 
-- `MapEditorTabInspectorPanelUi.cpp` into selection/background/objects/file UI builders
-- `MainWindowSidebar.cpp` into structure/search/validation/compiler page builders
+- remaining selection/objects/file construction in `MapEditorTabInspectorPanelUi.cpp`, only when a concrete change
+  touches that section; Backgrounds already has focused UI/controller ownership
+- remaining mixed construction/wiring branches in `MainWindowSidebar.cpp`; Search, Validation, Project Browser, and
+  Outputs shall not be planned as if they were still one unsplit page
 - status bar badge construction vs status update logic
 
 Current preferred split order:
 
 1. Status bar badge construction vs status update logic, because it has limited source-model risk.
-2. `MainWindowSidebar.cpp` page-builder extraction, one sidebar page at a time.
-3. Map inspector file/background/selection/object UI split only when a concrete inspector change needs it.
+2. One remaining `MainWindowSidebar.cpp` construction/wiring extraction when that branch is next touched.
+3. Map inspector file/selection/object UI split only when a concrete inspector change needs it.
 
 Verification:
 
@@ -374,11 +385,14 @@ Do not migrate the map canvas until:
 
 ## Recommended Next Slice Queue
 
-1. Extract one remaining long inline stylesheet into an existing style builder and verify light/dark behavior.
+1. Move the small inline stylesheet in `MainWindowProjectTemplate.cpp` into the existing application style-sheet API;
+   do not change labels, layout, or behavior in the same slice.
 2. Replace one repeated metric cluster with `ApplicationControlMetrics` / `ApplicationStyleTokens`.
 3. Split status badge construction from status update logic if the next status-bar change touches that area.
-4. Extract one `MainWindowSidebar` page builder only when modifying that sidebar page.
+4. Extract one remaining `MainWindowSidebar` construction branch only when modifying that branch.
 5. Introduce one small read-only view model for a panel/list state with focused unit coverage.
+6. Consolidate duplicated icon rendering only when a touched surface provides a bounded DPR-aware factory seam; do not
+   combine it with Map resource/cache work.
 
 ## Verification Gates
 

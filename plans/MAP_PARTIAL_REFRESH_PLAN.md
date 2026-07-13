@@ -2,21 +2,32 @@
 
 Date: 2026-06-30
 
+Reviewed: 2026-07-13 against `plans/REVIEW_CODEX.md` and current implementation.
+
 Scope: reduce post-edit map latency by refreshing only the affected TH2 geometry item group when it is safe, while keeping full scene refresh as the correctness fallback.
 
 This plan is a Map scene/rendering performance plan. It should stay compatible with the shared source model by accepting
 already-built geometry projections at narrow boundaries instead of baking document reparsing into renderer APIs.
 
+Relationship to the review: this plan owns P1-4 scene/projection refresh cost. Explicit style/background resource
+ownership is a prerequisite in `plans/MAP_RUNTIME_OWNERSHIP_PLAN.md` R1-R5. Undo-memory work is the independent U-series
+in that plan and shall not be mixed with scene refresh.
+
 ## Current State
 
-- Full map scene refresh reparses token lines, collects entries and geometry features, clears the map scene, renders every item, restores backgrounds/drafts/selection, reapplies presentation, and updates related UI.
+- Full map scene refresh consumes revision-cached logical/TH2 projections, then synchronously collects derived features,
+  clears the map scene, renders every item, restores backgrounds/drafts/selection, reapplies presentation, and updates
+  related UI. Cache hits avoid reparsing but not projection copies, feature collection, or item recreation.
 - `MapEditorLargeScenePerformanceSmokeTest` provides a generated large-map harness around roughly 2k parsed lines and 6k scene items.
 - Vertex selection restoration has an index through `mapVertexItemsByKey_`, which avoids scanning the full scene for many post-refresh selection restores.
 - Simple unstyled open-line vertex commits can skip the full scene refresh and restore selection locally.
+- One-line geometry item-group removal/re-rendering, index preflight, bounds fallback, and diagnostic timing already exist
+  for selected line-edit paths; the original phase queue therefore contains partially implemented slices.
 - Styled/decorated line commits still use full scene refresh because generated artefacts such as segment strokes, guide spines, line decorations, labels, direction ticks, handles, and connectors must stay consistent.
 - Drag preview for styled line segments now updates `wall:blocks` guide paths during vertex movement, preventing stale preview geometry while the drag is active.
 - Most scene items already carry `kMapSceneLineNumberRole`, but `mapItemsByLine_` stores only the primary item for a source line, not the full rendered item group.
-- `renderMapWorkspaceScene()` owns the line rendering branch directly; there is no reusable public helper that renders one `MapGeometryFeature::Line` into an existing scene.
+- Full-scene and partial paths still need a narrower shared immutable render/projection contract; current logical-command
+  and geometry callbacks return complete projections by value.
 
 ## Goals
 
@@ -28,8 +39,8 @@ already-built geometry projections at narrow boundaries instead of baking docume
 
 ## Non-Goals
 
-- Do not rewrite the Map source projection architecture in this plan.
-- Do not remove `MapEditorTab::parsedLinesForCurrentDocument()` or token-line compatibility APIs.
+- Do not reopen the completed unified source migration or add another Map parser.
+- Do not remove compatibility APIs until all current consumers and regression gates have replacement coverage.
 - Do not rewrite the whole map renderer.
 - Do not partial-refresh area fills, scrap clipping, referenced areas, backgrounds, drafts, cards, or Structure/Validation projections in the first implementation.
 - Do not make partial refresh the default for every source change.
@@ -37,14 +48,16 @@ already-built geometry projections at narrow boundaries instead of baking docume
 
 ## DOM Compatibility Boundary
 
-Partial refresh should be shaped around projection inputs, not text parsing:
+Partial refresh is shaped around shared projection inputs, not text parsing:
 
 ```cpp
 refreshSingleGeometryFeature(const MapGeometryFeature &feature,
                              const MapGeometryRenderContext &context);
 ```
 
-The first implementation may still obtain `MapGeometryFeature` from existing token-line helpers, but the refresh/render API should not require document text or line-number reparsing internally.
+The current implementation obtains source data through cached logical/TH2 projections, but several callbacks copy whole
+projection values and partial lookup reconstructs derived features. New APIs shall use immutable revision-keyed handles
+and shall not require document text or line-number reparsing internally.
 
 The current shared source model can provide the feature source through a cached TH2 geometry projection:
 
@@ -81,18 +94,66 @@ Fallback to full refresh when:
 - The current selection cannot be restored from the refreshed item group.
 - Any required item group metadata is incomplete.
 
+## Prerequisite M0 - Immutable Projection And Scene Generation
+
+### Slice M0A - Revision-Keyed Projection Handle
+
+Replace value-returning callbacks in `MapEditorLogicalSourceContext` with an immutable revision-keyed snapshot/handle
+that owns logical commands, `Th2GeometryProjection`, source bounds, and feature/dependency lookup for one document
+revision.
+
+Initial scope:
+
+- `MapEditorLogicalSourceContext.h`
+- `MapEditorTabSourceEditWorkflow.cpp`
+- `MapEditorTab.h`
+- `MapEditorSceneRefreshController.*`
+- a focused cache/handle test plus `MapEditorLargeScenePerformanceSmokeTest`
+
+Acceptance:
+
+- repeated consumers for the same revision share one immutable projection identity;
+- no render/selection consumer can mutate cached projection state;
+- source revision change creates a new identity and old deferred work cannot publish as current;
+- diagnostics can distinguish projection build from cache/handle reuse.
+
+Stop condition: do not expose references to a mutable cache entry whose lifetime can end during deferred work. Use
+`std::shared_ptr<const ...>` or an equivalent explicit lifetime contract.
+
+### Slice M0B - Scene Generation Completion
+
+Assign a monotonically increasing scene projection generation to each accepted full/partial refresh. Completion and
+selection/navigation restoration carry the target generation and apply once only when it is still current.
+
+The existing `sourceDrivenMapRefreshCompleted` signal is a source-refresh completion seam, not sufficient generation
+identity for overlapping full, partial, undo/redo, background, and deferred selection work.
+
+Tests:
+
+- source edit followed by map edit;
+- refresh A superseded by refresh B;
+- selection restore targeting A cannot apply after B;
+- tab teardown with deferred completion;
+- repeated parallel `MapEditorDragUndoRedoSmokeTest`.
+
+### Slice M0C - Baseline Full And Partial Cost
+
+Record opt-in diagnostics for projection lookup/copy, feature collection, item clear/render, background restore,
+selection, inspector, and total time on the generated large scene. Do not change behavior in this slice. Use the
+measurements to select the next item-group extraction rather than assuming line rendering is still the dominant cost.
+
 ## Phase 1 - Item Group Ownership
 
 Goal: make "all scene items for source line N" explicit enough to remove and replace a single rendered geometry group.
 
-Slice 1A - Inventory and Guardrails
+Slice 1A - Inventory and Guardrails - Done baseline
 
 - Audit all line-rendered scene items and confirm every item has `kMapSceneLineNumberRole`.
 - Identify items that should not be removed by geometry partial refresh, such as backgrounds, draft items, cards, and non-geometry overlays.
 - Add a focused test or assertion helper that rendered `wall:blocks` lines expose all expected line-number metadata on primary path, segment paths, guide spines, decorations, handles, connectors, label, and direction tick.
 - Keep this slice behavior-preserving.
 
-Slice 1B - Geometry Item Group Removal Helper
+Slice 1B - Geometry Item Group Removal Helper - Partially implemented
 
 - Add a focused helper that removes geometry scene items for one source line:
   - scans scene items for `kMapSceneLineNumberRole == lineNumber`
@@ -103,7 +164,7 @@ Slice 1B - Geometry Item Group Removal Helper
 - Keep background, draft, card, and unrelated overlay items untouched.
 - Add tests with multiple line features and a point/area nearby to prove only the target line group is removed.
 
-Slice 1C - Item Group Reindexing
+Slice 1C - Item Group Reindexing - Partially implemented
 
 - Ensure newly inserted handles are registered into `mapVertexItemsByKey_`.
 - Ensure the primary rendered line item is reinserted into `mapItemsByLine_`.
@@ -121,7 +182,7 @@ Verification:
 
 Goal: reuse the existing line rendering branch without requiring a full scene rebuild.
 
-Slice 2A - Render Context Extraction
+Slice 2A - Render Context Extraction - Pending after M0/R1
 
 - Introduce a narrow render context for geometry rendering inputs currently captured in `renderMapWorkspaceScene()`:
   - scene
@@ -136,7 +197,7 @@ Slice 2A - Render Context Extraction
 - Keep this type map-renderer-local unless another module needs it.
 - Do not move source parsing, document text, or selection logic into this context.
 
-Slice 2B - Extract Line Feature Renderer
+Slice 2B - Extract Line Feature Renderer - Partially implemented
 
 - Move the `MapGeometryFeature::Kind::Line` rendering branch into a helper that accepts one feature and the render context.
 - Preserve:
@@ -167,7 +228,7 @@ Verification:
 
 Goal: use the item group remover and single-line renderer from source transaction projection invalidation hooks.
 
-Slice 3A - Partial Refresh Eligibility
+Slice 3A - Partial Refresh Eligibility - Partially implemented
 
 - Add a pure eligibility helper that receives:
   - before feature
@@ -184,13 +245,13 @@ Slice 3A - Partial Refresh Eligibility
 - Start with conservative line-only eligibility.
 - Add tests for simple open line, `wall:blocks`, slope, closed line, area border dependency, and bounds expansion.
 
-Slice 3B - Feature Lookup Boundary
+Slice 3B - Feature Lookup Boundary - Partially implemented
 
 - Add a narrow feature lookup function at the scene refresh/controller boundary.
 - First implementation may use existing parsed-line compatibility helpers.
 - Keep the API ready for a future cached TH2 geometry projection by returning `MapGeometryFeature` / dependency metadata rather than raw parsed lines.
 
-Slice 3C - Projection Invalidation Hook
+Slice 3C - Projection Invalidation Hook - Partially implemented
 
 - Add a new source transaction invalidation hook for eligible line moves:
   - obtain after feature
@@ -204,7 +265,7 @@ Slice 3C - Projection Invalidation Hook
 - If any step fails, leave the pending full refresh in place and run the existing full refresh path.
 - Preserve undo/redo behavior by letting undo/redo trigger the same eligibility and refresh path only when safe.
 
-Slice 3D - Diagnostic Timing
+Slice 3D - Diagnostic Timing - Done baseline
 
 - Add optional diagnostic logging for partial refresh when troubleshooting logging is enabled:
 
@@ -233,6 +294,8 @@ Slice 4A - Area Border Dependency Detection
   - line source line -> dependent area line numbers
 - Keep Therion namespace/reference semantics aligned with `docs/THERION_COMPATIBILITY.md`.
 - Add tests for direct area border references and namespace-qualified references before using the index for refresh decisions.
+- Treat unresolved or ambiguous border references as a mandatory full-refresh fallback. Do not consider current one-line
+  replacement proof that area-border lines are safe.
 
 Slice 4B - Partial Refresh Of Dependent Area Groups
 
@@ -257,7 +320,7 @@ Verification:
 
 Goal: replace compatibility feature lookup with a cached DOM-backed TH2 projection when the Unified Source DOM plan reaches Map projection slices.
 
-Slice 5A - Projection Contract
+Slice 5A - Projection Contract - Done baseline
 
 - Define the smallest `Th2GeometryProjection` output needed by map rendering:
   - geometry features
@@ -267,10 +330,11 @@ Slice 5A - Projection Contract
   - optional feature lookup by source line
 - Keep scene item rendering independent of how the projection was built.
 
-Slice 5B - Cache Integration
+Slice 5B - Cache Integration - Partially implemented
 
-- Feed partial refresh eligibility from a revision-keyed projection cache.
-- Avoid reparsing unchanged text during cursor movement, selection updates, inspector refreshes, and repeated vertex commits.
+- Revision-keyed logical/TH2 caches exist and avoid reparsing unchanged text.
+- Remaining work is M0A immutable handle/lifetime ownership and direct feature/dependency lookup without whole-value
+  handoffs or repeated derived-feature collection.
 - Keep cache ownership outside widgets where practical.
 
 Slice 5C - Legacy Removal Gate
@@ -288,16 +352,15 @@ Verification:
 
 ## Recommended Slice Queue
 
-1. Slice 1A: audit and test line item group metadata, especially `wall:blocks`.
-2. Slice 1B: add safe one-line geometry item group removal and tests.
-3. Slice 1C: ensure item and vertex indices rebuild correctly after one-line group replacement.
-4. Slice 2A: extract a narrow line render context.
-5. Slice 2B: extract single-line renderer and make full-scene rendering use it.
-6. Slice 3A: add conservative partial-refresh eligibility helper with explicit fallback reasons.
-7. Slice 3C: wire eligible line vertex commits to partial refresh with full-refresh fallback.
-8. Slice 3D: add bounded diagnostic timings for partial refresh.
-9. Slice 4A: add line-to-area dependency index before widening eligibility.
-10. Slice 5A: align the API with future `Th2GeometryProjection`.
+1. Complete `MAP_RUNTIME_OWNERSHIP_PLAN.md` R1 so render contexts receive explicit immutable style data.
+2. Slice M0A: introduce an immutable revision-keyed projection handle and direct lookup boundary.
+3. Slice M0B: make full/partial refresh and selection restoration generation-aware.
+4. Slice M0C: capture current full/partial timing and projection handoff metrics.
+5. Slice 4A: add the conservative line-to-area dependency gate before widening eligibility.
+6. Finish Slice 1B/1C stale-pointer and reindex coverage for the existing replacement path.
+7. Finish Slice 2A/2B only for the first measured rendering bottleneck.
+8. Finish Slice 3A/3C with explicit fallback reasons and generation checks.
+9. Consider dependent-area partial refresh only after all earlier gates are stable.
 
 ## Acceptance Criteria
 
@@ -309,6 +372,8 @@ Verification:
 - Full scene refresh remains available and correct for every unsupported case.
 - Troubleshooting logs can distinguish partial refresh from full refresh and report fallback reasons when enabled.
 - The implementation can later consume a DOM-backed TH2 projection without changing map scene item ownership APIs.
+- Repeated same-revision consumers share immutable projection identity rather than copying complete cached projections.
+- Scene/selection completion is generation-keyed and stale deferred work cannot target a newer scene.
 
 ## Verification Gates
 
