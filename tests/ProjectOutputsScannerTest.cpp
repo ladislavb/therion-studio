@@ -35,6 +35,7 @@ class ProjectOutputsScannerTest final : public QObject
 
 private slots:
     void keepsDuplicateNamesDistinctAndClassifiesArtifacts();
+    void emptyProjectRootReportsOpenProjectState();
     void publishesOnlyLatestPendingRequest();
 };
 
@@ -103,6 +104,29 @@ void ProjectOutputsScannerTest::keepsDuplicateNamesDistinctAndClassifiesArtifact
     QCOMPARE(displayNamesByRelativePath.value(QStringLiteral("output/cave.sql")), QStringLiteral("cave.sql"));
 }
 
+void ProjectOutputsScannerTest::emptyProjectRootReportsOpenProjectState()
+{
+    ProjectOutputsScanner scanner;
+    scanner.setDebounceIntervalMs(0);
+
+    ProjectOutputsScanner::Result result;
+    bool received = false;
+    connect(&scanner,
+            &ProjectOutputsScanner::scanFinished,
+            &scanner,
+            [&](const ProjectOutputsScanner::Result &nextResult) {
+                result = nextResult;
+                received = true;
+            });
+
+    scanner.requestScan(QString());
+    QTRY_VERIFY_WITH_TIMEOUT(received, 2000);
+    QCOMPARE(result.requestSerial, quint64(1));
+    QVERIFY(result.projectRootPath.isEmpty());
+    QVERIFY(!result.errorMessage.isEmpty());
+    QVERIFY(result.artifacts.isEmpty());
+}
+
 void ProjectOutputsScannerTest::publishesOnlyLatestPendingRequest()
 {
     QSemaphore firstScanStarted;
@@ -132,13 +156,22 @@ void ProjectOutputsScannerTest::publishesOnlyLatestPendingRequest()
                 publishedResults.append(result);
             });
 
-    scanner.requestScan(QStringLiteral("project-a"));
+    scanner.requestScan(QStringLiteral("same-project"));
     QTRY_COMPARE_WITH_TIMEOUT(firstScanStarted.available(), 1, 2000);
     firstScanStarted.acquire();
 
-    scanner.requestScan(QStringLiteral("project-b"));
+    scanner.requestScan(QStringLiteral("same-project"));
+    ProjectOutputsScanner::Result firstIdentity;
+    firstIdentity.requestSerial = 1;
+    firstIdentity.projectRootPath = QStringLiteral("same-project");
+    QVERIFY(!scanner.isLatestRequestResult(firstIdentity));
+    ProjectOutputsScanner::Result secondIdentity;
+    secondIdentity.requestSerial = 2;
+    secondIdentity.projectRootPath = QStringLiteral("same-project");
+    QVERIFY(scanner.isLatestRequestResult(secondIdentity));
     QCoreApplication::processEvents(QEventLoop::AllEvents);
     scanner.requestScan(QStringLiteral("project-c"));
+    QVERIFY(!scanner.isLatestRequestResult(secondIdentity));
     releaseFirstScan.release();
     releaseFirstScanGuard.dismiss();
 

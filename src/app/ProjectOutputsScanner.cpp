@@ -70,8 +70,12 @@ ProjectOutputsScanner::Result performProjectOutputsScan(const QString &projectRo
 {
     ProjectOutputsScanner::Result result;
     result.requestSerial = requestSerial;
+    if (projectRootPath.trimmed().isEmpty()) {
+        result.errorMessage = QObject::tr("Open a project to browse outputs.");
+        return result;
+    }
     result.projectRootPath = ProjectFileDiscovery::canonicalOrAbsolutePath(projectRootPath);
-    if (result.projectRootPath.trimmed().isEmpty() || !QDir(result.projectRootPath).exists()) {
+    if (!QDir(result.projectRootPath).exists()) {
         result.errorMessage = QObject::tr("Open a project to browse outputs.");
         return result;
     }
@@ -136,6 +140,11 @@ void ProjectOutputsScanner::setDebounceIntervalMs(int intervalMs)
     debounceTimer_->setInterval(intervalMs);
 }
 
+bool ProjectOutputsScanner::isLatestRequestResult(const Result &result) const
+{
+    return result.requestSerial != 0 && result.requestSerial == latestRequestSerial_;
+}
+
 void ProjectOutputsScanner::startScan()
 {
     if (!hasPendingRequest_) {
@@ -159,7 +168,7 @@ void ProjectOutputsScanner::startScan()
 void ProjectOutputsScanner::handleScanFinished()
 {
     const Result result = scanWatcher_->result();
-    if (result.requestSerial == latestRequestSerial_) {
+    if (isLatestRequestResult(result)) {
         emit scanFinished(result);
     }
 

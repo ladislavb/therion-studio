@@ -283,16 +283,34 @@ int runLatestRequestSupersessionTest()
                          publishedResults.append(result);
                      });
 
-    scanner.requestScan(QStringLiteral("project-a"), {});
+    scanner.requestScan(QStringLiteral("same-project"), {});
     if (!expect(waitUntil([&]() { return firstScanStarted.available() == 1; }),
                 "First deterministic structure scan did not start.")) {
         return 1;
     }
     firstScanStarted.acquire();
 
-    scanner.requestScan(QStringLiteral("project-b"), {});
+    scanner.requestScan(QStringLiteral("same-project"), {});
+    ProjectStructureScanner::Result firstIdentity;
+    firstIdentity.requestSerial = 1;
+    firstIdentity.projectRootPath = QStringLiteral("same-project");
+    if (!expect(!scanner.isLatestRequestResult(firstIdentity),
+                "Same-root replacement should reject the previous structure result identity.")) {
+        return 1;
+    }
+    ProjectStructureScanner::Result secondIdentity;
+    secondIdentity.requestSerial = 2;
+    secondIdentity.projectRootPath = QStringLiteral("same-project");
+    if (!expect(scanner.isLatestRequestResult(secondIdentity),
+                "Latest same-root structure result identity should remain current.")) {
+        return 1;
+    }
     QCoreApplication::processEvents(QEventLoop::AllEvents);
     scanner.requestScan(QStringLiteral("project-c"), {});
+    if (!expect(!scanner.isLatestRequestResult(secondIdentity),
+                "Project-root replacement should reject the previous structure result identity.")) {
+        return 1;
+    }
     releaseFirstScan.release();
     releaseFirstScanGuard.dismiss();
 

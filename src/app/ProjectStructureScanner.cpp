@@ -104,6 +104,11 @@ void ProjectStructureScanner::setDebounceIntervalMs(int intervalMs)
     debounceTimer_->setInterval(intervalMs);
 }
 
+bool ProjectStructureScanner::isLatestRequestResult(const Result &result) const
+{
+    return result.requestSerial != 0 && result.requestSerial == latestRequestSerial_;
+}
+
 void ProjectStructureScanner::startScan()
 {
     if (!hasPendingRequest_) {
@@ -130,7 +135,7 @@ void ProjectStructureScanner::startScan()
 void ProjectStructureScanner::handleScanFinished()
 {
     const Result result = scanWatcher_->result();
-    if (result.requestSerial == latestRequestSerial_) {
+    if (isLatestRequestResult(result)) {
         emit scanFinished(result);
     }
 

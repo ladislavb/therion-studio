@@ -4,7 +4,7 @@ Date: 2026-07-13
 
 Review findings: P1-3, P1-5.
 
-Status: active; A1 complete, A2 is next.
+Status: active; A1-A2 complete, A3 is next.
 
 Scope: make Structure/Outputs result publication monotonic and move recursive project-watch inventory discovery off the
 GUI thread. This plan does not redesign project source snapshots, validation caches, or platform watcher policy.
@@ -63,7 +63,7 @@ starts only the latest pending request. Narrow injected scan callables let the f
 deterministic barrier, replace pending B with C, and verify stale success/error publication without fixed-delay sleeps or
 a general executor abstraction. Consumer-side defense remains A2 scope.
 
-## A2 — Guard Structure And Outputs Consumers
+## A2 — Guard Structure And Outputs Consumers — Complete
 
 Allowed scope:
 
@@ -78,6 +78,12 @@ Steps:
 3. Ensure stale errors and busy/empty states cannot replace the current surface.
 
 The scanner is the primary suppression owner; the UI check is defense in depth, not a second independent timeline.
+
+Outcome (2026-07-13): both presentation handlers reject results whose request serial is no longer current before they
+clear models, show errors, append console output, or apply Structure state. They also require the normalized result root
+to match the current project, including the empty-project state. Focused identity tests cover same-root replacement and
+project-root replacement, stale errors remain suppressed, and an empty Outputs request now reports the intended
+open-project state instead of resolving the empty path to the process working directory.
 
 ## A3 — Scanner Verification And Touched-Test Migration
 

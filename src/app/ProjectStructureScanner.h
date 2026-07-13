@@ -50,6 +50,7 @@ public:
                      const QHash<QString, QString> &inMemoryProjectContentsByPath,
                      const QString &preferredConfigPath);
     void setDebounceIntervalMs(int intervalMs);
+    bool isLatestRequestResult(const Result &result) const;
 
 signals:
     void scanFinished(const TherionStudio::ProjectStructureScanner::Result &result);

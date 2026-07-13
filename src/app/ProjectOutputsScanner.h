@@ -49,6 +49,7 @@ public:
 
     void requestScan(const QString &projectRootPath);
     void setDebounceIntervalMs(int intervalMs);
+    bool isLatestRequestResult(const Result &result) const;
 
 signals:
     void scanFinished(const TherionStudio::ProjectOutputsScanner::Result &result);

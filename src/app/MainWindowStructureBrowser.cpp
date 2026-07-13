@@ -649,13 +649,17 @@ void MainWindow::requestStructureSidebarRebuild()
 
 void MainWindow::handleStructureSidebarScanFinished(const TherionStudio::ProjectStructureScanner::Result &result)
 {
+    if (structureSidebarScanner_ == nullptr
+        || !structureSidebarScanner_->isLatestRequestResult(result)
+        || normalizedStructurePathKey(result.projectRootPath) != normalizedStructurePathKey(projectRootPath_)) {
+        return;
+    }
+
     if (!result.errorMessage.isEmpty()) {
         appendConsoleLine(result.errorMessage);
     }
 
-    if (result.projectRootPath == projectRootPath_
-        && !projectRootPath_.isEmpty()
-        && QDir(projectRootPath_).exists()) {
+    if (!projectRootPath_.isEmpty() && QDir(projectRootPath_).exists()) {
         if (!result.errorMessage.isEmpty()) {
             showStructureSidebarMessage(result.errorMessage);
             return;

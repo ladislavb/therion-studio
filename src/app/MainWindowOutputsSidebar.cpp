@@ -103,13 +103,15 @@ void MainWindow::requestProjectOutputsRefresh()
 
 void MainWindow::handleProjectOutputsScanFinished(const TherionStudio::ProjectOutputsScanner::Result &result)
 {
-    if (outputsModel_ == nullptr) {
+    if (outputsModel_ == nullptr
+        || projectOutputsScanner_ == nullptr
+        || !projectOutputsScanner_->isLatestRequestResult(result)) {
         return;
     }
-    const QString currentProjectRootPath = TherionStudio::ProjectFileDiscovery::canonicalOrAbsolutePath(projectRootPath_);
-    if (!projectRootPath_.trimmed().isEmpty()
-        && !result.projectRootPath.isEmpty()
-        && result.projectRootPath != currentProjectRootPath) {
+    const QString currentProjectRootPath = projectRootPath_.trimmed().isEmpty()
+        ? QString()
+        : TherionStudio::ProjectFileDiscovery::canonicalOrAbsolutePath(projectRootPath_);
+    if (result.projectRootPath != currentProjectRootPath) {
         return;
     }
 
