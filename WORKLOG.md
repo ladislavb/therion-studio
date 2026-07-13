@@ -8,7 +8,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
 2. Complete watcher W4 in `PROJECT_ASYNC_COORDINATION_PLAN.md`: verify large-tree responsiveness, root replacement,
    directory mutations, and cross-platform watcher behavior. SQL S1-S5 and watcher W1-W3 are complete.
 3. Real-project smoke testing for Raw, Blocks, Map, Validation, Structure, and Compiler navigation after DOM closure.
-4. Plan-driven follow-ups for map partial refresh, validation/cache tuning, GUI cleanup, SVG backgrounds, reporting, LiDAR design, and 3D viewer refinement.
+4. Plan-driven follow-ups for map partial refresh, validation/cache tuning, GUI cleanup, SVG backgrounds, reporting, LiDAR design, and 3D viewer refinement, including palette-regression coverage for inspector controls.
 
 ## Active Work
 

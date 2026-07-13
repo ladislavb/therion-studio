@@ -19,6 +19,23 @@ Rectangle {
     readonly property int sectionPadding: 12
     readonly property int sectionHeaderHeight: 32
 
+    component InspectorCheckBox: CheckBox {
+        id: control
+        palette.text: root.textColor
+        palette.buttonText: root.textColor
+        palette.windowText: root.textColor
+
+        contentItem: Text {
+            objectName: "inspectorCheckBoxText"
+            text: control.text
+            font: control.font
+            color: control.enabled ? root.textColor : root.mutedTextColor
+            verticalAlignment: Text.AlignVCenter
+            leftPadding: control.indicator.width + control.spacing
+            elide: Text.ElideRight
+        }
+    }
+
     function distanceToSlider(distance) {
         return Math.log(Math.max(4, distance)) / Math.LN10
     }
@@ -241,7 +258,7 @@ Rectangle {
                     Repeater {
                         model: layerModel
 
-                        delegate: CheckBox {
+                        delegate: InspectorCheckBox {
                             required property int rowIndex
                             required property int indent
                             required property bool hasChildren
@@ -253,8 +270,6 @@ Rectangle {
                             tristate: hasChildren
                             checkState: layerChecked
                             text: label
-                            palette.text: root.textColor
-                            palette.buttonText: root.textColor
                             nextCheckState: function() {
                                 return checkState === Qt.Checked ? Qt.Unchecked : Qt.Checked
                             }
@@ -337,10 +352,8 @@ Rectangle {
                         }
                     }
 
-                    CheckBox {
+                    InspectorCheckBox {
                         text: qsTr("Show Bounding Box")
-                        palette.text: root.textColor
-                        palette.buttonText: root.textColor
                         checked: inspectorState ? inspectorState.showBoundingBox : true
                         onToggled: {
                             if (inspectorState) {
@@ -349,10 +362,8 @@ Rectangle {
                         }
                     }
 
-                    CheckBox {
+                    InspectorCheckBox {
                         text: qsTr("Show Head-Up Display")
-                        palette.text: root.textColor
-                        palette.buttonText: root.textColor
                         checked: inspectorState ? inspectorState.showHud : true
                         onToggled: {
                             if (inspectorState) {
@@ -361,10 +372,8 @@ Rectangle {
                         }
                     }
 
-                    CheckBox {
+                    InspectorCheckBox {
                         text: qsTr("Show Title & Stats")
-                        palette.text: root.textColor
-                        palette.buttonText: root.textColor
                         checked: inspectorState ? inspectorState.showInfo : true
                         onToggled: {
                             if (inspectorState) {
