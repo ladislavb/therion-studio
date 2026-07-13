@@ -7,7 +7,6 @@
 #include <QDateTime>
 #include <QAbstractItemView>
 #include <QDir>
-#include <QElapsedTimer>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -121,34 +120,51 @@ private:
     TherionSqlReportTable table_;
 };
 
-TherionSqlReportTab::TherionSqlReportTab(QWidget *parent)
+TherionSqlReportTab::TherionSqlReportTab(TherionSqlReportSession *session, QWidget *parent)
     : QWidget(parent)
+    , session_(session)
     , customPresetStore_(customPresetSettings_)
 {
+    Q_ASSERT(session_ != nullptr);
     reports_ = TherionSqlReportDatabase::predefinedReports();
     customReports_ = customPresetStore_.loadCustomPresets();
     buildUi();
     populateReports();
+    runCustomSqlButton_->setEnabled(false);
+    connect(session_, &TherionSqlReportSession::importFinished,
+            this, &TherionSqlReportTab::handleImportFinished);
+    connect(session_, &TherionSqlReportSession::queryFinished,
+            this, &TherionSqlReportTab::handleQueryFinished);
+}
+
+TherionSqlReportTab::~TherionSqlReportTab()
+{
+    disconnect(session_, nullptr, this, nullptr);
+    session_->shutdown();
 }
 
 bool TherionSqlReportTab::loadFile(const QString &path, QString *errorMessage)
 {
-    const TherionSqlReportImportResult result = database_.importFile(path);
-    if (!result.success) {
-        if (errorMessage != nullptr) {
-            *errorMessage = result.errorMessage;
-        }
+    const QString canonicalPath = QFileInfo(path).canonicalFilePath();
+    const QString acceptedPath = canonicalPath.isEmpty() ? QFileInfo(path).absoluteFilePath() : canonicalPath;
+    const quint64 requestId = nextRequestId();
+    const QString sourceIdentity = QStringLiteral("%1#%2").arg(acceptedPath).arg(++sourceGeneration_);
+    const TherionSqlReportImportRequest request{requestId, sourceIdentity, acceptedPath};
+    if (!session_->requestImport(request, errorMessage)) {
         return false;
     }
 
-    statusLabel_->setText(tr("Imported %1 SQL statements from %2.")
-                              .arg(result.importedStatementCount)
-                              .arg(QDir::toNativeSeparators(database_.filePath())));
+    filePath_ = acceptedPath;
+    sourceIdentity_ = sourceIdentity;
+    latestRequestId_ = requestId;
+    databaseReady_ = false;
+    schema_.clear();
+    currentTable_ = {};
+    resultModel_->setTable({});
     refreshSchemaView();
-    if (builtInReportList_ != nullptr && builtInReportList_->count() > 0) {
-        builtInReportList_->setCurrentRow(0);
-        applySelectedPreset();
-    }
+    setImportBusy(true);
+    statusLabel_->setText(tr("Importing SQL export %1…")
+                              .arg(QDir::toNativeSeparators(filePath_)));
     emit titleChanged();
     emit statusChanged();
     return true;
@@ -156,13 +172,13 @@ bool TherionSqlReportTab::loadFile(const QString &path, QString *errorMessage)
 
 bool TherionSqlReportTab::reloadFile(QString *errorMessage)
 {
-    if (database_.filePath().isEmpty()) {
+    if (filePath_.isEmpty()) {
         if (errorMessage != nullptr) {
             *errorMessage = tr("No SQL export is open.");
         }
         return false;
     }
-    return loadFile(database_.filePath(), errorMessage);
+    return loadFile(filePath_, errorMessage);
 }
 
 bool TherionSqlReportTab::save(QString *errorMessage)
@@ -180,12 +196,12 @@ bool TherionSqlReportTab::isDirty() const
 
 QString TherionSqlReportTab::filePath() const
 {
-    return database_.filePath();
+    return filePath_;
 }
 
 QString TherionSqlReportTab::displayName() const
 {
-    return database_.displayName();
+    return QFileInfo(filePath_).fileName();
 }
 
 int TherionSqlReportTab::currentLineNumber() const
@@ -232,6 +248,7 @@ void TherionSqlReportTab::buildUi()
     workLayout->setSpacing(8);
 
     customSqlEdit_ = new QPlainTextEdit(workArea);
+    customSqlEdit_->setObjectName(QStringLiteral("sqlReportQueryEdit"));
     customSqlEdit_->setPlaceholderText(tr("Enter one read-only SELECT query."));
     customSqlEdit_->setPlainText(QStringLiteral("select * from SURVEY limit 100"));
     customSqlEdit_->setMaximumHeight(120);
@@ -241,11 +258,13 @@ void TherionSqlReportTab::buildUi()
     queryButtonLayout->setContentsMargins(0, 0, 0, 0);
     queryButtonLayout->addStretch(1);
     runCustomSqlButton_ = new QPushButton(tr("Run SELECT"), workArea);
+    runCustomSqlButton_->setObjectName(QStringLiteral("sqlReportRunQueryButton"));
     queryButtonLayout->addWidget(runCustomSqlButton_);
     workLayout->addLayout(queryButtonLayout);
 
     resultModel_ = new SqlReportTableModel(this);
     resultTable_ = new QTableView(workArea);
+    resultTable_->setObjectName(QStringLiteral("sqlReportResultTable"));
     resultTable_->setModel(resultModel_);
     resultTable_->setEditTriggers(QAbstractItemView::NoEditTriggers);
     resultTable_->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -254,6 +273,7 @@ void TherionSqlReportTab::buildUi()
     resultTable_->horizontalHeader()->setStretchLastSection(false);
     workLayout->addWidget(resultTable_, 1);
     statusLabel_ = new QLabel(tr("Open a Therion SQL export to view reports."), workArea);
+    statusLabel_->setObjectName(QStringLiteral("sqlReportStatusLabel"));
     statusLabel_->setTextInteractionFlags(Qt::TextSelectableByMouse);
     workLayout->addWidget(statusLabel_);
 
@@ -295,6 +315,7 @@ void TherionSqlReportTab::buildUi()
     auto *schemaPage = sidebarPanel_->addPlainTab(tr("Schema"));
     auto *schemaLayout = qobject_cast<QVBoxLayout *>(schemaPage->layout());
     schemaText_ = new QPlainTextEdit(schemaPage);
+    schemaText_->setObjectName(QStringLiteral("sqlReportSchemaText"));
     schemaText_->setReadOnly(true);
     if (schemaLayout != nullptr) {
         schemaLayout->addWidget(schemaText_, 1);
@@ -378,10 +399,9 @@ void TherionSqlReportTab::refreshSchemaView()
 {
     QStringList lines;
     lines.append(tr("Tables"));
-    for (const QString &table : database_.tableNames()) {
-        lines.append(QStringLiteral("- %1").arg(table));
-        const QStringList columns = database_.tableColumns(table);
-        for (const QString &column : columns) {
+    for (const TherionSqlReportSchemaTable &table : schema_) {
+        lines.append(QStringLiteral("- %1").arg(table.name));
+        for (const QString &column : table.columns) {
             lines.append(QStringLiteral("  - %1").arg(column));
         }
     }
@@ -399,7 +419,7 @@ QString TherionSqlReportTab::currentPresetQuery() const
 
 void TherionSqlReportTab::applySelectedPreset()
 {
-    if (!database_.isOpen()) {
+    if (!databaseReady_) {
         return;
     }
     const QString query = currentPresetQuery();
@@ -413,31 +433,117 @@ void TherionSqlReportTab::applySelectedPreset()
 
 void TherionSqlReportTab::runCustomQuery()
 {
-    if (!database_.isOpen()) {
+    if (!databaseReady_) {
         showError(tr("No Therion SQL export is open."));
         return;
     }
 
-    QString errorMessage;
-    QElapsedTimer timer;
-    timer.start();
-    const TherionSqlReportTable table = database_.executeCustomQuery(customSqlEdit_->toPlainText(),
-                                                                     &errorMessage,
-                                                                     kQueryRowLimit);
-    const qint64 elapsedMs = timer.elapsed();
-    if (!errorMessage.isEmpty()) {
-        showError(errorMessage);
+    const quint64 requestId = nextRequestId();
+    latestRequestId_ = requestId;
+    queryStartedAtMs_ = QDateTime::currentMSecsSinceEpoch();
+    const QListWidgetItem *builtInItem = builtInReportList_ != nullptr
+        ? builtInReportList_->currentItem()
+        : nullptr;
+    const bool exactBuiltInReport = builtInItem != nullptr
+        && builtInItem->data(kReportQueryRole).toString() == customSqlEdit_->toPlainText();
+    const TherionSqlReportQueryRequest request{
+        requestId,
+        sourceIdentity_,
+        customSqlEdit_->toPlainText(),
+        kQueryRowLimit,
+        exactBuiltInReport ? TherionSqlReportExecutionPolicy::BuiltInReport
+                           : TherionSqlReportExecutionPolicy::CustomReadOnly,
+    };
+    statusLabel_->setText(tr("Running SQL query…"));
+    emit statusChanged();
+    session_->requestQuery(request);
+}
+
+void TherionSqlReportTab::handleImportFinished(const TherionSqlReportImportWorkerResult &result)
+{
+    if (result.requestId != latestRequestId_ || result.sourceIdentity != sourceIdentity_) {
         return;
     }
-    showTable(table);
-    statusLabel_->setText(table.truncated
+
+    if (result.errorCode != TherionSqlReportErrorCode::None || result.cancelled) {
+        databaseReady_ = false;
+        schema_.clear();
+        currentTable_ = {};
+        resultModel_->setTable({});
+        refreshSchemaView();
+        setImportBusy(false);
+        showError(result.errorMessage.isEmpty() ? tr("SQL export import was cancelled.")
+                                                : result.errorMessage);
+        return;
+    }
+
+    databaseReady_ = true;
+    schema_ = result.schema;
+    refreshSchemaView();
+    setImportBusy(false);
+    statusLabel_->setText(tr("Imported %1 SQL statements from %2.")
+                              .arg(result.importedStatementCount)
+                              .arg(QDir::toNativeSeparators(filePath_)));
+    emit statusChanged();
+
+    if (builtInReportList_ != nullptr && builtInReportList_->count() > 0) {
+        if (builtInReportList_->currentRow() == 0) {
+            applySelectedPreset();
+        } else {
+            builtInReportList_->setCurrentRow(0);
+        }
+    }
+}
+
+void TherionSqlReportTab::handleQueryFinished(const TherionSqlReportQueryWorkerResult &result)
+{
+    if (result.requestId != latestRequestId_ || result.sourceIdentity != sourceIdentity_) {
+        return;
+    }
+    if (result.errorCode != TherionSqlReportErrorCode::None || result.cancelled) {
+        showError(result.errorMessage.isEmpty() ? tr("SQL query was cancelled.")
+                                                : result.errorMessage);
+        return;
+    }
+
+    const qint64 elapsedMs = qMax<qint64>(0, QDateTime::currentMSecsSinceEpoch() - queryStartedAtMs_);
+    showTable(result.table);
+    statusLabel_->setText(result.table.truncated
                               ? tr("Query returned more than %1 rows in %2 ms; showing the first %1.")
                                     .arg(kQueryRowLimit)
                                     .arg(elapsedMs)
                               : tr("Query returned %1 rows and %2 columns in %3 ms.")
-                                    .arg(table.rows.size())
-                                    .arg(table.columns.size())
+                                    .arg(result.table.rows.size())
+                                    .arg(result.table.columns.size())
                                     .arg(elapsedMs));
+    emit statusChanged();
+}
+
+void TherionSqlReportTab::setImportBusy(bool busy)
+{
+    importBusy_ = busy;
+    if (builtInReportList_ != nullptr) {
+        builtInReportList_->setEnabled(!busy);
+    }
+    if (customReportList_ != nullptr) {
+        customReportList_->setEnabled(!busy);
+    }
+    if (customSqlEdit_ != nullptr) {
+        customSqlEdit_->setEnabled(!busy);
+    }
+    if (runCustomSqlButton_ != nullptr) {
+        runCustomSqlButton_->setEnabled(!busy && databaseReady_);
+    }
+    updateCustomPresetButtons();
+}
+
+quint64 TherionSqlReportTab::nextRequestId()
+{
+    ++requestSequence_;
+    if (requestSequence_ == 0) {
+        ++requestSequence_;
+    }
+    return requestSequence_;
 }
 
 void TherionSqlReportTab::saveCurrentQueryAsPreset()
@@ -566,13 +672,14 @@ void TherionSqlReportTab::updateCustomPresetButtons()
 {
     const bool hasCustomSelection = selectedCustomPreset() != nullptr;
     if (savePresetButton_ != nullptr) {
-        savePresetButton_->setEnabled(customSqlEdit_ != nullptr && !customSqlEdit_->toPlainText().trimmed().isEmpty());
+        savePresetButton_->setEnabled(!importBusy_ && customSqlEdit_ != nullptr
+                                      && !customSqlEdit_->toPlainText().trimmed().isEmpty());
     }
     if (renamePresetButton_ != nullptr) {
-        renamePresetButton_->setEnabled(hasCustomSelection);
+        renamePresetButton_->setEnabled(!importBusy_ && hasCustomSelection);
     }
     if (deletePresetButton_ != nullptr) {
-        deletePresetButton_->setEnabled(hasCustomSelection);
+        deletePresetButton_->setEnabled(!importBusy_ && hasCustomSelection);
     }
 }
 
@@ -632,12 +739,12 @@ void TherionSqlReportTab::exportCurrentTableCsv()
         return;
     }
 
-    const QString initialDirectory = !database_.filePath().isEmpty()
-        ? QFileInfo(database_.filePath()).absolutePath()
+    const QString initialDirectory = !filePath_.isEmpty()
+        ? QFileInfo(filePath_).absolutePath()
         : projectRootPath_;
     const QString defaultName = defaultExportFileName(QStringLiteral("report"),
                                                       projectRootPath_,
-                                                      database_.filePath(),
+                                                      filePath_,
                                                       QStringLiteral("csv"),
                                                       QDateTime::currentDateTime());
     const QString outputPath = QFileDialog::getSaveFileName(this,

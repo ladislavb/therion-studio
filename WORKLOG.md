@@ -5,8 +5,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ## Current Focus
 
 1. `2026.7.2` post-DOM stabilization and next feature selection.
-2. Continue `SQL_REPORT_ASYNC_PLAN.md` with S2: the worker-owned SQLite contract is in place, while the report tab still
-   needs async load/query identity, busy/error state, and teardown orchestration. Keep watcher W1-W4 queued behind SQL
+2. Continue `SQL_REPORT_ASYNC_PLAN.md` with S3: import/query dispatch and stale-result suppression are now asynchronous,
+   while real SQLite interruption and deadline feasibility still need cross-platform proof. Keep watcher W1-W4 queued behind SQL
    S1-S4 as a separate worker/thread-affinity chain.
 3. Real-project smoke testing for Raw, Blocks, Map, Validation, Structure, and Compiler navigation after DOM closure.
 4. Plan-driven follow-ups for map partial refresh, validation/cache tuning, GUI cleanup, SVG backgrounds, reporting, LiDAR design, and 3D viewer refinement.
@@ -21,9 +21,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Raw source workspaces now expose an explicit `Format Document` toolbar action with a `text-quote` icon. It uses the shared source document
   structure to normalize leading indentation to literal tabs in one undo step while preserving code bodies, blank rows,
   line endings, and encoding; formatting remains opt-in rather than an opening/save side effect.
-- The SQL report worker contract now keeps connection creation, use, and removal on one worker thread with value-only
-  request/results and focused rollback/recovery/teardown coverage. The report tab remains synchronous until S2 and real
-  SQLite interruption remains S3; keep preset/CSV ownership extraction as a later separate slice.
+- The SQL report tab now receives an explicitly composed worker session, accepts file loads without blocking on import,
+  keeps import/query requests generation-keyed, suppresses stale schema/table results, presents coherent busy/error state,
+  and disconnects UI publication before asynchronous worker teardown. Real SQLite interruption remains S3; keep
+  preset/CSV ownership extraction as a later separate slice.
 - Keep LiDAR/point-cloud processing as design/backlog work until the Map/TH2 projection boundary has a concrete import,
   registration, and 2D projection design.
 

@@ -7642,7 +7642,34 @@ subtype blocks</translation>
     </message>
 </context>
 <context>
+    <name>TherionStudio::TherionSqlReportWorkerSession</name>
+    <message>
+        <source>The SQL report session is closing.</source>
+        <translation>Relácia SQL reportu sa zatvára.</translation>
+    </message>
+    <message>
+        <source>Could not read SQL export %1.</source>
+        <translation>Nepodarilo sa prečítať SQL export %1.</translation>
+    </message>
+</context>
+<context>
     <name>TherionStudio::TherionSqlReportTab</name>
+    <message>
+        <source>Importing SQL export %1…</source>
+        <translation>Importuje sa SQL export %1…</translation>
+    </message>
+    <message>
+        <source>Running SQL query…</source>
+        <translation>Spúšťa sa SQL dotaz…</translation>
+    </message>
+    <message>
+        <source>SQL export import was cancelled.</source>
+        <translation>Import SQL exportu bol zrušený.</translation>
+    </message>
+    <message>
+        <source>SQL query was cancelled.</source>
+        <translation>SQL dotaz bol zrušený.</translation>
+    </message>
     <message>
         <location filename="../src/app/reports/TherionSqlReportTab.cpp" line="136"/>
         <source>Imported %1 SQL statements from %2.</source>

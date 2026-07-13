@@ -3,6 +3,7 @@
 #include "MainWindowDocumentOpenController.h"
 #include "three_d_viewer/ThreeDViewerTab.h"
 #include "reports/TherionSqlReportTab.h"
+#include "reports/TherionSqlReportWorkerSession.h"
 #include "../core/TherionFileTypes.h"
 
 #include <QApplication>
@@ -185,7 +186,9 @@ TherionStudio::TherionSqlReportTab *MainWindow::openTherionSqlReportTab(const QS
         return existingTab;
     }
 
-    auto *tab = new TherionStudio::TherionSqlReportTab();
+    auto *reportSession = new TherionStudio::TherionSqlReportWorkerSession();
+    auto *tab = new TherionStudio::TherionSqlReportTab(reportSession);
+    reportSession->setParent(tab);
     tab->setProjectRootPath(projectRootPath_);
     QString errorMessage;
     if (!tab->loadFile(canonicalPath, &errorMessage)) {

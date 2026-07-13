@@ -122,10 +122,13 @@ SQL report import and query execution target a dedicated worker-thread boundary:
 - Import and query requests/results cross the boundary as immutable value DTOs carrying request and source identity,
   execution policy, schema/table data, and explicit error/cancellation state.
 - Connection teardown occurs only after statement-local query objects have been destroyed.
+- `MainWindow` explicitly composes a `TherionSqlReportWorkerSession` and injects its narrow session contract into the
+  report tab. The session owns thread dispatch and asynchronous teardown; the tab owns only presentation state and
+  accepts results whose monotonically increasing request ID and source generation are both current.
 
-The worker contract and thread-affinity tests exist, but `TherionSqlReportTab` remains a transitional synchronous caller
-until the S2 workflow migration is complete. Do not treat the SQL responsiveness finding as resolved or add a second
-connection-sharing path during that transition.
+The async tab workflow suppresses superseded results and keeps closing bounded by disconnecting UI publication before
+the worker drains. It does not yet interrupt a SQLite statement already executing; real interruption and deadline policy
+remain S3 scope, so the SQL responsiveness finding stays open until that slice is verified on packaged platforms.
 
 ## Validation Architecture
 

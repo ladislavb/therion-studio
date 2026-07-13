@@ -293,10 +293,13 @@ set(THERION_APP_SOURCES
     src/app/reports/TherionSqlReportDatabase.h
     src/app/reports/TherionSqlReportPresetStore.cpp
     src/app/reports/TherionSqlReportPresetStore.h
+    src/app/reports/TherionSqlReportSession.h
     src/app/reports/TherionSqlReportTab.cpp
     src/app/reports/TherionSqlReportTab.h
     src/app/reports/TherionSqlReportWorker.cpp
     src/app/reports/TherionSqlReportWorker.h
+    src/app/reports/TherionSqlReportWorkerSession.cpp
+    src/app/reports/TherionSqlReportWorkerSession.h
     ${THERION_INSPECTOR_PANEL_SOURCES}
     src/app/three_d_viewer/ThreeDViewerTab.cpp
     src/app/three_d_viewer/ThreeDViewerTab.h
@@ -1353,6 +1356,14 @@ qt_add_resources(MainWindowServiceQTests MainWindowServiceQTestResources
     FILES
         resources/sql_report_presets.json)
 
+qt_add_executable(TherionSqlReportTabTest
+    tests/TherionSqlReportTabTest.cpp)
+target_link_libraries(TherionSqlReportTabTest PRIVATE therion_app Qt6::Test)
+qt_add_resources(TherionSqlReportTabTest TherionSqlReportTabTestResources
+    PREFIX "/"
+    FILES
+        resources/sql_report_presets.json)
+
 therion_add_app_unit_test(ProjectTemplateServiceTest
     tests/ProjectTemplateServiceTest.cpp)
 
@@ -1667,6 +1678,7 @@ set(THERION_UNIT_TEST_TARGETS
     MainWindowValidationFixApplyServiceTest)
 
 set(THERION_UI_TEST_TARGETS
+    TherionSqlReportTabTest
     TextEditorCaretInteractionTest
     TextEditorCompletionHighlightTest
     TextEditorSourceTransactionControllerTest

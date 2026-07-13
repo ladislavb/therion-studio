@@ -1,7 +1,7 @@
 #pragma once
 
-#include "TherionSqlReportDatabase.h"
 #include "TherionSqlReportPresetStore.h"
+#include "TherionSqlReportSession.h"
 
 #include <QSettings>
 #include <QWidget>
@@ -23,7 +23,8 @@ class TherionSqlReportTab final : public QWidget
     Q_OBJECT
 
 public:
-    explicit TherionSqlReportTab(QWidget *parent = nullptr);
+    explicit TherionSqlReportTab(TherionSqlReportSession *session, QWidget *parent = nullptr);
+    ~TherionSqlReportTab() override;
 
     bool loadFile(const QString &filePath, QString *errorMessage);
     bool reloadFile(QString *errorMessage);
@@ -48,6 +49,10 @@ private:
     void populateBuiltInReports();
     void populateCustomReports(const QString &selectedId = QString());
     void refreshSchemaView();
+    void handleImportFinished(const TherionSqlReportImportWorkerResult &result);
+    void handleQueryFinished(const TherionSqlReportQueryWorkerResult &result);
+    void setImportBusy(bool busy);
+    quint64 nextRequestId();
     void applySelectedPreset();
     void runCustomQuery();
     void saveCurrentQueryAsPreset();
@@ -61,13 +66,22 @@ private:
     int customPresetIndexByTitle(const QString &title, const QString &ignoredId = QString()) const;
     TherionSqlReportDefinition *selectedCustomPreset();
 
-    TherionSqlReportDatabase database_;
+    TherionSqlReportSession *session_ = nullptr;
     QVector<TherionSqlReportDefinition> reports_;
     QVector<TherionSqlReportDefinition> customReports_;
     QSettings customPresetSettings_;
     TherionSqlReportPresetStore customPresetStore_;
     QString projectRootPath_;
+    QString filePath_;
+    QString sourceIdentity_;
+    QVector<TherionSqlReportSchemaTable> schema_;
     TherionSqlReportTable currentTable_;
+    quint64 requestSequence_ = 0;
+    quint64 latestRequestId_ = 0;
+    quint64 sourceGeneration_ = 0;
+    qint64 queryStartedAtMs_ = 0;
+    bool databaseReady_ = false;
+    bool importBusy_ = false;
 
     QLabel *statusLabel_ = nullptr;
     QListWidget *builtInReportList_ = nullptr;

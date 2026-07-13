@@ -4,7 +4,7 @@ Date: 2026-07-13
 
 Review findings: P1-2 and the report-specific part of P2-1.
 
-Status: active; S1 complete, S2 is next.
+Status: active; S1-S2 complete, S3 is next.
 
 Scope: move Therion SQL import and read-only report queries behind a worker-owned SQLite connection with request
 supersession, real interruption, bounded execution, and safe tab teardown. Preset persistence and CSV file output move
@@ -62,7 +62,7 @@ all SQL access against it, and closes/removes named connections after local quer
 cover worker-thread lifecycle events, valid import/query, source mismatch, malformed transactional rollback, recovery,
 and warning-free deterministic teardown. The tab is intentionally unchanged and remains S2 scope.
 
-## S2 — Define Async Tab Load And Query Semantics
+## S2 — Define Async Tab Load And Query Semantics — Complete
 
 Read callers of `TherionSqlReportTab::loadFile()` before editing. Preserve the generic document-open contract by making
 the synchronous return mean "request accepted/path valid" and present later import/schema failure through the tab's
@@ -85,6 +85,15 @@ Tests:
 - load file A then B cannot publish A's schema/table;
 - import error leaves a coherent empty/previous state according to the declared policy;
 - close tab during import/query is bounded and safe.
+
+Outcome (2026-07-13): `MainWindow` now explicitly composes a `TherionSqlReportWorkerSession` and injects the narrow
+session contract into `TherionSqlReportTab`. Synchronous `loadFile()` success means that a readable path was accepted;
+import/schema failures arrive later through the tab error state. The tab clears previous file projections at accepted
+load, disables conflicting controls while importing, and accepts import/query results only when both request ID and
+source generation remain current. Newer query and load requests therefore suppress older table/schema publication.
+Closing the tab disconnects publication and initiates non-blocking session teardown; active SQLite work may still drain
+in the detached worker because actual statement interruption remains explicitly S3 scope. A focused QApplication QTest
+covers large-import event-loop heartbeat, A/B load and query supersession, coherent import failure, and bounded tab close.
 
 ## S3 — Add Real SQLite Interruption And Deadline Policy
 
