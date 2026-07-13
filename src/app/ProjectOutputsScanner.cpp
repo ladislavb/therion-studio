@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <optional>
+#include <utility>
 
 namespace TherionStudio
 {
@@ -65,10 +66,10 @@ std::optional<ProjectOutputsScanner::ArtifactKind> artifactKindForFile(const QFi
     return std::nullopt;
 }
 
-ProjectOutputsScanner::Result performProjectOutputsScan(const QString &projectRootPath, quint64 generation)
+ProjectOutputsScanner::Result performProjectOutputsScan(const QString &projectRootPath, quint64 requestSerial)
 {
     ProjectOutputsScanner::Result result;
-    result.generation = generation;
+    result.requestSerial = requestSerial;
     result.projectRootPath = ProjectFileDiscovery::canonicalOrAbsolutePath(projectRootPath);
     if (result.projectRootPath.trimmed().isEmpty() || !QDir(result.projectRootPath).exists()) {
         result.errorMessage = QObject::tr("Open a project to browse outputs.");
@@ -106,9 +107,15 @@ ProjectOutputsScanner::Result performProjectOutputsScan(const QString &projectRo
 }
 
 ProjectOutputsScanner::ProjectOutputsScanner(QObject *parent)
+    : ProjectOutputsScanner(performProjectOutputsScan, parent)
+{
+}
+
+ProjectOutputsScanner::ProjectOutputsScanner(ScanFunction scanFunction, QObject *parent)
     : QObject(parent)
     , debounceTimer_(new QTimer(this))
     , scanWatcher_(new QFutureWatcher<Result>(this))
+    , scanFunction_(std::move(scanFunction))
 {
     debounceTimer_->setSingleShot(true);
     debounceTimer_->setInterval(120);
@@ -118,7 +125,8 @@ ProjectOutputsScanner::ProjectOutputsScanner(QObject *parent)
 
 void ProjectOutputsScanner::requestScan(const QString &projectRootPath)
 {
-    pendingProjectRootPath_ = projectRootPath;
+    pendingRequest_.requestSerial = ++latestRequestSerial_;
+    pendingRequest_.projectRootPath = projectRootPath;
     hasPendingRequest_ = true;
     debounceTimer_->start();
 }
@@ -139,11 +147,11 @@ void ProjectOutputsScanner::startScan()
         return;
     }
 
-    const QString projectRootPath = pendingProjectRootPath_;
+    const Request request = pendingRequest_;
     hasPendingRequest_ = false;
-    const quint64 generation = ++generation_;
-    auto future = QtConcurrent::run([projectRootPath, generation]() {
-        return performProjectOutputsScan(projectRootPath, generation);
+    const ScanFunction scanFunction = scanFunction_;
+    auto future = QtConcurrent::run([request, scanFunction]() {
+        return scanFunction(request.projectRootPath, request.requestSerial);
     });
     scanWatcher_->setFuture(future);
 }
@@ -151,7 +159,9 @@ void ProjectOutputsScanner::startScan()
 void ProjectOutputsScanner::handleScanFinished()
 {
     const Result result = scanWatcher_->result();
-    emit scanFinished(result);
+    if (result.requestSerial == latestRequestSerial_) {
+        emit scanFinished(result);
+    }
 
     if (queuedScan_) {
         queuedScan_ = false;

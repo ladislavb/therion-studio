@@ -4,7 +4,7 @@ Date: 2026-07-13
 
 Review findings: P1-3, P1-5.
 
-Status: active after the hermetic test gate.
+Status: active; A1 complete, A2 is next.
 
 Scope: make Structure/Outputs result publication monotonic and move recursive project-watch inventory discovery off the
 GUI thread. This plan does not redesign project source snapshots, validation caches, or platform watcher policy.
@@ -27,7 +27,7 @@ GUI thread. This plan does not redesign project source snapshots, validation cac
 - Do not change project-index/cache keys or Structure/Outputs result content.
 - Do not choose periodic reconciliation or a platform-specific watcher strategy without measurements.
 
-## A1 — Define Latest-Request Serial Semantics
+## A1 — Define Latest-Request Serial Semantics — Complete
 
 Allowed scope:
 
@@ -56,6 +56,12 @@ Acceptance:
 
 Stop condition: if deterministic overlap requires a general task scheduler abstraction, extract only the scan callable
 needed by these tests and stop before creating a repository-wide executor framework.
+
+Outcome (2026-07-13): both scanners assign `requestSerial` when a request is accepted, carry it through the worker
+result, and suppress completion unless it still matches the latest accepted serial. The existing queued replacement
+starts only the latest pending request. Narrow injected scan callables let the focused tests hold request A at a
+deterministic barrier, replace pending B with C, and verify stale success/error publication without fixed-delay sleeps or
+a general executor abstraction. Consumer-side defense remains A2 scope.
 
 ## A2 — Guard Structure And Outputs Consumers
 

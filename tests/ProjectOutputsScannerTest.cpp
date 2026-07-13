@@ -5,9 +5,13 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QHash>
+#include <QSemaphore>
+#include <QScopeGuard>
 #include <QTemporaryDir>
 #include <QTest>
 #include <QTimer>
+
+#include <atomic>
 
 using TherionStudio::ProjectOutputsScanner;
 
@@ -31,6 +35,7 @@ class ProjectOutputsScannerTest final : public QObject
 
 private slots:
     void keepsDuplicateNamesDistinctAndClassifiesArtifacts();
+    void publishesOnlyLatestPendingRequest();
 };
 
 void ProjectOutputsScannerTest::keepsDuplicateNamesDistinctAndClassifiesArtifacts()
@@ -96,6 +101,52 @@ void ProjectOutputsScannerTest::keepsDuplicateNamesDistinctAndClassifiesArtifact
     QCOMPARE(displayNamesByRelativePath.value(QStringLiteral("b/out/map.pdf")), QStringLiteral("map.pdf (b/out)"));
     QCOMPARE(displayNamesByRelativePath.value(QStringLiteral("output/cave.lox")), QStringLiteral("cave.lox"));
     QCOMPARE(displayNamesByRelativePath.value(QStringLiteral("output/cave.sql")), QStringLiteral("cave.sql"));
+}
+
+void ProjectOutputsScannerTest::publishesOnlyLatestPendingRequest()
+{
+    QSemaphore firstScanStarted;
+    QSemaphore releaseFirstScan;
+    std::atomic_int scanCallCount = 0;
+
+    ProjectOutputsScanner scanner([&](const QString &projectRootPath, quint64 requestSerial) {
+        const int callNumber = ++scanCallCount;
+        ProjectOutputsScanner::Result result;
+        result.requestSerial = requestSerial;
+        result.projectRootPath = projectRootPath;
+        if (callNumber == 1) {
+            firstScanStarted.release();
+            releaseFirstScan.acquire();
+            result.errorMessage = QStringLiteral("superseded error");
+        }
+        return result;
+    });
+    auto releaseFirstScanGuard = qScopeGuard([&]() { releaseFirstScan.release(); });
+    scanner.setDebounceIntervalMs(0);
+
+    QVector<ProjectOutputsScanner::Result> publishedResults;
+    connect(&scanner,
+            &ProjectOutputsScanner::scanFinished,
+            &scanner,
+            [&](const ProjectOutputsScanner::Result &result) {
+                publishedResults.append(result);
+            });
+
+    scanner.requestScan(QStringLiteral("project-a"));
+    QTRY_COMPARE_WITH_TIMEOUT(firstScanStarted.available(), 1, 2000);
+    firstScanStarted.acquire();
+
+    scanner.requestScan(QStringLiteral("project-b"));
+    QCoreApplication::processEvents(QEventLoop::AllEvents);
+    scanner.requestScan(QStringLiteral("project-c"));
+    releaseFirstScan.release();
+    releaseFirstScanGuard.dismiss();
+
+    QTRY_COMPARE_WITH_TIMEOUT(publishedResults.size(), 1, 2000);
+    QCOMPARE(scanCallCount.load(), 2);
+    QCOMPARE(publishedResults.constFirst().requestSerial, quint64(3));
+    QCOMPARE(publishedResults.constFirst().projectRootPath, QStringLiteral("project-c"));
+    QVERIFY(publishedResults.constFirst().errorMessage.isEmpty());
 }
 
 int runProjectOutputsScannerTest(int argc, char **argv)

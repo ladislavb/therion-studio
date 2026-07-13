@@ -4,11 +4,16 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QEventLoop>
+#include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
 #include <QTemporaryDir>
+#include <QSemaphore>
+#include <QScopeGuard>
 #include <QTimer>
 
+#include <atomic>
+#include <functional>
 #include <iostream>
 
 using namespace TherionStudio;
@@ -68,6 +73,16 @@ ScanWaitResult waitForScan(ProjectStructureScanner &scanner)
     return waitResult;
 }
 
+bool waitUntil(const std::function<bool()> &condition, int timeoutMs = 5000)
+{
+    QElapsedTimer timer;
+    timer.start();
+    while (!condition() && timer.elapsed() < timeoutMs) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
+    }
+    return condition();
+}
+
 int runFilesystemScanTest()
 {
     QTemporaryDir tempDir;
@@ -94,7 +109,7 @@ int runFilesystemScanTest()
     if (!expect(waitResult.received, "ProjectStructureScanner did not emit scanFinished before timeout.")) {
         return 1;
     }
-    if (!expect(waitResult.result.generation == 1, "First scan generation should be 1.")) {
+    if (!expect(waitResult.result.requestSerial == 1, "First scan request serial should be 1.")) {
         return 1;
     }
     if (!expect(waitResult.result.projectRootPath == tempDir.path(), "Scan result project root path mismatch.")) {
@@ -149,7 +164,7 @@ int runInMemoryScanTest()
     if (!expect(waitResult.received, "In-memory scan did not emit scanFinished before timeout.")) {
         return 1;
     }
-    if (!expect(waitResult.result.generation == 1, "In-memory first scan generation should be 1.")) {
+    if (!expect(waitResult.result.requestSerial == 1, "In-memory first scan request serial should be 1.")) {
         return 1;
     }
     if (!expect(waitResult.result.errorMessage.isEmpty(), "In-memory scan should not report an error.")) {
@@ -234,6 +249,73 @@ int runSharedProjectIndexCacheTest()
 
     return 0;
 }
+
+int runLatestRequestSupersessionTest()
+{
+    QSemaphore firstScanStarted;
+    QSemaphore releaseFirstScan;
+    std::atomic_int scanCallCount = 0;
+
+    ProjectStructureScanner scanner(
+        [&](const QString &projectRootPath,
+            const QString &,
+            const QHash<QString, QString> &,
+            quint64 requestSerial) {
+            const int callNumber = ++scanCallCount;
+            ProjectStructureScanner::Result result;
+            result.requestSerial = requestSerial;
+            result.projectRootPath = projectRootPath;
+            if (callNumber == 1) {
+                firstScanStarted.release();
+                releaseFirstScan.acquire();
+                result.errorMessage = QStringLiteral("superseded error");
+            }
+            return result;
+        });
+    auto releaseFirstScanGuard = qScopeGuard([&]() { releaseFirstScan.release(); });
+    scanner.setDebounceIntervalMs(0);
+
+    QVector<ProjectStructureScanner::Result> publishedResults;
+    QObject::connect(&scanner,
+                     &ProjectStructureScanner::scanFinished,
+                     &scanner,
+                     [&](const ProjectStructureScanner::Result &result) {
+                         publishedResults.append(result);
+                     });
+
+    scanner.requestScan(QStringLiteral("project-a"), {});
+    if (!expect(waitUntil([&]() { return firstScanStarted.available() == 1; }),
+                "First deterministic structure scan did not start.")) {
+        return 1;
+    }
+    firstScanStarted.acquire();
+
+    scanner.requestScan(QStringLiteral("project-b"), {});
+    QCoreApplication::processEvents(QEventLoop::AllEvents);
+    scanner.requestScan(QStringLiteral("project-c"), {});
+    releaseFirstScan.release();
+    releaseFirstScanGuard.dismiss();
+
+    if (!expect(waitUntil([&]() { return publishedResults.size() == 1; }),
+                "Latest structure scan result was not published.")) {
+        return 1;
+    }
+    if (!expect(scanCallCount.load() == 2,
+                "Only the running and latest pending structure requests should execute.")) {
+        return 1;
+    }
+    if (!expect(publishedResults.constFirst().requestSerial == 3
+                    && publishedResults.constFirst().projectRootPath == QStringLiteral("project-c"),
+                "Structure scanner should publish only the latest accepted request.")) {
+        return 1;
+    }
+    if (!expect(publishedResults.constFirst().errorMessage.isEmpty(),
+                "A superseded structure error must not replace the latest result.")) {
+        return 1;
+    }
+
+    return 0;
+}
 }
 
 int main(int argc, char **argv)
@@ -247,6 +329,9 @@ int main(int argc, char **argv)
         return 1;
     }
     if (runSharedProjectIndexCacheTest() != 0) {
+        return 1;
+    }
+    if (runLatestRequestSupersessionTest() != 0) {
         return 1;
     }
 

@@ -7,8 +7,54 @@
 #include <QTimer>
 #include <QtConcurrent>
 
+#include <optional>
+#include <utility>
+
 namespace TherionStudio
 {
+namespace
+{
+ProjectStructureScanner::ScanFunction makeScanFunction(
+    const std::shared_ptr<ProjectScanCacheService> &scanCacheService)
+{
+    return [scanCacheService](const QString &projectRootPath,
+                              const QString &preferredConfigPath,
+                              const QHash<QString, QString> &inMemoryProjectContentsByPath,
+                              quint64 requestSerial) {
+        ProjectStructureScanner::Result result;
+        result.requestSerial = requestSerial;
+        result.projectRootPath = projectRootPath;
+        bool sourceSnapshotCacheHit = false;
+        const ProjectSourceSnapshot sourceSnapshot =
+            scanCacheService->projectSourceSnapshot(projectRootPath,
+                                                    preferredConfigPath,
+                                                    inMemoryProjectContentsByPath,
+                                                    -1,
+                                                    &sourceSnapshotCacheHit);
+        result.projectSourceSnapshotCacheHit = sourceSnapshotCacheHit;
+        const QString sourceRequestKey = sourceSnapshot.requestKey.stableKey();
+        const std::optional<ProjectIndexSnapshotCacheEntry> cachedProjectIndex =
+            scanCacheService->projectIndexSnapshot(sourceRequestKey);
+        if (cachedProjectIndex.has_value()) {
+            result.projectIndexSnapshotCacheHit = true;
+            result.errorMessage = cachedProjectIndex->errorMessage;
+            result.projectIndex = cachedProjectIndex->snapshot;
+        } else {
+            result.projectIndex = ProjectStructureIndex::scanProjectIndex(
+                projectStructureIndexSourceSet(sourceSnapshot),
+                &result.errorMessage);
+            scanCacheService->storeProjectIndexSnapshot(ProjectIndexSnapshotCacheEntry{
+                sourceRequestKey,
+                result.errorMessage,
+                result.projectIndex,
+            });
+        }
+        result.entries = result.projectIndex.entries;
+        return result;
+    };
+}
+}
+
 ProjectStructureScanner::ProjectStructureScanner(QObject *parent)
     : ProjectStructureScanner(std::make_shared<ProjectScanCacheService>(), parent)
 {
@@ -16,12 +62,18 @@ ProjectStructureScanner::ProjectStructureScanner(QObject *parent)
 
 ProjectStructureScanner::ProjectStructureScanner(std::shared_ptr<ProjectScanCacheService> scanCacheService,
                                                  QObject *parent)
+    : ProjectStructureScanner(makeScanFunction(scanCacheService != nullptr
+                                                   ? std::move(scanCacheService)
+                                                   : std::make_shared<ProjectScanCacheService>()),
+                              parent)
+{
+}
+
+ProjectStructureScanner::ProjectStructureScanner(ScanFunction scanFunction, QObject *parent)
     : QObject(parent)
     , debounceTimer_(new QTimer(this))
     , scanWatcher_(new QFutureWatcher<Result>(this))
-    , scanCacheService_(scanCacheService != nullptr
-                            ? std::move(scanCacheService)
-                            : std::make_shared<ProjectScanCacheService>())
+    , scanFunction_(std::move(scanFunction))
 {
     debounceTimer_->setSingleShot(true);
     debounceTimer_->setInterval(180);
@@ -39,6 +91,7 @@ void ProjectStructureScanner::requestScan(const QString &projectRootPath,
                                           const QHash<QString, QString> &inMemoryProjectContentsByPath,
                                           const QString &preferredConfigPath)
 {
+    pendingRequest_.requestSerial = ++latestRequestSerial_;
     pendingRequest_.projectRootPath = projectRootPath;
     pendingRequest_.preferredConfigPath = preferredConfigPath;
     pendingRequest_.inMemoryProjectContentsByPath = inMemoryProjectContentsByPath;
@@ -64,44 +117,12 @@ void ProjectStructureScanner::startScan()
 
     const Request request = pendingRequest_;
     hasPendingRequest_ = false;
-    const quint64 generation = ++generation_;
-
-    const std::shared_ptr<ProjectScanCacheService> scanCacheService = scanCacheService_;
-    auto future = QtConcurrent::run([request, generation, scanCacheService]() {
-        Result result;
-        result.generation = generation;
-        result.projectRootPath = request.projectRootPath;
-        bool sourceSnapshotCacheHit = false;
-        const ProjectSourceSnapshot sourceSnapshot =
-            scanCacheService->projectSourceSnapshot(request.projectRootPath,
-                                                    request.preferredConfigPath,
-                                                    request.inMemoryProjectContentsByPath,
-                                                    -1,
-                                                    &sourceSnapshotCacheHit);
-        result.projectSourceSnapshotCacheHit = sourceSnapshotCacheHit;
-        const QString sourceRequestKey = sourceSnapshot.requestKey.stableKey();
-        const std::optional<ProjectIndexSnapshotCacheEntry> cachedProjectIndex =
-            scanCacheService != nullptr
-                ? scanCacheService->projectIndexSnapshot(sourceRequestKey)
-                : std::nullopt;
-        if (cachedProjectIndex.has_value()) {
-            result.projectIndexSnapshotCacheHit = true;
-            result.errorMessage = cachedProjectIndex->errorMessage;
-            result.projectIndex = cachedProjectIndex->snapshot;
-        } else {
-            result.projectIndex = ProjectStructureIndex::scanProjectIndex(
-                projectStructureIndexSourceSet(sourceSnapshot),
-                &result.errorMessage);
-            if (scanCacheService != nullptr) {
-                scanCacheService->storeProjectIndexSnapshot(ProjectIndexSnapshotCacheEntry{
-                    sourceRequestKey,
-                    result.errorMessage,
-                    result.projectIndex,
-                });
-            }
-        }
-        result.entries = result.projectIndex.entries;
-        return result;
+    const ScanFunction scanFunction = scanFunction_;
+    auto future = QtConcurrent::run([request, scanFunction]() {
+        return scanFunction(request.projectRootPath,
+                            request.preferredConfigPath,
+                            request.inMemoryProjectContentsByPath,
+                            request.requestSerial);
     });
     scanWatcher_->setFuture(future);
 }
@@ -109,7 +130,9 @@ void ProjectStructureScanner::startScan()
 void ProjectStructureScanner::handleScanFinished()
 {
     const Result result = scanWatcher_->result();
-    emit scanFinished(result);
+    if (result.requestSerial == latestRequestSerial_) {
+        emit scanFinished(result);
+    }
 
     if (queuedScan_) {
         queuedScan_ = false;

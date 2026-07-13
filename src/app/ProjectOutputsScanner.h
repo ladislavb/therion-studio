@@ -4,6 +4,8 @@
 #include <QString>
 #include <QVector>
 
+#include <functional>
+
 class QTimer;
 
 template <typename T>
@@ -34,13 +36,16 @@ public:
 
     struct Result
     {
-        quint64 generation = 0;
+        quint64 requestSerial = 0;
         QString projectRootPath;
         QString errorMessage;
         QVector<Artifact> artifacts;
     };
 
+    using ScanFunction = std::function<Result(const QString &projectRootPath, quint64 requestSerial)>;
+
     explicit ProjectOutputsScanner(QObject *parent = nullptr);
+    explicit ProjectOutputsScanner(ScanFunction scanFunction, QObject *parent = nullptr);
 
     void requestScan(const QString &projectRootPath);
     void setDebounceIntervalMs(int intervalMs);
@@ -53,12 +58,19 @@ private slots:
     void handleScanFinished();
 
 private:
-    QString pendingProjectRootPath_;
+    struct Request
+    {
+        quint64 requestSerial = 0;
+        QString projectRootPath;
+    };
+
+    Request pendingRequest_;
     bool hasPendingRequest_ = false;
     bool queuedScan_ = false;
-    quint64 generation_ = 0;
+    quint64 latestRequestSerial_ = 0;
     QTimer *debounceTimer_ = nullptr;
     QFutureWatcher<Result> *scanWatcher_ = nullptr;
+    ScanFunction scanFunction_;
 };
 
 } // namespace TherionStudio

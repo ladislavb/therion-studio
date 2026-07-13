@@ -7,6 +7,7 @@
 
 #include "../core/ProjectStructureIndex.h"
 
+#include <functional>
 #include <memory>
 
 class QTimer;
@@ -25,7 +26,7 @@ class ProjectStructureScanner final : public QObject
 public:
     struct Result
     {
-        quint64 generation = 0;
+        quint64 requestSerial = 0;
         QString projectRootPath;
         QString errorMessage;
         ProjectIndexSnapshot projectIndex;
@@ -34,9 +35,15 @@ public:
         bool projectIndexSnapshotCacheHit = false;
     };
 
+    using ScanFunction = std::function<Result(const QString &projectRootPath,
+                                              const QString &preferredConfigPath,
+                                              const QHash<QString, QString> &inMemoryProjectContentsByPath,
+                                              quint64 requestSerial)>;
+
     explicit ProjectStructureScanner(QObject *parent = nullptr);
     explicit ProjectStructureScanner(std::shared_ptr<ProjectScanCacheService> scanCacheService,
                                      QObject *parent = nullptr);
+    explicit ProjectStructureScanner(ScanFunction scanFunction, QObject *parent = nullptr);
     void requestScan(const QString &projectRootPath,
                      const QHash<QString, QString> &inMemoryProjectContentsByPath);
     void requestScan(const QString &projectRootPath,
@@ -54,6 +61,7 @@ private slots:
 private:
     struct Request
     {
+        quint64 requestSerial = 0;
         QString projectRootPath;
         QString preferredConfigPath;
         QHash<QString, QString> inMemoryProjectContentsByPath;
@@ -62,9 +70,9 @@ private:
     Request pendingRequest_;
     bool hasPendingRequest_ = false;
     bool queuedScan_ = false;
-    quint64 generation_ = 0;
+    quint64 latestRequestSerial_ = 0;
     QTimer *debounceTimer_ = nullptr;
     QFutureWatcher<Result> *scanWatcher_ = nullptr;
-    std::shared_ptr<ProjectScanCacheService> scanCacheService_;
+    ScanFunction scanFunction_;
 };
 }

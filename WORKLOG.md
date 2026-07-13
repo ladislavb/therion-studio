@@ -5,8 +5,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ## Current Focus
 
 1. `2026.7.2` post-DOM stabilization and next feature selection.
-2. Execute `PROJECT_ASYNC_COORDINATION_PLAN.md` A1-A3 so Structure and Outputs cannot publish superseded worker results,
-   then address SQL report UI-thread work.
+2. Continue `PROJECT_ASYNC_COORDINATION_PLAN.md` with A2-A3: scanner-side request serial suppression is in place, and
+   Structure/Outputs consumers still need defensive identity checks plus the touched-test migration gate before SQL
+   report UI-thread work.
 3. Real-project smoke testing for Raw, Blocks, Map, Validation, Structure, and Compiler navigation after DOM closure.
 4. Plan-driven follow-ups for map partial refresh, validation/cache tuning, GUI cleanup, SVG backgrounds, reporting, LiDAR design, and 3D viewer refinement.
 
