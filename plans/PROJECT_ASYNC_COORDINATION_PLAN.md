@@ -187,6 +187,12 @@ watch setup into a synthetic mutation. `ProjectFileWatchDeltaPlanner` provides f
 - changed Therion file still invalidates shared scan cache and requests Structure/Outputs/Validation refresh;
 - macOS, Windows, and Linux focused CI.
 
+Local outcome (2026-07-14, macOS): `QTemporaryDir` coverage builds a 61-directory / 60-source-file deep and wide tree,
+verifies skipped VCS/build and symlink paths remain excluded, and confirms that a heartbeat timer continues while worker
+inventory collection is intentionally held. The existing W2 test covers rapid same-root and changed-root replacement;
+W3 preserves the existing invalidation path after a real same-root inventory delta. The app/service runner passed ten
+consecutive release runs. Windows and Linux CI remain the cross-platform completion gate for this verification step.
+
 ## Relationship To Other Plans
 
 - `PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md` retains source snapshot/cache/live-validation work. A-series is a

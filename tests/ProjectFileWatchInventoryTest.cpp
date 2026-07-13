@@ -25,6 +25,7 @@ class ProjectFileWatchInventoryTest final : public QObject
 private slots:
     void collectsDeterministicTherionInventory();
     void excludesSymlinkedPathsOutsideProjectRoot();
+    void collectsDeepWideTreeWithoutSkippedOrSymlinkedPaths();
     void reportsInvalidRoot();
 };
 
@@ -94,6 +95,47 @@ void ProjectFileWatchInventoryTest::excludesSymlinkedPathsOutsideProjectRoot()
     QVERIFY(!inventory.files.contains(symlinkPath));
     QVERIFY(inventory.skippedPaths.contains(
         QDir(inventory.projectRootPath).filePath(QStringLiteral("outside-link.th"))));
+}
+
+void ProjectFileWatchInventoryTest::collectsDeepWideTreeWithoutSkippedOrSymlinkedPaths()
+{
+    QTemporaryDir projectDir;
+    QTemporaryDir externalDir;
+    QVERIFY(projectDir.isValid());
+    QVERIFY(externalDir.isValid());
+    const QString rootPath = projectDir.path();
+    constexpr int branchCount = 12;
+    constexpr int levelsPerBranch = 4;
+    for (int branch = 0; branch < branchCount; ++branch) {
+        QString directoryPath = QDir(rootPath).filePath(QStringLiteral("branch-%1").arg(branch));
+        QVERIFY(QDir().mkpath(directoryPath));
+        QVERIFY(writeFile(QDir(directoryPath).filePath(QStringLiteral("survey.th"))));
+        for (int level = 0; level < levelsPerBranch; ++level) {
+            directoryPath = QDir(directoryPath).filePath(QStringLiteral("level-%1").arg(level));
+            QVERIFY(QDir().mkpath(directoryPath));
+            QVERIFY(writeFile(QDir(directoryPath).filePath(QStringLiteral("map.th2"))));
+        }
+    }
+    QVERIFY(QDir(rootPath).mkpath(QStringLiteral(".git")));
+    QVERIFY(QDir(rootPath).mkpath(QStringLiteral("build")));
+    QVERIFY(writeFile(QDir(rootPath).filePath(QStringLiteral(".git/ignored.th"))));
+    QVERIFY(writeFile(QDir(rootPath).filePath(QStringLiteral("build/generated.th"))));
+
+    const QString externalFilePath = QDir(externalDir.path()).filePath(QStringLiteral("external.th"));
+    const QString symlinkPath = QDir(rootPath).filePath(QStringLiteral("external-link.th"));
+    if (QFile::link(externalFilePath, symlinkPath) && QFileInfo(symlinkPath).isSymLink()) {
+        QVERIFY(writeFile(externalFilePath));
+    }
+
+    const ProjectFileWatchInventory inventory = ProjectFileWatchInventoryCollector::collect({rootPath});
+    QCOMPARE(inventory.directories.size(), 1 + branchCount * (1 + levelsPerBranch));
+    QCOMPARE(inventory.files.size(), branchCount * (1 + levelsPerBranch));
+    QVERIFY(inventory.discoveryErrors.isEmpty());
+    for (const QString &path : inventory.directories + inventory.files) {
+        QVERIFY(!path.contains(QStringLiteral("/.git/")));
+        QVERIFY(!path.contains(QStringLiteral("/build/")));
+        QVERIFY(!path.endsWith(QStringLiteral("external-link.th")));
+    }
 }
 
 void ProjectFileWatchInventoryTest::reportsInvalidRoot()

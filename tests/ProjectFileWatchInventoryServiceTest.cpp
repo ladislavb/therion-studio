@@ -5,6 +5,7 @@
 #include <QScopeGuard>
 #include <QSemaphore>
 #include <QTest>
+#include <QTimer>
 
 #include <atomic>
 #include <memory>
@@ -29,6 +30,7 @@ class ProjectFileWatchInventoryServiceTest final : public QObject
 private slots:
     void publishesInventoryWithTiming();
     void publishesOnlyLatestPendingRequest();
+    void keepsEventLoopResponsiveDuringInventory();
     void reportsDiscoveryError();
     void teardownDoesNotPublishCompletedWorker();
 };
@@ -99,6 +101,38 @@ void ProjectFileWatchInventoryServiceTest::publishesOnlyLatestPendingRequest()
     QCOMPARE(callCount.load(), 2);
     QCOMPARE(publishedResults.constFirst().requestSerial, quint64(3));
     QCOMPARE(publishedResults.constFirst().projectRootPath, QStringLiteral("project-b"));
+}
+
+void ProjectFileWatchInventoryServiceTest::keepsEventLoopResponsiveDuringInventory()
+{
+    QSemaphore workerStarted;
+    QSemaphore releaseWorker;
+    ProjectFileWatchInventoryService service([&](const ProjectFileWatchInventoryRequest &request) {
+        workerStarted.release();
+        releaseWorker.acquire();
+        return inventoryForPath(request.projectRootPath);
+    });
+    auto releaseGuard = qScopeGuard([&]() { releaseWorker.release(); });
+    service.setDebounceIntervalMs(0);
+
+    int heartbeatCount = 0;
+    QTimer heartbeat;
+    heartbeat.setInterval(1);
+    connect(&heartbeat, &QTimer::timeout, &service, [&]() { ++heartbeatCount; });
+    heartbeat.start();
+    bool received = false;
+    connect(&service,
+            &ProjectFileWatchInventoryService::inventoryFinished,
+            &service,
+            [&](const ProjectFileWatchInventoryService::Result &) { received = true; });
+
+    service.requestInventory(QStringLiteral("project"));
+    QTRY_COMPARE_WITH_TIMEOUT(workerStarted.available(), 1, 2000);
+    workerStarted.acquire();
+    QTRY_VERIFY_WITH_TIMEOUT(heartbeatCount > 0, 2000);
+    releaseWorker.release();
+    releaseGuard.dismiss();
+    QTRY_VERIFY_WITH_TIMEOUT(received, 2000);
 }
 
 void ProjectFileWatchInventoryServiceTest::reportsDiscoveryError()
