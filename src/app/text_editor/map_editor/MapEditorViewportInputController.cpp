@@ -832,15 +832,14 @@ QGraphicsItem *preferredMapClickHitItemForViewportPosition(MapEditorViewportInpu
     }
 
     // Resolve the current pointer position before consulting the cached hover
-    // presentation. A previous hover item can remain marked while a test or
-    // synthetic pointer sequence moves directly to another object. In that
-    // case the current fill/line hit must win, especially near a shared area
-    // border at high zoom.
+    // presentation. A filled area is authoritative when the pointer is inside
+    // it, especially near a shared area border at high zoom; otherwise retain
+    // the highlighted path so its pending selection metadata remains stable
+    // when a primary press follows a hover event.
     QGraphicsItem *currentHitItem =
         preferredMapHitItemForViewportPosition(context, viewportPosition, false);
     if (currentHitItem != nullptr
-        && (dynamic_cast<QGraphicsPathItem *>(currentHitItem) != nullptr
-            || dynamic_cast<MapEditableGeometryVertexItem *>(currentHitItem) != nullptr)) {
+        && currentHitItem->data(kMapSceneSelectionSubtypeRole).toInt() == kMapSceneSelectionSubtypeAreaFill) {
         return currentHitItem;
     }
 
