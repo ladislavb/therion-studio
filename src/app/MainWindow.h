@@ -13,6 +13,7 @@
 
 #include "MainWindowTherionConsoleController.h"
 #include "ProjectOutputsScanner.h"
+#include "ProjectFileWatchInventoryService.h"
 #include "ProjectSearchScanner.h"
 #include "ProjectValidationController.h"
 #include "ProjectStructureScanner.h"
@@ -209,6 +210,8 @@ private:
     QWidget *documentWidgetForFilePath(const QString &filePath) const;
     void rebuildProjectFileWatcher();
     void clearProjectFileWatcher();
+    void handleProjectFileWatchInventoryFinished(
+        const TherionStudio::ProjectFileWatchInventoryService::Result &result);
     void invalidateProjectScanCache();
     void handleProjectFileSystemMutation(const QString &changedPath, const QString &previousPath = QString());
     void handleProjectDirectoryChanged(const QString &directoryPath);
@@ -444,9 +447,12 @@ private:
     QPushButton *therionCopyOutputButton_ = nullptr;
     QFileSystemWatcher *documentFileWatcher_ = nullptr;
     QFileSystemWatcher *projectFileWatcher_ = nullptr;
+    TherionStudio::ProjectFileWatchInventoryService *projectFileWatchInventoryService_ = nullptr;
     QHash<QString, QByteArray> watchedDocumentFingerprints_;
     QSet<QString> pendingWatchedDocumentChanges_;
     QSet<QString> pendingWatchedDocumentDirectoryChanges_;
+    QString projectFileWatcherInventoryRootPath_;
+    QStringList projectFileWatcherFailedPaths_;
     TherionStudio::TherionRunnerService *therionRunnerService_ = nullptr;
     TherionStudio::MainWindowTherionConsoleController therionConsoleController_;
     QLabel *statusHintLabel_ = nullptr;

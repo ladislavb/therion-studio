@@ -33,7 +33,7 @@ localization, and acceptance-criteria updates in the same slice.
 | P1-1 non-hermetic core runner | `TEST_HERMETICITY_PLAN.md` | H1-H3 complete | resolved 2026-07-13 |
 | P1-3 stale Structure/Outputs results | `PROJECT_ASYNC_COORDINATION_PLAN.md` | A1-A3 complete | resolved 2026-07-13 |
 | P1-2 blocking SQL import/query | `SQL_REPORT_ASYNC_PLAN.md` | S1-S5 complete | resolved 2026-07-13 |
-| P1-5 UI-thread project watcher walk | `PROJECT_ASYNC_COORDINATION_PLAN.md` | W1-W2 complete; W3 GUI-thread watcher deltas next | A1-A3 and W1-W2 complete |
+| P1-5 UI-thread project watcher walk | `PROJECT_ASYNC_COORDINATION_PLAN.md` | W1-W3 complete; W4 verification next | implementation complete; verification pending |
 | P1-7 localization extraction blind spot | `LOCALIZATION_EXTRACTION_PLAN.md` | L1 fix known visible literals | none; separate commit chain |
 | P1-6 static Map resource/cache state | `MAP_RUNTIME_OWNERSHIP_PLAN.md` | R1 style catalog provider seam | scanner/SQL work independent |
 | P1-4 synchronous Map full rebuild | `MAP_PARTIAL_REFRESH_PLAN.md` | M0 immutable projection handoff | R1 style injection first |

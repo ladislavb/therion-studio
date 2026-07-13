@@ -4,7 +4,7 @@ Date: 2026-07-13
 
 Review findings: P1-3, P1-5.
 
-Status: active; A1-A3 and W1-W2 complete, W3 is next.
+Status: active; A1-A3 and W1-W3 complete, W4 verification is next.
 
 Scope: make Structure/Outputs result publication monotonic and move recursive project-watch inventory discovery off the
 GUI thread. This plan does not redesign project source snapshots, validation caches, or platform watcher policy.
@@ -155,7 +155,7 @@ serial, and elapsed discovery time for later bounded diagnostics. It owns no wat
 worker completion is delivered. Focused QTests cover normal publication, same-root replacement followed by changed-root
 replacement, discovery errors, and teardown; the app/service runner passed ten consecutive release runs.
 
-## W3 — Apply Watcher Deltas On The GUI Thread
+## W3 — Apply Watcher Deltas On The GUI Thread — Complete
 
 Update `MainWindowProjectFileWatcher.cpp` and `MainWindow.h` to request inventory asynchronously and apply it only when
 its project root/serial is current.
@@ -170,6 +170,13 @@ Apply behavior:
 
 Stop condition: watcher-limit policy changes are out of scope. If platform limits remain a problem, record measurements
 and plan a later hybrid policy.
+
+Outcome (2026-07-13): `MainWindow` now requests inventory instead of recursively walking project paths. Completed
+current-generation inventories are root-checked and applied as sorted add/remove deltas while `QFileSystemWatcher`
+signals are blocked. Signature state is retained only for paths that the watcher reports as active; rejected additions
+are retained as a bounded diagnostic list and logged with at most five paths. A same-root inventory change triggers the
+existing project mutation invalidations once after the delta is applied; opening a different root does not turn initial
+watch setup into a synthetic mutation. `ProjectFileWatchDeltaPlanner` provides focused deterministic delta coverage.
 
 ## W4 — Large-Tree And Mutation Verification
 

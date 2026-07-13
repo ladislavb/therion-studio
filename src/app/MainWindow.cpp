@@ -391,6 +391,7 @@ MainWindow::MainWindow(TherionStudio::ISessionStore &sessionStore,
     , mapObjectsModel_(new QStandardItemModel(this))
     , documentFileWatcher_(new QFileSystemWatcher(this))
     , projectFileWatcher_(new QFileSystemWatcher(this))
+    , projectFileWatchInventoryService_(new TherionStudio::ProjectFileWatchInventoryService(this))
     , sessionStore_(&sessionStore)
     , commandCatalogStore_(std::move(commandCatalogStore))
     , projectScanCacheService_(std::make_shared<TherionStudio::ProjectScanCacheService>())
@@ -412,6 +413,8 @@ MainWindow::MainWindow(TherionStudio::ISessionStore &sessionStore,
             this, &MainWindow::handleProjectValidationFinished);
     connect(structureSidebarScanner_, &TherionStudio::ProjectStructureScanner::scanFinished,
             this, &MainWindow::handleStructureSidebarScanFinished);
+    connect(projectFileWatchInventoryService_, &TherionStudio::ProjectFileWatchInventoryService::inventoryFinished,
+            this, &MainWindow::handleProjectFileWatchInventoryFinished);
     connect(documentFileWatcher_, &QFileSystemWatcher::fileChanged,
             this, &MainWindow::handleWatchedDocumentFileChanged);
     connect(documentFileWatcher_, &QFileSystemWatcher::directoryChanged,
@@ -420,7 +423,6 @@ MainWindow::MainWindow(TherionStudio::ISessionStore &sessionStore,
             this, &MainWindow::handleProjectDirectoryChanged);
     connect(projectFileWatcher_, &QFileSystemWatcher::fileChanged,
             this, &MainWindow::handleProjectFileChanged);
-
     buildUi();
     qApp->installEventFilter(this);
     setMinimumSize(minimumMainWindowSize());

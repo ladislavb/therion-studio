@@ -206,7 +206,8 @@ Recommendation:
 Progress (2026-07-13): W1 extracted the deterministic, presentation-free `ProjectFileWatchInventoryCollector` with
 focused coverage for skipped directories, symlinks, outside-root paths, signatures, and discovery errors. W2 adds the
 generation-keyed `ProjectFileWatchInventoryService`, so collection is now off the GUI thread and stale results are
-suppressed. P1-5 remains open until W3 applies completed inventories as GUI-thread watcher deltas.
+suppressed. W3 applies completed inventories as GUI-thread watcher deltas and retains only active-path signatures.
+P1-5 remains pending W4 large-tree, mutation, and cross-platform verification.
 
 ### P1-6 — Map Catalog and Background Caches Are Hidden Static Presentation State
 

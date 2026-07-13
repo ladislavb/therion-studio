@@ -274,6 +274,8 @@ set(THERION_APP_SOURCES
     src/app/ProjectFileWatchInventory.h
     src/app/ProjectFileWatchInventoryService.cpp
     src/app/ProjectFileWatchInventoryService.h
+    src/app/ProjectFileWatchDelta.cpp
+    src/app/ProjectFileWatchDelta.h
     src/app/ProjectOutputsScanner.cpp
     src/app/ProjectOutputsScanner.h
     src/app/ProjectSearchScanner.cpp
@@ -1356,6 +1358,7 @@ qt_add_executable(MainWindowServiceQTests
     tests/MainWindowRecentProjectsServiceTest.cpp
     tests/ProjectFileWatchInventoryTest.cpp
     tests/ProjectFileWatchInventoryServiceTest.cpp
+    tests/ProjectFileWatchDeltaTest.cpp
     tests/ProjectOutputsScannerTest.cpp
     tests/ProjectStructureScannerTest.cpp
     tests/MainWindowSessionDocumentServiceTest.cpp
