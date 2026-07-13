@@ -30,7 +30,7 @@ localization, and acceptance-criteria updates in the same slice.
 
 | Review finding | Owning plan | First executable slice | Dependency |
 | --- | --- | --- | --- |
-| P1-1 non-hermetic core runner | `TEST_HERMETICITY_PLAN.md` | H1 committed minimal `.lox` fixture | none; do first |
+| P1-1 non-hermetic core runner | `TEST_HERMETICITY_PLAN.md` | H1-H3 complete | resolved 2026-07-13 |
 | P1-3 stale Structure/Outputs results | `PROJECT_ASYNC_COORDINATION_PLAN.md` | A1 request serial contract | hermetic baseline |
 | P1-2 blocking SQL import/query | `SQL_REPORT_ASYNC_PLAN.md` | S1 worker-owned database contract | hermetic baseline |
 | P1-5 UI-thread project watcher walk | `PROJECT_ASYNC_COORDINATION_PLAN.md` | W1 pure watch inventory | A1-A3 recommended first |
@@ -53,9 +53,9 @@ Secondary findings are handled as follows:
 
 ## Delivery Order
 
-### Gate 1 — Restore Trustworthy Verification
+### Gate 1 — Restore Trustworthy Verification — Completed 2026-07-13
 
-Complete `TEST_HERMETICITY_PLAN.md` H1-H3. The mandatory `unit` label must be independent of ignored local corpora.
+`TEST_HERMETICITY_PLAN.md` H1-H3 are complete. The mandatory `unit` label is independent of ignored local corpora.
 
 Exit gate:
 

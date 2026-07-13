@@ -1049,6 +1049,8 @@ therion_add_core_qtest_runner(TherionCoreQTests
     tests/core/Th2GeometryProjectionTest.cpp
     tests/core/ThreeDViewerCameraTest.cpp
     tests/core/TherionFileTypesTest.cpp
+    tests/core/ThreeDViewerLoxCorpusFixtures.h
+    tests/core/ThreeDViewerLoxCorpusPolicyTest.cpp
     tests/core/ThreeDViewerLoxLoaderTest.cpp
     tests/core/ThreeDViewerSceneModelTest.cpp
     tests/core/ThreeDViewerSceneStatisticsTest.cpp
@@ -1067,7 +1069,8 @@ target_compile_definitions(TherionCoreQTests PRIVATE
 
 if(THERION_STUDIO_ENABLE_LOX_CORPUS_TESTS)
     therion_add_core_qtest_runner(ThreeDViewerLoxCorpusTest
-        tests/core/ThreeDViewerLoxCorpusTest.cpp)
+        tests/core/ThreeDViewerLoxCorpusTest.cpp
+        tests/core/ThreeDViewerLoxCorpusFixtures.h)
     target_compile_definitions(ThreeDViewerLoxCorpusTest PRIVATE
         THERION_STUDIO_LOX_CORPUS_ROOT="${THERION_STUDIO_LOX_CORPUS_ROOT}")
 endif()

@@ -4,7 +4,7 @@ Date: 2026-07-13
 
 Review findings: P1-1, P2-4.
 
-Status: active. H1-H2 are complete; H3 is the next slice in `REVIEW_IMPLEMENTATION_PLAN.md`.
+Status: H1-H3 and the review Gate 1 exit criteria are complete. H4 remains an ongoing touched-test rule.
 
 Scope: make mandatory CTest labels deterministic in a clean checkout while retaining optional real-project corpus
 coverage as explicitly opt-in integration tests.
@@ -14,7 +14,7 @@ coverage as explicitly opt-in integration tests.
 H1 removed the fixed-path dependency on ignored `sample_data/`. Mandatory loader coverage now uses the committed
 `tests/fixtures/three_d_viewer/1302.lox` Therion export through an explicit compile-time fixture root. H2 moved the
 known real-project fixture matrix into an opt-in `ThreeDViewerLoxCorpusTest` with row-level skips and a dedicated
-`corpus` CTest label. H3 still owns a mandatory regression test for corpus path-resolution policy.
+`corpus` CTest label. H3 added mandatory regression coverage for corpus path-resolution policy.
 
 ## Non-Goals
 
@@ -99,7 +99,15 @@ Acceptance:
 
 Stop condition: do not add a custom test runner when QTest data rows and CTest labels provide the required boundary.
 
-## H3 — Add The Partial-Corpus Regression
+## H3 — Add The Partial-Corpus Regression — Completed 2026-07-13
+
+Implemented result:
+
+- extracted the known fixture metadata and path resolution into shared test-only `ThreeDViewerLoxCorpusFixtures.h`;
+- made the opt-in corpus runner consume the same normalized absolute paths and availability decisions;
+- added mandatory aggregate QTest coverage proving unrelated files match no known fixture, a one-file corpus resolves
+  exactly one row, and equivalent relative/absolute roots resolve identically;
+- kept all temporary files under `QTemporaryDir` and left developer `sample_data/` untouched.
 
 Add a focused test of fixture discovery policy rather than mutating the developer's actual `sample_data/` directory.
 Prefer extracting a small pure fixture-resolution function if that is the smallest deterministic seam.

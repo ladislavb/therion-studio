@@ -112,7 +112,6 @@ Next slices:
 
 Next slices:
 
-- Complete `TEST_HERMETICITY_PLAN.md` before adding more loader corpus assumptions.
 - Add one legally distributable or explicitly opt-in real Therion-exported terrain fixture before changing surface
   rendering defaults.
 - Add a loader test that documents surface bitmap handling, even if the decision is to ignore bitmap chunks initially.
@@ -159,14 +158,13 @@ Next slices:
 
 ## Recommended Next Slices
 
-1. Complete the committed minimal `.lox` fixture and optional-corpus split in `TEST_HERMETICITY_PLAN.md`.
-2. Add debug/log diagnostics for 3D load/render statistics so later performance reports have comparable numbers.
-3. Add an opt-in real terrain/surface-bitmap fixture only with explicit provenance and per-fixture skip behavior.
-4. Profile automatic station marker and label decluttering on dense real projects and add priority ranking only if
+1. Add debug/log diagnostics for 3D load/render statistics so later performance reports have comparable numbers.
+2. Add an opt-in real terrain/surface-bitmap fixture only with explicit provenance and per-fixture skip behavior.
+3. Profile automatic station marker and label decluttering on dense real projects and add priority ranking only if
    important stations are hidden.
-5. Profile the current Qt Quick scene-graph renderer on a large real cave and record the first concrete bottleneck before
+4. Profile the current Qt Quick scene-graph renderer on a large real cave and record the first concrete bottleneck before
    responsibility-based changes to `ThreeDViewerViewportItem.cpp`.
-6. Specify stale/missing generated-artifact reporting on top of the implemented Outputs discovery workflow.
+5. Specify stale/missing generated-artifact reporting on top of the implemented Outputs discovery workflow.
 
 ## Verification Strategy
 

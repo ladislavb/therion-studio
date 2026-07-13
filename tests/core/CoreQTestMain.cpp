@@ -13,6 +13,7 @@ int runTherionDocumentEditorDraftInsertionTest(int argc, char **argv);
 int runTherionSourceValidatorFixTest(int argc, char **argv);
 int runTherionSourceValidatorProjectionTest(int argc, char **argv);
 int runThreeDViewerLoxLoaderTest(int argc, char **argv);
+int runThreeDViewerLoxCorpusPolicyTest(int argc, char **argv);
 int runThreeDViewerCameraTest(int argc, char **argv);
 int runThreeDViewerSceneModelTest(int argc, char **argv);
 int runThreeDViewerSceneStatisticsTest(int argc, char **argv);
@@ -27,6 +28,7 @@ int main(int argc, char **argv)
     status |= runTherionFileTypesTest(argc, argv);
     status |= runThreeDViewerCameraTest(argc, argv);
     status |= runThreeDViewerLoxLoaderTest(argc, argv);
+    status |= runThreeDViewerLoxCorpusPolicyTest(argc, argv);
     status |= runThreeDViewerSceneModelTest(argc, argv);
     status |= runThreeDViewerSceneStatisticsTest(argc, argv);
     status |= runTherionDocumentEditorDraftInsertionTest(argc, argv);

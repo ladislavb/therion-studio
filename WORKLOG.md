@@ -5,8 +5,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ## Current Focus
 
 1. `2026.7.2` post-DOM stabilization and next feature selection.
-2. Complete `TEST_HERMETICITY_PLAN.md` H3 with a mandatory regression for partial-corpus path resolution, then address
-   superseded Structure/Outputs results and SQL report UI-thread work.
+2. Execute `PROJECT_ASYNC_COORDINATION_PLAN.md` A1-A3 so Structure and Outputs cannot publish superseded worker results,
+   then address SQL report UI-thread work.
 3. Real-project smoke testing for Raw, Blocks, Map, Validation, Structure, and Compiler navigation after DOM closure.
 4. Plan-driven follow-ups for map partial refresh, validation/cache tuning, GUI cleanup, SVG backgrounds, reporting, LiDAR design, and 3D viewer refinement.
 
@@ -221,8 +221,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Continue migrating touched hand-rolled tests to QTest where the dependency/runtime boundary is already clear.
 - Keep `python3 scripts/check_structure_constraints.py` green and preserve guardrails against map-editor source mutation
   bypasses.
-- Keep mandatory `.lox` coverage on the committed fixture root and optional real-project rows behind the `corpus` label;
-  H3 shall add a pure mandatory regression for partial-corpus path resolution without touching developer data.
+- Keep mandatory `.lox` coverage on the committed fixture root, optional real-project rows behind the `corpus` label,
+  and corpus path-policy regressions inside the core aggregate runner.
 - Keep Linux/Windows CI and package Qt runtime module lists aligned with QML inspector imports.
 - Keep Linux strict-warning builds green by updating aggregate initializers when project scan/source structs gain fields.
 - Keep app-library and editor-test support source ownership aligned with static-link boundaries; shared UI components such
@@ -254,8 +254,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Follow `plans/3D_VIEWER_PLAN.md` for remaining work.
 - PNG export, export resolution presets, black/white scene background, Scene Settings, and Outputs `.lox` opening are
   implemented baseline behavior.
-- Complete `plans/TEST_HERMETICITY_PLAN.md` before adding optional real terrain/surface-bitmap corpus coverage; then add
-  debug/log load/render statistics before renderer refactoring.
+- Add optional real terrain/surface-bitmap corpus coverage only with per-fixture skip semantics; then add debug/log
+  load/render statistics before renderer refactoring.
 - Keep the viewer read-only and keep `.lox` loading/model/statistics in core.
 - Decide whether to add Therion `.3d` model support to the 3D viewer or keep `.3d` outputs hidden from the Outputs pane.
 

@@ -18,19 +18,18 @@ asynchronous and cancellation-aware, production dependencies are explicitly inje
 and the stable editor directory layout is enforced. No confirmed P0 source-corruption or security defect was found in
 this review.
 
-The main risks have shifted from parser convergence to runtime coordination and ownership:
+The remaining risks have shifted from parser convergence to runtime coordination and ownership:
 
-1. one unit runner is non-hermetic and currently fails in a checkout containing an incomplete optional sample corpus;
-2. SQL report import and user queries can block the UI thread without cancellation;
-3. Structure and Outputs workers publish superseded results before their queued replacement runs;
-4. Map refresh still performs a synchronous full scene rebuild and repeatedly copies cached projections by value;
-5. recursive project watcher setup runs on the UI thread;
-6. Map style/background resource caches remain hidden static state in presentation code;
-7. localization checks do not detect visible strings that never enter Qt translation extraction.
+1. SQL report import and user queries can block the UI thread without cancellation;
+2. Structure and Outputs workers publish superseded results before their queued replacement runs;
+3. Map refresh still performs a synchronous full scene rebuild and repeatedly copies cached projections by value;
+4. recursive project watcher setup runs on the UI thread;
+5. Map style/background resource caches remain hidden static state in presentation code;
+6. localization checks do not detect visible strings that never enter Qt translation extraction.
 
 These are focused follow-ups, not reasons to reopen the DOM migration or start a broad renderer rewrite. The safest
-sequence is to restore hermetic tests first, then fix worker result generations and SQL responsiveness, then move Map
-resource ownership and refresh work behind explicit revision-keyed services.
+sequence is to fix worker result generations and SQL responsiveness, then move Map resource ownership and refresh work
+behind explicit revision-keyed services.
 
 ## Review Method and Verification
 
@@ -81,28 +80,23 @@ No confirmed P0 finding was identified. Source rewrite and transaction work rema
 current guardrails and focused tests are evidence against treating it as an active release blocker without a concrete
 regression.
 
-### P1-1 — The Core Test Runner Is Not Hermetic
+### P1-1 — The Core Test Runner Is Not Hermetic — Resolved 2026-07-13
 
-Evidence:
+Resolution:
 
-- `tests/core/ThreeDViewerLoxLoaderTest.cpp:16-26` considers the repository fixture root available when any
-  `sample_data` directory exists.
-- `tests/core/ThreeDViewerLoxLoaderTest.cpp:29-37` then constructs one fixed Babice path.
-- `tests/core/ThreeDViewerLoxLoaderTest.cpp:141-148` skips only when no sample-data root exists, but fails when the root
-  exists and that one optional file does not.
-- The focused unit run in this review failed exactly at that assertion, while the remaining 47 unit tests passed.
-- `sample_data/` is ignored by Git, so its content is not a reproducible test dependency.
+- mandatory loader coverage uses the committed `tests/fixtures/three_d_viewer/1302.lox` fixture and explicit CMake
+  fixture root;
+- ignored real-project files run only through opt-in `ThreeDViewerLoxCorpusTest` and the `corpus` CTest label;
+- every known optional fixture is an independent row with a missing-file skip;
+- mandatory `ThreeDViewerLoxCorpusPolicyTest` covers unrelated, partial, relative-root, and absolute-root resolution.
 
-Impact:
+Verification:
 
-- A developer with a partial real-project corpus gets a red unit suite while another checkout skips the same case.
-- Aggregate-runner failure obscures the status of otherwise hermetic core tests.
-
-Recommendation:
-
-- Move a minimal legally distributable `.lox` fixture into `tests/fixtures/` and use it for mandatory loader coverage.
-- Keep broad real-project corpus coverage in a separate opt-in test/label that skips each missing fixture independently.
-- Add a regression test for the partial-corpus case so the aggregate core runner remains green.
+- Release `unit` label passes without corpus discovery and with the local partial/complete corpus present;
+- complete optional corpus passes all ten known rows;
+- one-file optional corpus passes one row and skips nine independently;
+- fixture provenance and opt-in invocation are documented in `tests/fixtures/three_d_viewer/README.md` and
+  `docs/BUILDING.md`.
 
 ### P1-2 — SQL Import and Queries Can Block the UI Indefinitely
 
@@ -338,7 +332,7 @@ These are not priority work by themselves:
 
 ## Recommended Delivery Sequence
 
-1. **Restore a hermetic test baseline**
+1. **Restore a hermetic test baseline — completed**
    - fix the optional `.lox` fixture contract;
    - keep `unit`, `ui`, corpus, performance, and packaging responsibilities explicitly labeled.
 2. **Make asynchronous results monotonic**
@@ -395,5 +389,5 @@ production caller, focused tests, and exit gate are complete.
 ## Final Recommendation
 
 Keep the unified source architecture closed and stable. The next release-quality gains come from making asynchronous
-results monotonic, removing UI-thread SQL/project traversal, restoring hermetic tests, and moving hidden Map resource
-state to explicit bounded services. Only after those boundaries are in place should Map partial refresh be widened.
+results monotonic, removing UI-thread SQL/project traversal, and moving hidden Map resource state to explicit bounded
+services. Only after those boundaries are in place should Map partial refresh be widened.
