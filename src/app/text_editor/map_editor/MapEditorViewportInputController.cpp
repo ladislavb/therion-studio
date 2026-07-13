@@ -831,6 +831,19 @@ QGraphicsItem *preferredMapClickHitItemForViewportPosition(MapEditorViewportInpu
         return directVertexItem;
     }
 
+    // Resolve the current pointer position before consulting the cached hover
+    // presentation. A previous hover item can remain marked while a test or
+    // synthetic pointer sequence moves directly to another object. In that
+    // case the current fill/line hit must win, especially near a shared area
+    // border at high zoom.
+    QGraphicsItem *currentHitItem =
+        preferredMapHitItemForViewportPosition(context, viewportPosition, false);
+    if (currentHitItem != nullptr
+        && (dynamic_cast<QGraphicsPathItem *>(currentHitItem) != nullptr
+            || dynamic_cast<MapEditableGeometryVertexItem *>(currentHitItem) != nullptr)) {
+        return currentHitItem;
+    }
+
     if (QGraphicsItem *hoverItem = preferredHoveredPathHitItemForViewportPosition(context, viewportPosition)) {
         const QPointF scenePosition = context.view->mapToScene(viewportPosition);
         resetPendingClickSelection(context, scenePosition);
@@ -838,7 +851,7 @@ QGraphicsItem *preferredMapClickHitItemForViewportPosition(MapEditorViewportInpu
         return hoverItem;
     }
 
-    return preferredMapHitItemForViewportPosition(context, viewportPosition, false);
+    return currentHitItem;
 }
 
 bool isSameMapObjectInteractionGroup(const QGraphicsItem *item, const QGraphicsItem *referenceItem)

@@ -1,6 +1,7 @@
 #include "../src/app/ValidationResultsMarkdownExporter.h"
 
 #include <QtTest/QtTest>
+#include <QDir>
 #include <QTimeZone>
 
 namespace
@@ -66,8 +67,8 @@ private slots:
         QVERIFY(markdown.contains(QStringLiteral("- Errors: 1")));
         QVERIFY(markdown.contains(QStringLiteral("- Warnings: 1")));
         QVERIFY(markdown.contains(QStringLiteral("Result limit was reached")));
-        QVERIFY(markdown.contains(QStringLiteral("## maps/a.th2")));
-        QVERIFY(markdown.contains(QStringLiteral("## thconfig")));
+        QVERIFY(markdown.contains(QStringLiteral("## %1").arg(QDir::toNativeSeparators(QStringLiteral("maps/a.th2")))));
+        QVERIFY(markdown.contains(QStringLiteral("## %1").arg(QDir::toNativeSeparators(QStringLiteral("thconfig")))));
         QVERIFY(markdown.contains(QStringLiteral("### Line 12: Warning: Portable path separator")));
         QVERIFY(markdown.contains(QStringLiteral("```therion\ninput .\\data\\a.th\n```")));
         QVERIFY(markdown.contains(QStringLiteral("```therion\ninput ./data/a.th\n```")));

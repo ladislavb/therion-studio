@@ -173,6 +173,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ### Map Input And Partial Refresh
 
 - Map scene scrolling now expands around visible background layer bounds while keeping the base map/source projection fixed, so a moved, scaled, or rotated raster/SVG/XVI layer can be panned to every edge instead of being cut off at the original canvas rectangle; asynchronously loaded backgrounds also suppress stale empty-map guides once they become visible.
+- Map `Fit` now falls back to the fixed canvas when a document has no geometry; backgrounds are included only by the explicit `Fit With Background` action, avoiding a scrollbar-resize loop in empty maps with asynchronously loaded backgrounds.
 - Background session state now only supplements layers declared in the current TH2 metadata; it can no longer silently restore a session-only drawing reference into an empty or unrelated TH2 document.
 - Map point insertion now captures the original scene rectangle and exact scrollbar values before its source transaction, then reapplies them after every deferred projection and selection update; the values therefore retain their original scene-coordinate meaning and avoid both the old large remap jump and high-zoom rounding drift. Transitional viewport repaints remain suppressed until the preserved state is restored. The interactive drag/undo smoke test covers the regression.
 - Keep `plans/MAP_PARTIAL_REFRESH_PLAN.md` as the detailed slice queue for widening one-line map partial refresh.
