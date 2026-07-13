@@ -4,7 +4,7 @@ Date: 2026-07-13
 
 Review findings: P1-3, P1-5.
 
-Status: active; A1-A3 complete, W1 is queued after SQL S1-S4.
+Status: active; A1-A3 and W1 complete, W2 is next.
 
 Scope: make Structure/Outputs result publication monotonic and move recursive project-watch inventory discovery off the
 GUI thread. This plan does not redesign project source snapshots, validation caches, or platform watcher policy.
@@ -104,7 +104,7 @@ navigation/opening smoke coverage. Direct visual sidebar activation remains part
 
 A-series exit gate: complete.
 
-## W1 — Extract Pure Project Watch Inventory
+## W1 — Extract Pure Project Watch Inventory — Complete
 
 Introduce focused value types, for example:
 
@@ -127,6 +127,12 @@ Acceptance:
 - symlink loops and skipped directories are excluded;
 - files outside the root cannot enter the inventory;
 - collector has no widgets, `MainWindow`, or `QFileSystemWatcher` dependency.
+
+Outcome (2026-07-13): `ProjectFileWatchInventoryCollector` now performs deterministic, pure recursive discovery from a
+normalized root. It records directories, supported Therion files, per-path signatures, skipped VCS/build/symlink paths,
+and discovery errors without presentation or watcher dependencies. Focused `QTemporaryDir` coverage verifies ordering,
+signatures, skipped directories, symlink exclusion, outside-root exclusion, and invalid-root reporting; the app/service
+runner passed ten consecutive release runs. W2 remains responsible for moving this completed pure operation to a worker.
 
 ## W2 — Add Generation-Keyed Inventory Service
 

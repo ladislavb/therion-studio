@@ -203,6 +203,10 @@ Recommendation:
 - Measure large-tree startup and mutation behavior before choosing between recursive watches, bounded directory watches,
   or a hybrid periodic reconciliation policy.
 
+Progress (2026-07-13): W1 extracted the deterministic, presentation-free `ProjectFileWatchInventoryCollector` with
+focused coverage for skipped directories, symlinks, outside-root paths, signatures, and discovery errors. P1-5 remains
+open until W2 moves collection off the GUI thread and W3 applies generation-keyed watcher deltas.
+
 ### P1-6 — Map Catalog and Background Caches Are Hidden Static Presentation State
 
 Evidence:

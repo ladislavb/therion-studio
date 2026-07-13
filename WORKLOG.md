@@ -5,8 +5,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ## Current Focus
 
 1. `2026.7.2` post-DOM stabilization and next feature selection.
-2. Start watcher W1-W4 in `PROJECT_ASYNC_COORDINATION_PLAN.md`: move project watcher inventory behind a separate
-   worker/thread-affinity boundary. SQL S1-S5 is complete.
+2. Continue watcher W2-W4 in `PROJECT_ASYNC_COORDINATION_PLAN.md`: add generation-keyed background inventory
+   coordination, then apply watcher deltas on the GUI thread. SQL S1-S5 and watcher W1 are complete.
 3. Real-project smoke testing for Raw, Blocks, Map, Validation, Structure, and Compiler navigation after DOM closure.
 4. Plan-driven follow-ups for map partial refresh, validation/cache tuning, GUI cleanup, SVG backgrounds, reporting, LiDAR design, and 3D viewer refinement.
 

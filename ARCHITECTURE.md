@@ -173,6 +173,12 @@ The project navigation sidebar displays file navigation and project structure pr
 
 Project source and project-index cache ownership belongs at an explicit application workflow boundary. Structure and Validation scanners may share a `ProjectScanCacheService` composed by `MainWindow` or a future composition root, but they shall not use static/global project-index caches or hidden service locators.
 
+Project watch inventory discovery belongs to `ProjectFileWatchInventoryCollector`, a pure application-level filesystem
+component. It normalizes the root, applies shared project discovery skip rules, and returns deterministic paths,
+signatures, skipped paths, and errors; it has no presentation or `QFileSystemWatcher` dependency. A generation-keyed
+workflow service shall run that collector off the GUI thread, while `QFileSystemWatcher` path mutation and completed
+inventory application remain GUI-thread responsibilities.
+
 The Therion compiler remains authoritative for final export behavior. The project index is a lightweight navigation and early-feedback projection, not a compiler replacement.
 
 Project-index namespace, reference, and duplicate-identifier behavior shall follow `docs/THERION_COMPATIBILITY.md`. In particular, survey/map/scrap names share their parent survey namespace, drawing object IDs share their containing scrap namespace, and identical object names in different survey namespaces are valid.
