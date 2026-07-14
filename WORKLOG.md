@@ -121,6 +121,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   small enough or the user wants live full-project diagnostics.
 - Use `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md` only for future validation/cache follow-ups; Structure and
   Validation already share snapshot-compatible collection/index input paths and explicit cache ownership.
+- Project station-reference validation now applies a scrap's `-station-names <prefix> <suffix>` transform before
+  resolving station points against centerline data, with focused QTest coverage for valid and missing references.
 - `ProjectSourceProjectionCache` now provides the first focused per-run source/logical projection cache for project source
   snapshots with observable reuse stats.
 - `ProjectValidationScanner` local per-file validation now uses `ProjectSourceProjectionCache` for source and

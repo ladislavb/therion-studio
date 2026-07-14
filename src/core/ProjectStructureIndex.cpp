@@ -295,6 +295,12 @@ struct StationReferenceIndex
     ReferenceKeyIndex keysByNameAndNamespace;
 };
 
+struct ScrapStationNameTransform
+{
+    QString prefix;
+    QString suffix;
+};
+
 enum class ReferenceResolutionState
 {
     Missing,
@@ -532,6 +538,48 @@ ReferenceResolution resolveStationReference(const StationReferenceIndex &index,
     return resolveCandidates(candidates);
 }
 
+QString stationReferenceWithScrapNameTransform(const QString &referenceName,
+                                               const ScrapStationNameTransform &transform)
+{
+    const MapReferenceParts reference = parseMapReference(referenceName);
+    if (reference.name.isEmpty()) {
+        return QString();
+    }
+
+    const QString transformedName = transform.prefix + reference.name + transform.suffix;
+    if (!reference.hasNamespace) {
+        return transformedName;
+    }
+
+    return QStringLiteral("%1@%2").arg(transformedName, reference.namespacePath);
+}
+
+QString scrapStationNamePart(const QString &value)
+{
+    const QString trimmedValue = value.trimmed();
+    return trimmedValue == QStringLiteral("[]") ? QString() : trimmedValue;
+}
+
+ReferenceResolution resolveStationPointReference(const StationReferenceIndex &index,
+                                                 const QString &referenceName,
+                                                 const QString &ownerNamespacePath,
+                                                 const std::optional<ScrapStationNameTransform> &transform)
+{
+    if (!transform.has_value()) {
+        return resolveStationReference(index, referenceName, ownerNamespacePath);
+    }
+
+    const QString transformedReference =
+        stationReferenceWithScrapNameTransform(referenceName, transform.value());
+    if (!transformedReference.isEmpty()) {
+        const ReferenceResolution transformedResolution =
+            resolveStationReference(index, transformedReference, ownerNamespacePath);
+        return transformedResolution;
+    }
+
+    return {};
+}
+
 bool stationReferenceShouldReportMissing(const QString &referenceName)
 {
     return referenceName.contains(QLatin1Char('@'));
@@ -569,6 +617,7 @@ void appendStationReferenceDiagnosticsForRange(QVector<ProjectIndexDiagnostic> *
                                                const ProjectStructureEntry &ownerEntry,
                                                const QString &sourceFile,
                                                const TherionSourceLogicalArgumentRange &referenceRange,
+                                               const std::optional<ScrapStationNameTransform> &transform,
                                                bool reportPlainMissingReferences)
 {
     if (diagnostics == nullptr) {
@@ -581,7 +630,7 @@ void appendStationReferenceDiagnosticsForRange(QVector<ProjectIndexDiagnostic> *
     }
 
     const ReferenceResolution resolution =
-        resolveStationReference(stationIndex, referenceName, ownerEntry.namespacePath);
+        resolveStationPointReference(stationIndex, referenceName, ownerEntry.namespacePath, transform);
     if (resolution.state == ReferenceResolutionState::Unique) {
         return;
     }
@@ -1858,6 +1907,49 @@ QVector<ProjectIndexDiagnostic> scanJoinReferences(const QVector<ProjectStructur
     return diagnostics;
 }
 
+QHash<int, ScrapStationNameTransform> scrapStationNameTransformsByStartLine(
+    const TherionSourceLogicalDocument &logicalDocument)
+{
+    QHash<int, ScrapStationNameTransform> transforms;
+    for (const TherionSourceLogicalCommand &command : logicalDocument.commands()) {
+        if (command.metadata.commandName != QStringLiteral("scrap")) {
+            continue;
+        }
+
+        for (const TherionSourceLogicalOptionEntryRange &optionEntry : command.optionEntryRanges) {
+            if (normalizedCommandOptionName(optionEntry.key) != QStringLiteral("station-names")
+                || optionEntry.valueRanges.size() < 2) {
+                continue;
+            }
+
+            transforms.insert(command.startLineNumber,
+                             {scrapStationNamePart(optionEntry.valueRanges.at(0).text),
+                              scrapStationNamePart(optionEntry.valueRanges.at(1).text)});
+            break;
+        }
+    }
+    return transforms;
+}
+
+std::optional<ScrapStationNameTransform> activeScrapStationNameTransform(
+    const TherionSourceLogicalCommand &command,
+    const QHash<int, ScrapStationNameTransform> &transformsByStartLine)
+{
+    std::optional<ScrapStationNameTransform> transform;
+    for (const TherionSourceBlockFrame &frame : command.blockStackBefore) {
+        if (normalizedStructureDirective(frame.directive) != QStringLiteral("scrap")) {
+            continue;
+        }
+
+        transform.reset();
+        const auto transformIt = transformsByStartLine.constFind(frame.lineNumber);
+        if (transformIt != transformsByStartLine.constEnd()) {
+            transform = transformIt.value();
+        }
+    }
+    return transform;
+}
+
 bool commandIsInCenterline(const TherionSourceLogicalCommand &command)
 {
     const QString currentBlock = normalizedStructureDirective(command.currentBlockDirective);
@@ -1983,6 +2075,8 @@ QVector<ProjectIndexDiagnostic> scanStationReferences(const QVector<ProjectStruc
         }
         const TherionSourceLogicalDocument &logicalDocument =
             logicalDocumentForFile(sourceFile, cache, inMemoryFileContentsByPath);
+        const QHash<int, ScrapStationNameTransform> scrapStationNameTransforms =
+            scrapStationNameTransformsByStartLine(logicalDocument);
         for (const TherionSourceLogicalCommand &command : logicalDocument.commands()) {
             if (projectIndexScanShouldCancel(shouldCancel)) {
                 return diagnostics;
@@ -1996,6 +2090,8 @@ QVector<ProjectIndexDiagnostic> scanStationReferences(const QVector<ProjectStruc
                                                           ownerEntry,
                                                           sourceFile,
                                                           *stationPointReference,
+                                                          activeScrapStationNameTransform(command,
+                                                                                          scrapStationNameTransforms),
                                                           true);
                 continue;
             }
@@ -2019,6 +2115,7 @@ QVector<ProjectIndexDiagnostic> scanStationReferences(const QVector<ProjectStruc
                                                           ownerEntry,
                                                           sourceFile,
                                                           TherionSourceLogicalArgumentRange{tokenIndex, referenceName, referenceRange},
+                                                          std::nullopt,
                                                           false);
             }
         }

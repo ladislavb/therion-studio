@@ -53,6 +53,7 @@ Therion Studio is an editor and early-feedback tool. The Therion compiler remain
 - The project index is a lightweight projection for navigation, relationships, and early feedback. It must not be treated as a full Therion compiler.
 - Project-index diagnostics should be conservative and source-range-aware. Prefer suppressing uncertain findings over producing false positives in valid Therion projects.
 - Active-document validation and project validation should share rules where practical so open saved and unsaved documents behave consistently.
+- A scrap option `-station-names <prefix> <suffix>` adds the prefix and suffix to station names used by station points in that scrap; `[]` denotes an empty prefix or suffix. Project-index station-reference validation shall apply that transform before resolving the reference in the owning survey namespace.
 - Inline highlighter diagnostics should use the same source ranges and severity as the validation diagnostics they represent.
 
 ## Metadata Sources

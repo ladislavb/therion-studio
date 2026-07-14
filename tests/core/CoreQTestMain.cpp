@@ -14,6 +14,7 @@ int runTherionTokenRulesTest(int argc, char **argv);
 int runTherionDocumentEditorDraftInsertionTest(int argc, char **argv);
 int runTherionSourceValidatorFixTest(int argc, char **argv);
 int runTherionSourceValidatorProjectionTest(int argc, char **argv);
+int runProjectStructureIndexQTest(int argc, char **argv);
 int runThreeDViewerLoxLoaderTest(int argc, char **argv);
 int runThreeDViewerLoxCorpusPolicyTest(int argc, char **argv);
 int runThreeDViewerCameraTest(int argc, char **argv);
@@ -41,5 +42,6 @@ int main(int argc, char **argv)
         {"TherionSourceSnapshotCacheTest", runTherionSourceSnapshotCacheTest},
         {"TherionSourceValidatorFixTest", runTherionSourceValidatorFixTest},
         {"TherionSourceValidatorProjectionTest", runTherionSourceValidatorProjectionTest},
+        {"ProjectStructureIndexQTest", runProjectStructureIndexQTest},
         {"TherionTokenRulesTest", runTherionTokenRulesTest}});
 }
