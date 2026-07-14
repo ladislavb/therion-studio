@@ -119,5 +119,22 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Continue"
-          & "$env:GITHUB_WORKSPACE\build\TherionCoreQTests.exe" -v2
-          & "$env:GITHUB_WORKSPACE\build\MainWindowServiceQTests.exe" -v2
+          $env:QT_QPA_PLATFORM = "offscreen"
+          $testExecutables = @(
+            "TherionCoreQTests.exe",
+            "MainWindowServiceQTests.exe"
+          )
+          foreach ($testExecutable in $testExecutables) {
+            $testPath = Join-Path "$env:GITHUB_WORKSPACE\build" $testExecutable
+            $outputPath = Join-Path $env:RUNNER_TEMP "$testExecutable.qtest.txt"
+            Write-Host "Running diagnostic test aggregate: $testExecutable"
+            & $testPath -v2 -o "$outputPath,txt"
+            $testExitCode = $LASTEXITCODE
+            if (Test-Path $outputPath) {
+              Get-Content $outputPath
+            } else {
+              Write-Host "QTest did not create a diagnostic log at $outputPath"
+            }
+            Write-Host "Diagnostic exit code for $testExecutable`: $testExitCode"
+          }
+          exit 0

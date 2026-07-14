@@ -16,7 +16,6 @@ public:
         LoadStructureNameOverrides,
         SyncOpenDocumentsToProjectRoot,
         RebuildStructureSidebar,
-        AppendSkippedProtectedProjectConsole,
         RefreshTherionConfigDisplay,
         UpdateProjectActionState,
         RestoreOpenDocuments

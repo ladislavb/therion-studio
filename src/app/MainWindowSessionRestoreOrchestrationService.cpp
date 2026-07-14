@@ -21,15 +21,6 @@ MainWindowSessionRestoreOrchestrationService::Plan MainWindowSessionRestoreOrche
         return plan;
     }
 
-    if (restoreProjectDecision.status == MainWindowSessionProjectService::ProjectRestoreStatus::SkippedProtectedFolder) {
-        plan.steps = {
-            Step::AppendSkippedProtectedProjectConsole,
-            Step::RefreshTherionConfigDisplay,
-            Step::UpdateProjectActionState,
-            Step::RestoreOpenDocuments};
-        return plan;
-    }
-
     plan.steps = {
         Step::RefreshTherionConfigDisplay,
         Step::UpdateProjectActionState,

@@ -8,9 +8,4 @@ QString MainWindowSessionRestoreUiFlowService::restoredProjectRootConsoleLine(co
 {
     return QCoreApplication::translate("MainWindow", "Restored project root %1").arg(projectPath);
 }
-
-QString MainWindowSessionRestoreUiFlowService::skippedProtectedProjectConsoleLine(const QString &projectPath)
-{
-    return QCoreApplication::translate("MainWindow", "Skipped automatic project restore for protected folder %1").arg(projectPath);
-}
 }

@@ -19,10 +19,6 @@ void MainWindowSessionRestoreUiFlowServiceTest::presentsConsoleLines()
     const QString restored = MainWindowSessionRestoreUiFlowService::restoredProjectRootConsoleLine(
         QStringLiteral("/tmp/project"));
     QCOMPARE(restored, QStringLiteral("Restored project root /tmp/project"));
-
-    const QString skipped = MainWindowSessionRestoreUiFlowService::skippedProtectedProjectConsoleLine(
-        QStringLiteral("/tmp/protected"));
-    QCOMPARE(skipped, QStringLiteral("Skipped automatic project restore for protected folder /tmp/protected"));
 }
 }
 

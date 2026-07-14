@@ -40,6 +40,10 @@ include(GNUInstallDirs)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(MSVC)
+    add_compile_options(/utf-8)
+endif()
+
 option(THERION_ENABLE_STRICT_WARNINGS
     "Enable warnings-as-errors for non-UI library targets"
     OFF)

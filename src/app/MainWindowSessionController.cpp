@@ -40,11 +40,6 @@ void executeRestoreSteps(const MainWindowSessionRestoreOrchestrationService::Pla
                 actions.rebuildStructureSidebar();
             }
             break;
-        case MainWindowSessionRestoreOrchestrationService::Step::AppendSkippedProtectedProjectConsole:
-            if (actions.appendConsoleLine) {
-                actions.appendConsoleLine(MainWindowSessionRestoreUiFlowService::skippedProtectedProjectConsoleLine(projectPath));
-            }
-            break;
         case MainWindowSessionRestoreOrchestrationService::Step::RefreshTherionConfigDisplay:
             if (actions.refreshTherionConfigDisplay) {
                 actions.refreshTherionConfigDisplay();

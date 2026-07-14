@@ -657,6 +657,7 @@ The rules below define the expected day-to-day interaction model. If a later req
 - The application shall restore the active tab when the corresponding document still exists.
 - The application shall restore viewport and selection anchors only when the underlying source locations still resolve.
 - If a restored selection no longer exists, the document shall still open without failing the restore process.
+- Automatic session restore shall attempt any previously saved project and document path that is still accessible, including paths inside standard user folders on macOS.
 
 ### 3.9 Command, Menu, and Shortcut Conventions
 
@@ -1241,6 +1242,7 @@ The criteria below are intended for implementation verification and QA.
 - Previously opened tabs are restored where possible.
 - The active tab is restored when the underlying document still exists.
 - Restoring state does not fail the application if a previously selected source location no longer exists.
+- A project or document inside a standard macOS user folder shall be restored when accessible; an inaccessible path shall not prevent the remaining session state from being restored.
 
 #### 8.1.8 Window and Document Lifecycle
 

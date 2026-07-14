@@ -1,6 +1,6 @@
 # Therion Studio User Manual
 
-Last updated: 2026-07-03
+Last updated: 2026-07-14
 
 This guide covers everyday workflows in Therion Studio. It intentionally focuses on using the application, not on the full Therion language reference. Therion source syntax, command names, options, and serialized document content stay in canonical Therion form.
 
@@ -98,6 +98,8 @@ When no project is open, the welcome tab shows `New Empty Project`, `New Project
 The welcome tab and `File -> Recent Projects` list up to five recently opened projects. Select a project from either list to reopen it.
 
 When a project is open, the welcome tab shows the active project name and path. It also lists up to ten recent files from that project; select a recent file to reopen it. The same project-scoped list is available from `File -> Recent Files`.
+
+After restarting Therion Studio, the last accessible project and previously open documents are restored where possible, including projects in standard user folders such as `Documents` on macOS. If a path is not accessible, it is skipped without preventing the rest of the session from being restored.
 
 ### 3.3 Open Documents
 

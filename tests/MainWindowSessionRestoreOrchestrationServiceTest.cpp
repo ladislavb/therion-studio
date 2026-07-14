@@ -12,7 +12,6 @@ class MainWindowSessionRestoreOrchestrationServiceTest : public QObject
 
 private slots:
     void buildsRestoredPlan();
-    void buildsSkippedProtectedPlan();
     void buildsNoProjectPlan();
 };
 
@@ -42,21 +41,6 @@ void MainWindowSessionRestoreOrchestrationServiceTest::buildsRestoredPlan()
         MainWindowSessionRestoreOrchestrationService::Step::RestoreOpenDocuments};
 
     QVERIFY2(plan.steps == expected, "Restored-project session restore plan steps changed unexpectedly.");
-}
-
-void MainWindowSessionRestoreOrchestrationServiceTest::buildsSkippedProtectedPlan()
-{
-    const auto plan = MainWindowSessionRestoreOrchestrationService::buildPlan(
-        makeDecision(MainWindowSessionProjectService::ProjectRestoreStatus::SkippedProtectedFolder,
-                     QStringLiteral("/tmp/protected")));
-
-    const std::vector<MainWindowSessionRestoreOrchestrationService::Step> expected = {
-        MainWindowSessionRestoreOrchestrationService::Step::AppendSkippedProtectedProjectConsole,
-        MainWindowSessionRestoreOrchestrationService::Step::RefreshTherionConfigDisplay,
-        MainWindowSessionRestoreOrchestrationService::Step::UpdateProjectActionState,
-        MainWindowSessionRestoreOrchestrationService::Step::RestoreOpenDocuments};
-
-    QVERIFY2(plan.steps == expected, "Skipped-protected session restore plan steps changed unexpectedly.");
 }
 
 void MainWindowSessionRestoreOrchestrationServiceTest::buildsNoProjectPlan()

@@ -91,6 +91,8 @@ Uvítacia karta a `Súbor -> Posledné projekty` zobrazujú najviac päť naposl
 
 Ak je projekt otvorený, uvítacia karta zobrazuje názov a cestu aktívneho projektu. Zobrazuje tiež najviac desať posledných súborov z tohto projektu; výberom súbor znovu otvoríte. Rovnaký projektový zoznam je dostupný cez `Súbor -> Posledné súbory`.
 
+Po reštarte Therion Studio sa podľa možností obnoví posledný dostupný projekt a predtým otvorené dokumenty vrátane projektov v štandardných používateľských priečinkoch, napríklad v `Dokumenty` na macOS. Ak cesta nie je dostupná, preskočí sa bez zablokovania obnovy zvyšku relácie.
+
 ### 3.3 Otvorenie dokumentov
 
 - Dvojklikom otvoríte súbor v paneli `Súbory`.

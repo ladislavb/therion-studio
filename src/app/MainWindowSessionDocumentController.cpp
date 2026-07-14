@@ -1,7 +1,6 @@
 #include "MainWindowSessionDocumentController.h"
 
 #include "MainWindowSessionDocumentService.h"
-#include "MainWindowSessionProjectService.h"
 #include "MainWindowSessionStateService.h"
 
 namespace TherionStudio
@@ -20,8 +19,7 @@ void MainWindowSessionDocumentController::restoreOpenDocuments(const ISessionSto
 
     for (const auto &entry : restoreEntries) {
         const QString &documentPath = entry.filePath;
-        if (documentPath.isEmpty()
-            || MainWindowSessionProjectService::isProtectedMacUserFolder(documentPath)) {
+        if (documentPath.isEmpty()) {
             continue;
         }
 

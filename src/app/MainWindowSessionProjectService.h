@@ -10,8 +10,7 @@ public:
     enum class ProjectRestoreStatus
     {
         NotRestored,
-        Restored,
-        SkippedProtectedFolder
+        Restored
     };
 
     struct ProjectRestoreDecision
@@ -21,6 +20,5 @@ public:
     };
 
     static ProjectRestoreDecision decideProjectRestore(const QString &lastProjectPath);
-    static bool isProtectedMacUserFolder(const QString &path);
 };
 }
