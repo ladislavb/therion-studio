@@ -61,8 +61,10 @@ void ThreeDViewerLoxCorpusPolicyTest::resolvesPartialCorpusIndependently()
         ++availableCount;
         QCOMPARE(fixture.fixture.rowName, expectedFixture.rowName);
         QCOMPARE(fixture.fixture.relativePath, expectedFixture.relativePath);
-        QVERIFY(fixture.absolutePath.startsWith(normalizedThreeDViewerLoxCorpusRoot(corpus.path())
-                                                + QDir::separator()));
+        const QString normalizedRoot =
+            QDir::fromNativeSeparators(normalizedThreeDViewerLoxCorpusRoot(corpus.path()));
+        const QString normalizedFixturePath = QDir::fromNativeSeparators(fixture.absolutePath);
+        QVERIFY(normalizedFixturePath.startsWith(normalizedRoot + QLatin1Char('/')));
     }
     QCOMPARE(availableCount, 1);
 }

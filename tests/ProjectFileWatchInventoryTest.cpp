@@ -16,6 +16,27 @@ bool writeFile(const QString &filePath, const QByteArray &contents = "x")
     return file.open(QIODevice::WriteOnly | QIODevice::Truncate)
         && file.write(contents) == contents.size();
 }
+
+QString externalLinkFileName()
+{
+#ifdef Q_OS_WIN
+    return QStringLiteral("outside-link.lnk");
+#else
+    return QStringLiteral("outside-link.th");
+#endif
+}
+
+bool createExternalLink(const QString &targetPath, const QString &linkPath)
+{
+    if (!QFile::link(targetPath, linkPath)) {
+        return false;
+    }
+    if (QFileInfo(linkPath).isSymLink()) {
+        return true;
+    }
+    QFile::remove(linkPath);
+    return false;
+}
 }
 
 class ProjectFileWatchInventoryTest final : public QObject
@@ -80,14 +101,14 @@ void ProjectFileWatchInventoryTest::excludesSymlinkedPathsOutsideProjectRoot()
     QVERIFY(projectDir.isValid());
     QVERIFY(externalDir.isValid());
     const QString externalFilePath = QDir(externalDir.path()).filePath(QStringLiteral("outside.th"));
-    const QString symlinkPath = QDir(projectDir.path()).filePath(QStringLiteral("outside-link.th"));
-    if (!QFile::link(externalFilePath, symlinkPath)) {
+    const QString symlinkPath = QDir(projectDir.path()).filePath(externalLinkFileName());
+    QVERIFY(writeFile(externalFilePath));
+    if (!createExternalLink(externalFilePath, symlinkPath)) {
         QSKIP("The platform does not permit the test symlink.");
     }
     if (!QFileInfo(symlinkPath).isSymLink()) {
         QSKIP("QFile::link did not create a symbolic link on this platform.");
     }
-    QVERIFY(writeFile(externalFilePath));
 
     const ProjectFileWatchInventory inventory =
         ProjectFileWatchInventoryCollector::collect({projectDir.path()});
@@ -104,6 +125,7 @@ void ProjectFileWatchInventoryTest::collectsDeepWideTreeWithoutSkippedOrSymlinke
     QVERIFY(projectDir.isValid());
     QVERIFY(externalDir.isValid());
     const QString rootPath = projectDir.path();
+    const QString externalLinkName = externalLinkFileName();
     constexpr int branchCount = 12;
     constexpr int levelsPerBranch = 4;
     for (int branch = 0; branch < branchCount; ++branch) {
@@ -122,10 +144,9 @@ void ProjectFileWatchInventoryTest::collectsDeepWideTreeWithoutSkippedOrSymlinke
     QVERIFY(writeFile(QDir(rootPath).filePath(QStringLiteral("build/generated.th"))));
 
     const QString externalFilePath = QDir(externalDir.path()).filePath(QStringLiteral("external.th"));
-    const QString symlinkPath = QDir(rootPath).filePath(QStringLiteral("external-link.th"));
-    if (QFile::link(externalFilePath, symlinkPath) && QFileInfo(symlinkPath).isSymLink()) {
-        QVERIFY(writeFile(externalFilePath));
-    }
+    const QString symlinkPath = QDir(rootPath).filePath(externalLinkName);
+    QVERIFY(writeFile(externalFilePath));
+    createExternalLink(externalFilePath, symlinkPath);
 
     const ProjectFileWatchInventory inventory = ProjectFileWatchInventoryCollector::collect({rootPath});
     QCOMPARE(inventory.directories.size(), 1 + branchCount * (1 + levelsPerBranch));
@@ -134,7 +155,7 @@ void ProjectFileWatchInventoryTest::collectsDeepWideTreeWithoutSkippedOrSymlinke
     for (const QString &path : inventory.directories + inventory.files) {
         QVERIFY(!path.contains(QStringLiteral("/.git/")));
         QVERIFY(!path.contains(QStringLiteral("/build/")));
-        QVERIFY(!path.endsWith(QStringLiteral("external-link.th")));
+        QVERIFY(!path.endsWith(externalLinkName));
     }
 }
 

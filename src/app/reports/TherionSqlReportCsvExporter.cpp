@@ -26,7 +26,7 @@ bool TherionSqlReportCsvFileExporter::writeTable(const QString &filePath,
                                                   QString *errorMessage) const
 {
     QFile file(filePath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    if (!file.open(QIODevice::WriteOnly)) {
         if (errorMessage != nullptr) {
             *errorMessage = file.errorString();
         }
