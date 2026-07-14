@@ -281,8 +281,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Backlog
 
-- Continue the Map runtime-ownership plan after explicit style-catalog composition: add the immutable projection handle,
-  scene generation, area dependency gate, then measured partial-refresh widening.
+- Continue the Map runtime-ownership plan by migrating XVI first, then raster and SVG, onto the explicit bounded
+  background cache before adding invalidation diagnostics and measured partial-refresh widening.
 - Optional Structure graph view for relationships such as `preview`, `revise`, `join`, `equate`, relationship status, and station-network edges.
 - Compiler-confirmed project-index comparison once lightweight indexing is no longer sufficient.
 - Broaden retained project validation cache coverage only if fresh logs show repeated scans still rebuilding unchanged

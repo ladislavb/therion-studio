@@ -229,6 +229,7 @@ set(THERION_THREE_D_VIEWER_QTEST_SUITES
 
 set(THERION_MAP_EDITOR_QTEST_SUITES
     MapEditorAreaReferenceResolverTest
+    MapEditorBackgroundAssetCacheTest
     MapEditorFreehandSimplificationTest
     MapEditorInputPolicyTest
     MapEditorObjectDeletePlannerTest
@@ -660,6 +661,8 @@ set(THERION_TEXT_EDITOR_SHARED_SOURCES
 )
 
 set(THERION_MAP_EDITOR_SOURCES
+    src/app/text_editor/map_editor/MapEditorBackgroundAssetCache.cpp
+    src/app/text_editor/map_editor/MapEditorBackgroundAssetCache.h
     src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp
     src/app/text_editor/map_editor/MapEditorAreaReferenceResolver.cpp
     src/app/text_editor/map_editor/MapEditorAreaReferenceResolver.h
@@ -1273,6 +1276,7 @@ therion_add_core_unit_test(DocumentFileEncodingTest
 qt_add_executable(MapEditorLogicQTests
     tests/MapEditorLogicQTestMain.cpp
     tests/MapEditorAreaReferenceResolverTest.cpp
+    tests/MapEditorBackgroundAssetCacheTest.cpp
     tests/MapEditorFreehandSimplificationTest.cpp
     tests/MapEditorInputPolicyTest.cpp
     tests/MapEditorObjectDeletePlannerTest.cpp
@@ -1282,6 +1286,8 @@ qt_add_executable(MapEditorLogicQTests
     tests/MapEditorUndoArbitrationServiceTest.cpp
     src/app/text_editor/map_editor/MapEditorAreaReferenceResolver.cpp
     src/app/text_editor/map_editor/MapEditorAreaReferenceResolver.h
+    src/app/text_editor/map_editor/MapEditorBackgroundAssetCache.cpp
+    src/app/text_editor/map_editor/MapEditorBackgroundAssetCache.h
     src/app/text_editor/map_editor/MapEditorInteractiveDrawLogic.cpp
     src/app/text_editor/map_editor/MapEditorInteractiveDrawLogic.h
     src/app/text_editor/map_editor/MapEditorInputPolicy.cpp

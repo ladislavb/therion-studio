@@ -194,6 +194,9 @@ Therion command, option, help, style, and symbol metadata should be data-driven.
 - Map-object style discovery and override merging shall occur at Map-editor composition or explicit test setup. The
   resulting immutable catalog is passed to the scene renderer and style preview; rendering and painting shall not load
   resources, inspect environment/settings paths, or access a process-global catalog cache.
+- Background asset caching is an application-owned, byte-bounded LRU policy. Cache keys shall include canonical source
+  identity, asset format, and decode/projection options; cached values retain revision/error state but no graphics-item,
+  inspector, or source-transaction state.
 
 ## UI Shell Reduction
 

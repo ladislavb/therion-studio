@@ -3,6 +3,7 @@
 #include <QtTest/QtTest>
 
 int runMapEditorAreaReferenceResolverTest(int argc, char **argv);
+int runMapEditorBackgroundAssetCacheTest(int argc, char **argv);
 int runMapEditorFreehandSimplificationTest(int argc, char **argv);
 int runMapEditorInputPolicyTest(int argc, char **argv);
 int runMapEditorObjectDeletePlannerTest(int argc, char **argv);
@@ -15,6 +16,7 @@ int main(int argc, char **argv)
 {
     return runSelectedQTestSuites(argc, argv, {
         {"MapEditorAreaReferenceResolverTest", runMapEditorAreaReferenceResolverTest},
+        {"MapEditorBackgroundAssetCacheTest", runMapEditorBackgroundAssetCacheTest},
         {"MapEditorFreehandSimplificationTest", runMapEditorFreehandSimplificationTest},
         {"MapEditorInputPolicyTest", runMapEditorInputPolicyTest},
         {"MapEditorObjectDeletePlannerTest", runMapEditorObjectDeletePlannerTest},
