@@ -113,3 +113,89 @@ jobs:
           -E StructureConstraintsTest
           --output-on-failure
           --timeout 300
+
+      - name: Diagnose failed unit tests
+        if: failure()
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Continue"
+          $env:QT_QPA_PLATFORM = "offscreen"
+          $buildPath = Join-Path $env:GITHUB_WORKSPACE "build"
+          $failedTestsPath = Join-Path $buildPath "Testing\Temporary\LastTestsFailed.log"
+
+          if (-not (Test-Path $failedTestsPath)) {
+            Write-Warning "CTest did not create $failedTestsPath."
+            exit 0
+          }
+
+          $failedTestNames = @(
+            Get-Content $failedTestsPath |
+              ForEach-Object {
+                if ($_ -match '^\s*\d+:(?<name>[^\s]+)\s*$') {
+                  $Matches["name"]
+                }
+              } |
+              Select-Object -Unique
+          )
+
+          if ($failedTestNames.Count -eq 0) {
+            Write-Warning "CTest failure log did not contain a test name."
+            Get-Content $failedTestsPath
+            exit 0
+          }
+
+          Push-Location $buildPath
+          try {
+            foreach ($testName in $failedTestNames) {
+              Write-Host "::group::Verbose QTest diagnostics: $testName"
+              $testFilter = '^{0}$' -f [regex]::Escape($testName)
+              $ctestListing = @(ctest -N -V -R $testFilter 2>&1)
+              $commandLine = $ctestListing |
+                Where-Object { $_ -match '^\s*\d+:\s+Test command:\s+' } |
+                Select-Object -First 1
+
+              if (-not $commandLine) {
+                Write-Warning "Could not resolve the executable for $testName."
+                $ctestListing
+                Write-Host "::endgroup::"
+                continue
+              }
+
+              $commandText = $commandLine -replace '^\s*\d+:\s+Test command:\s+', ''
+              $commandMatch = [regex]::Match(
+                $commandText,
+                '^(?:"(?<quoted>[^\"]+)"|(?<unquoted>\S+))')
+              if (-not $commandMatch.Success) {
+                Write-Warning "Could not parse the executable for $testName."
+                Write-Host $commandText
+                Write-Host "::endgroup::"
+                continue
+              }
+
+              $executable = if ($commandMatch.Groups["quoted"].Success) {
+                $commandMatch.Groups["quoted"].Value
+              } else {
+                $commandMatch.Groups["unquoted"].Value
+              }
+
+              $commandArguments = @()
+              if ($commandText -match '(?:^|\s)"?--suite"?(?:\s|$)') {
+                $commandArguments = @("--suite", $testName, "-v1")
+              }
+
+              $displayArguments = if ($commandArguments.Count -gt 0) {
+                " " + ($commandArguments -join " ")
+              } else {
+                ""
+              }
+              Write-Host "Running $executable$displayArguments"
+              & $executable @commandArguments
+              Write-Host "QTest exit code: $LASTEXITCODE"
+              Write-Host "::endgroup::"
+            }
+          } finally {
+            Pop-Location
+          }
+
+          # The preceding CTest step remains the authoritative failure status.
+          exit 0
