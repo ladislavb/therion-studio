@@ -1480,6 +1480,79 @@ int runSvgBackgroundInsertionPreservesMapiahMetadataTest()
     return 0;
 }
 
+int runInvalidSvgMetadataRestoreKeepsValidBackgroundsTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Failed to create temporary directory for invalid SVG restore test.")) {
+        return 1;
+    }
+
+    const QString rasterPath = tempDir.filePath(QStringLiteral("valid.png"));
+    QImage raster(24, 12, QImage::Format_ARGB32);
+    raster.fill(QColor(60, 100, 140, 255));
+    if (!expect(raster.save(rasterPath), "Failed to create valid raster background for invalid SVG restore test.")) {
+        return 1;
+    }
+
+    const QString invalidSvgPath = tempDir.filePath(QStringLiteral("invalid.svg"));
+    if (!expect(writeTextFile(invalidSvgPath, QByteArrayLiteral("<svg><path>")),
+                "Failed to create invalid SVG background fixture.")) {
+        return 1;
+    }
+
+    const QString filePath = tempDir.filePath(QStringLiteral("invalid_svg_restore.th2"));
+    const QString th2Contents = QStringLiteral(
+        "encoding utf-8\n"
+        "##XTHERION## xth_me_area_adjust 0 -20 40 0\n"
+        "##XTHERION## xth_me_area_zoom_to 100\n"
+        "##MAPIAH## image_insert_v1 {format=svg;filename=invalid.svg;xx=0;yy=0;xScale=1;yScale=1;rotationCenterDx=0;rotationCenterDy=0;rotationDeg=0;pivotSet=false;intrinsicWidth=24;intrinsicHeight=12;sourceViewBoxLeft=0;sourceViewBoxTop=0;sourceViewBoxWidth=24;sourceViewBoxHeight=12}\n"
+        "##XTHERION## xth_me_image_insert {0 1 1} {0 {}} valid.png 0 {}\n"
+        "\n"
+        "scrap invalid-svg-restore -projection plan\n"
+        "point 0 0 station -name A\n"
+        "endscrap\n");
+    if (!expect(writeTextFile(filePath, th2Contents.toUtf8()),
+                "Failed to create TH2 file for invalid SVG restore test.")) {
+        return 1;
+    }
+
+    QtFileSystem fileSystem;
+    FakeSessionStore sessionStore;
+    QMainWindow hostWindow;
+    hostWindow.resize(960, 720);
+    auto *central = new QWidget(&hostWindow);
+    auto *layout = new QVBoxLayout(central);
+    layout->setContentsMargins(0, 0, 0, 0);
+    auto *mapTab = new MapEditorTab(fileSystem, sessionStore, CommandCatalogStore(), central);
+    layout->addWidget(mapTab);
+    hostWindow.setCentralWidget(central);
+    hostWindow.show();
+    pumpEvents();
+
+    QString errorMessage;
+    if (!expect(mapTab->loadFile(filePath, &errorMessage),
+                "MapEditorTab failed to load TH2 file for invalid SVG restore test.")) {
+        if (!errorMessage.isEmpty()) {
+            std::cerr << errorMessage.toStdString() << '\n';
+        }
+        return 1;
+    }
+    if (!expect(waitForSingleRasterLayerReady(mapTab, QSize(24, 12)),
+                "Valid raster background should still load when sibling SVG is invalid.")) {
+        return 1;
+    }
+    const QString statusHint = mapTab->statusHintText();
+    const QByteArray statusFailure = QStringLiteral("Invalid SVG restore should report the affected file in the map status. Actual: %1")
+                                       .arg(statusHint)
+                                       .toUtf8();
+    if (!expect(statusHint.contains(QStringLiteral("SVG background"))
+                    && statusHint.contains(QStringLiteral("invalid.svg")),
+                statusFailure.constData())) {
+        return 1;
+    }
+    return 0;
+}
+
 int runLegacyMultiRasterAreaAdjustPlacementTest()
 {
     QTemporaryDir tempDir;
@@ -2302,6 +2375,9 @@ int main(int argc, char **argv)
         return rc;
     }
     if (const int rc = runSvgBackgroundInsertionPreservesMapiahMetadataTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runInvalidSvgMetadataRestoreKeepsValidBackgroundsTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runLegacyMultiRasterAreaAdjustPlacementTest(); rc != 0) {

@@ -259,8 +259,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ### SVG Backgrounds
 
 - Follow `plans/SVG_BACKGROUND_PLAN.md` for remaining SVG background work.
-- Next implementation slice should cover invalid SVG restore reporting while continuing to load valid sibling layers;
-  Gamma and Fit With Background are verified baseline behavior.
+- Invalid or missing restored SVG layers now report their filename in the Map status while valid sibling background
+  layers continue loading; Gamma and Fit With Background are verified baseline behavior.
 - Preserve Mapiah `format=svg` semantics and existing background source transaction paths.
 - Keep general background cache/provider work in `plans/MAP_RUNTIME_OWNERSHIP_PLAN.md`.
 

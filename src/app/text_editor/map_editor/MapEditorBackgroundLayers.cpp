@@ -32,6 +32,7 @@
 #include <QRadioButton>
 #include <QRegularExpression>
 #include <QSet>
+#include <QStringList>
 #include <QSpinBox>
 #include <QTabWidget>
 #include <QTimer>
@@ -2934,13 +2935,20 @@ void MapEditorTab::syncAutoBackgroundLayersFromCurrentDocument()
     }
 
     int addedCount = 0;
+    QStringList failedSvgFileNames;
     for (const XtherionBackgroundReference &reference : references) {
         if (!isSupportedBackgroundReference(reference)) {
             continue;
         }
         const QString referencePath = QFileInfo(reference.absolutePath).absoluteFilePath();
         const QString referencePathKey = normalizedPathKey(referencePath);
-        if (referencePath.isEmpty() || !QFileInfo::exists(referencePath) || existingLayerPaths.contains(referencePathKey)) {
+        if (referencePath.isEmpty() || existingLayerPaths.contains(referencePathKey)) {
+            continue;
+        }
+        if (!QFileInfo::exists(referencePath)) {
+            if (reference.layerFormat == TherionBackgroundLayerFormat::Svg) {
+                failedSvgFileNames.append(QFileInfo(referencePath).fileName());
+            }
             continue;
         }
 
@@ -2991,6 +2999,7 @@ void MapEditorTab::syncAutoBackgroundLayersFromCurrentDocument()
                                                   areaAdjust,
                                                   svgModelBounds,
                                                   previewBounds)) {
+                failedSvgFileNames.append(QFileInfo(referencePath).fileName());
                 continue;
             }
             QGraphicsPixmapItem *backgroundItem = backgroundImageItems_.last();
@@ -3053,6 +3062,16 @@ void MapEditorTab::syncAutoBackgroundLayersFromCurrentDocument()
     if (addedCount > 0) {
         toolbarStatusNote_ = tr("Auto-loaded %1 background layer(s) from xth_me_image_insert metadata.").arg(addedCount);
         saveBackgroundLayersToSession();
+    }
+    if (!failedSvgFileNames.isEmpty()) {
+        const QString fileNames = failedSvgFileNames.join(QStringLiteral(", "));
+        toolbarStatusNote_ = addedCount > 0
+            ? tr("Auto-loaded %1 background layer(s), but could not load SVG background: %2.")
+                  .arg(addedCount)
+                  .arg(fileNames)
+            : tr("Could not load SVG background: %1.").arg(fileNames);
+    }
+    if (addedCount > 0 || !failedSvgFileNames.isEmpty()) {
         refreshToolbarSummary();
     }
 }
