@@ -81,7 +81,8 @@ bool MainWindow::isDocumentPathInsideOpenProject(const QString &filePath) const
 
 void MainWindow::handleDocumentTextChanged(QWidget *documentWidget)
 {
-    if (qobject_cast<TherionStudio::MapEditorTab *>(documentWidget) != nullptr) {
+    const bool isMapEditorDocument = qobject_cast<TherionStudio::MapEditorTab *>(documentWidget) != nullptr;
+    if (isMapEditorDocument) {
         QPointer<QWidget> guardedDocument(documentWidget);
         QTimer::singleShot(0, this, [this, guardedDocument]() {
             if (guardedDocument == nullptr) {
@@ -95,33 +96,27 @@ void MainWindow::handleDocumentTextChanged(QWidget *documentWidget)
                 refreshWorkspaceModeSwitcher();
             }
         });
-        return;
-    }
-
-    if (!projectRootPath_.isEmpty()) {
+    } else if (!projectRootPath_.isEmpty()) {
         requestStructureSidebarRebuild();
     }
-    const bool canRequestLiveProjectValidation =
-        qobject_cast<TherionStudio::MapEditorTab *>(documentWidget) == nullptr;
+
     const QString documentPath = documentPathForWidget(documentWidget);
     const bool insideOpenProject = isDocumentPathInsideOpenProject(documentPath);
     const bool dirtyDocument = documentIsDirtyForWidget(documentWidget);
-    if (canRequestLiveProjectValidation && insideOpenProject) {
+    if (insideOpenProject) {
         if (TherionStudio::diagnosticLoggingEnabled()) {
             qInfo().noquote()
                 << QStringLiteral("project-validation-request-origin trigger=document-changed action=%1 path=\"%2\" dirty=%3 current=%4 tabs=%5")
-                       .arg(dirtyDocument ? QStringLiteral("requested") : QStringLiteral("skipped-clean"))
+                       .arg(QStringLiteral("requested"))
                        .arg(QDir::toNativeSeparators(documentPath))
                        .arg(dirtyDocument ? QStringLiteral("true") : QStringLiteral("false"))
                        .arg(currentDocumentWidget() == documentWidget ? QStringLiteral("true") : QStringLiteral("false"))
                        .arg(editorTabs_ != nullptr ? editorTabs_->count() : 0);
         }
-        if (dirtyDocument) {
-            requestProjectValidation(TherionStudio::ProjectValidationController::Trigger::DocumentChanged,
-                                     false);
-        }
+        requestProjectValidation(TherionStudio::ProjectValidationController::Trigger::DocumentChanged,
+                                 false);
     }
-    if (currentDocumentWidget() == documentWidget) {
+    if (!isMapEditorDocument && currentDocumentWidget() == documentWidget) {
         rebuildMapObjectsTree();
         refreshWorkspaceModeSwitcher();
     }

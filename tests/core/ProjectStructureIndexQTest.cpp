@@ -42,6 +42,7 @@ private slots:
                                   "    data normal from to length compass clino\n"
                                   "    pre1suf pre2suf 1 0 0\n"
                                   "    pre3 pre4 1 0 0\n"
+                                  "    1 1 1 0 0\n"
                                   "  endcenterline\n"
                                   "endsurvey cave\n")));
         QVERIFY(writeTextFile(projectDir.filePath(QStringLiteral("maps/map.th2")),
@@ -53,6 +54,9 @@ private slots:
                                   "endscrap\n"
                                   "scrap s2 -station-names pre []\n"
                                   "point 3 3 station -name 3\n"
+                                  "endscrap\n"
+                                  "scrap s3 -station-names \"\" @cave\n"
+                                  "point 4 4 station -name 1@cave\n"
                                   "endscrap\n")));
 
         QString errorMessage;
@@ -71,6 +75,7 @@ private slots:
         QVERIFY(!unknownStationReferences.contains(QStringLiteral("2")));
         QVERIFY(!unknownStationReferences.contains(QStringLiteral("3")));
         QCOMPARE(unknownStationReferences.count(QStringLiteral("missing")), 1);
+        QCOMPARE(unknownStationReferences.count(QStringLiteral("1@cave")), 1);
     }
 };
 

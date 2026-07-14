@@ -42,6 +42,19 @@ enum class ProjectIndexDiagnosticKind
     DuplicateObjectId,
 };
 
+enum class ProjectStationReferenceResolutionState
+{
+    Missing,
+    Unique,
+    Ambiguous,
+};
+
+struct ProjectStationReferenceResolution
+{
+    ProjectStationReferenceResolutionState state = ProjectStationReferenceResolutionState::Missing;
+    int candidateCount = 0;
+};
+
 struct ProjectStructureEntry
 {
     ProjectStructureEntryKind kind = ProjectStructureEntryKind::Unknown;
@@ -85,6 +98,7 @@ struct ProjectIndexSnapshot
     QHash<QString, QSet<QString>> mapScrapReferencesByMapKey;
     QHash<QString, QSet<QString>> mapChildReferencesByMapKey;
     QHash<QString, QSet<QString>> mapPreviewReferencesByMapKey;
+    QHash<QString, QSet<QString>> stationReferenceCandidateKeysByLookupKey;
     QVector<ProjectIndexDiagnostic> diagnostics;
     ProjectStructureIndexScanStats scanStats;
     bool canceled = false;
@@ -120,6 +134,10 @@ public:
                                                  QString *errorMessage = nullptr);
     static ProjectIndexSnapshot scanProjectIndex(const ProjectStructureIndexSourceSet &sourceSet,
                                                  QString *errorMessage = nullptr);
+    static ProjectStationReferenceResolution resolveStationReference(
+        const ProjectIndexSnapshot &snapshot,
+        const QString &referenceName,
+        const QString &ownerNamespacePath = {});
     static QVector<ProjectStructureEntry> scanProject(const QString &projectRootPath, QString *errorMessage = nullptr);
     static QVector<ProjectStructureEntry> scanProject(const QString &projectRootPath,
                                                       const QHash<QString, QString> &inMemoryFileContentsByPath,

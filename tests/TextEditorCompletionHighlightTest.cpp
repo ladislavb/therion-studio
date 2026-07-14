@@ -294,6 +294,23 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    editor->setPlainText(QStringLiteral("point 0 0 station -name bad-name\n"));
+    TherionSourceDiagnostic externalDiagnostic;
+    externalDiagnostic.severity = TherionSourceDiagnosticSeverity::Error;
+    externalDiagnostic.code = QStringLiteral("unknown-station-reference");
+    externalDiagnostic.lineNumber = 1;
+    externalDiagnostic.columnNumber = 25;
+    externalDiagnostic.columnLength = QStringLiteral("bad-name").size();
+    externalDiagnostic.currentText = QStringLiteral("point 0 0 station -name bad-name");
+    tab.setProjectValidationDiagnostics({externalDiagnostic});
+    pumpEvents();
+    const QTextBlock externalDiagnosticLine = editor->document()->findBlockByLineNumber(0);
+    if (!expect(tokenHasWaveUnderline(externalDiagnosticLine, QStringLiteral("bad-name")),
+                "Project validation station-reference diagnostics should underline the invalid station name.")) {
+        return 1;
+    }
+    tab.setProjectValidationDiagnostics({});
+
     {
         editor->setPlainText(QStringLiteral("\n"));
         QTextBlock firstLine = editor->document()->findBlockByLineNumber(0);

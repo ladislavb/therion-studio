@@ -137,6 +137,8 @@ set(THERION_CORE_SOURCES
     src/core/TherionSourceValidator.h
     src/core/ProjectStructureIndex.cpp
     src/core/ProjectStructureIndex.h
+    src/core/TherionStationNameRules.cpp
+    src/core/TherionStationNameRules.h
     src/core/TherionDocumentParser.cpp
     src/core/TherionDocumentParser.h
     src/core/SessionStore.cpp
@@ -204,6 +206,7 @@ set(THERION_MAIN_WINDOW_QTEST_SUITES
     ProjectFileWatchInventoryServiceTest
     ProjectFileWatchDeltaTest
     ProjectOutputsScannerTest
+    ProjectValidationScannerQTest
     ProjectStructureScannerTest
     MainWindowSessionDocumentServiceTest
     MainWindowSessionProjectServiceTest
@@ -1458,6 +1461,7 @@ qt_add_executable(MainWindowServiceQTests
     tests/ProjectFileWatchInventoryServiceTest.cpp
     tests/ProjectFileWatchDeltaTest.cpp
     tests/ProjectOutputsScannerTest.cpp
+    tests/ProjectValidationScannerQTest.cpp
     tests/ProjectStructureScannerTest.cpp
     tests/MainWindowSessionDocumentServiceTest.cpp
     tests/MainWindowSessionProjectServiceTest.cpp

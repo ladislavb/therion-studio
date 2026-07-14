@@ -23,6 +23,7 @@ int runProjectFileWatchInventoryTest(int argc, char **argv);
 int runProjectFileWatchInventoryServiceTest(int argc, char **argv);
 int runProjectFileWatchDeltaTest(int argc, char **argv);
 int runProjectOutputsScannerTest(int argc, char **argv);
+int runProjectValidationScannerQTest(int argc, char **argv);
 int runProjectStructureScannerTest(int argc, char **argv);
 
 int main(int argc, char **argv)
@@ -41,6 +42,7 @@ int main(int argc, char **argv)
         {"ProjectFileWatchInventoryServiceTest", runProjectFileWatchInventoryServiceTest},
         {"ProjectFileWatchDeltaTest", runProjectFileWatchDeltaTest},
         {"ProjectOutputsScannerTest", runProjectOutputsScannerTest},
+        {"ProjectValidationScannerQTest", runProjectValidationScannerQTest},
         {"ProjectStructureScannerTest", runProjectStructureScannerTest},
         {"MainWindowSessionDocumentServiceTest", runMainWindowSessionDocumentServiceTest},
         {"MainWindowSessionProjectServiceTest", runMainWindowSessionProjectServiceTest},

@@ -7,6 +7,7 @@
 #include "../core/TherionFileTypes.h"
 #include "../core/TherionSourceLogicalDocument.h"
 #include "../core/TherionSourceReferenceResolver.h"
+#include "../core/TherionStationNameRules.h"
 #include "../platform/DiagnosticLogging.h"
 
 #include <QDir>
@@ -325,6 +326,7 @@ ProjectStructureIndexSourceSet projectStructureIndexSourceSetWithLogicalDocument
 
 void appendUnindexedTh2StationNameFindings(ProjectValidationScanner::Result *result,
                                            const ProjectSourceDocument &document,
+                                           const ProjectIndexSnapshot &projectIndexSnapshot,
                                            ProjectSourceProjectionCache &projectionCache)
 {
     if (result == nullptr
@@ -335,25 +337,51 @@ void appendUnindexedTh2StationNameFindings(ProjectValidationScanner::Result *res
 
     const TherionSourceLogicalDocument &logicalDocument =
         projectionCache.logicalDocument(document);
+    const QHash<int, TherionStationNameTransform> scrapStationNameTransforms =
+        therionScrapStationNameTransformsByStartLine(logicalDocument);
     for (const TherionSourceLogicalCommand &command : logicalDocument.commands()) {
         const TherionSourceLogicalArgumentRange *nameRange = pointStationNameRange(command);
         if (nameRange == nullptr) {
             continue;
         }
         const QString referenceName = nameRange->text.trimmed();
-        if (referenceName.contains(QLatin1Char('@'))) {
+        const std::optional<TherionStationNameTransform> scrapStationNameTransform =
+            therionActiveScrapStationNameTransform(command, scrapStationNameTransforms);
+        const QString effectiveReferenceName = scrapStationNameTransform.has_value()
+            ? therionStationReferenceWithScrapNameTransform(referenceName,
+                                                             scrapStationNameTransform.value())
+            : referenceName;
+
+        const bool hasNamespace = effectiveReferenceName.contains(QLatin1Char('@'));
+        const ProjectStationReferenceResolution resolution =
+            hasNamespace
+                ? ProjectStructureIndex::resolveStationReference(projectIndexSnapshot,
+                                                                  effectiveReferenceName)
+                : ProjectStationReferenceResolution{};
+        if (resolution.state == ProjectStationReferenceResolutionState::Unique) {
             continue;
         }
 
         TherionSourceDiagnostic diagnostic;
-        diagnostic.code = QStringLiteral("unknown-station-reference");
         diagnostic.severity = TherionSourceDiagnosticSeverity::Error;
         diagnostic.lineNumber = nameRange->physicalRange.lineNumber;
         diagnostic.columnNumber = qMax(1, nameRange->physicalRange.columnNumber);
         diagnostic.columnLength = qMax(1, nameRange->physicalRange.columnLength);
-        diagnostic.title = QObject::tr("Unknown station reference");
-        diagnostic.message = QObject::tr("Station reference `%1` cannot be resolved because this file is not included in the project source graph.")
-                                 .arg(referenceName);
+        if (resolution.state == ProjectStationReferenceResolutionState::Ambiguous) {
+            diagnostic.code = QStringLiteral("ambiguous-station-reference");
+            diagnostic.title = QObject::tr("Ambiguous station reference");
+            diagnostic.message = QObject::tr("Station reference `%1` matches %2 stations in the project index.")
+                                     .arg(effectiveReferenceName)
+                                     .arg(resolution.candidateCount);
+        } else {
+            diagnostic.code = QStringLiteral("unknown-station-reference");
+            diagnostic.title = QObject::tr("Unknown station reference");
+            diagnostic.message = hasNamespace
+                ? QObject::tr("Station reference `%1` has no matching station in the project index.")
+                      .arg(effectiveReferenceName)
+                : QObject::tr("Station reference `%1` cannot be resolved because this file is not included in the project source graph.")
+                      .arg(referenceName);
+        }
         diagnostic.currentText = nameRange->physicalRange.lineText;
 
         if (!containsEquivalentFinding(result->findings, document.normalizedPath, diagnostic)) {
@@ -428,6 +456,7 @@ void appendProjectIndexFindings(ProjectValidationScanner::Result *result,
         }
         appendUnindexedTh2StationNameFindings(result,
                                               documentIt.value(),
+                                              snapshot,
                                               projectionCache);
         if (result->limitReached) {
             return;

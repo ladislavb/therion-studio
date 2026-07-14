@@ -807,9 +807,6 @@ void MainWindow::updateOpenEditorProjectValidationDiagnostics()
         }
 
         if (auto *mapTab = qobject_cast<TherionStudio::MapEditorTab *>(widget)) {
-            if (mapTab->workspaceMode() != TherionStudio::MapEditorTab::WorkspaceMode::Raw) {
-                return;
-            }
             mapTab->setProjectValidationDiagnostics(diagnosticsByPath.value(normalizedValidationPath(mapTab->filePath())));
         }
     };

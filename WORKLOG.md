@@ -59,8 +59,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Tester feedback says application launch is slow while TH2 rendering and compilation feel fast; startup timing checkpoints
   are now emitted into troubleshooting logs so the next report can identify whether startup, bootstrap, session restore,
   document restore, project open, or first event-loop readiness is the bottleneck.
-- Clean synthetic text-change notifications during session restore are logged as skipped and no longer request duplicate
-  `DocumentChanged` project validation; dirty project text edits still trigger live validation.
+- Every in-project source-text mutation, including undo back to the saved text, requests a `DocumentChanged` project
+  validation so stale diagnostics cannot remain after the document becomes clean; the controller still honors the
+  automatic-validation setting.
 - Troubleshooting logging no longer writes `THERION_STUDIO_ENABLE_LOG` when enabled from the UI preference; internal
   diagnostic timing helpers follow the active diagnostic handler so the 24-hour preference expiry is honored on restart,
   while explicit environment overrides remain available for developer launches.
@@ -122,7 +123,12 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Use `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md` only for future validation/cache follow-ups; Structure and
   Validation already share snapshot-compatible collection/index input paths and explicit cache ownership.
 - Project station-reference validation now applies a scrap's `-station-names <prefix> <suffix>` transform before
-  resolving station points against centerline data, with focused QTest coverage for valid and missing references.
+  resolving the complete station token against centerline data in both indexed and unindexed TH2 validation paths,
+  including quoted empty prefix/suffix values; unindexed qualified references are resolved against the cached project
+  station index, including relative namespaces; map-editor project diagnostics are retained while Visual mode is
+  active so they become visible when the affected document is opened in Raw mode, and map-editor changes (including
+  undo back to a clean document) participate in debounced live project validation from the in-memory source snapshot,
+  with focused QTest coverage for valid, missing, and invalid-namespace references.
 - `ProjectSourceProjectionCache` now provides the first focused per-run source/logical projection cache for project source
   snapshots with observable reuse stats.
 - `ProjectValidationScanner` local per-file validation now uses `ProjectSourceProjectionCache` for source and
