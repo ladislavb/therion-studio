@@ -112,10 +112,11 @@ void ProjectFileWatchInventoryTest::excludesSymlinkedPathsOutsideProjectRoot()
 
     const ProjectFileWatchInventory inventory =
         ProjectFileWatchInventoryCollector::collect({projectDir.path()});
+    const QString normalizedSymlinkPath =
+        QDir(inventory.projectRootPath).filePath(externalLinkFileName());
     QVERIFY(!inventory.files.contains(QFileInfo(externalFilePath).canonicalFilePath()));
-    QVERIFY(!inventory.files.contains(symlinkPath));
-    QVERIFY(inventory.skippedPaths.contains(
-        QDir(inventory.projectRootPath).filePath(QStringLiteral("outside-link.th"))));
+    QVERIFY(!inventory.files.contains(normalizedSymlinkPath));
+    QVERIFY(inventory.skippedPaths.contains(normalizedSymlinkPath));
 }
 
 void ProjectFileWatchInventoryTest::collectsDeepWideTreeWithoutSkippedOrSymlinkedPaths()
