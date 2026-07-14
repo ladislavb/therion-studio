@@ -9,6 +9,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
    directory mutations, and cross-platform watcher behavior. SQL S1-S5 and watcher W1-W3 are complete.
 3. Real-project smoke testing for Raw, Blocks, Map, Validation, Structure, and Compiler navigation after DOM closure.
 4. Plan-driven follow-ups for map partial refresh, validation/cache tuning, GUI cleanup, SVG backgrounds, reporting, LiDAR design, and 3D viewer refinement, including palette-regression coverage for inspector controls.
+5. Keep Windows CI failures diagnosable by emitting verbose output from the affected aggregate QTest executables after a unit-test failure.
 
 ## Active Work
 

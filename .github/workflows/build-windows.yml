@@ -113,3 +113,11 @@ jobs:
           -E StructureConstraintsTest
           --output-on-failure
           --timeout 300
+
+      - name: Print failing aggregate test diagnostics
+        if: failure()
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Continue"
+          & "$env:GITHUB_WORKSPACE\build\TherionCoreQTests.exe" -v2
+          & "$env:GITHUB_WORKSPACE\build\MainWindowServiceQTests.exe" -v2
