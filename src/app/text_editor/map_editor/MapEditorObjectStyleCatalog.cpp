@@ -983,20 +983,6 @@ bool applySplitStyleDirectory(MapEditorObjectStyleCatalog *catalog, const QStrin
     return loaded;
 }
 
-bool applyUserStyleOverrides(MapEditorObjectStyleCatalog *catalog)
-{
-    return applySplitStyleDirectory(catalog, mapEditorUserObjectStylesDirectory());
-}
-
-MapEditorObjectStyleCatalog loadMapEditorObjectStyleCatalogFromResource()
-{
-    MapEditorObjectStyleCatalog catalog;
-
-    catalog.loadedFromResource =
-        applySplitStyleDirectory(&catalog, QStringLiteral(":/resources/map_object_styles"));
-    catalog.loadedUserOverrides = applyUserStyleOverrides(&catalog);
-    return catalog;
-}
 } // namespace
 
 QString mapEditorUserObjectStylesDirectory()
@@ -1014,10 +1000,18 @@ QString mapEditorUserObjectStylesDirectory()
         : QDir(appDataLocation).filePath(QStringLiteral("map_object_styles"));
 }
 
-MapEditorObjectStyleCatalog mapEditorObjectStyleCatalog()
+MapEditorObjectStyleCatalog loadMapEditorObjectStyleCatalog(const QString &userOverrideDirectory)
 {
-    static const MapEditorObjectStyleCatalog catalog = loadMapEditorObjectStyleCatalogFromResource();
+    MapEditorObjectStyleCatalog catalog;
+    catalog.loadedFromResource =
+        applySplitStyleDirectory(&catalog, QStringLiteral(":/resources/map_object_styles"));
+    catalog.loadedUserOverrides = applySplitStyleDirectory(&catalog, userOverrideDirectory);
     return catalog;
+}
+
+MapEditorObjectStyleCatalog loadDefaultMapEditorObjectStyleCatalog()
+{
+    return loadMapEditorObjectStyleCatalog(mapEditorUserObjectStylesDirectory());
 }
 
 MapEditorResolvedPointStyle resolveMapEditorPointStyle(const MapEditorObjectStyleCatalog &catalog,

@@ -173,7 +173,7 @@ void MapEditorTab::buildInspectorPanelUi()
     objectDetailsUiState_.objectQuickRecentLabel_ = new QLabel(tr("Recent"), objectDetailsUiState_.objectQuickFieldsEditor_);
     objectDetailsUiState_.objectQuickTargetScrapLabel_ = new QLabel(tr("Insert into"), objectDetailsUiState_.objectQuickFieldsEditor_);
     objectDetailsUiState_.objectStylePreviewLabel_ = new QLabel(tr("Preview"), objectDetailsUiState_.objectQuickFieldsEditor_);
-    objectDetailsUiState_.objectStylePreview_ = new MapEditorStylePreviewWidget(objectDetailsUiState_.objectQuickFieldsEditor_);
+    objectDetailsUiState_.objectStylePreview_ = new MapEditorStylePreviewWidget(objectStyleCatalog_, objectDetailsUiState_.objectQuickFieldsEditor_);
     objectDetailsUiState_.objectStylePreview_->setObjectName(QStringLiteral("mapObjectStylePreview"));
     objectDetailsUiState_.objectStylePreview_->clearStyleSelection();
     connect(objectDetailsUiState_.objectQuickIdentifierEdit_, &QLineEdit::editingFinished, this, &MapEditorTab::applyObjectQuickFieldEdits);

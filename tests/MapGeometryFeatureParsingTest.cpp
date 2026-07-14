@@ -1,4 +1,5 @@
 #include "../src/app/text_editor/map_editor/MapEditorSceneSupport.h"
+#include "../src/app/text_editor/map_editor/MapEditorObjectStyleCatalog.h"
 #include "../src/app/text_editor/map_editor/MapEditorSmartAreaPlanner.h"
 #include "../src/core/Th2GeometryProjection.h"
 #include "../src/core/TherionDocumentEditor.h"
@@ -24,6 +25,12 @@ bool expect(bool condition, const char *message)
         std::cerr << message << '\n';
     }
     return condition;
+}
+
+const MapEditorObjectStyleCatalog &testStyleCatalog()
+{
+    static const MapEditorObjectStyleCatalog catalog = loadMapEditorObjectStyleCatalog(QString());
+    return catalog;
 }
 
 bool expectMoveSetsEqual(const QVector<MapLineSecondaryMove> &expected,
@@ -428,7 +435,8 @@ int runLinePointSubtypeSegmentParsingTest()
                             {},
                             {},
                             {},
-                            {});
+                            {},
+                            testStyleCatalog());
 
     int renderedPathItems = 0;
     for (QGraphicsItem *item : scene.items()) {
@@ -488,7 +496,8 @@ int runLinePointSubtypeBlocksGuideRenderingTest()
                             {},
                             {},
                             {},
-                            {});
+                            {},
+                            testStyleCatalog());
 
     bool foundBlocksSegmentGuide = false;
     for (QGraphicsItem *item : scene.items()) {
@@ -570,7 +579,8 @@ int runLineGeometryItemGroupRemovalTest()
                             {},
                             {},
                             {},
-                            {});
+                            {},
+                            testStyleCatalog());
 
     auto *nonGeometryItem = new QGraphicsRectItem(QRectF(0, 0, 1, 1));
     nonGeometryItem->setData(kMapSceneLineNumberRole, targetLine->lineNumber);
@@ -650,7 +660,8 @@ int runLineGeometryItemGroupRemovalTest()
                                              {},
                                              {},
                                              {},
-                                             {});
+                                             {},
+                                             testStyleCatalog());
     if (!expect(renderResult.addedItems == targetGeometryBefore,
                 "Expected single-feature render to restore every target line geometry item.")) {
         return 1;
@@ -724,7 +735,8 @@ int runLinePointSubtypeBlocksPreviewRefreshTest()
                             {},
                             {},
                             {},
-                            {});
+                            {},
+                            testStyleCatalog());
 
     QGraphicsItem *anchorItem = nullptr;
     QGraphicsPathItem *blocksGuideItem = nullptr;
@@ -800,7 +812,8 @@ int runLineLabelPreviewRefreshTest()
                             {},
                             {},
                             {},
-                            {});
+                            {},
+                            testStyleCatalog());
 
     QGraphicsItem *anchorItem = nullptr;
     QGraphicsItem *lineLabelItem = nullptr;
@@ -1251,7 +1264,8 @@ int runTwoAnchorClosedBezierRenderingTest()
                             {},
                             {},
                             {},
-                            {});
+                            {},
+                            testStyleCatalog());
 
     auto *pathItem = dynamic_cast<QGraphicsPathItem *>(mapItemsByLine.value(line->lineNumber, nullptr));
     if (!expect(pathItem != nullptr, "Expected rendered closed line item to be available by source line.")) {
@@ -1352,7 +1366,8 @@ int runExplicitClosedBezierRowRenderingTest()
                             {},
                             {},
                             {},
-                            {});
+                            {},
+                            testStyleCatalog());
 
     auto *pathItem = dynamic_cast<QGraphicsPathItem *>(mapItemsByLine.value(line->lineNumber, nullptr));
     if (!expect(pathItem != nullptr, "Expected rendered explicit closed Bezier line item to be available.")) {
@@ -2243,7 +2258,8 @@ int runCurvedIntersectingReferencedAreaParsingTest()
                             {},
                             {},
                             {},
-                            {});
+                            {},
+                            testStyleCatalog());
 
     auto *fillItem = dynamic_cast<QGraphicsPathItem *>(mapItemsByLine.value(area->lineNumber, nullptr));
     if (!expect(fillItem != nullptr, "Expected rendered curved referenced area fill item to be available.")) {

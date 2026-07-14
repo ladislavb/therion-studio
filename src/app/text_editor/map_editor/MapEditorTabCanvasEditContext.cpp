@@ -98,6 +98,7 @@ MapEditorCanvasEditContext MapEditorTab::canvasEditContext()
         .selectedObjectKind = &objectSelectionState_.selectedObjectKind_,
         .selectedObjectCoordinate = &objectSelectionState_.selectedObjectCoordinate_,
         .nextDraftGeometryId = &nextDraftGeometryId_,
+        .styleCatalog = &objectStyleCatalog_,
         .translate = [this](const char *text) {
             return tr(text);
         },

@@ -2,6 +2,7 @@
 #include "../src/app/text_editor/map_editor/MapEditorSceneInternals.h"
 #include "../src/app/text_editor/map_editor/MapEditorSceneRefreshController.h"
 #include "../src/app/text_editor/map_editor/MapEditorSceneSupport.h"
+#include "../src/app/text_editor/map_editor/MapEditorObjectStyleCatalog.h"
 #include "../src/app/text_editor/map_editor/MapEditorSelectionController.h"
 #include "../src/app/text_editor/TextEditorTab.h"
 #include "../src/core/CommandCatalogStore.h"
@@ -1378,6 +1379,7 @@ bool runSceneRefreshSelectionSourceSmoke()
     bool recreateControlDuringRefresh = true;
     MapEditorOrientationApplicabilityByCommand orientationApplicability;
 
+    const MapEditorObjectStyleCatalog styleCatalog = loadMapEditorObjectStyleCatalog(QString());
     MapEditorSceneRefreshContext context{
         .sceneParent = &sceneParent,
         .selectionConnectionContext = &sceneParent,
@@ -1390,6 +1392,7 @@ bool runSceneRefreshSelectionSourceSmoke()
         .autoFitEnabled = &autoFitEnabled,
         .fitBackgroundRequested = &fitBackgroundRequested,
         .orientationApplicabilityByCommand = &orientationApplicability,
+        .styleCatalog = &styleCatalog,
         .documentText = []() {
             return QStringLiteral("encoding utf-8\n");
         },

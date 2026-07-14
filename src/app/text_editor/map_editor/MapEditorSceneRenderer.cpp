@@ -29,6 +29,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <utility>
 
 namespace TherionStudio {
@@ -1884,7 +1885,8 @@ MapGeometryItemGroupRenderResult renderMapGeometryItemGroupForFeature(
     const std::function<void(int, const QPointF &, const QPointF &)> &recordPointGeometryMove,
     const std::function<void(int, const QString &, int, const QPointF &, const QPointF &)> &recordLineAreaVertexMove,
     const std::function<void(int, qreal)> &recordPointOrientationHandleChange,
-    const std::function<void(int, int, qreal, qreal)> &recordLinePointLeftHandleChange)
+    const std::function<void(int, int, qreal, qreal)> &recordLinePointLeftHandleChange,
+    const MapEditorObjectStyleCatalog &styleCatalog)
 {
     MapGeometryItemGroupRenderResult result;
     if (scene == nullptr || feature.lineNumber <= 0) {
@@ -1908,7 +1910,8 @@ MapGeometryItemGroupRenderResult renderMapGeometryItemGroupForFeature(
                             recordPointGeometryMove,
                             recordLineAreaVertexMove,
                             recordPointOrientationHandleChange,
-                            recordLinePointLeftHandleChange);
+                            recordLinePointLeftHandleChange,
+                            styleCatalog);
 
     auto isGeometryItemForFeature = [&feature](const QGraphicsItem *item) {
         return item != nullptr
@@ -2113,7 +2116,8 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                              const std::function<void(int, const QPointF &, const QPointF &)> &recordPointGeometryMove,
                              const std::function<void(int, const QString &, int, const QPointF &, const QPointF &)> &recordLineAreaVertexMove,
                              const std::function<void(int, qreal)> &recordPointOrientationHandleChange,
-                             const std::function<void(int, int, qreal, qreal)> &recordLinePointLeftHandleChange)
+                             const std::function<void(int, int, qreal, qreal)> &recordLinePointLeftHandleChange,
+                             const MapEditorObjectStyleCatalog &styleCatalog)
 {
     Q_UNUSED(documentPath);
     Q_UNUSED(recordCardMove);
@@ -2163,7 +2167,6 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
     const qreal mapScale = sceneCoordsScaleFactor(sourceBounds, previewBounds);
     const QHash<int, QPainterPath> scrapClipPaths =
         scrapClipPathsForFeatures(geometryFeatures, sourceBounds, previewBounds);
-    const MapEditorObjectStyleCatalog styleCatalog = mapEditorObjectStyleCatalog();
     const qreal vertexRadius = 3.8;
     auto markGeometryItem = [](QGraphicsItem *item) {
         if (item != nullptr) {

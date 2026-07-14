@@ -23,6 +23,7 @@
 #include "MapEditorInteractiveDrawLogic.h"
 #include "MapEditorLogicalSourceContext.h"
 #include "MapEditorObjectDetailsLogic.h"
+#include "MapEditorObjectStyleCatalog.h"
 #include "MapEditorSmartAreaPlanner.h"
 #include "MapEditorUndoArbitrationService.h"
 #include "../../../core/CommandCatalogStore.h"
@@ -854,6 +855,7 @@ private:
     CommandCatalogStore catalogStore_;
     InspectorSymbolCatalog inspectorSymbolCatalog_;
     MapEditorOrientationApplicabilityByCommand orientationApplicabilityByCommand_;
+    const MapEditorObjectStyleCatalog objectStyleCatalog_;
     bool touchFriendlyControlsEnabled_ = false;
     int selectedBackgroundLayerIndex_ = -1;
     bool mapCommandApplyInProgress_ = false;

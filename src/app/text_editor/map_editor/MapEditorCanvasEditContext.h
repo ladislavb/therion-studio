@@ -21,6 +21,7 @@ class QUndoStack;
 namespace TherionStudio
 {
 class TextEditorTab;
+struct MapEditorObjectStyleCatalog;
 
 struct MapEditorCanvasEditContext
 {
@@ -44,6 +45,7 @@ struct MapEditorCanvasEditContext
     QString *selectedObjectKind = nullptr;
     std::optional<QPointF> *selectedObjectCoordinate = nullptr;
     int *nextDraftGeometryId = nullptr;
+    const MapEditorObjectStyleCatalog *styleCatalog = nullptr;
 
     std::function<QString(const char *)> translate;
     std::function<void()> markSourceChangeOriginatedFromMapTransaction;

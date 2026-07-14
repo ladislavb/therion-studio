@@ -41,10 +41,7 @@ int prepareUserOverrideFixture(QTemporaryDir *temporaryDir)
         return 1;
     }
 
-    qputenv("THERION_STUDIO_MAP_OBJECT_STYLES_DIR",
-            QFile::encodeName(temporaryDir->filePath(QStringLiteral("map_object_styles"))));
-
-    const QString overrideDirectoryPath = mapEditorUserObjectStylesDirectory();
+    const QString overrideDirectoryPath = temporaryDir->filePath(QStringLiteral("map_object_styles"));
     if (!expect(!overrideDirectoryPath.isEmpty(),
                 "Expected non-empty user style override directory path.")) {
         return 1;
@@ -229,9 +226,9 @@ int prepareUserOverrideFixture(QTemporaryDir *temporaryDir)
     return 0;
 }
 
-int runCatalogTest()
+int runCatalogTest(const QString &overrideDirectoryPath)
 {
-    const MapEditorObjectStyleCatalog catalog = mapEditorObjectStyleCatalog();
+    const MapEditorObjectStyleCatalog catalog = loadMapEditorObjectStyleCatalog(overrideDirectoryPath);
     if (!expect(catalog.loadedFromResource,
                 "Expected map object style catalog to load from resource JSON.")) {
         return 1;
@@ -851,5 +848,5 @@ int main(int argc, char **argv)
         return result;
     }
 
-    return runCatalogTest();
+    return runCatalogTest(temporaryDir.filePath(QStringLiteral("map_object_styles")));
 }

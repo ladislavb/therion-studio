@@ -87,6 +87,7 @@ MapEditorTab::MapEditorTab(IFileSystem &fileSystem,
     , catalogStore_(std::move(catalogStore))
     , inspectorSymbolCatalog_(inspectorSymbolCatalogFromCommandCatalog(catalogStore_.catalogObject()))
     , orientationApplicabilityByCommand_(mapEditorOrientationApplicabilityFromCommandCatalog(catalogStore_.catalogObject()))
+    , objectStyleCatalog_(loadDefaultMapEditorObjectStyleCatalog())
 {
     initializeWorkspace();
 }

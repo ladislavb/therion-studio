@@ -315,7 +315,8 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
                             context_.recordPointGeometryMove,
                             context_.recordLineAreaVertexMove,
                             context_.recordPointOrientationHandleChange,
-                            context_.recordLinePointLeftHandleChange);
+                            context_.recordLinePointLeftHandleChange,
+                            *context_.styleCatalog);
     const qint64 renderMs = logTiming ? stageTimer.restart() : 0;
 
     context_.restoreBackgroundImageItems();

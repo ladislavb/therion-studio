@@ -285,7 +285,8 @@ struct MapEditorResolvedAreaStyle
 };
 
 QString mapEditorUserObjectStylesDirectory();
-MapEditorObjectStyleCatalog mapEditorObjectStyleCatalog();
+MapEditorObjectStyleCatalog loadMapEditorObjectStyleCatalog(const QString &userOverrideDirectory);
+MapEditorObjectStyleCatalog loadDefaultMapEditorObjectStyleCatalog();
 MapEditorResolvedPointStyle resolveMapEditorPointStyle(const MapEditorObjectStyleCatalog &catalog,
                                                        const QString &rawType,
                                                        const QString &subtype = QString());

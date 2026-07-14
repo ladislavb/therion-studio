@@ -21,6 +21,7 @@ class QUndoStack;
 namespace TherionStudio
 {
 struct TherionParsedLine;
+struct MapEditorObjectStyleCatalog;
 
 struct MapEditorSceneRefreshContext
 {
@@ -37,6 +38,7 @@ struct MapEditorSceneRefreshContext
     bool *fitBackgroundRequested = nullptr;
     quint64 *lineVertexSelectionRestoreGeneration = nullptr;
     const MapEditorOrientationApplicabilityByCommand *orientationApplicabilityByCommand = nullptr;
+    const MapEditorObjectStyleCatalog *styleCatalog = nullptr;
     MapEditorLogicalSourceContext logicalSource;
 
     std::function<QString()> documentText;

@@ -1,6 +1,7 @@
 #include "../src/app/text_editor/map_editor/MapEditorSceneInternals.h"
 #include "../src/app/text_editor/map_editor/MapEditorSceneRefreshController.h"
 #include "../src/app/text_editor/map_editor/MapEditorSceneSupport.h"
+#include "../src/app/text_editor/map_editor/MapEditorObjectStyleCatalog.h"
 #include "../src/core/TherionDocumentParser.h"
 
 #include <QApplication>
@@ -115,6 +116,7 @@ int runLargeSceneRefreshSmoke()
         }
     };
 
+    const MapEditorObjectStyleCatalog styleCatalog = loadMapEditorObjectStyleCatalog(QString());
     MapEditorSceneRefreshContext context{
         .sceneParent = nullptr,
         .selectionConnectionContext = &view,
@@ -129,6 +131,7 @@ int runLargeSceneRefreshSmoke()
         .fitBackgroundRequested = &fitBackgroundRequested,
         .lineVertexSelectionRestoreGeneration = &lineVertexSelectionRestoreGeneration,
         .orientationApplicabilityByCommand = &orientationApplicability,
+        .styleCatalog = &styleCatalog,
         .documentText = [&documentText]() {
             return documentText;
         },

@@ -24,6 +24,7 @@ class QWidget;
 
 namespace TherionStudio
 {
+struct MapEditorObjectStyleCatalog;
 class Th2GeometryProjection;
 struct TherionSourceLogicalCommand;
 
@@ -328,7 +329,8 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                              const std::function<void(int, const QPointF &, const QPointF &)> &recordPointGeometryMove,
                              const std::function<void(int, const QString &, int, const QPointF &, const QPointF &)> &recordLineAreaVertexMove,
                              const std::function<void(int, qreal)> &recordPointOrientationHandleChange,
-                             const std::function<void(int, int, qreal, qreal)> &recordLinePointLeftHandleChange);
+                             const std::function<void(int, int, qreal, qreal)> &recordLinePointLeftHandleChange,
+                             const MapEditorObjectStyleCatalog &styleCatalog);
 MapGeometryItemGroupRemovalResult removeMapGeometryItemGroupForLine(QGraphicsScene *scene,
                                                                     int lineNumber,
                                                                     QHash<int, QGraphicsItem *> *mapItemsByLine,
@@ -342,7 +344,8 @@ MapGeometryItemGroupRenderResult renderMapGeometryItemGroupForFeature(
     const std::function<void(int, const QPointF &, const QPointF &)> &recordPointGeometryMove,
     const std::function<void(int, const QString &, int, const QPointF &, const QPointF &)> &recordLineAreaVertexMove,
     const std::function<void(int, qreal)> &recordPointOrientationHandleChange,
-    const std::function<void(int, int, qreal, qreal)> &recordLinePointLeftHandleChange);
+    const std::function<void(int, int, qreal, qreal)> &recordLinePointLeftHandleChange,
+    const MapEditorObjectStyleCatalog &styleCatalog);
 
 QUndoCommand *createMapCardMoveCommand(MapCardItem *item, const QPointF &oldPosition, const QPointF &newPosition);
 QUndoCommand *createMapCardVisibilityCommand(MapCardItem *item, bool oldVisible, bool newVisible);

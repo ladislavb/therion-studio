@@ -1,4 +1,5 @@
 #include "../src/app/text_editor/map_editor/MapEditorCanvasEditController.h"
+#include "../src/app/text_editor/map_editor/MapEditorObjectStyleCatalog.h"
 #include "../src/app/text_editor/map_editor/MapEditorSceneSupport.h"
 #include "../src/app/text_editor/TextEditorTab.h"
 #include "../src/core/CommandCatalogStore.h"
@@ -30,6 +31,12 @@ bool expect(bool condition, const char *message)
         std::cerr << message << '\n';
     }
     return condition;
+}
+
+const MapEditorObjectStyleCatalog &testStyleCatalog()
+{
+    static const MapEditorObjectStyleCatalog catalog = loadMapEditorObjectStyleCatalog(QString());
+    return catalog;
 }
 
 void pumpEvents()
@@ -83,6 +90,7 @@ MapEditorCanvasEditController makeController(TextEditorTab *tab,
     context.undoStack = undoStack;
     context.itemsByLine = itemsByLine;
     context.vertexItemsByKey = vertexItemsByKey;
+    context.styleCatalog = &testStyleCatalog();
     context.draftGeometryItems = draftItems;
     context.toolbarStatusNote = toolbarStatus;
     context.commandApplyInProgress = commandApplyInProgress;
@@ -368,7 +376,8 @@ int runPointGeometryMoveUsesPartialRefreshTest()
                             {},
                             {},
                             {},
-                            {});
+                            {},
+                            testStyleCatalog());
     const int geometryItemCountBefore = geometryItemCountForLine(scene, 1);
     if (!expect(geometryItemCountBefore > 0 && itemsByLine.contains(1),
                 "Point partial refresh test should start with a rendered geometry item group.")) {
@@ -541,7 +550,8 @@ int runSegmentStyledLineVertexMoveUsesPartialRefreshTest()
                             {},
                             {},
                             {},
-                            {});
+                            {},
+                            testStyleCatalog());
     const int geometryItemCountBefore = geometryItemCountForLine(scene, 1);
     if (!expect(geometryItemCountBefore > 1,
                 "Segment-styled line vertex move test should start with a multi-item rendered geometry group.")) {
@@ -651,7 +661,8 @@ int runSegmentStyledLineVertexMoveFallsBackWhenPrimaryIndexMissingTest()
                             {},
                             {},
                             {},
-                            {});
+                            {},
+                            testStyleCatalog());
     const int geometryItemCountBefore = geometryItemCountForLine(scene, 1);
     if (!expect(geometryItemCountBefore > 1 && itemsByLine.contains(1),
                 "Missing-index fallback test should start with a complete rendered geometry group.")) {
@@ -757,7 +768,8 @@ int runSegmentStyledLineVertexMoveFallsBackWhenBoundsChangeTest()
                             {},
                             {},
                             {},
-                            {});
+                            {},
+                            testStyleCatalog());
     const int geometryItemCountBefore = geometryItemCountForLine(scene, 1);
     if (!expect(geometryItemCountBefore > 1,
                 "Bounds-changing line vertex move test should start with a multi-item rendered geometry group.")) {

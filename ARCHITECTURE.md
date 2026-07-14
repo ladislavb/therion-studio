@@ -191,6 +191,9 @@ Therion command, option, help, style, and symbol metadata should be data-driven.
 - Use `resources/therion_catalog/overrides/*.override.json` only as a short-term fallback when parser extraction is not yet feasible.
 - Remove overrides once generator support exists.
 - Keep command catalog loading at composition, startup, or explicit test setup boundaries. Avoid UI-side static catalog access and long-lived resource overrides.
+- Map-object style discovery and override merging shall occur at Map-editor composition or explicit test setup. The
+  resulting immutable catalog is passed to the scene renderer and style preview; rendering and painting shall not load
+  resources, inspect environment/settings paths, or access a process-global catalog cache.
 
 ## UI Shell Reduction
 

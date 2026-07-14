@@ -989,7 +989,8 @@ std::function<void()> deferredMapGeometryPartialRefreshHook(const MapEditorCanva
                                                              sourceVertexIndex,
                                                              orientationDegrees,
                                                              leftSize);
-                    });
+                    },
+                    *context.styleCatalog);
             addedItems = renderResult.addedItems;
             addedVertexEntries = renderResult.addedVertexIndexEntries;
             addedPrimaryItem = renderResult.addedPrimaryItem;

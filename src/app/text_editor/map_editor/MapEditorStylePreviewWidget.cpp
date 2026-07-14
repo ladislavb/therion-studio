@@ -821,8 +821,10 @@ void drawAreaPatternPreview(QPainter *painter,
 }
 }
 
-MapEditorStylePreviewWidget::MapEditorStylePreviewWidget(QWidget *parent)
+MapEditorStylePreviewWidget::MapEditorStylePreviewWidget(const MapEditorObjectStyleCatalog &styleCatalog,
+                                                         QWidget *parent)
     : QWidget(parent)
+    , styleCatalog_(styleCatalog)
 {
     setMinimumHeight(72);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -892,7 +894,6 @@ void MapEditorStylePreviewWidget::paintEvent(QPaintEvent *event)
         return;
     }
 
-    const MapEditorObjectStyleCatalog catalog = mapEditorObjectStyleCatalog();
     const QColor previewBackground = fillColor;
     const QColor fallbackStroke = readablePreviewColor(pal.color(QPalette::Text),
                                                        previewBackground,
@@ -902,7 +903,7 @@ void MapEditorStylePreviewWidget::paintEvent(QPaintEvent *event)
                                                        QColor(38, 114, 211));
 
     if (commandKind_ == QStringLiteral("point")) {
-        const MapEditorResolvedPointStyle style = resolveMapEditorPointStyle(catalog, rawType_, subtype_);
+        const MapEditorResolvedPointStyle style = resolveMapEditorPointStyle(styleCatalog_, rawType_, subtype_);
         const qreal symbolSize = qBound<qreal>(14.0, style.size * 1.7, qMin(content.width(), content.height()) - 4.0);
         std::optional<QColor> pointFill = style.fillColor;
         if (!pointFill.has_value()) {
@@ -929,7 +930,7 @@ void MapEditorStylePreviewWidget::paintEvent(QPaintEvent *event)
     }
 
     if (commandKind_ == QStringLiteral("line")) {
-        const MapEditorResolvedLineStyle style = resolveMapEditorLineStyle(catalog, rawType_, subtype_);
+        const MapEditorResolvedLineStyle style = resolveMapEditorLineStyle(styleCatalog_, rawType_, subtype_);
         const QColor strokeColor = style.strokeColor.value_or(fallbackStroke);
         QPainterPath path;
         path.moveTo(content.left(), content.center().y() + content.height() * 0.22);
@@ -953,7 +954,7 @@ void MapEditorStylePreviewWidget::paintEvent(QPaintEvent *event)
     }
 
     if (commandKind_ == QStringLiteral("area")) {
-        const MapEditorResolvedAreaStyle style = resolveMapEditorAreaStyle(catalog, rawType_, subtype_);
+        const MapEditorResolvedAreaStyle style = resolveMapEditorAreaStyle(styleCatalog_, rawType_, subtype_);
         const QColor strokeColor = readablePreviewColor(style.strokeColor.value_or(fallbackStroke),
                                                         previewBackground,
                                                         fallbackStroke);
