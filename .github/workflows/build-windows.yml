@@ -179,8 +179,17 @@ jobs:
               }
 
               $commandArguments = @()
+              $qtestOutputPath = $null
               if ($commandText -match '(?:^|\s)"?--suite"?(?:\s|$)') {
-                $commandArguments = @("--suite", $testName, "-v1")
+                $qtestOutputPath = Join-Path $env:RUNNER_TEMP "$testName.qtest.txt"
+                Remove-Item -Force -ErrorAction SilentlyContinue $qtestOutputPath
+                $commandArguments = @(
+                  "--suite",
+                  $testName,
+                  "-v1",
+                  "-o",
+                  "$qtestOutputPath,txt"
+                )
               }
 
               $displayArguments = if ($commandArguments.Count -gt 0) {
@@ -190,7 +199,12 @@ jobs:
               }
               Write-Host "Running $executable$displayArguments"
               & $executable @commandArguments
-              Write-Host "QTest exit code: $LASTEXITCODE"
+              $testExitCode = $LASTEXITCODE
+              Write-Host "Test process exit code: $testExitCode"
+              if ($qtestOutputPath -and (Test-Path $qtestOutputPath)) {
+                Write-Host "QTest output:"
+                Get-Content $qtestOutputPath | ForEach-Object { Write-Host $_ }
+              }
               Write-Host "::endgroup::"
             }
           } finally {
