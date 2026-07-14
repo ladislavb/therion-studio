@@ -41,6 +41,7 @@ class MapEditorBackgroundAssetCacheTest final : public QObject
 
 private slots:
     void hitsForSameIdentityRevisionAndOptions();
+    void storesWorkerResultForLaterLookup();
     void reloadsWhenMetadataRevisionChanges();
     void reloadsWhenContentFingerprintChangesAtSameTimestamp();
     void evictsLeastRecentlyUsedEntryAtByteLimit();
@@ -63,6 +64,23 @@ void MapEditorBackgroundAssetCacheTest::hitsForSameIdentityRevisionAndOptions()
     QCOMPARE(calls, 2);
     QCOMPARE(cache.stats().entryCount, 2);
     QCOMPARE(cache.stats().hits, 1ULL);
+}
+
+void MapEditorBackgroundAssetCacheTest::storesWorkerResultForLaterLookup()
+{
+    MapEditorBackgroundAssetCache cache(16);
+    const MapEditorBackgroundAssetRequest assetRequest = request(QStringLiteral("/project/background.png"));
+    QVERIFY(!cache.find(assetRequest).cacheHit);
+
+    QVERIFY(cache.store(assetRequest, MapEditorBackgroundAssetLoadResult{
+                                          .payload = std::make_shared<const QByteArray>(QByteArray("asset")),
+                                          .byteCost = 4}));
+
+    const MapEditorBackgroundAssetCacheResult result = cache.find(assetRequest);
+    QVERIFY(result.cacheHit);
+    QVERIFY(result.cached);
+    QCOMPARE(cache.stats().hits, 1ULL);
+    QCOMPARE(cache.stats().misses, 1ULL);
 }
 
 void MapEditorBackgroundAssetCacheTest::reloadsWhenMetadataRevisionChanges()

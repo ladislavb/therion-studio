@@ -317,7 +317,7 @@ void cacheRasterSourceImage(QGraphicsPixmapItem *item, const QImage &sourceImage
     item->setData(kBackgroundLayerSourceImageRole, QVariant::fromValue(sourceImage));
 }
 
-QImage rasterSourceImageForItem(QGraphicsPixmapItem *item)
+QImage rasterSourceImageForItem(MapEditorBackgroundAssetCache &assetCache, QGraphicsPixmapItem *item)
 {
     if (item == nullptr) {
         return QImage();
@@ -331,7 +331,7 @@ QImage rasterSourceImageForItem(QGraphicsPixmapItem *item)
         }
     }
 
-    const QImage sourceImage = readMapEditorRasterSourceImage(item->data(0).toString());
+    const QImage sourceImage = readMapEditorRasterSourceImage(assetCache, item->data(0).toString());
     cacheRasterSourceImage(item, sourceImage);
     return sourceImage;
 }
@@ -2926,7 +2926,7 @@ void MapEditorTab::syncAutoBackgroundLayersFromCurrentDocument()
                                                         previewBounds);
             } else {
                 placeMapEditorRasterLayerFromMetadata(existingLayer,
-                                                      rasterSourceImageForItem(existingLayer),
+                                                      rasterSourceImageForItem(backgroundAssetCache_, existingLayer),
                                                       *existingMetadata,
                                                       areaAdjust,
                                                       rasterModelBounds,
@@ -3215,7 +3215,7 @@ void MapEditorTab::reprojectMetadataBackgroundLayersForCurrentDocument()
                                                       rasterModelBounds,
                                                       previewBounds)
             : placeMapEditorRasterLayerFromMetadata(existingLayer,
-                                                    rasterSourceImageForItem(existingLayer),
+                                                    rasterSourceImageForItem(backgroundAssetCache_, existingLayer),
                                                     *metadataReference,
                                                     areaAdjust,
                                                     rasterModelBounds,
@@ -3619,7 +3619,7 @@ void MapEditorTab::addBackgroundImage(const QString &imagePath, bool writeXtheri
         return;
     }
 
-    const QImage image = readMapEditorRasterSourceImage(imagePath);
+    const QImage image = readMapEditorRasterSourceImage(backgroundAssetCache_, imagePath);
     addBackgroundImageFromSourceImage(imagePath, image, writeXtherionMetadata);
 }
 
@@ -3629,7 +3629,7 @@ void MapEditorTab::addBackgroundImageAsync(const QString &imagePath, bool writeX
         return;
     }
 
-    if (const std::optional<QImage> cachedImage = cachedMapEditorRasterSourceImage(imagePath); cachedImage.has_value()) {
+    if (const std::optional<QImage> cachedImage = cachedMapEditorRasterSourceImage(backgroundAssetCache_, imagePath); cachedImage.has_value()) {
         addBackgroundImageFromSourceImage(imagePath, cachedImage.value(), writeXtherionMetadata);
         return;
     }
@@ -3649,7 +3649,7 @@ void MapEditorTab::addBackgroundImageAsync(const QString &imagePath, bool writeX
             return;
         }
 
-        rememberMapEditorRasterSourceImage(result.imagePath, result.image);
+        rememberMapEditorRasterSourceImage(backgroundAssetCache_, result.imagePath, result.image);
         if (addBackgroundImageFromSourceImage(result.imagePath, result.image, writeXtherionMetadata)) {
             toolbarStatusNote_ = tr("Added background layer.");
             saveBackgroundLayersToSession();
@@ -3764,7 +3764,7 @@ void MapEditorTab::loadBackgroundImageSourceAsync(QGraphicsPixmapItem *item)
         return;
     }
 
-    if (const std::optional<QImage> cachedImage = cachedMapEditorRasterSourceImage(imagePath); cachedImage.has_value()) {
+    if (const std::optional<QImage> cachedImage = cachedMapEditorRasterSourceImage(backgroundAssetCache_, imagePath); cachedImage.has_value()) {
         cacheRasterSourceImage(item, cachedImage.value());
         if (item->data(4).toBool()) {
             reprojectMetadataBackgroundLayersForCurrentDocument();
@@ -3801,7 +3801,7 @@ void MapEditorTab::loadBackgroundImageSourceAsync(QGraphicsPixmapItem *item)
             return;
         }
 
-        rememberMapEditorRasterSourceImage(result.imagePath, result.image);
+        rememberMapEditorRasterSourceImage(backgroundAssetCache_, result.imagePath, result.image);
         cacheRasterSourceImage(item, result.image);
         if (item->data(4).toBool()) {
             reprojectMetadataBackgroundLayersForCurrentDocument();
@@ -3820,7 +3820,7 @@ bool MapEditorTab::addBackgroundImageFromSourceImage(const QString &imagePath,
         return false;
     }
 
-    rememberMapEditorRasterSourceImage(imagePath, image);
+    rememberMapEditorRasterSourceImage(backgroundAssetCache_, imagePath, image);
 
     const QRectF previewBounds = mapPreviewBounds();
     if (!previewBounds.isValid() || previewBounds.width() < 2.0 || previewBounds.height() < 2.0) {
@@ -3889,13 +3889,21 @@ void MapEditorTab::applyBackgroundLayerGamma(QGraphicsPixmapItem *item, qreal ga
     }
 
     if (!item->data(kBackgroundLayerSourceImageRole).canConvert<QImage>()
-        && !cachedMapEditorRasterSourceImage(layerPath).has_value()
+        && !cachedMapEditorRasterSourceImage(backgroundAssetCache_, layerPath).has_value()
         && item->data(kBackgroundLayerRasterLoadRequestRole).toULongLong() != 0) {
         item->setData(2, boundedGamma);
         return;
     }
 
-    QImage sourceImage = rasterSourceImageForItem(item);
+    if (const std::optional<QImage> cachedImage = cachedMapEditorRasterDisplayImage(backgroundAssetCache_, layerPath, boundedGamma);
+        cachedImage.has_value()) {
+        item->setData(2, boundedGamma);
+        item->setPixmap(QPixmap::fromImage(cachedImage.value()));
+        applyBackgroundLayerTransform(item);
+        return;
+    }
+
+    QImage sourceImage = rasterSourceImageForItem(backgroundAssetCache_, item);
     if (sourceImage.isNull()) {
         return;
     }
@@ -3905,7 +3913,7 @@ void MapEditorTab::applyBackgroundLayerGamma(QGraphicsPixmapItem *item, qreal ga
     item->setData(2, boundedGamma);
 
     auto *watcher = new QFutureWatcher<QImage>(this);
-    connect(watcher, &QFutureWatcher<QImage>::finished, this, [this, watcher, item, requestId]() {
+    connect(watcher, &QFutureWatcher<QImage>::finished, this, [this, watcher, item, layerPath, boundedGamma, requestId]() {
         const QImage adjustedImage = watcher->result();
         watcher->deleteLater();
 
@@ -3919,11 +3927,11 @@ void MapEditorTab::applyBackgroundLayerGamma(QGraphicsPixmapItem *item, qreal ga
             return;
         }
 
+        rememberMapEditorRasterDisplayImage(backgroundAssetCache_, layerPath, boundedGamma, adjustedImage);
         item->setPixmap(QPixmap::fromImage(adjustedImage));
         applyBackgroundLayerTransform(item);
     });
     watcher->setFuture(QtConcurrent::run(gammaCorrectMapEditorRasterSourceImage,
-                                         layerPath,
                                          sourceImage,
                                          boundedGamma));
 }

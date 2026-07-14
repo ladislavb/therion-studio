@@ -13,12 +13,11 @@ MapEditorBackgroundAssetCache::MapEditorBackgroundAssetCache(std::size_t byteLim
 {
 }
 
-MapEditorBackgroundAssetCacheResult MapEditorBackgroundAssetCache::load(
-    const MapEditorBackgroundAssetRequest &request,
-    const Loader &loader)
+MapEditorBackgroundAssetCacheResult MapEditorBackgroundAssetCache::find(
+    const MapEditorBackgroundAssetRequest &request)
 {
     const QString id = entryId(request.key);
-    if (id.isEmpty() || !loader) {
+    if (id.isEmpty()) {
         ++misses_;
         return MapEditorBackgroundAssetCacheResult{
             .loadResult = MapEditorBackgroundAssetLoadResult{.error = QStringLiteral("Invalid background asset request.")}};
@@ -39,13 +38,24 @@ MapEditorBackgroundAssetCacheResult MapEditorBackgroundAssetCache::load(
     }
 
     ++misses_;
-    MapEditorBackgroundAssetLoadResult loadResult = loader(request);
+    return MapEditorBackgroundAssetCacheResult{};
+}
+
+bool MapEditorBackgroundAssetCache::store(const MapEditorBackgroundAssetRequest &request,
+                                          MapEditorBackgroundAssetLoadResult loadResult)
+{
+    const QString id = entryId(request.key);
+    if (id.isEmpty()) {
+        return false;
+    }
+
+    if (entries_.contains(id)) {
+        remove(id, false);
+    }
+
     const std::size_t byteCost = storedByteCost(loadResult);
     if (!canStore(byteCost)) {
-        return MapEditorBackgroundAssetCacheResult{
-            .loadResult = std::move(loadResult),
-            .cacheHit = false,
-            .cached = false};
+        return false;
     }
 
     while (!leastRecentlyUsedEntryIds_.isEmpty() && storedBytes_ + byteCost > byteLimit_) {
@@ -59,10 +69,30 @@ MapEditorBackgroundAssetCacheResult MapEditorBackgroundAssetCache::load(
                             .byteCost = byteCost});
     storedBytes_ += byteCost;
     leastRecentlyUsedEntryIds_.append(id);
+    return true;
+}
+
+MapEditorBackgroundAssetCacheResult MapEditorBackgroundAssetCache::load(
+    const MapEditorBackgroundAssetRequest &request,
+    const Loader &loader)
+{
+    if (!loader) {
+        ++misses_;
+        return MapEditorBackgroundAssetCacheResult{
+            .loadResult = MapEditorBackgroundAssetLoadResult{.error = QStringLiteral("Invalid background asset loader.")}};
+    }
+
+    MapEditorBackgroundAssetCacheResult cachedResult = find(request);
+    if (cachedResult.cacheHit) {
+        return cachedResult;
+    }
+
+    MapEditorBackgroundAssetLoadResult loadResult = loader(request);
+    const bool cached = store(request, loadResult);
     return MapEditorBackgroundAssetCacheResult{
         .loadResult = std::move(loadResult),
         .cacheHit = false,
-        .cached = true};
+        .cached = cached};
 }
 
 int MapEditorBackgroundAssetCache::invalidateSource(const QString &canonicalSourcePath)
