@@ -46,6 +46,24 @@ bool MapEditorSvgBackgroundItem::isValid() const
         && intrinsicSize_.height() > 0.0;
 }
 
+bool MapEditorSvgBackgroundItem::reloadSourceData(const QByteArray &svgData)
+{
+    auto *replacementRenderer = new QSvgRenderer(svgData, nullptr);
+    const QRectF defaultViewBox(QPointF(0.0, 0.0), intrinsicSize_);
+    if (replacementRenderer->isValid() && sourceViewBox_.isValid() && sourceViewBox_ != defaultViewBox) {
+        replacementRenderer->setViewBox(sourceViewBox_);
+    }
+    if (!replacementRenderer->isValid()) {
+        delete replacementRenderer;
+        return false;
+    }
+
+    delete renderer_;
+    renderer_ = replacementRenderer;
+    update();
+    return true;
+}
+
 QSizeF MapEditorSvgBackgroundItem::intrinsicSize() const
 {
     return intrinsicSize_;

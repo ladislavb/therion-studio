@@ -20,6 +20,7 @@ public:
     ~MapEditorSvgBackgroundItem() override;
 
     bool isValid() const;
+    bool reloadSourceData(const QByteArray &svgData);
     QSizeF intrinsicSize() const;
     QRectF sourceViewBox() const;
 

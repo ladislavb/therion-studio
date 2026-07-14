@@ -1,5 +1,7 @@
 #include "MapEditorBackgroundAssetCache.h"
 
+#include <QDir>
+#include <QFileInfo>
 #include <QHash>
 #include <QStringList>
 
@@ -11,6 +13,23 @@ namespace TherionStudio
 MapEditorBackgroundAssetCache::MapEditorBackgroundAssetCache(std::size_t byteLimit)
     : byteLimit_(byteLimit)
 {
+}
+
+QString MapEditorBackgroundAssetCache::canonicalSourceIdentity(const QString &sourcePath)
+{
+    if (sourcePath.trimmed().isEmpty()) {
+        return {};
+    }
+
+    const QFileInfo fileInfo(sourcePath);
+    QString resolvedPath = fileInfo.absoluteFilePath();
+    if (resolvedPath.isEmpty()) {
+        resolvedPath = sourcePath;
+    }
+
+    return QDir::cleanPath(resolvedPath)
+        .normalized(QString::NormalizationForm_C)
+        .toCaseFolded();
 }
 
 MapEditorBackgroundAssetCacheResult MapEditorBackgroundAssetCache::find(

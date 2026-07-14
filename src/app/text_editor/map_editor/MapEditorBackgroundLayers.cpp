@@ -60,6 +60,7 @@
 #include "../../../core/TherionSourceText.h"
 #include "../../../core/TherionTokenRules.h"
 #include "../../../core/TherionXviParser.h"
+#include "../../../platform/DiagnosticLogging.h"
 #include "MapEditorXviBackgroundItem.h"
 
 namespace TherionStudio
@@ -117,22 +118,7 @@ XviSketchStrokeStyle xviSketchStrokeStyleForToken(const QString &token)
 
 QString normalizedPathKey(const QString &path)
 {
-    if (path.trimmed().isEmpty()) {
-        return QString();
-    }
-
-    QFileInfo fileInfo(path);
-    QString resolvedPath = fileInfo.canonicalFilePath();
-    if (resolvedPath.isEmpty()) {
-        resolvedPath = fileInfo.absoluteFilePath();
-    }
-    if (resolvedPath.isEmpty()) {
-        resolvedPath = path;
-    }
-
-    return QDir::cleanPath(resolvedPath)
-        .normalized(QString::NormalizationForm_C)
-        .toCaseFolded();
+    return MapEditorBackgroundAssetCache::canonicalSourceIdentity(path);
 }
 
 QVector<XtherionBackgroundReference> parseXtherionBackgroundReferences(const QString &documentText, const QString &documentPath)
@@ -3673,6 +3659,70 @@ void MapEditorTab::invalidateBackgroundRasterJobs()
     ++backgroundRasterJobGeneration_;
     for (QGraphicsPixmapItem *item : std::as_const(backgroundImageItems_)) {
         invalidateBackgroundLayerRasterJobs(item);
+    }
+}
+
+void MapEditorTab::invalidateBackgroundAsset(const QString &sourcePath)
+{
+    const QString sourceIdentity = MapEditorBackgroundAssetCache::canonicalSourceIdentity(sourcePath);
+    if (sourceIdentity.isEmpty()) {
+        return;
+    }
+
+    const int invalidatedEntries = backgroundAssetCache_.invalidateSource(sourceIdentity);
+    bool reprojectXviLayer = false;
+    for (QGraphicsPixmapItem *item : std::as_const(backgroundImageItems_)) {
+        if (item == nullptr
+            || MapEditorBackgroundAssetCache::canonicalSourceIdentity(item->data(0).toString()) != sourceIdentity) {
+            continue;
+        }
+
+        invalidateBackgroundLayerRasterJobs(item);
+        const QString layerPath = item->data(0).toString();
+        if (auto *svgItem = dynamic_cast<MapEditorSvgBackgroundItem *>(item)) {
+            SvgBackgroundAsset asset;
+            if (loadSvgBackgroundAssetCached(&backgroundAssetCache_, layerPath, &asset)) {
+                svgItem->reloadSourceData(asset.sourceData);
+            }
+            continue;
+        }
+        if (isMapEditorXviBackgroundPath(layerPath)) {
+            reprojectXviLayer = true;
+            continue;
+        }
+
+        item->setData(kBackgroundLayerSourceImageRole, QVariant());
+        item->setData(kBackgroundLayerRasterProjectionKeyRole, QVariant());
+        loadBackgroundImageSourceAsync(item);
+    }
+
+    if (reprojectXviLayer) {
+        reprojectMetadataBackgroundLayersForCurrentDocument();
+    }
+
+    if (TherionStudio::diagnosticLoggingEnabled()) {
+        const MapEditorBackgroundAssetCacheStats cacheStats = backgroundAssetCache_.stats();
+        qInfo("map-background-cache invalidate entries=%d cached_entries=%d bytes=%llu hits=%llu misses=%llu evictions=%llu",
+              invalidatedEntries,
+              cacheStats.entryCount,
+              static_cast<unsigned long long>(cacheStats.storedBytes),
+              static_cast<unsigned long long>(cacheStats.hits),
+              static_cast<unsigned long long>(cacheStats.misses),
+              static_cast<unsigned long long>(cacheStats.evictions));
+    }
+}
+
+void MapEditorTab::clearBackgroundAssetCache()
+{
+    backgroundAssetCache_.clear();
+    if (TherionStudio::diagnosticLoggingEnabled()) {
+        const MapEditorBackgroundAssetCacheStats cacheStats = backgroundAssetCache_.stats();
+        qInfo("map-background-cache clear cached_entries=%d bytes=%llu hits=%llu misses=%llu evictions=%llu",
+              cacheStats.entryCount,
+              static_cast<unsigned long long>(cacheStats.storedBytes),
+              static_cast<unsigned long long>(cacheStats.hits),
+              static_cast<unsigned long long>(cacheStats.misses),
+              static_cast<unsigned long long>(cacheStats.evictions));
     }
 }
 

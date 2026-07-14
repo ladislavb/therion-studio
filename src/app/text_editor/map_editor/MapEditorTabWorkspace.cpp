@@ -147,6 +147,7 @@ MapEditorTab::~MapEditorTab()
     if (mapScene_ != nullptr) {
         disconnect(mapScene_, nullptr, this, nullptr);
     }
+    clearBackgroundAssetCache();
     mapScene_ = nullptr;
 }
 

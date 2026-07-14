@@ -3,10 +3,14 @@
 #include "ProjectFileDiscovery.h"
 #include "ProjectFileWatchDelta.h"
 #include "ProjectScanCacheService.h"
+#include "text_editor/map_editor/MapEditorTab.h"
 
 #include <QDebug>
 #include <QFileSystemWatcher>
+#include <QSet>
 #include <QSignalBlocker>
+
+#include <utility>
 
 namespace
 {
@@ -103,7 +107,44 @@ void MainWindow::handleProjectFileWatchInventoryFinished(
     projectFileWatcherInventoryRootPath_ = result.projectRootPath;
 
     if (sameInventoryRoot && previousSignatures != projectFileWatcherSignatures_) {
+        QSet<QString> changedFilePaths;
+        for (auto it = previousSignatures.cbegin(); it != previousSignatures.cend(); ++it) {
+            if (projectFileWatcherSignatures_.value(it.key()) != it.value()) {
+                changedFilePaths.insert(it.key());
+            }
+        }
+        for (auto it = projectFileWatcherSignatures_.cbegin(); it != projectFileWatcherSignatures_.cend(); ++it) {
+            if (previousSignatures.value(it.key()) != it.value()) {
+                changedFilePaths.insert(it.key());
+            }
+        }
+        invalidateMapBackgroundAssets(changedFilePaths.values());
         handleProjectFileSystemMutation(result.projectRootPath);
+    }
+}
+
+void MainWindow::invalidateMapBackgroundAssets(const QStringList &sourcePaths)
+{
+    if (sourcePaths.isEmpty()) {
+        return;
+    }
+
+    QSet<TherionStudio::MapEditorTab *> mapTabs;
+    for (int index = 0; index < editorTabs_->count(); ++index) {
+        if (auto *mapTab = qobject_cast<TherionStudio::MapEditorTab *>(editorTabs_->widget(index))) {
+            mapTabs.insert(mapTab);
+        }
+    }
+    for (TherionStudio::MapEditorTab *mapTab : detachedMapEditorTabs()) {
+        if (mapTab != nullptr) {
+            mapTabs.insert(mapTab);
+        }
+    }
+
+    for (TherionStudio::MapEditorTab *mapTab : std::as_const(mapTabs)) {
+        for (const QString &sourcePath : sourcePaths) {
+            mapTab->invalidateBackgroundAsset(sourcePath);
+        }
     }
 }
 

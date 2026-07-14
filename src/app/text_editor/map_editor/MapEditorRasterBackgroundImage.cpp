@@ -1,7 +1,6 @@
 #include "MapEditorRasterBackgroundImage.h"
 
 #include <QDateTime>
-#include <QDir>
 #include <QFileInfo>
 #include <QImageReader>
 #include <QtMath>
@@ -33,22 +32,7 @@ QImage cappedRasterDisplayImage(const QImage &image)
 
 QString normalizedRasterPathKey(const QString &path)
 {
-    if (path.trimmed().isEmpty()) {
-        return QString();
-    }
-
-    QFileInfo fileInfo(path);
-    QString resolvedPath = fileInfo.canonicalFilePath();
-    if (resolvedPath.isEmpty()) {
-        resolvedPath = fileInfo.absoluteFilePath();
-    }
-    if (resolvedPath.isEmpty()) {
-        resolvedPath = path;
-    }
-
-    return QDir::cleanPath(resolvedPath)
-        .normalized(QString::NormalizationForm_C)
-        .toCaseFolded();
+    return MapEditorBackgroundAssetCache::canonicalSourceIdentity(path);
 }
 
 std::optional<MapEditorBackgroundAssetRequest> rasterImageRequest(const QString &layerPath,

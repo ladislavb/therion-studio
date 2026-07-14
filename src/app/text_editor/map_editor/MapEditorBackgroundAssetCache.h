@@ -69,6 +69,7 @@ public:
 
     explicit MapEditorBackgroundAssetCache(std::size_t byteLimit);
 
+    static QString canonicalSourceIdentity(const QString &sourcePath);
     MapEditorBackgroundAssetCacheResult find(const MapEditorBackgroundAssetRequest &request);
     bool store(const MapEditorBackgroundAssetRequest &request,
                MapEditorBackgroundAssetLoadResult loadResult);

@@ -212,6 +212,7 @@ private:
     void clearProjectFileWatcher();
     void handleProjectFileWatchInventoryFinished(
         const TherionStudio::ProjectFileWatchInventoryService::Result &result);
+    void invalidateMapBackgroundAssets(const QStringList &sourcePaths);
     void invalidateProjectScanCache();
     void handleProjectFileSystemMutation(const QString &changedPath, const QString &previousPath = QString());
     void handleProjectDirectoryChanged(const QString &directoryPath);

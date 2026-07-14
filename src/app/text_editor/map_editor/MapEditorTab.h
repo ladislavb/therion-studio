@@ -235,6 +235,7 @@ public:
     int selectedBackgroundLayerIndex() const;
     void setSelectedBackgroundLayerIndex(int index);
     void browseAndAddBackgroundImages();
+    void invalidateBackgroundAsset(const QString &sourcePath);
 #ifdef THERION_STUDIO_TESTING
     bool addSvgBackgroundImageForTest(const QString &imagePath) { return addSvgBackgroundImage(imagePath); }
     bool addRasterBackgroundImageForTest(const QString &imagePath,
@@ -579,6 +580,7 @@ private:
     void removeBackgroundLayerXtherionMetadata(const QString &layerPath, const QString &label);
     void invalidateBackgroundLayerRasterJobs(QGraphicsPixmapItem *item);
     void invalidateBackgroundRasterJobs();
+    void clearBackgroundAssetCache();
     QGraphicsPixmapItem *backgroundLayerItemAt(int index) const;
     QGraphicsPixmapItem *selectedBackgroundLayerItem() const;
     bool backgroundLayerPaintsVisiblePixels(int index) const;

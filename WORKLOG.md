@@ -4,7 +4,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Current Focus
 
-1. `2026.7.2` post-DOM stabilization and next feature selection.
+1. `2026.7.2` is a performance and unified-source-DOM release: prioritize measured map refresh, explicit runtime ownership, and repeated project-workflow responsiveness over unrelated feature breadth.
 2. Complete watcher W4 in `PROJECT_ASYNC_COORDINATION_PLAN.md`: verify large-tree responsiveness, root replacement,
    directory mutations, and cross-platform watcher behavior. SQL S1-S5 and watcher W1-W3 are complete.
 3. Real-project smoke testing for Raw, Blocks, Map, Validation, Structure, and Compiler navigation after DOM closure.
@@ -15,6 +15,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ### 2026.7.2 Planning
 
+- Keep the `2026.7.2` scope open for the focused performance sequence: complete Map runtime ownership R4-R5, establish
+  map refresh M0 measurements/immutable generation contracts, then widen only measured-safe partial refresh paths.
+  Treat range-based undo as a separate measured decision; do not add unrelated user-facing feature work merely to fill
+  the release.
 - Treat Unified Source DOM implementation as closed for `2026.7.2`; the completed M0-M9 plan is archived at
   `plans/archive/UNIFIED_SOURCE_DOM_PLAN.md`. Future parser/source-model work should treat the DOM as the current
   architecture and extend it through focused regressions rather than reviving the migration queue.
@@ -283,8 +287,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Backlog
 
-- Continue the Map runtime-ownership plan by migrating raster, then SVG, onto the explicit bounded background cache
-  before adding invalidation diagnostics and measured partial-refresh widening.
+- Continue the Map runtime-ownership plan with R5 responsibility extraction, then proceed to M0 map-refresh
+  measurements and the immutable DOM projection/generation contract before widening partial refresh.
 - Optional Structure graph view for relationships such as `preview`, `revise`, `join`, `equate`, relationship status, and station-network edges.
 - Compiler-confirmed project-index comparison once lightweight indexing is no longer sufficient.
 - Broaden retained project validation cache coverage only if fresh logs show repeated scans still rebuilding unchanged

@@ -101,7 +101,13 @@ separate typed payloads behind one policy owner.
 
 Implementation status (2026-07-14): R3 format migration is complete. XVI documents, raster source/display payloads,
 and immutable SVG source bytes plus intrinsic metadata use the tab-owned cache. SVG graphics items receive cached source
-data and no longer open source files themselves. R4 is the next cache slice.
+data and no longer open source files themselves.
+
+Implementation status (2026-07-15): R4 is complete. Project watcher inventory deltas invalidate matching entries in
+every attached or detached Map tab; raster reload remains asynchronous, SVG replaces only its renderer payload, and
+XVI reprojects its derived geometry. Cache teardown occurs with its owning Map tab. Diagnostic mode logs bounded cache
+counts/bytes/hit-miss/eviction statistics without source content or path lists. The cache regression suite covers a
+removed source path whose stable normalized identity must still evict its entry.
 
 ## R5 — Background File Responsibility Split
 

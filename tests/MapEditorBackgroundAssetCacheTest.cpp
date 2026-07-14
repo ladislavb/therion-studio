@@ -1,6 +1,8 @@
 #include "../src/app/text_editor/map_editor/MapEditorBackgroundAssetCache.h"
 
+#include <QFile>
 #include <QTest>
+#include <QTemporaryDir>
 
 using namespace TherionStudio;
 
@@ -47,6 +49,7 @@ private slots:
     void evictsLeastRecentlyUsedEntryAtByteLimit();
     void doesNotStoreOversizedEntries();
     void invalidatesAllFormatsForSource();
+    void invalidatesRemovedSourceByStableIdentity();
     void clearsEntriesAndReleasesPayloads();
     void retainsLoadErrorsAsCacheEntries();
 };
@@ -141,6 +144,28 @@ void MapEditorBackgroundAssetCacheTest::invalidatesAllFormatsForSource()
     QCOMPARE(cache.stats().entryCount, 1);
     QVERIFY(!cache.load(request(QStringLiteral("/project/background")), loader).cacheHit);
     QCOMPARE(calls, 4);
+}
+
+void MapEditorBackgroundAssetCacheTest::invalidatesRemovedSourceByStableIdentity()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString sourcePath = directory.filePath(QStringLiteral("background.svg"));
+    QFile sourceFile(sourcePath);
+    QVERIFY(sourceFile.open(QIODevice::WriteOnly));
+    QVERIFY(sourceFile.write("svg") > 0);
+    sourceFile.close();
+
+    const QString sourceIdentity = MapEditorBackgroundAssetCache::canonicalSourceIdentity(sourcePath);
+    QVERIFY(!sourceIdentity.isEmpty());
+    MapEditorBackgroundAssetCache cache(16);
+    int calls = 0;
+    cache.load(request(sourceIdentity, 3, 100, QByteArray(), MapEditorBackgroundAssetFormat::Svg), countingLoader(&calls));
+    QVERIFY(QFile::remove(sourcePath));
+
+    QCOMPARE(MapEditorBackgroundAssetCache::canonicalSourceIdentity(sourcePath), sourceIdentity);
+    QCOMPARE(cache.invalidateSource(MapEditorBackgroundAssetCache::canonicalSourceIdentity(sourcePath)), 1);
+    QCOMPARE(cache.stats().entryCount, 0);
 }
 
 void MapEditorBackgroundAssetCacheTest::clearsEntriesAndReleasesPayloads()
