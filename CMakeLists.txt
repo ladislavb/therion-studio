@@ -189,6 +189,7 @@ set(THERION_CORE_QTEST_SUITES
     TherionSourceSnapshotCacheTest
     TherionSourceValidatorFixTest
     TherionSourceValidatorProjectionTest
+    ProjectStructureIndexQTest
     TherionTokenRulesTest)
 
 set(THERION_MAIN_WINDOW_QTEST_SUITES
@@ -1183,6 +1184,7 @@ therion_add_core_qtest_runner(TherionCoreQTests
     tests/core/TherionSourceSnapshotCacheTest.cpp
     tests/core/TherionSourceValidatorFixTest.cpp
     tests/core/TherionSourceValidatorProjectionTest.cpp
+    tests/core/ProjectStructureIndexQTest.cpp
     tests/core/TherionSourceTextTest.cpp
     tests/core/TherionTokenRulesTest.cpp)
 
