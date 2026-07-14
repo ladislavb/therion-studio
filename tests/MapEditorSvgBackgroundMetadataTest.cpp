@@ -1,6 +1,7 @@
 #include "../src/app/text_editor/map_editor/MapEditorSvgBackgroundMetadata.h"
 
 #include <QDir>
+#include <QFile>
 #include <QObject>
 #include <QTest>
 
@@ -21,6 +22,7 @@ class MapEditorSvgBackgroundMetadataTest final : public QObject
 
 private slots:
     void readsExplicitSizeAndViewBox();
+    void parsesLoadedSourceData();
     void fallsBackToViewBoxSize();
     void readsWikimediaFixtureSize();
 };
@@ -29,6 +31,19 @@ void MapEditorSvgBackgroundMetadataTest::readsExplicitSizeAndViewBox()
 {
     const MapEditorSvgBackgroundMetadata metadata =
         readMapEditorSvgBackgroundMetadata(svgFixturePath(QStringLiteral("explicit-size.svg")));
+
+    QVERIFY(metadata.valid);
+    QCOMPARE(metadata.intrinsicSize, QSizeF(120.0, 80.0));
+    QCOMPARE(metadata.sourceViewBox, QRectF(-5.0, 10.0, 240.0, 160.0));
+}
+
+void MapEditorSvgBackgroundMetadataTest::parsesLoadedSourceData()
+{
+    QFile file(svgFixturePath(QStringLiteral("explicit-size.svg")));
+    QVERIFY(file.open(QIODevice::ReadOnly));
+
+    const MapEditorSvgBackgroundMetadata metadata =
+        parseMapEditorSvgBackgroundMetadata(file.readAll());
 
     QVERIFY(metadata.valid);
     QCOMPARE(metadata.intrinsicSize, QSizeF(120.0, 80.0));

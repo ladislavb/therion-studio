@@ -99,6 +99,10 @@ separate typed payloads behind one policy owner.
 - Never log document content or unbounded file lists.
 - Add fakes proving tests do not share mutable cache state.
 
+Implementation status (2026-07-14): R3 format migration is complete. XVI documents, raster source/display payloads,
+and immutable SVG source bytes plus intrinsic metadata use the tab-owned cache. SVG graphics items receive cached source
+data and no longer open source files themselves. R4 is the next cache slice.
+
 ## R5 — Background File Responsibility Split
 
 Only after R2-R4 provide a real seam, extract asset loading/cache coordination from

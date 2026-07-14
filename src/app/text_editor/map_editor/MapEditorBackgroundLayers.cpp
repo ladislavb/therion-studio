@@ -308,6 +308,61 @@ bool parseXviDocumentFileCached(MapEditorBackgroundAssetCache *assetCache,
     return true;
 }
 
+struct SvgBackgroundAsset
+{
+    QByteArray sourceData;
+    MapEditorSvgBackgroundMetadata metadata;
+};
+
+bool loadSvgBackgroundAssetCached(MapEditorBackgroundAssetCache *assetCache,
+                                  const QString &absolutePath,
+                                  SvgBackgroundAsset *asset)
+{
+    if (assetCache == nullptr || asset == nullptr || absolutePath.isEmpty()) {
+        return false;
+    }
+
+    const QFileInfo fileInfo(absolutePath);
+    if (!fileInfo.exists() || !fileInfo.isFile()) {
+        return false;
+    }
+
+    const MapEditorBackgroundAssetRequest request{
+        .key = MapEditorBackgroundAssetKey{
+            .canonicalSourcePath = normalizedPathKey(fileInfo.absoluteFilePath()),
+            .format = MapEditorBackgroundAssetFormat::Svg,
+            .decodeOptions = QStringLiteral("therion-svg-source-v1")},
+        .revision = MapEditorBackgroundAssetRevision{
+            .byteSize = fileInfo.size(),
+            .modifiedMilliseconds = fileInfo.lastModified().toMSecsSinceEpoch()}};
+    const MapEditorBackgroundAssetCacheResult cacheResult = assetCache->load(
+        request,
+        [filePath = fileInfo.absoluteFilePath()](const MapEditorBackgroundAssetRequest &) {
+            QFile file(filePath);
+            if (!file.open(QIODevice::ReadOnly)) {
+                return MapEditorBackgroundAssetLoadResult{.error = QStringLiteral("Unable to read SVG background.")};
+            }
+
+            const QByteArray sourceData = file.readAll();
+            const MapEditorSvgBackgroundMetadata metadata = parseMapEditorSvgBackgroundMetadata(sourceData);
+            if (!metadata.valid) {
+                return MapEditorBackgroundAssetLoadResult{.error = QStringLiteral("Invalid SVG background.")};
+            }
+
+            return MapEditorBackgroundAssetLoadResult{
+                .payload = std::make_shared<const SvgBackgroundAsset>(SvgBackgroundAsset{
+                    .sourceData = sourceData,
+                    .metadata = metadata}),
+                .byteCost = static_cast<std::size_t>(sourceData.size())};
+        });
+    if (!cacheResult.loadResult.payload) {
+        return false;
+    }
+
+    *asset = *std::static_pointer_cast<const SvgBackgroundAsset>(cacheResult.loadResult.payload);
+    return true;
+}
+
 void cacheRasterSourceImage(QGraphicsPixmapItem *item, const QImage &sourceImage)
 {
     if (item == nullptr || sourceImage.isNull()) {
@@ -1293,6 +1348,7 @@ bool createAndAppendXviBackgroundItem(QGraphicsScene *scene,
 
 bool createAndAppendSvgBackgroundItem(QGraphicsScene *scene,
                                       QVector<QGraphicsPixmapItem *> *layers,
+                                      MapEditorBackgroundAssetCache *assetCache,
                                       const QString &absolutePath,
                                       const XtherionBackgroundReference &reference,
                                       const XtherionAreaAdjust &areaAdjust,
@@ -1307,7 +1363,12 @@ bool createAndAppendSvgBackgroundItem(QGraphicsScene *scene,
         return false;
     }
 
-    auto *backgroundItem = new MapEditorSvgBackgroundItem(absolutePath,
+    SvgBackgroundAsset asset;
+    if (!loadSvgBackgroundAssetCached(assetCache, absolutePath, &asset)) {
+        return false;
+    }
+
+    auto *backgroundItem = new MapEditorSvgBackgroundItem(asset.sourceData,
                                                           reference.svgIntrinsicSize,
                                                           reference.svgSourceViewBox);
     if (!backgroundItem->isValid()) {
@@ -2743,6 +2804,7 @@ void MapEditorTab::loadBackgroundLayersFromSession()
                 : (areaAdjust.valid && areaAdjust.modelRect.isValid() ? areaAdjust.modelRect : QRectF());
             if (!createAndAppendSvgBackgroundItem(mapScene_,
                                                   &backgroundImageItems_,
+                                                  &backgroundAssetCache_,
                                                   QFileInfo(layerPath).absoluteFilePath(),
                                                   *metadataReference,
                                                   areaAdjust,
@@ -3002,6 +3064,7 @@ void MapEditorTab::syncAutoBackgroundLayersFromCurrentDocument()
                 : (areaAdjust.valid && areaAdjust.modelRect.isValid() ? areaAdjust.modelRect : QRectF());
             if (!createAndAppendSvgBackgroundItem(mapScene_,
                                                   &backgroundImageItems_,
+                                                  &backgroundAssetCache_,
                                                   referencePath,
                                                   reference,
                                                   areaAdjust,
@@ -3666,11 +3729,12 @@ bool MapEditorTab::addSvgBackgroundImage(const QString &imagePath)
     }
 
     const QString absolutePath = QFileInfo(imagePath).absoluteFilePath();
-    const MapEditorSvgBackgroundMetadata svgMetadata = readMapEditorSvgBackgroundMetadata(absolutePath);
-    if (!svgMetadata.valid) {
+    SvgBackgroundAsset svgAsset;
+    if (!loadSvgBackgroundAssetCached(&backgroundAssetCache_, absolutePath, &svgAsset)) {
         toolbarStatusNote_ = tr("Could not load SVG background metadata.");
         return false;
     }
+    const MapEditorSvgBackgroundMetadata &svgMetadata = svgAsset.metadata;
 
     const QRectF previewBounds = mapPreviewBounds();
     if (!previewBounds.isValid() || previewBounds.width() < 2.0 || previewBounds.height() < 2.0) {
@@ -3701,6 +3765,7 @@ bool MapEditorTab::addSvgBackgroundImage(const QString &imagePath)
         : XtherionAreaAdjust{};
     if (!createAndAppendSvgBackgroundItem(mapScene_,
                                           &backgroundImageItems_,
+                                          &backgroundAssetCache_,
                                           absolutePath,
                                           reference,
                                           areaAdjust,

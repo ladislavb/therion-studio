@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QByteArray>
 #include <QRectF>
 #include <QSizeF>
 #include <QString>
@@ -15,5 +16,6 @@ struct MapEditorSvgBackgroundMetadata
 };
 
 MapEditorSvgBackgroundMetadata readMapEditorSvgBackgroundMetadata(const QString &absolutePath);
+MapEditorSvgBackgroundMetadata parseMapEditorSvgBackgroundMetadata(const QByteArray &svgData);
 
 }

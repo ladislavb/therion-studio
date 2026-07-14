@@ -71,14 +71,9 @@ QRectF parseSvgViewBox(const QString &value)
 }
 }
 
-MapEditorSvgBackgroundMetadata readMapEditorSvgBackgroundMetadata(const QString &absolutePath)
+MapEditorSvgBackgroundMetadata parseMapEditorSvgBackgroundMetadata(const QByteArray &svgData)
 {
-    QFile file(absolutePath);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return {};
-    }
-
-    QXmlStreamReader reader(&file);
+    QXmlStreamReader reader(svgData);
     while (!reader.atEnd()) {
         reader.readNext();
         if (!reader.isStartElement()) {
@@ -117,6 +112,15 @@ MapEditorSvgBackgroundMetadata readMapEditorSvgBackgroundMetadata(const QString 
     }
 
     return {};
+}
+
+MapEditorSvgBackgroundMetadata readMapEditorSvgBackgroundMetadata(const QString &absolutePath)
+{
+    QFile file(absolutePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return {};
+    }
+    return parseMapEditorSvgBackgroundMetadata(file.readAll());
 }
 
 }

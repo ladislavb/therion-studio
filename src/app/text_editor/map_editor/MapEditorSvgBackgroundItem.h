@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QByteArray>
 #include <QGraphicsPixmapItem>
 #include <QRectF>
 #include <QSizeF>
@@ -13,7 +14,7 @@ namespace TherionStudio
 class MapEditorSvgBackgroundItem final : public QGraphicsPixmapItem
 {
 public:
-    explicit MapEditorSvgBackgroundItem(const QString &absolutePath,
+    explicit MapEditorSvgBackgroundItem(const QByteArray &svgData,
                                         const QSizeF &intrinsicSize,
                                         const QRectF &sourceViewBox);
     ~MapEditorSvgBackgroundItem() override;

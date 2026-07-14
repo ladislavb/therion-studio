@@ -11,12 +11,12 @@ namespace
 constexpr int kMapEditorSvgBackgroundItemRole = 118;
 }
 
-MapEditorSvgBackgroundItem::MapEditorSvgBackgroundItem(const QString &absolutePath,
+MapEditorSvgBackgroundItem::MapEditorSvgBackgroundItem(const QByteArray &svgData,
                                                        const QSizeF &intrinsicSize,
                                                        const QRectF &sourceViewBox)
     : intrinsicSize_(intrinsicSize)
     , sourceViewBox_(sourceViewBox)
-    , renderer_(new QSvgRenderer(absolutePath, nullptr))
+    , renderer_(new QSvgRenderer(svgData, nullptr))
 {
     setData(kMapEditorSvgBackgroundItemRole, true);
     const QRectF defaultViewBox(QPointF(0.0, 0.0), intrinsicSize_);
