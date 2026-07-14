@@ -123,9 +123,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Use `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md` only for future validation/cache follow-ups; Structure and
   Validation already share snapshot-compatible collection/index input paths and explicit cache ownership.
 - Project station-reference validation now applies a scrap's `-station-names <prefix> <suffix>` transform before
-  resolving the complete station token against centerline data in both indexed and unindexed TH2 validation paths,
-  including quoted empty prefix/suffix values; unindexed qualified references are resolved against the cached project
-  station index, including relative namespaces; map-editor project diagnostics are retained while Visual mode is
+  resolving the complete station token against centerline data where the TH2 file has project namespace context,
+  including quoted empty prefix/suffix values; unindexed qualified references are suppressed conservatively while
+  unqualified references report their lack of source-graph context; map-editor project diagnostics are retained while Visual mode is
   active so they become visible when the affected document is opened in Raw mode, and map-editor changes (including
   undo back to a clean document) participate in debounced live project validation from the in-memory source snapshot,
   with focused QTest coverage for valid, missing, and invalid-namespace references.

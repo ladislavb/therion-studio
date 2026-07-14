@@ -54,6 +54,9 @@ Therion Studio is an editor and early-feedback tool. The Therion compiler remain
 - Project-index diagnostics should be conservative and source-range-aware. Prefer suppressing uncertain findings over producing false positives in valid Therion projects.
 - Active-document validation and project validation should share rules where practical so open saved and unsaved documents behave consistently.
 - A scrap option `-station-names <prefix> <suffix>` adds the prefix and suffix to station names used by station points in that scrap; `[]` denotes an empty prefix or suffix. Project-index station-reference validation shall apply that transform before resolving the reference in the owning survey namespace.
+- A `.th2` file outside the project source graph has no owning survey namespace. Project validation may report an
+  unqualified station name in that file as unresolved, but shall suppress qualified station references until sufficient
+  project context is available.
 - Inline highlighter diagnostics should use the same source ranges and severity as the validation diagnostics they represent.
 
 ## Metadata Sources
