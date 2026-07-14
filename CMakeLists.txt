@@ -165,6 +165,98 @@ function(therion_add_core_qtest_runner target_name)
     target_link_libraries(${target_name} PRIVATE therion_core Qt6::Test)
 endfunction()
 
+function(therion_add_qtest_suite_cases target_name)
+    foreach(suite_name IN LISTS ARGN)
+        add_test(NAME ${suite_name} COMMAND ${target_name} --suite ${suite_name})
+    endforeach()
+endfunction()
+
+set(THERION_CORE_QTEST_SUITES
+    CommandCatalogStoreTest
+    PocketTopoImportTest
+    Th2GeometryProjectionTest
+    TherionFileTypesTest
+    ThreeDViewerCameraTest
+    ThreeDViewerLoxLoaderTest
+    ThreeDViewerLoxCorpusPolicyTest
+    ThreeDViewerSceneModelTest
+    ThreeDViewerSceneStatisticsTest
+    TherionDocumentEditorDraftInsertionTest
+    TherionSourceTextTest
+    TherionSourceDocumentTest
+    TherionSourceFormatterTest
+    TherionSourceLogicalDocumentTest
+    TherionSourceSnapshotCacheTest
+    TherionSourceValidatorFixTest
+    TherionSourceValidatorProjectionTest
+    TherionTokenRulesTest)
+
+set(THERION_MAIN_WINDOW_QTEST_SUITES
+    MainWindowHelpDocumentTest
+    MainWindowProjectLifecycleServiceTest
+    MainWindowProjectOrchestrationServiceTest
+    MainWindowProjectUiFlowServiceTest
+    MainWindowProjectWorkspaceServiceTest
+    MainWindowRecentFilesServiceTest
+    MainWindowRecentProjectsServiceTest
+    ProjectFileWatchInventoryTest
+    ProjectFileWatchInventoryServiceTest
+    ProjectFileWatchDeltaTest
+    ProjectOutputsScannerTest
+    ProjectStructureScannerTest
+    MainWindowSessionDocumentServiceTest
+    MainWindowSessionProjectServiceTest
+    MainWindowSessionRestoreOrchestrationServiceTest
+    MainWindowSessionRestoreUiFlowServiceTest
+    MainWindowSessionStateServiceTest
+    MainWindowSessionWindowRestoreServiceTest
+    MainWindowStructureNameOverridesServiceTest
+    TherionSqlReportDatabaseTest
+    TherionSqlReportWorkerTest)
+
+set(THERION_THREE_D_VIEWER_QTEST_SUITES
+    ThreeDViewerProjectionTest
+    ThreeDViewerLayerListModelTest
+    ThreeDViewerInspectorStateTest
+    ThreeDViewerImageExportDialogTest
+    ThreeDViewerInspectorWidgetTest
+    ThreeDViewerViewportWidgetTest
+    ThreeDViewerViewportControllerTest)
+
+set(THERION_MAP_EDITOR_QTEST_SUITES
+    MapEditorAreaReferenceResolverTest
+    MapEditorFreehandSimplificationTest
+    MapEditorInputPolicyTest
+    MapEditorObjectDeletePlannerTest
+    MapEditorObjectMovePlannerTest
+    MapEditorPointSymbolGeometryTest
+    MapEditorSvgBackgroundMetadataTest
+    MapEditorUndoArbitrationServiceTest)
+
+set(THERION_TEXT_EDITOR_DOCUMENT_QTEST_SUITES
+    TextEditorDocumentIoServiceTest
+    TextEditorDocumentPersistenceStateServiceTest
+    TextEditorDocumentPreconditionsServiceTest
+    TextEditorDocumentWorkflowControllerTest
+    TextEditorOptionValidationTest)
+
+set(THERION_TEXT_EDITOR_RAW_QTEST_SUITES
+    RawEditorCompletionInsertionControllerTest
+    RawEditorCompletionContextAnalyzerTest
+    RawEditorCompletionTokenContextTest
+    RawEditorFindShortcutTest)
+
+set(THERION_BLOCK_EDITOR_QTEST_SUITES
+    BlockEditorDocumentOutlineBuilderTest
+    BlockEditorMoveSourceRewriterTest)
+
+set(THERION_RUNNER_SUPPORT_QTEST_SUITES
+    TherionExecutableSelectionControllerTest
+    TherionRunnerConfigDisplayControllerTest
+    TherionRunnerConfigResolverTest
+    TherionRunnerOutputLinkerTest
+    TherionRunnerPresenterTest)
+
 set(THERION_PLATFORM_SOURCES
     src/platform/ApplicationIdentity.cpp
     src/platform/ApplicationIdentity.h
@@ -1760,19 +1852,59 @@ endforeach()
 
 enable_testing()
 
+set(THERION_QTEST_AGGREGATE_TARGETS
+    TherionCoreQTests
+    MainWindowServiceQTests
+    ThreeDViewerQTests
+    MapEditorLogicQTests
+    TextEditorDocumentServiceQTests
+    TextEditorRawEditorQTests
+    BlockEditorLogicQTests
+    TherionRunnerSupportQTests)
+
+set(THERION_QTEST_SUITE_CASES
+    ${THERION_CORE_QTEST_SUITES}
+    ${THERION_MAIN_WINDOW_QTEST_SUITES}
+    ${THERION_THREE_D_VIEWER_QTEST_SUITES}
+    ${THERION_MAP_EDITOR_QTEST_SUITES}
+    ${THERION_TEXT_EDITOR_DOCUMENT_QTEST_SUITES}
+    ${THERION_TEXT_EDITOR_RAW_QTEST_SUITES}
+    ${THERION_BLOCK_EDITOR_QTEST_SUITES}
+    ${THERION_RUNNER_SUPPORT_QTEST_SUITES})
+
 foreach(test_target IN LISTS THERION_TEST_EXECUTABLE_TARGETS)
-    add_test(NAME ${test_target} COMMAND ${test_target})
+    if(NOT test_target IN_LIST THERION_QTEST_AGGREGATE_TARGETS)
+        add_test(NAME ${test_target} COMMAND ${test_target})
+    endif()
 endforeach()
+
+therion_add_qtest_suite_cases(TherionCoreQTests ${THERION_CORE_QTEST_SUITES})
+therion_add_qtest_suite_cases(MainWindowServiceQTests ${THERION_MAIN_WINDOW_QTEST_SUITES})
+therion_add_qtest_suite_cases(ThreeDViewerQTests ${THERION_THREE_D_VIEWER_QTEST_SUITES})
+therion_add_qtest_suite_cases(MapEditorLogicQTests ${THERION_MAP_EDITOR_QTEST_SUITES})
+therion_add_qtest_suite_cases(TextEditorDocumentServiceQTests ${THERION_TEXT_EDITOR_DOCUMENT_QTEST_SUITES})
+therion_add_qtest_suite_cases(TextEditorRawEditorQTests ${THERION_TEXT_EDITOR_RAW_QTEST_SUITES})
+therion_add_qtest_suite_cases(BlockEditorLogicQTests ${THERION_BLOCK_EDITOR_QTEST_SUITES})
+therion_add_qtest_suite_cases(TherionRunnerSupportQTests ${THERION_RUNNER_SUPPORT_QTEST_SUITES})
 
 add_test(NAME StructureConstraintsTest COMMAND python3 ${CMAKE_SOURCE_DIR}/scripts/check_structure_constraints.py)
 
-set_tests_properties(
+set(THERION_TEST_CASE_NAMES
     ${THERION_TEST_EXECUTABLE_TARGETS}
+    ${THERION_QTEST_SUITE_CASES})
+list(REMOVE_ITEM THERION_TEST_CASE_NAMES ${THERION_QTEST_AGGREGATE_TARGETS})
+
+set_tests_properties(
+    ${THERION_TEST_CASE_NAMES}
     PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+set(THERION_UNIT_TEST_CASES ${THERION_UNIT_TEST_TARGETS})
+list(REMOVE_ITEM THERION_UNIT_TEST_CASES ${THERION_QTEST_AGGREGATE_TARGETS})
+list(APPEND THERION_UNIT_TEST_CASES ${THERION_QTEST_SUITE_CASES})
+
 set_tests_properties(
-    ${THERION_UNIT_TEST_TARGETS}
+    ${THERION_UNIT_TEST_CASES}
     StructureConstraintsTest
     PROPERTIES
         LABELS "unit")

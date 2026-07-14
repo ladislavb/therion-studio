@@ -9,7 +9,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
    directory mutations, and cross-platform watcher behavior. SQL S1-S5 and watcher W1-W3 are complete.
 3. Real-project smoke testing for Raw, Blocks, Map, Validation, Structure, and Compiler navigation after DOM closure.
 4. Plan-driven follow-ups for map partial refresh, validation/cache tuning, GUI cleanup, SVG backgrounds, reporting, LiDAR design, and 3D viewer refinement, including palette-regression coverage for inspector controls.
-5. Verify the Windows unit-test stabilization, use the persisted aggregate QTest logs for any remaining platform-specific failure, and keep session restore working for accessible projects in standard macOS user folders.
+5. Verify the Windows unit-test stabilization and keep session restore working for accessible projects in standard macOS user folders; unit CTest cases now identify individual QTest suites without multiplying test binaries. On failures, verify production code before considering any test change, which requires explicit approval.
 
 ## Active Work
 

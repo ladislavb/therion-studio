@@ -1,3 +1,5 @@
+#include "QTestSuiteDispatcher.h"
+
 #include <QCoreApplication>
 #include <QtTest/QtTest>
 
@@ -11,11 +13,10 @@ int main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
 
-    int status = 0;
-    status |= runTherionExecutableSelectionControllerTest(argc, argv);
-    status |= runTherionRunnerConfigDisplayControllerTest(argc, argv);
-    status |= runTherionRunnerConfigResolverTest(argc, argv);
-    status |= runTherionRunnerOutputLinkerTest(argc, argv);
-    status |= runTherionRunnerPresenterTest(argc, argv);
-    return status;
+    return runSelectedQTestSuites(argc, argv, {
+        {"TherionExecutableSelectionControllerTest", runTherionExecutableSelectionControllerTest},
+        {"TherionRunnerConfigDisplayControllerTest", runTherionRunnerConfigDisplayControllerTest},
+        {"TherionRunnerConfigResolverTest", runTherionRunnerConfigResolverTest},
+        {"TherionRunnerOutputLinkerTest", runTherionRunnerOutputLinkerTest},
+        {"TherionRunnerPresenterTest", runTherionRunnerPresenterTest}});
 }

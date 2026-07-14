@@ -1,3 +1,5 @@
+#include "QTestSuiteDispatcher.h"
+
 #include <QCoreApplication>
 #include <QtTest/QtTest>
 
@@ -27,27 +29,26 @@ int main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
 
-    int status = 0;
-    status |= runMainWindowHelpDocumentTest(argc, argv);
-    status |= runMainWindowProjectLifecycleServiceTest(argc, argv);
-    status |= runMainWindowProjectOrchestrationServiceTest(argc, argv);
-    status |= runMainWindowProjectUiFlowServiceTest(argc, argv);
-    status |= runMainWindowProjectWorkspaceServiceTest(argc, argv);
-    status |= runMainWindowRecentFilesServiceTest(argc, argv);
-    status |= runMainWindowRecentProjectsServiceTest(argc, argv);
-    status |= runProjectFileWatchInventoryTest(argc, argv);
-    status |= runProjectFileWatchInventoryServiceTest(argc, argv);
-    status |= runProjectFileWatchDeltaTest(argc, argv);
-    status |= runProjectOutputsScannerTest(argc, argv);
-    status |= runProjectStructureScannerTest(argc, argv);
-    status |= runMainWindowSessionDocumentServiceTest(argc, argv);
-    status |= runMainWindowSessionProjectServiceTest(argc, argv);
-    status |= runMainWindowSessionRestoreOrchestrationServiceTest(argc, argv);
-    status |= runMainWindowSessionRestoreUiFlowServiceTest(argc, argv);
-    status |= runMainWindowSessionStateServiceTest(argc, argv);
-    status |= runMainWindowSessionWindowRestoreServiceTest(argc, argv);
-    status |= runMainWindowStructureNameOverridesServiceTest(argc, argv);
-    status |= runTherionSqlReportDatabaseTest(argc, argv);
-    status |= runTherionSqlReportWorkerTest(argc, argv);
-    return status;
+    return runSelectedQTestSuites(argc, argv, {
+        {"MainWindowHelpDocumentTest", runMainWindowHelpDocumentTest},
+        {"MainWindowProjectLifecycleServiceTest", runMainWindowProjectLifecycleServiceTest},
+        {"MainWindowProjectOrchestrationServiceTest", runMainWindowProjectOrchestrationServiceTest},
+        {"MainWindowProjectUiFlowServiceTest", runMainWindowProjectUiFlowServiceTest},
+        {"MainWindowProjectWorkspaceServiceTest", runMainWindowProjectWorkspaceServiceTest},
+        {"MainWindowRecentFilesServiceTest", runMainWindowRecentFilesServiceTest},
+        {"MainWindowRecentProjectsServiceTest", runMainWindowRecentProjectsServiceTest},
+        {"ProjectFileWatchInventoryTest", runProjectFileWatchInventoryTest},
+        {"ProjectFileWatchInventoryServiceTest", runProjectFileWatchInventoryServiceTest},
+        {"ProjectFileWatchDeltaTest", runProjectFileWatchDeltaTest},
+        {"ProjectOutputsScannerTest", runProjectOutputsScannerTest},
+        {"ProjectStructureScannerTest", runProjectStructureScannerTest},
+        {"MainWindowSessionDocumentServiceTest", runMainWindowSessionDocumentServiceTest},
+        {"MainWindowSessionProjectServiceTest", runMainWindowSessionProjectServiceTest},
+        {"MainWindowSessionRestoreOrchestrationServiceTest", runMainWindowSessionRestoreOrchestrationServiceTest},
+        {"MainWindowSessionRestoreUiFlowServiceTest", runMainWindowSessionRestoreUiFlowServiceTest},
+        {"MainWindowSessionStateServiceTest", runMainWindowSessionStateServiceTest},
+        {"MainWindowSessionWindowRestoreServiceTest", runMainWindowSessionWindowRestoreServiceTest},
+        {"MainWindowStructureNameOverridesServiceTest", runMainWindowStructureNameOverridesServiceTest},
+        {"TherionSqlReportDatabaseTest", runTherionSqlReportDatabaseTest},
+        {"TherionSqlReportWorkerTest", runTherionSqlReportWorkerTest}});
 }

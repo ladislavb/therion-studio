@@ -169,6 +169,8 @@ These instructions apply to the whole repository.
 
 ## Verification Expectations
 
+- When a test fails, first treat the failure as evidence that the production code, its platform integration, or the test environment may be incorrect. Reproduce the failure, inspect and verify the code under test, and fix the production code when it is defective; do not change the test merely to make the failure pass.
+- Do not weaken assertions, broaden tolerances, add skips, disable cases, or otherwise alter an existing test as the first response to a failure. Test changes are allowed only after concrete evidence shows that the test itself is incorrect, stale, or invalid for the specified behavior, and only after explicit user approval; document that evidence and the reason for the approved test change.
 - Prefer focused automated tests for parser, serializer, project loading, indexing, command routing, session restore, and document-editing logic.
 - Use Qt's QTest framework for all new C++ tests. Keep CTest as the test runner/orchestrator, but do not add new hand-rolled `main()`/`require()`/`expect()` test harnesses unless there is a narrowly documented reason.
 - Organize QTest executables by dependency/runtime boundary, not by individual test class and not as one global runner. Use aggregate runners such as `TherionCoreQTests`, future app-service runners, text-editor runners, and map/UI runners when test files share the same dependencies and runtime setup.

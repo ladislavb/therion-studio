@@ -1,3 +1,5 @@
+#include "QTestSuiteDispatcher.h"
+
 #include <QApplication>
 #include <QtTest/QtTest>
 
@@ -12,13 +14,12 @@ int runThreeDViewerViewportControllerTest(int argc, char **argv);
 int main(int argc, char **argv)
 {
     QApplication application(argc, argv);
-    int status = 0;
-    status |= runThreeDViewerProjectionTest(argc, argv);
-    status |= runThreeDViewerLayerListModelTest(argc, argv);
-    status |= runThreeDViewerInspectorStateTest(argc, argv);
-    status |= runThreeDViewerImageExportDialogTest(argc, argv);
-    status |= runThreeDViewerInspectorWidgetTest(argc, argv);
-    status |= runThreeDViewerViewportWidgetTest(argc, argv);
-    status |= runThreeDViewerViewportControllerTest(argc, argv);
-    return status;
+    return runSelectedQTestSuites(argc, argv, {
+        {"ThreeDViewerProjectionTest", runThreeDViewerProjectionTest},
+        {"ThreeDViewerLayerListModelTest", runThreeDViewerLayerListModelTest},
+        {"ThreeDViewerInspectorStateTest", runThreeDViewerInspectorStateTest},
+        {"ThreeDViewerImageExportDialogTest", runThreeDViewerImageExportDialogTest},
+        {"ThreeDViewerInspectorWidgetTest", runThreeDViewerInspectorWidgetTest},
+        {"ThreeDViewerViewportWidgetTest", runThreeDViewerViewportWidgetTest},
+        {"ThreeDViewerViewportControllerTest", runThreeDViewerViewportControllerTest}});
 }

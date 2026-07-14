@@ -1,3 +1,5 @@
+#include "../QTestSuiteDispatcher.h"
+
 #include <QtTest/QtTest>
 
 int runCommandCatalogStoreTest(int argc, char **argv);
@@ -21,24 +23,23 @@ int runTherionFileTypesTest(int argc, char **argv);
 
 int main(int argc, char **argv)
 {
-    int status = 0;
-    status |= runCommandCatalogStoreTest(argc, argv);
-    status |= runPocketTopoImportTest(argc, argv);
-    status |= runTh2GeometryProjectionTest(argc, argv);
-    status |= runTherionFileTypesTest(argc, argv);
-    status |= runThreeDViewerCameraTest(argc, argv);
-    status |= runThreeDViewerLoxLoaderTest(argc, argv);
-    status |= runThreeDViewerLoxCorpusPolicyTest(argc, argv);
-    status |= runThreeDViewerSceneModelTest(argc, argv);
-    status |= runThreeDViewerSceneStatisticsTest(argc, argv);
-    status |= runTherionDocumentEditorDraftInsertionTest(argc, argv);
-    status |= runTherionSourceTextTest(argc, argv);
-    status |= runTherionSourceDocumentTest(argc, argv);
-    status |= runTherionSourceFormatterTest(argc, argv);
-    status |= runTherionSourceLogicalDocumentTest(argc, argv);
-    status |= runTherionSourceSnapshotCacheTest(argc, argv);
-    status |= runTherionSourceValidatorFixTest(argc, argv);
-    status |= runTherionSourceValidatorProjectionTest(argc, argv);
-    status |= runTherionTokenRulesTest(argc, argv);
-    return status;
+    return runSelectedQTestSuites(argc, argv, {
+        {"CommandCatalogStoreTest", runCommandCatalogStoreTest},
+        {"PocketTopoImportTest", runPocketTopoImportTest},
+        {"Th2GeometryProjectionTest", runTh2GeometryProjectionTest},
+        {"TherionFileTypesTest", runTherionFileTypesTest},
+        {"ThreeDViewerCameraTest", runThreeDViewerCameraTest},
+        {"ThreeDViewerLoxLoaderTest", runThreeDViewerLoxLoaderTest},
+        {"ThreeDViewerLoxCorpusPolicyTest", runThreeDViewerLoxCorpusPolicyTest},
+        {"ThreeDViewerSceneModelTest", runThreeDViewerSceneModelTest},
+        {"ThreeDViewerSceneStatisticsTest", runThreeDViewerSceneStatisticsTest},
+        {"TherionDocumentEditorDraftInsertionTest", runTherionDocumentEditorDraftInsertionTest},
+        {"TherionSourceTextTest", runTherionSourceTextTest},
+        {"TherionSourceDocumentTest", runTherionSourceDocumentTest},
+        {"TherionSourceFormatterTest", runTherionSourceFormatterTest},
+        {"TherionSourceLogicalDocumentTest", runTherionSourceLogicalDocumentTest},
+        {"TherionSourceSnapshotCacheTest", runTherionSourceSnapshotCacheTest},
+        {"TherionSourceValidatorFixTest", runTherionSourceValidatorFixTest},
+        {"TherionSourceValidatorProjectionTest", runTherionSourceValidatorProjectionTest},
+        {"TherionTokenRulesTest", runTherionTokenRulesTest}});
 }

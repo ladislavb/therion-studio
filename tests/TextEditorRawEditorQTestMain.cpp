@@ -1,3 +1,5 @@
+#include "QTestSuiteDispatcher.h"
+
 #include <QApplication>
 #include <QtTest/QtTest>
 
@@ -10,10 +12,9 @@ int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
 
-    int status = 0;
-    status |= runRawEditorCompletionInsertionControllerTest(argc, argv);
-    status |= runRawEditorCompletionContextAnalyzerTest(argc, argv);
-    status |= runRawEditorCompletionTokenContextTest(argc, argv);
-    status |= runRawEditorFindShortcutTest(argc, argv);
-    return status;
+    return runSelectedQTestSuites(argc, argv, {
+        {"RawEditorCompletionInsertionControllerTest", runRawEditorCompletionInsertionControllerTest},
+        {"RawEditorCompletionContextAnalyzerTest", runRawEditorCompletionContextAnalyzerTest},
+        {"RawEditorCompletionTokenContextTest", runRawEditorCompletionTokenContextTest},
+        {"RawEditorFindShortcutTest", runRawEditorFindShortcutTest}});
 }
