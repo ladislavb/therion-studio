@@ -21,6 +21,7 @@
 
 #include "MapEditorInspectorData.h"
 #include "MapEditorInteractiveDrawLogic.h"
+#include "MapEditorBackgroundAssetCache.h"
 #include "MapEditorLogicalSourceContext.h"
 #include "MapEditorObjectDetailsLogic.h"
 #include "MapEditorObjectStyleCatalog.h"
@@ -809,6 +810,7 @@ private:
     QHash<int, QGraphicsItem *> mapItemsByLine_;
     QVector<QGraphicsRectItem *> draftGeometryItems_;
     QVector<QGraphicsPixmapItem *> backgroundImageItems_;
+    MapEditorBackgroundAssetCache backgroundAssetCache_;
     quint64 backgroundRasterJobGeneration_ = 0;
     QUndoStack *undoStack_ = nullptr;
     int nextDraftGeometryId_ = 1;

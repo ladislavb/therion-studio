@@ -38,14 +38,9 @@ struct MapEditorBackgroundAssetRequest
     MapEditorBackgroundAssetRevision revision;
 };
 
-struct MapEditorBackgroundAssetPayload
-{
-    QByteArray bytes;
-};
-
 struct MapEditorBackgroundAssetLoadResult
 {
-    std::shared_ptr<const MapEditorBackgroundAssetPayload> payload;
+    std::shared_ptr<const void> payload;
     QString error;
     std::size_t byteCost = 0;
 };

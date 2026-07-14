@@ -2,7 +2,6 @@
 
 #include <QColor>
 #include <QCoreApplication>
-#include <QCryptographicHash>
 #include <QDateTime>
 #include <QDialog>
 #include <QDialogButtonBox>
@@ -84,12 +83,6 @@ constexpr int kBackgroundLayerRasterProjectionKeyRole = 108;
 constexpr int kBackgroundLayerRasterBasePositionRole = 109;
 constexpr qreal kDefaultXviLayerOpacity = 1.0;
 constexpr qreal kDefaultRasterLayerOpacity = 0.58;
-
-struct CachedXviDocumentEntry
-{
-    QByteArray contentHash;
-    XviDocument document;
-};
 
 struct XviSketchStrokeStyle
 {
@@ -263,40 +256,55 @@ QRectF rasterPlacementModelBoundsForReference(const XtherionBackgroundReference 
     return rasterMetadataModelBounds(areaAdjust, sourceBounds);
 }
 
-bool parseXviDocumentFileCached(const QString &absolutePath, XviDocument *document)
+bool parseXviDocumentFileCached(MapEditorBackgroundAssetCache *assetCache,
+                                const QString &absolutePath,
+                                XviDocument *document)
 {
-    if (document == nullptr || absolutePath.isEmpty()) {
+    if (assetCache == nullptr || document == nullptr || absolutePath.isEmpty()) {
         return false;
     }
 
-    static QHash<QString, CachedXviDocumentEntry> cache;
-
     QFileInfo fileInfo(absolutePath);
-    if (!fileInfo.exists()) {
+    if (!fileInfo.exists() || !fileInfo.isFile()) {
         return false;
     }
 
     const QString pathKey = normalizedPathKey(fileInfo.absoluteFilePath());
-    QFile file(fileInfo.absoluteFilePath());
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return false;
-    }
-    const QByteArray fileBytes = file.readAll();
-    const QByteArray contentHash = QCryptographicHash::hash(fileBytes, QCryptographicHash::Sha256);
-
-    const auto cacheIt = cache.constFind(pathKey);
-    if (cacheIt != cache.constEnd() && cacheIt->contentHash == contentHash) {
-        *document = cacheIt->document;
-        return true;
-    }
-
-    XviDocument parsed;
-    if (!parseTherionXviDocumentText(QString::fromUtf8(fileBytes), &parsed)) {
+    if (pathKey.isEmpty()) {
         return false;
     }
 
-    cache.insert(pathKey, CachedXviDocumentEntry{contentHash, parsed});
-    *document = parsed;
+    const MapEditorBackgroundAssetRequest request{
+        .key = MapEditorBackgroundAssetKey{
+            .canonicalSourcePath = pathKey,
+            .format = MapEditorBackgroundAssetFormat::Xvi,
+            .decodeOptions = QStringLiteral("therion-xvi-v1")},
+        .revision = MapEditorBackgroundAssetRevision{
+            .byteSize = fileInfo.size(),
+            .modifiedMilliseconds = fileInfo.lastModified().toMSecsSinceEpoch()}};
+    const MapEditorBackgroundAssetCacheResult cacheResult = assetCache->load(
+        request,
+        [filePath = fileInfo.absoluteFilePath()](const MapEditorBackgroundAssetRequest &) {
+            QFile file(filePath);
+            if (!file.open(QIODevice::ReadOnly)) {
+                return MapEditorBackgroundAssetLoadResult{
+                    .error = QStringLiteral("Unable to read XVI background source.")};
+            }
+            const QByteArray fileBytes = file.readAll();
+            auto parsed = std::make_shared<XviDocument>();
+            if (!parseTherionXviDocumentText(QString::fromUtf8(fileBytes), parsed.get())) {
+                return MapEditorBackgroundAssetLoadResult{
+                    .error = QStringLiteral("Unable to parse XVI background source.")};
+            }
+            return MapEditorBackgroundAssetLoadResult{
+                .payload = std::move(parsed),
+                .byteCost = static_cast<std::size_t>(fileBytes.size())};
+        });
+    if (!cacheResult.loadResult.payload) {
+        return false;
+    }
+
+    *document = *std::static_pointer_cast<const XviDocument>(cacheResult.loadResult.payload);
     return true;
 }
 
@@ -1726,7 +1734,7 @@ void MapEditorTab::browseAndAddBackgroundImages()
                 ? areaAdjust.modelRect
                 : sourceBounds;
             if (!generatedXviDocument.has_value()
-                && !parseXviDocumentFileCached(QFileInfo(xviPath).absoluteFilePath(), &xviDocument)) {
+                && !parseXviDocumentFileCached(&backgroundAssetCache_, QFileInfo(xviPath).absoluteFilePath(), &xviDocument)) {
                 continue;
             }
             if (generatedXviDocument.has_value()) {
@@ -1938,7 +1946,7 @@ void MapEditorTab::setSelectedBackgroundLayerPosition(const QPointF &position)
     if (isMapEditorXviBackgroundPath(item->data(0).toString())) {
         const QString layerPath = QFileInfo(item->data(0).toString()).absoluteFilePath();
         XviDocument xviDocument;
-        if (!parseXviDocumentFileCached(layerPath, &xviDocument)) {
+        if (!parseXviDocumentFileCached(&backgroundAssetCache_, layerPath, &xviDocument)) {
             return;
         }
 
@@ -2712,7 +2720,7 @@ void MapEditorTab::loadBackgroundLayersFromSession()
             const QRectF xviModelBounds = areaAdjust.valid && areaAdjust.modelRect.isValid()
                 ? areaAdjust.modelRect
                 : sourceBounds;
-            if (!parseXviDocumentFileCached(QFileInfo(layerPath).absoluteFilePath(), &xviDocument)
+            if (!parseXviDocumentFileCached(&backgroundAssetCache_, QFileInfo(layerPath).absoluteFilePath(), &xviDocument)
                 || !createAndAppendXviBackgroundItem(mapScene_,
                                                      &backgroundImageItems_,
                                                      QFileInfo(layerPath).absoluteFilePath(),
@@ -2954,7 +2962,7 @@ void MapEditorTab::syncAutoBackgroundLayersFromCurrentDocument()
 
         if (reference.xviReference) {
             XviDocument xviDocument;
-            if (!parseXviDocumentFileCached(referencePath, &xviDocument)) {
+            if (!parseXviDocumentFileCached(&backgroundAssetCache_, referencePath, &xviDocument)) {
                 continue;
             }
 
@@ -3125,7 +3133,7 @@ void MapEditorTab::reprojectMetadataBackgroundLayersForCurrentDocument()
 
         if (metadataReference->xviReference) {
             XviDocument xviDocument;
-            if (!parseXviDocumentFileCached(layerPath, &xviDocument)) {
+            if (!parseXviDocumentFileCached(&backgroundAssetCache_, layerPath, &xviDocument)) {
                 continue;
             }
 

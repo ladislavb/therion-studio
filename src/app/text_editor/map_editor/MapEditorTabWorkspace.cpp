@@ -64,6 +64,7 @@ namespace TherionStudio
 namespace
 {
 constexpr int kMapEditorUndoLimit = 200;
+constexpr std::size_t kMapEditorBackgroundAssetCacheByteLimit = 32U * 1024U * 1024U;
 
 void applyThinSplitterStyle(QSplitter *splitter, const QString &objectName)
 {
@@ -88,6 +89,7 @@ MapEditorTab::MapEditorTab(IFileSystem &fileSystem,
     , inspectorSymbolCatalog_(inspectorSymbolCatalogFromCommandCatalog(catalogStore_.catalogObject()))
     , orientationApplicabilityByCommand_(mapEditorOrientationApplicabilityFromCommandCatalog(catalogStore_.catalogObject()))
     , objectStyleCatalog_(loadDefaultMapEditorObjectStyleCatalog())
+    , backgroundAssetCache_(kMapEditorBackgroundAssetCacheByteLimit)
 {
     initializeWorkspace();
 }

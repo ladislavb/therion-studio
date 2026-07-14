@@ -29,7 +29,7 @@ MapEditorBackgroundAssetCache::Loader countingLoader(int *calls, std::size_t byt
     return [calls, byteCost](const MapEditorBackgroundAssetRequest &) {
         ++(*calls);
         return MapEditorBackgroundAssetLoadResult{
-            .payload = std::make_shared<MapEditorBackgroundAssetPayload>(MapEditorBackgroundAssetPayload{.bytes = QByteArray("asset")}),
+            .payload = std::make_shared<const QByteArray>(QByteArray("asset")),
             .byteCost = byteCost};
     };
 }
@@ -128,11 +128,11 @@ void MapEditorBackgroundAssetCacheTest::invalidatesAllFormatsForSource()
 void MapEditorBackgroundAssetCacheTest::clearsEntriesAndReleasesPayloads()
 {
     MapEditorBackgroundAssetCache cache(16);
-    std::weak_ptr<const MapEditorBackgroundAssetPayload> weakPayload;
+    std::weak_ptr<const void> weakPayload;
     {
         const auto response = cache.load(request(QStringLiteral("/project/background.png")), [](const MapEditorBackgroundAssetRequest &) {
             return MapEditorBackgroundAssetLoadResult{
-                .payload = std::make_shared<MapEditorBackgroundAssetPayload>(MapEditorBackgroundAssetPayload{.bytes = QByteArray("asset")}),
+                .payload = std::make_shared<const QByteArray>(QByteArray("asset")),
                 .byteCost = 4};
         });
         weakPayload = response.loadResult.payload;
