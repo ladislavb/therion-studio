@@ -75,7 +75,7 @@ class ProjectValidationScannerQTest final : public QObject
     Q_OBJECT
 
 private slots:
-    void validatesUnindexedQualifiedStationNamesAfterScrapTransform()
+    void suppressesUnindexedQualifiedStationNamesAfterScrapTransform()
     {
         QTemporaryDir tempDir;
         QVERIFY(tempDir.isValid());
@@ -137,8 +137,6 @@ private slots:
         }
 
         const QSet<QString> expectedStationReferenceFindings = {
-            QStringLiteral("point 1 1 station -name 1@hp"),
-            QStringLiteral("point 2 2 station -name 1@hpc"),
             QStringLiteral("point 3 3 station -name missing")};
         QCOMPARE(stationReferenceFindings, expectedStationReferenceFindings);
 
@@ -165,7 +163,7 @@ private slots:
                 hpcStationReferenceFindings.insert(finding.diagnostic.currentText);
             }
         }
-        QVERIFY(hpcStationReferenceFindings.contains(QStringLiteral("point 0 0 station -name 0")));
+        QCOMPARE(hpcStationReferenceFindings, expectedStationReferenceFindings);
 
         inMemoryContents.insert(looseMapFile, mapContents);
         received = false;

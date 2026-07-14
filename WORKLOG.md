@@ -125,7 +125,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Project station-reference validation now applies a scrap's `-station-names <prefix> <suffix>` transform before
   resolving the complete station token against centerline data where the TH2 file has project namespace context,
   including quoted empty prefix/suffix values; unindexed qualified references are suppressed conservatively while
-  unqualified references report their lack of source-graph context; map-editor project diagnostics are retained while Visual mode is
+  unqualified references report their lack of source-graph context. Focused QTest coverage verifies that transformed
+  qualified names remain suppressed across edits to the scrap suffix; map-editor project diagnostics are retained while Visual mode is
   active so they become visible when the affected document is opened in Raw mode, and map-editor changes (including
   undo back to a clean document) participate in debounced live project validation from the in-memory source snapshot,
   with focused QTest coverage for valid, missing, and invalid-namespace references.
