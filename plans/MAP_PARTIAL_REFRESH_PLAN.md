@@ -164,6 +164,11 @@ stages below one millisecond at the harness resolution. Therefore the next optim
 replacement, not another parser or source-projection cache change. These measurements are informational baselines, not
 cross-machine thresholds.
 
+The same harness now also replaces one representative 18-item Bezier line group in the already-rendered scene. On the
+same local release macOS arm64 run it measured one millisecond total (below one millisecond removal, one millisecond
+direct replacement). The smoke test asserts equivalent item and vertex-index counts before and after replacement; it
+does not use timing as a pass/fail threshold.
+
 ## Phase 1 - Item Group Ownership
 
 Goal: make "all scene items for source line N" explicit enough to remove and replace a single rendered geometry group.

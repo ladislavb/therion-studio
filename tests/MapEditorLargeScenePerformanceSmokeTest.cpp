@@ -17,6 +17,7 @@
 #include <QUndoStack>
 #include <QVector>
 
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -273,6 +274,59 @@ int runLargeSceneRefreshSmoke()
     }
     if (!expect(completedSceneGeneration == sceneGeneration.current() && completedSceneGeneration > 0,
                 "Large map refresh should publish its current scene generation after selection restoration.")) {
+        return 1;
+    }
+
+    const QList<QGraphicsItem *> sceneItemsBeforePartialRefresh = scene->items();
+    const int targetItemsBefore = std::count_if(sceneItemsBeforePartialRefresh.cbegin(),
+                                                sceneItemsBeforePartialRefresh.cend(),
+                                                [&targetLine](const QGraphicsItem *item) {
+        return item != nullptr
+            && item->data(kMapItemRole).toInt() == kMapItemGeometryValue
+            && item->data(kMapSceneLineNumberRole).toInt() == targetLine.lineNumber;
+    });
+    const int targetVertexEntriesBefore = std::count_if(vertexItemsByKey.cbegin(),
+                                                         vertexItemsByKey.cend(),
+                                                         [&targetLine](const QGraphicsItem *item) {
+        return item != nullptr && item->data(kMapSceneLineNumberRole).toInt() == targetLine.lineNumber;
+    });
+    QElapsedTimer partialTimer;
+    partialTimer.start();
+    const MapGeometryItemGroupRemovalResult partialRemoval =
+        removeMapGeometryItemGroupForLine(scene, targetLine.lineNumber, &itemsByLine, &vertexItemsByKey);
+    const qint64 partialRemoveMs = partialTimer.elapsed();
+    const MapGeometryItemGroupRenderResult partialRender =
+        renderMapGeometryItemGroupForFeature(scene,
+                                             targetLine,
+                                             geometryBoundsForFeatures(geometryFeatures),
+                                             &itemsByLine,
+                                             &vertexItemsByKey,
+                                             {},
+                                             {},
+                                             {},
+                                             {},
+                                             styleCatalog);
+    const qint64 partialTotalMs = partialTimer.elapsed();
+    std::cout << "large-map-partial-refresh"
+              << " line=" << targetLine.lineNumber
+              << " items_removed=" << partialRemoval.removedItems
+              << " items_added=" << partialRender.addedItems
+              << " remove_ms=" << partialRemoveMs
+              << " render_ms=" << (partialTotalMs - partialRemoveMs)
+              << " total_ms=" << partialTotalMs
+              << '\n';
+    if (!expect(partialRemoval.removedItems == targetItemsBefore
+                    && partialRender.addedItems == targetItemsBefore
+                    && partialRender.addedPrimaryItem,
+                "Large map partial refresh should replace the complete target line item group.")) {
+        return 1;
+    }
+    if (!expect(std::count_if(vertexItemsByKey.cbegin(),
+                              vertexItemsByKey.cend(),
+                              [&targetLine](const QGraphicsItem *item) {
+            return item != nullptr && item->data(kMapSceneLineNumberRole).toInt() == targetLine.lineNumber;
+        }) == targetVertexEntriesBefore,
+                "Large map partial refresh should restore the target vertex index entries.")) {
         return 1;
     }
 

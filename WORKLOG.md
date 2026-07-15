@@ -289,8 +289,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ## Backlog
 
 - Map partial refresh now renders the replacement feature directly into the target scene with local indexes, eliminating
-  the temporary scene/item-reparenting step while preserving the existing workspace renderer branch. Next: extract the
-  line branch into a renderer-local helper and add metadata-equivalence coverage before widening eligibility.
+  the temporary scene/item-reparenting step while preserving the existing workspace renderer branch. The generated
+  340-line smoke now measures full refresh and replacement of one 18-item Bezier line group: local release macOS arm64
+  measured 15 ms versus 1 ms. Next: use this baseline to make any eligibility widening only where dependency/bounds
+  safety is proven; do not perform a 700-line renderer-only refactor without a measured maintenance or performance need.
 - Optional Structure graph view for relationships such as `preview`, `revise`, `join`, `equate`, relationship status, and station-network edges.
 - Compiler-confirmed project-index comparison once lightweight indexing is no longer sufficient.
 - Broaden retained project validation cache coverage only if fresh logs show repeated scans still rebuilding unchanged
