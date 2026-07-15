@@ -98,7 +98,7 @@ int runLargeSceneRefreshSmoke()
     bool sceneRefreshPending = false;
     bool autoFitEnabled = false;
     bool fitBackgroundRequested = false;
-    quint64 lineVertexSelectionRestoreGeneration = 0;
+    MapEditorSceneGeneration sceneGeneration;
     MapEditorOrientationApplicabilityByCommand orientationApplicability;
     int selectedLineNumber = targetLine.lineNumber;
     int selectedVertexIndex = targetLine.lineVertices.first().outgoingSourceVertexIndex;
@@ -129,7 +129,7 @@ int runLargeSceneRefreshSmoke()
         .sceneRefreshPending = &sceneRefreshPending,
         .autoFitEnabled = &autoFitEnabled,
         .fitBackgroundRequested = &fitBackgroundRequested,
-        .lineVertexSelectionRestoreGeneration = &lineVertexSelectionRestoreGeneration,
+        .sceneGeneration = &sceneGeneration,
         .orientationApplicabilityByCommand = &orientationApplicability,
         .styleCatalog = &styleCatalog,
         .documentText = [&documentText]() {

@@ -813,6 +813,7 @@ MapEditorObjectDetailsContext MapEditorTab::objectDetailsContext()
             selectMapLine(lineNumber, centerOnSelection);
             syncInspectorObjectSelectionToLine(lineNumber);
         },
+        .sceneGeneration = &sceneGeneration_,
         .restorePointSelectionLater = [this](int lineNumber) {
             restorePointSelection(lineNumber);
         },

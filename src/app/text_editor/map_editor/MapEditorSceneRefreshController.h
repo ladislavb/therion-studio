@@ -11,6 +11,7 @@
 
 #include "MapEditorLogicalSourceContext.h"
 #include "MapEditorObjectDetailsLogic.h"
+#include "MapEditorSceneGeneration.h"
 
 class QGraphicsItem;
 class QGraphicsScene;
@@ -36,7 +37,7 @@ struct MapEditorSceneRefreshContext
     bool *sceneRefreshPending = nullptr;
     bool *autoFitEnabled = nullptr;
     bool *fitBackgroundRequested = nullptr;
-    quint64 *lineVertexSelectionRestoreGeneration = nullptr;
+    MapEditorSceneGeneration *sceneGeneration = nullptr;
     const MapEditorOrientationApplicabilityByCommand *orientationApplicabilityByCommand = nullptr;
     const MapEditorObjectStyleCatalog *styleCatalog = nullptr;
     MapEditorLogicalSourceContext logicalSource;

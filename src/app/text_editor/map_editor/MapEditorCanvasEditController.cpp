@@ -707,17 +707,16 @@ bool restoreLineVertexOwnerSelectionForContext(const MapEditorCanvasEditContext 
     return restoreLineVertexSourceSelectionForContext(context, lineNumber, ownerSourceVertexIndex);
 }
 
-quint64 startLineVertexSelectionRestoreGeneration(const MapEditorCanvasEditContext &context)
+quint64 currentSceneGeneration(const MapEditorCanvasEditContext &context)
 {
-    return context.lineVertexSelectionRestoreGeneration != nullptr
-        ? ++(*context.lineVertexSelectionRestoreGeneration)
+    return context.sceneGeneration != nullptr
+        ? context.sceneGeneration->current()
         : 0;
 }
 
-bool isCurrentLineVertexSelectionRestoreGeneration(const MapEditorCanvasEditContext &context, quint64 restoreGeneration)
+bool isCurrentSceneGeneration(const MapEditorCanvasEditContext &context, quint64 generation)
 {
-    return context.lineVertexSelectionRestoreGeneration == nullptr
-        || *context.lineVertexSelectionRestoreGeneration == restoreGeneration;
+    return context.sceneGeneration == nullptr || context.sceneGeneration->isCurrent(generation);
 }
 
 void schedulePointSelectionRecovery(const MapEditorCanvasEditContext &context, int lineNumber)
@@ -726,7 +725,11 @@ void schedulePointSelectionRecovery(const MapEditorCanvasEditContext &context, i
         return;
     }
 
-    auto attemptRestore = [context, lineNumber]() {
+    const quint64 generation = currentSceneGeneration(context);
+    auto attemptRestore = [context, lineNumber, generation]() {
+        if (!isCurrentSceneGeneration(context, generation)) {
+            return;
+        }
         context.restorePointSelectionLater(lineNumber);
     };
     if (context.callbackContext != nullptr) {
@@ -744,7 +747,11 @@ void scheduleLineAnchorSelectionRecovery(const MapEditorCanvasEditContext &conte
         return;
     }
 
-    auto attemptRestore = [context, lineNumber, sourceVertexIndex]() {
+    const quint64 generation = currentSceneGeneration(context);
+    auto attemptRestore = [context, lineNumber, sourceVertexIndex, generation]() {
+        if (!isCurrentSceneGeneration(context, generation)) {
+            return;
+        }
         context.restoreLineAnchorSelectionLater(lineNumber, sourceVertexIndex);
     };
     if (context.callbackContext != nullptr) {
@@ -758,9 +765,9 @@ void scheduleLineVertexOwnerSelectionRecovery(const MapEditorCanvasEditContext &
                                               int lineNumber,
                                               int ownerIndex)
 {
-    const quint64 restoreGeneration = startLineVertexSelectionRestoreGeneration(context);
-    auto attemptRestore = [context, lineNumber, ownerIndex, restoreGeneration]() {
-        if (!isCurrentLineVertexSelectionRestoreGeneration(context, restoreGeneration)) {
+    const quint64 generation = currentSceneGeneration(context);
+    auto attemptRestore = [context, lineNumber, ownerIndex, generation]() {
+        if (!isCurrentSceneGeneration(context, generation)) {
             return;
         }
         restoreLineVertexOwnerSelectionForContext(context, lineNumber, ownerIndex);
@@ -776,9 +783,9 @@ void scheduleLineVertexSourceSelectionRecovery(const MapEditorCanvasEditContext 
                                                int lineNumber,
                                                int ownerSourceVertexIndex)
 {
-    const quint64 restoreGeneration = startLineVertexSelectionRestoreGeneration(context);
-    auto attemptRestore = [context, lineNumber, ownerSourceVertexIndex, restoreGeneration]() {
-        if (!isCurrentLineVertexSelectionRestoreGeneration(context, restoreGeneration)) {
+    const quint64 generation = currentSceneGeneration(context);
+    auto attemptRestore = [context, lineNumber, ownerSourceVertexIndex, generation]() {
+        if (!isCurrentSceneGeneration(context, generation)) {
             return;
         }
         restoreLineVertexSourceSelectionForContext(context, lineNumber, ownerSourceVertexIndex);
@@ -851,6 +858,9 @@ std::function<void()> deferredMapGeometryPartialRefreshHook(const MapEditorCanva
                             diagnosticName,
                             previousSourceBounds,
                             selectionRestoreHook = std::move(selectionRestoreHook)]() mutable {
+            if (context.sceneGeneration != nullptr) {
+                context.sceneGeneration->beginRefresh();
+            }
             const bool logTiming = diagnosticMapInputLoggingEnabled();
             QElapsedTimer totalTimer;
             QElapsedTimer stageTimer;

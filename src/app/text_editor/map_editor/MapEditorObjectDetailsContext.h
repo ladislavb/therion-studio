@@ -11,6 +11,7 @@
 #include "MapEditorInspectorData.h"
 #include "MapEditorLogicalSourceContext.h"
 #include "MapEditorObjectDetailsLogic.h"
+#include "MapEditorSceneGeneration.h"
 #include "../TextEditorSourceTransactionController.h"
 
 class QCheckBox;
@@ -148,6 +149,7 @@ struct MapEditorObjectDetailsContext
     std::function<void(bool, qreal)> setPendingInsertLinePointLeftSize;
     std::function<void()> clearInspectorObjectSelection;
     std::function<void(int, bool)> selectMapLine;
+    MapEditorSceneGeneration *sceneGeneration = nullptr;
     std::function<void(int)> restorePointSelectionLater;
     std::function<void(int, int)> restoreLineAnchorSelectionLater;
     std::function<TextEditorSourceTransactionResult(const QString &, const QString &, const QString &, int, std::function<void()>)>

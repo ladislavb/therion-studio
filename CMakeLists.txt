@@ -235,6 +235,7 @@ set(THERION_MAP_EDITOR_QTEST_SUITES
     MapEditorObjectDeletePlannerTest
     MapEditorObjectMovePlannerTest
     MapEditorPointSymbolGeometryTest
+    MapEditorSceneGenerationTest
     MapEditorSourceProjectionCacheTest
     MapEditorSvgBackgroundMetadataTest
     MapEditorUndoArbitrationServiceTest)
@@ -664,6 +665,8 @@ set(THERION_TEXT_EDITOR_SHARED_SOURCES
 set(THERION_MAP_EDITOR_SOURCES
     src/app/text_editor/map_editor/MapEditorBackgroundAssetCache.cpp
     src/app/text_editor/map_editor/MapEditorBackgroundAssetCache.h
+    src/app/text_editor/map_editor/MapEditorSceneGeneration.cpp
+    src/app/text_editor/map_editor/MapEditorSceneGeneration.h
     src/app/text_editor/map_editor/MapEditorBackgroundAssetLoader.cpp
     src/app/text_editor/map_editor/MapEditorBackgroundAssetLoader.h
     src/app/text_editor/map_editor/MapEditorSourceProjectionCache.cpp
@@ -1287,6 +1290,7 @@ qt_add_executable(MapEditorLogicQTests
     tests/MapEditorObjectDeletePlannerTest.cpp
     tests/MapEditorObjectMovePlannerTest.cpp
     tests/MapEditorPointSymbolGeometryTest.cpp
+    tests/MapEditorSceneGenerationTest.cpp
     tests/MapEditorSourceProjectionCacheTest.cpp
     tests/MapEditorSvgBackgroundMetadataTest.cpp
     tests/MapEditorUndoArbitrationServiceTest.cpp
@@ -1305,6 +1309,8 @@ qt_add_executable(MapEditorLogicQTests
     src/app/text_editor/map_editor/MapEditorObjectMovePlanner.cpp
     src/app/text_editor/map_editor/MapEditorObjectMovePlanner.h
     src/app/text_editor/map_editor/MapEditorPointSymbolGeometry.h
+    src/app/text_editor/map_editor/MapEditorSceneGeneration.cpp
+    src/app/text_editor/map_editor/MapEditorSceneGeneration.h
     src/app/text_editor/map_editor/MapEditorSourceProjectionCache.cpp
     src/app/text_editor/map_editor/MapEditorSourceProjectionCache.h
     src/app/text_editor/map_editor/MapEditorUndoArbitrationService.cpp

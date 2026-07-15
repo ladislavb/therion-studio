@@ -164,7 +164,11 @@ void schedulePointSelectionRecovery(const MapEditorObjectDetailsContext &context
         return;
     }
 
-    auto attemptRestore = [context, lineNumber]() {
+    const quint64 generation = context.sceneGeneration != nullptr ? context.sceneGeneration->current() : 0;
+    auto attemptRestore = [context, lineNumber, generation]() {
+        if (context.sceneGeneration != nullptr && !context.sceneGeneration->isCurrent(generation)) {
+            return;
+        }
         context.restorePointSelectionLater(lineNumber);
     };
     if (context.callbackContext != nullptr) {
@@ -182,7 +186,11 @@ void scheduleLineAnchorSelectionRecovery(const MapEditorObjectDetailsContext &co
         return;
     }
 
-    auto attemptRestore = [context, lineNumber, sourceVertexIndex]() {
+    const quint64 generation = context.sceneGeneration != nullptr ? context.sceneGeneration->current() : 0;
+    auto attemptRestore = [context, lineNumber, sourceVertexIndex, generation]() {
+        if (context.sceneGeneration != nullptr && !context.sceneGeneration->isCurrent(generation)) {
+            return;
+        }
         context.restoreLineAnchorSelectionLater(lineNumber, sourceVertexIndex);
     };
     if (context.callbackContext != nullptr) {

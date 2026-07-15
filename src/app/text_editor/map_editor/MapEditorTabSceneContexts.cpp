@@ -66,7 +66,7 @@ MapEditorSceneRefreshContext MapEditorTab::sceneRefreshContext()
         .sceneRefreshPending = &mapSceneRefreshPending_,
         .autoFitEnabled = &autoFitEnabled_,
         .fitBackgroundRequested = &fitBackgroundRequested_,
-        .lineVertexSelectionRestoreGeneration = &lineVertexSelectionRestoreGeneration_,
+        .sceneGeneration = &sceneGeneration_,
         .orientationApplicabilityByCommand = &orientationApplicabilityByCommand_,
         .styleCatalog = &objectStyleCatalog_,
         .logicalSource = logicalSourceContext(),

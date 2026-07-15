@@ -25,6 +25,7 @@
 #include "MapEditorLogicalSourceContext.h"
 #include "MapEditorObjectDetailsLogic.h"
 #include "MapEditorObjectStyleCatalog.h"
+#include "MapEditorSceneGeneration.h"
 #include "MapEditorSmartAreaPlanner.h"
 #include "MapEditorUndoArbitrationService.h"
 #include "../../../core/CommandCatalogStore.h"
@@ -862,7 +863,7 @@ private:
     int preserveMapUndoForSourceRevision_ = 0;
     bool mapSceneRefreshPending_ = false;
     bool mapSceneRefreshWhenVisiblePending_ = false;
-    quint64 lineVertexSelectionRestoreGeneration_ = 0;
+    MapEditorSceneGeneration sceneGeneration_;
     QTimer *sourceDrivenMapRefreshTimer_ = nullptr;
     DetachedPaneState detachedPaneState_;
     SelectionSyncState selectionSyncState_;

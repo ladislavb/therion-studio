@@ -209,8 +209,8 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
         stageTimer.start();
     }
     const int beforeItemCount = logTiming ? mapScene->items().size() : -1;
-    if (context_.lineVertexSelectionRestoreGeneration != nullptr) {
-        ++(*context_.lineVertexSelectionRestoreGeneration);
+    if (context_.sceneGeneration != nullptr) {
+        context_.sceneGeneration->beginRefresh();
     }
     const bool canPreserveViewport = preserveViewport
         && context_.view != nullptr
