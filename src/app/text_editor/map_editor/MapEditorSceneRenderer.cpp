@@ -16,6 +16,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QRegularExpression>
+#include <QSet>
 #include <QStaticText>
 #include <QTransform>
 
@@ -1893,18 +1894,21 @@ MapGeometryItemGroupRenderResult renderMapGeometryItemGroupForFeature(
         return result;
     }
 
-    QGraphicsScene temporaryScene;
-    temporaryScene.setPalette(scene->palette());
-    QHash<int, QGraphicsItem *> temporaryItemsByLine;
-    QHash<QString, QGraphicsItem *> temporaryVertexItemsByKey;
-    renderMapWorkspaceScene(&temporaryScene,
+    // Reuse the established feature branch directly in the target scene.  Keeping
+    // the per-feature indexes local prevents a partial refresh from resetting the
+    // indexes owned by the complete workspace scene.
+    const QList<QGraphicsItem *> existingItems = scene->items();
+    const QSet<QGraphicsItem *> existingItemSet(existingItems.cbegin(), existingItems.cend());
+    QHash<int, QGraphicsItem *> featureItemsByLine;
+    QHash<QString, QGraphicsItem *> featureVertexItemsByKey;
+    renderMapWorkspaceScene(scene,
                             QString(),
                             {},
                             QVector<MapGeometryFeature>{feature},
                             sourceBounds.isValid() ? std::optional<QRectF>(sourceBounds) : std::nullopt,
                             false,
-                            &temporaryItemsByLine,
-                            &temporaryVertexItemsByKey,
+                            &featureItemsByLine,
+                            &featureVertexItemsByKey,
                             {},
                             {},
                             recordPointGeometryMove,
@@ -1919,21 +1923,27 @@ MapGeometryItemGroupRenderResult renderMapGeometryItemGroupForFeature(
             && item->data(kMapSceneLineNumberRole).toInt() == feature.lineNumber;
     };
 
-    QList<QGraphicsItem *> itemsToMove;
-    for (QGraphicsItem *item : temporaryScene.items()) {
+    QList<QGraphicsItem *> itemsToRemove;
+    for (QGraphicsItem *item : scene->items()) {
+        if (item == nullptr || existingItemSet.contains(item)) {
+            continue;
+        }
         if (isGeometryItemForFeature(item)) {
-            itemsToMove.append(item);
+            ++result.addedItems;
+        } else {
+            // The workspace renderer adds its canvas frame. It is not part of a
+            // geometry item group and must not accumulate on partial refresh.
+            itemsToRemove.append(item);
         }
     }
 
-    for (QGraphicsItem *item : itemsToMove) {
-        temporaryScene.removeItem(item);
-        scene->addItem(item);
-        ++result.addedItems;
+    for (QGraphicsItem *item : itemsToRemove) {
+        scene->removeItem(item);
+        delete item;
     }
 
     if (mapItemsByLine != nullptr) {
-        QGraphicsItem *primaryItem = temporaryItemsByLine.value(feature.lineNumber, nullptr);
+        QGraphicsItem *primaryItem = featureItemsByLine.value(feature.lineNumber, nullptr);
         if (isGeometryItemForFeature(primaryItem)) {
             mapItemsByLine->insert(feature.lineNumber, primaryItem);
             result.addedPrimaryItem = true;
@@ -1941,7 +1951,7 @@ MapGeometryItemGroupRenderResult renderMapGeometryItemGroupForFeature(
     }
 
     if (mapVertexItemsByKey != nullptr) {
-        for (auto it = temporaryVertexItemsByKey.cbegin(); it != temporaryVertexItemsByKey.cend(); ++it) {
+        for (auto it = featureVertexItemsByKey.cbegin(); it != featureVertexItemsByKey.cend(); ++it) {
             if (!isGeometryItemForFeature(it.value())) {
                 continue;
             }

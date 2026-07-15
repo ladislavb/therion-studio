@@ -288,7 +288,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Backlog
 
-- Use the M0C render-dominant baseline to complete the next safe item-group replacement slice before widening partial refresh.
+- Map partial refresh now renders the replacement feature directly into the target scene with local indexes, eliminating
+  the temporary scene/item-reparenting step while preserving the existing workspace renderer branch. Next: extract the
+  line branch into a renderer-local helper and add metadata-equivalence coverage before widening eligibility.
 - Optional Structure graph view for relationships such as `preview`, `revise`, `join`, `equate`, relationship status, and station-network edges.
 - Compiler-confirmed project-index comparison once lightweight indexing is no longer sufficient.
 - Broaden retained project validation cache coverage only if fresh logs show repeated scans still rebuilding unchanged

@@ -204,24 +204,20 @@ Verification:
 
 Goal: reuse the existing line rendering branch without requiring a full scene rebuild.
 
-Slice 2A - Render Context Extraction - Pending after M0/R1
+Slice 2A - Direct Target-Scene Rendering - Complete (2026-07-15)
 
-- Introduce a narrow render context for geometry rendering inputs currently captured in `renderMapWorkspaceScene()`:
-  - scene
-  - source bounds
-  - preview bounds
-  - map scale
-  - style catalog or resolved style access
-  - canvas theme
-  - vertex/item indices
-  - move/preview callbacks
-  - orientation applicability callbacks where needed
-- Keep this type map-renderer-local unless another module needs it.
-- Do not move source parsing, document text, or selection logic into this context.
+- `renderMapGeometryItemGroupForFeature()` now invokes the established workspace feature branch directly in the target
+  scene, with local per-feature indexes. It removes only the transient canvas frame afterwards; geometry items stay in
+  place and are never rendered into a temporary scene and reparented.
+- This preserves the full renderer's style, preview-callback, and item-metadata behavior while removing temporary-scene
+  allocation, item transfer, and transfer-time ownership churn from partial replacement.
+- The existing `MapGeometryFeatureParsingTest` item-count/index restoration coverage guards the direct path.
+- Do not move source parsing, document text, or selection logic into this rendering boundary.
 
-Slice 2B - Extract Line Feature Renderer - Partially implemented
+Slice 2B - Extract Line Feature Renderer - Next
 
-- Move the `MapGeometryFeature::Kind::Line` rendering branch into a helper that accepts one feature and the render context.
+- Move the `MapGeometryFeature::Kind::Line` rendering branch into a helper that accepts one feature and a renderer-local
+  context.
 - Preserve:
   - segment-styled paths
   - line decorations
@@ -233,12 +229,14 @@ Slice 2B - Extract Line Feature Renderer - Partially implemented
   - Bezier control handles/connectors
   - interactive preview callbacks
   - item metadata and z-values
-- Keep the full-scene renderer calling the same helper for all line features.
+- Keep the full-scene renderer and direct partial path calling the same helper for all line features.
 - Add focused tests proving full-scene rendering and single-line rendering produce equivalent item metadata for a representative line.
 
 Slice 2C - Keep Point/Area Out Of Scope
 
-- Leave point and area rendering in the full renderer unless a later performance trace proves they need the same extraction.
+- Leave point and area eligibility in the full-refresh policy unless a later performance trace proves they need the same
+  extraction. The generic direct target-scene boundary retains their existing rendering behavior but does not widen the
+  current line-only partial-refresh eligibility.
 - Document any temporary duplication introduced during extraction and remove it before widening partial refresh.
 
 Verification:
