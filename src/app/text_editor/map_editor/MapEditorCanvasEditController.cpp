@@ -1,5 +1,6 @@
 #include "MapEditorCanvasEditController.h"
 
+#include "MapEditorAreaReferenceResolver.h"
 #include <QCoreApplication>
 
 #include "../TextEditorSourceTransactionController.h"
@@ -403,6 +404,29 @@ bool mapGeometryItemGroupReadyForPartialRefresh(QGraphicsScene *scene,
     }
 
     return primaryItemInScene && geometryItemInScene;
+}
+
+bool lineHasDependentArea(const MapEditorLogicalSourceContext &logicalSource, int lineNumber)
+{
+    if (lineNumber <= 0) {
+        return false;
+    }
+
+    if (logicalSource.projectionSnapshotForCurrentDocument) {
+        const MapEditorSourceProjectionSnapshotPtr snapshot =
+            logicalSource.projectionSnapshotForCurrentDocument();
+        if (snapshot) {
+            return !mapEditorAreaReferencesForBorderLine(snapshot->geometryProjection, lineNumber).isEmpty();
+        }
+    }
+
+    if (logicalSource.logicalCommandsForCurrentDocument) {
+        return !mapEditorAreaReferencesForBorderLine(
+                    logicalSource.logicalCommandsForCurrentDocument(), lineNumber)
+                    .isEmpty();
+    }
+
+    return false;
 }
 
 std::optional<QPointF> defaultIncomingControlForLineVertex(const QVector<MapGeometryFeature::TH2LineVertex> &vertices,
@@ -933,6 +957,11 @@ std::function<void()> deferredMapGeometryPartialRefreshHook(const MapEditorCanva
             resolveMs = logTiming ? stageTimer.restart() : 0;
             if (!refreshedFeature.has_value()) {
                 fallbackFullRefresh(QStringLiteral("missing-feature"));
+                return;
+            }
+            if (expectedKind == MapGeometryFeature::Kind::Line
+                && lineHasDependentArea(context.logicalSource, lineNumber)) {
+                fallbackFullRefresh(QStringLiteral("area-dependency"));
                 return;
             }
             const QRectF currentSourceBounds =

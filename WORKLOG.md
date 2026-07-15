@@ -293,6 +293,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   340-line smoke now measures full refresh and replacement of one 18-item Bezier line group: local release macOS arm64
   measured 15 ms versus 1 ms. Next: use this baseline to make any eligibility widening only where dependency/bounds
   safety is proven; do not perform a 700-line renderer-only refactor without a measured maintenance or performance need.
+- Map line partial refresh now checks the immutable TH2 projection for areas that reference the edited border. Dependent
+  borders deliberately use full refresh, preserving area fills until dependent-area group replacement is explicitly
+  designed and covered.
 - Optional Structure graph view for relationships such as `preview`, `revise`, `join`, `equate`, relationship status, and station-network edges.
 - Compiler-confirmed project-index comparison once lightweight indexing is no longer sufficient.
 - Broaden retained project validation cache coverage only if fresh logs show repeated scans still rebuilding unchanged

@@ -311,7 +311,7 @@ Verification:
 
 Goal: widen eligibility without breaking area fills or referenced geometry.
 
-Slice 4A - Area Border Dependency Detection
+Slice 4A - Area Border Dependency Detection - Partially implemented
 
 - Build a lightweight dependency index from current geometry features:
   - line identifier -> line source number
@@ -321,6 +321,11 @@ Slice 4A - Area Border Dependency Detection
 - Add tests for direct area border references and namespace-qualified references before using the index for refresh decisions.
 - Treat unresolved or ambiguous border references as a mandatory full-refresh fallback. Do not consider current one-line
   replacement proof that area-border lines are safe.
+
+Implementation status (2026-07-15): the partial-refresh hook now asks the immutable current
+`Th2GeometryProjection` for dependent areas before replacing a line group. A border line referenced by an area falls
+back to full scene refresh, so the area fill cannot become stale. When no snapshot is available, the existing logical
+command resolver is the compatibility fallback. `MapEditorCanvasEditSourceTransactionTest` covers the fallback.
 
 Slice 4B - Partial Refresh Of Dependent Area Groups
 

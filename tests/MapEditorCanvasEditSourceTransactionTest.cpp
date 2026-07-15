@@ -721,6 +721,64 @@ int runSegmentStyledLineVertexMoveFallsBackWhenPrimaryIndexMissingTest()
     return 0;
 }
 
+int runAreaReferencedLineVertexMoveFallsBackToFullRefreshTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Failed to create temporary directory.")) {
+        return 1;
+    }
+
+    const QString filePath = createTestFile(tempDir,
+                                            "line border -id border-1 -close on\n"
+                                            "  0.0 0.0\n"
+                                            "  1.0 1.0\n"
+                                            "  4.0 4.0\n"
+                                            "endline\n"
+                                            "area water\n"
+                                            "  border-1\n"
+                                            "endarea\n");
+    if (!expect(!filePath.isEmpty(), "Failed to create area-referenced line partial refresh test file.")) {
+        return 1;
+    }
+
+    QtFileSystem fileSystem;
+    TextEditorTab tab{fileSystem, CommandCatalogStore()};
+    if (!expect(loadTestTab(&tab, filePath), "Failed to load area-referenced line partial refresh test tab.")) {
+        return 1;
+    }
+
+    QUndoStack undoStack;
+    QString toolbarStatus;
+    bool commandApplyInProgress = false;
+    int refreshCount = 0;
+    int flushCount = 0;
+    int discardCount = 0;
+    QGraphicsScene scene;
+    QHash<int, QGraphicsItem *> itemsByLine;
+    QHash<QString, QGraphicsItem *> vertexItemsByKey;
+    const QVector<TherionParsedLine> parsedLines = TherionDocumentParser::parseTokenLines(tab.text());
+    const QVector<MapGeometryFeature> features = collectGeometryFeatures(parsedLines);
+    renderMapWorkspaceScene(&scene, filePath, collectMapSceneEntries(parsedLines), features,
+                            geometryBoundsForFeatures(features), false, &itemsByLine, &vertexItemsByKey,
+                            {}, {}, {}, {}, {}, {}, testStyleCatalog());
+
+    MapEditorCanvasEditController controller =
+        makeController(&tab, &undoStack, &toolbarStatus, &commandApplyInProgress, &refreshCount, &flushCount,
+                       &discardCount, &scene, nullptr, &itemsByLine, &vertexItemsByKey,
+                       [&tab]() {
+                           return geometryBoundsForFeatures(
+                               collectGeometryFeatures(TherionDocumentParser::parseTokenLines(tab.text())));
+                       });
+    controller.recordLineAreaVertexMove(1, QStringLiteral("line"), 1, QPointF(1.0, 1.0), QPointF(2.0, 3.0));
+    pumpEvents();
+
+    if (!expect(flushCount == 1 && discardCount == 0,
+                "Area-referenced line move should retain the full refresh for the dependent area.")) {
+        return 1;
+    }
+    return 0;
+}
+
 int runSegmentStyledLineVertexMoveFallsBackWhenBoundsChangeTest()
 {
     QTemporaryDir tempDir;
@@ -1002,6 +1060,9 @@ int main(int argc, char **argv)
         return 1;
     }
     if (runSegmentStyledLineVertexMoveFallsBackWhenPrimaryIndexMissingTest() != 0) {
+        return 1;
+    }
+    if (runAreaReferencedLineVertexMoveFallsBackToFullRefreshTest() != 0) {
         return 1;
     }
     if (runSegmentStyledLineVertexMoveFallsBackWhenBoundsChangeTest() != 0) {
