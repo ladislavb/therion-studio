@@ -24,6 +24,28 @@ namespace TherionStudio
 struct TherionParsedLine;
 struct MapEditorObjectStyleCatalog;
 
+struct MapEditorSceneRefreshMetrics
+{
+    bool usedProjectionSnapshot = false;
+    bool projectionSnapshotWasReused = false;
+    bool usedSourceFallback = false;
+    int beforeItemCount = 0;
+    int afterItemCount = 0;
+    qsizetype entryCount = 0;
+    qsizetype geometryFeatureCount = 0;
+    qint64 projectionLookupMs = 0;
+    qint64 sourceFallbackMs = 0;
+    qint64 featureCollectionMs = 0;
+    qint64 sceneClearMs = 0;
+    qint64 renderMs = 0;
+    qint64 backgroundRestoreMs = 0;
+    qint64 selectionMs = 0;
+    qint64 presentationMs = 0;
+    qint64 viewportMs = 0;
+    qint64 finalUiMs = 0;
+    qint64 totalMs = 0;
+};
+
 struct MapEditorSceneRefreshContext
 {
     QObject *sceneParent = nullptr;
@@ -76,6 +98,7 @@ struct MapEditorSceneRefreshContext
     std::function<void()> refreshObjectDetailsPanel;
     std::function<void()> updateHelpPanel;
     std::function<void(quint64)> recordSceneProjectionRefreshCompleted;
+    std::function<void(const MapEditorSceneRefreshMetrics &)> recordSceneRefreshMetrics;
 };
 
 class MapEditorSceneRefreshController final

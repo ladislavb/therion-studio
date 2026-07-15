@@ -156,6 +156,14 @@ Record opt-in diagnostics for projection lookup/copy, feature collection, item c
 selection, inspector, and total time on the generated large scene. Do not change behavior in this slice. Use the
 measurements to select the next item-group extraction rather than assuming line rendering is still the dominant cost.
 
+Implementation status (2026-07-15): M0C is complete. `MapEditorSceneRefreshMetrics` is an optional context callback;
+production timing remains behind existing diagnostic logging, while the large-scene harness records a comparable
+baseline without source content. On the local release macOS arm64 build, the 340-line / 6,121-item immutable-snapshot
+fixture measured 14–16 ms total over three runs: feature collection 3 ms and scene rendering 10–12 ms, with all other
+stages below one millisecond at the harness resolution. Therefore the next optimization shall target safe render-item
+replacement, not another parser or source-projection cache change. These measurements are informational baselines, not
+cross-machine thresholds.
+
 ## Phase 1 - Item Group Ownership
 
 Goal: make "all scene items for source line N" explicit enough to remove and replace a single rendered geometry group.

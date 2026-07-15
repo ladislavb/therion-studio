@@ -2,7 +2,10 @@
 #include "../src/app/text_editor/map_editor/MapEditorSceneRefreshController.h"
 #include "../src/app/text_editor/map_editor/MapEditorSceneSupport.h"
 #include "../src/app/text_editor/map_editor/MapEditorObjectStyleCatalog.h"
+#include "../src/app/text_editor/map_editor/MapEditorSourceProjectionCache.h"
 #include "../src/core/TherionDocumentParser.h"
+#include "../src/core/TherionSourceDocument.h"
+#include "../src/core/TherionSourceLogicalDocument.h"
 
 #include <QApplication>
 #include <QElapsedTimer>
@@ -15,6 +18,7 @@
 #include <QVector>
 
 #include <iostream>
+#include <memory>
 #include <optional>
 
 using namespace TherionStudio;
@@ -100,12 +104,24 @@ int runLargeSceneRefreshSmoke()
     bool fitBackgroundRequested = false;
     MapEditorSceneGeneration sceneGeneration;
     MapEditorOrientationApplicabilityByCommand orientationApplicability;
+    TherionSourceDocumentMetadata metadata;
+    metadata.sourceType = TherionSourceDocumentType::TherionMap;
+    metadata.revisionId = 1;
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(documentText, metadata);
+    const TherionSourceLogicalDocument logicalDocument =
+        TherionSourceLogicalDocument::fromSourceDocument(sourceDocument);
+    const MapEditorSourceProjectionSnapshotPtr projectionSnapshot =
+        std::make_shared<const MapEditorSourceProjectionSnapshot>(MapEditorSourceProjectionSnapshot{
+            .revision = metadata.revisionId,
+            .logicalCommands = logicalDocument.commands(),
+            .geometryProjection = Th2GeometryProjection::fromDocuments(sourceDocument, logicalDocument)});
     int selectedLineNumber = targetLine.lineNumber;
     int selectedVertexIndex = targetLine.lineVertices.first().outgoingSourceVertexIndex;
     QString selectedKind = QStringLiteral("line control");
     int currentLineNumber = targetLine.lineNumber;
     bool restoredSelection = false;
     quint64 completedSceneGeneration = 0;
+    std::optional<MapEditorSceneRefreshMetrics> refreshMetrics;
 
     auto clearScene = [&]() {
         itemsByLine.clear();
@@ -133,6 +149,13 @@ int runLargeSceneRefreshSmoke()
         .sceneGeneration = &sceneGeneration,
         .orientationApplicabilityByCommand = &orientationApplicability,
         .styleCatalog = &styleCatalog,
+        .logicalSource = MapEditorLogicalSourceContext{
+            .projectionSnapshotForCurrentDocument = [projectionSnapshot]() {
+                return projectionSnapshot;
+            },
+            .projectionSnapshotWasReused = []() {
+                return true;
+            }},
         .documentText = [&documentText]() {
             return documentText;
         },
@@ -191,6 +214,9 @@ int runLargeSceneRefreshSmoke()
         .recordSceneProjectionRefreshCompleted = [&completedSceneGeneration](quint64 generation) {
             completedSceneGeneration = generation;
         },
+        .recordSceneRefreshMetrics = [&refreshMetrics](const MapEditorSceneRefreshMetrics &metrics) {
+            refreshMetrics = metrics;
+        },
     };
 
     QElapsedTimer timer;
@@ -205,6 +231,19 @@ int runLargeSceneRefreshSmoke()
               << " geometry=" << geometryFeatures.size()
               << " scene_items=" << sceneItems
               << " vertex_index=" << vertexItemsByKey.size()
+              << " projection_snapshot=" << (refreshMetrics.has_value() && refreshMetrics->usedProjectionSnapshot ? 1 : 0)
+              << " projection_cache_reused=" << (refreshMetrics.has_value() && refreshMetrics->projectionSnapshotWasReused ? 1 : 0)
+              << " source_fallback=" << (refreshMetrics.has_value() && refreshMetrics->usedSourceFallback ? 1 : 0)
+              << " projection_lookup_ms=" << (refreshMetrics.has_value() ? refreshMetrics->projectionLookupMs : -1)
+              << " source_fallback_ms=" << (refreshMetrics.has_value() ? refreshMetrics->sourceFallbackMs : -1)
+              << " collect_ms=" << (refreshMetrics.has_value() ? refreshMetrics->featureCollectionMs : -1)
+              << " clear_ms=" << (refreshMetrics.has_value() ? refreshMetrics->sceneClearMs : -1)
+              << " render_ms=" << (refreshMetrics.has_value() ? refreshMetrics->renderMs : -1)
+              << " background_ms=" << (refreshMetrics.has_value() ? refreshMetrics->backgroundRestoreMs : -1)
+              << " selection_ms=" << (refreshMetrics.has_value() ? refreshMetrics->selectionMs : -1)
+              << " presentation_ms=" << (refreshMetrics.has_value() ? refreshMetrics->presentationMs : -1)
+              << " viewport_ms=" << (refreshMetrics.has_value() ? refreshMetrics->viewportMs : -1)
+              << " final_ui_ms=" << (refreshMetrics.has_value() ? refreshMetrics->finalUiMs : -1)
               << " refresh_ms=" << refreshMs
               << '\n';
 
@@ -223,6 +262,13 @@ int runLargeSceneRefreshSmoke()
         return 1;
     }
     if (!expect(restoredSelection, "Large map refresh should update geometry selection presentation.")) {
+        return 1;
+    }
+    if (!expect(refreshMetrics.has_value()
+                    && refreshMetrics->usedProjectionSnapshot
+                    && refreshMetrics->projectionSnapshotWasReused
+                    && !refreshMetrics->usedSourceFallback,
+                "Large map baseline should measure the reused immutable projection path.")) {
         return 1;
     }
     if (!expect(completedSceneGeneration == sceneGeneration.current() && completedSceneGeneration > 0,
