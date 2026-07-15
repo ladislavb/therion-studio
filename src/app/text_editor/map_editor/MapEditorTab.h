@@ -277,6 +277,7 @@ signals:
     void currentLineChanged(int lineNumber);
     void documentTextChanged();
     void sourceDrivenMapRefreshCompleted();
+    void sceneProjectionRefreshCompleted(quint64 generation);
     void backgroundLayersChanged();
     void backgroundLayerPropertiesChanged();
     void modeStatusChanged();
@@ -864,6 +865,7 @@ private:
     bool mapSceneRefreshPending_ = false;
     bool mapSceneRefreshWhenVisiblePending_ = false;
     MapEditorSceneGeneration sceneGeneration_;
+    quint64 lastCompletedSceneProjectionGeneration_ = 0;
     QTimer *sourceDrivenMapRefreshTimer_ = nullptr;
     DetachedPaneState detachedPaneState_;
     SelectionSyncState selectionSyncState_;

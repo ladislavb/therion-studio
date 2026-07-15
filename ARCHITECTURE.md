@@ -205,6 +205,8 @@ Therion command, option, help, style, and symbol metadata should be data-driven.
   revision, so scene refresh shares one immutable identity rather than copying separately cached projections.
 - `MapEditorSceneGeneration` advances when an accepted full or single-feature partial Map refresh begins. Deferred
   selection recovery captures that generation and shall not mutate the scene after a newer refresh supersedes it.
+- `sceneProjectionRefreshCompleted(generation)` is emitted only for the current generation after the relevant
+  selection/navigation restoration. `sourceDrivenMapRefreshCompleted` remains a separate legacy source-refresh seam.
 - Project watcher mutations invalidate matching background assets in every attached or detached Map tab. The source
   identity is a normalized absolute path so invalidation remains stable after a file is removed; raster reload stays
   asynchronous, while vector items replace only their immutable source payload or derived geometry.

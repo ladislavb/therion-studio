@@ -135,11 +135,12 @@ selection/navigation restoration carry the target generation and apply once only
 The existing `sourceDrivenMapRefreshCompleted` signal is a source-refresh completion seam, not sufficient generation
 identity for overlapping full, partial, undo/redo, background, and deferred selection work.
 
-Implementation status (2026-07-15): M0B1 is complete. `MapEditorSceneGeneration` advances for accepted full and
+Implementation status (2026-07-15): M0B is complete. `MapEditorSceneGeneration` advances for accepted full and
 single-feature partial refreshes. Canvas and inspector deferred point/line selection recovery capture the current
-generation and are discarded after supersession; focused QTest verifies the monotonic current-generation contract.
-M0B2 remains: publish a generation-aware completion signal and migrate completion/navigation listeners without
-changing the source-refresh signal’s existing meaning.
+generation and are discarded after supersession. `sceneProjectionRefreshCompleted(generation)` publishes only the
+current generation after selection/navigation restoration, while `sourceDrivenMapRefreshCompleted` keeps its existing
+source-refresh meaning. Focused QTest verifies the monotonic current-generation contract; the large-scene smoke
+verifies completion publication for the active generation.
 
 Tests:
 

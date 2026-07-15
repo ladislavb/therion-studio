@@ -58,6 +58,7 @@ struct MapEditorCanvasEditContext
     std::function<void()> updateCommandSurfaceState;
     std::function<void()> updateHelpPanel;
     std::function<void()> refreshObjectDetailsPanel;
+    std::function<void(quint64)> sceneProjectionRefreshCompleted;
     std::function<QRectF()> mapPreviewBounds;
     std::function<QRectF()> mapSourceBoundsForCurrentDocument;
     MapEditorLogicalSourceContext logicalSource;

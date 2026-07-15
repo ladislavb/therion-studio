@@ -55,8 +55,12 @@ void MapEditorTab::buildMapScene()
 
 void MapEditorTab::refreshMapScene()
 {
+    const quint64 previousGeneration = lastCompletedSceneProjectionGeneration_;
     MapEditorSceneRefreshController(sceneRefreshContext()).refreshMapScene();
     applyPendingNavigationSelection(false);
+    if (lastCompletedSceneProjectionGeneration_ > previousGeneration) {
+        emit sceneProjectionRefreshCompleted(lastCompletedSceneProjectionGeneration_);
+    }
     if (mapMagnifierOverlay_ != nullptr) {
         mapMagnifierOverlay_->update();
     }
@@ -64,8 +68,12 @@ void MapEditorTab::refreshMapScene()
 
 void MapEditorTab::refreshMapScenePreservingUndoStack()
 {
+    const quint64 previousGeneration = lastCompletedSceneProjectionGeneration_;
     MapEditorSceneRefreshController(sceneRefreshContext()).refreshMapScenePreservingUndoStack();
     applyPendingNavigationSelection(false);
+    if (lastCompletedSceneProjectionGeneration_ > previousGeneration) {
+        emit sceneProjectionRefreshCompleted(lastCompletedSceneProjectionGeneration_);
+    }
     if (mapMagnifierOverlay_ != nullptr) {
         mapMagnifierOverlay_->update();
     }
@@ -74,10 +82,14 @@ void MapEditorTab::refreshMapScenePreservingUndoStack()
 void MapEditorTab::flushPendingMapSceneRefreshAfterCommand()
 {
     const bool hadPendingRefresh = mapSceneRefreshPending_;
+    const quint64 previousGeneration = lastCompletedSceneProjectionGeneration_;
     MapEditorSceneRefreshController(sceneRefreshContext()).flushPendingMapSceneRefreshAfterCommand();
     if (hadPendingRefresh) {
         rebuildInspectorObjectsTree();
         applyPendingNavigationSelection(false);
+    }
+    if (lastCompletedSceneProjectionGeneration_ > previousGeneration) {
+        emit sceneProjectionRefreshCompleted(lastCompletedSceneProjectionGeneration_);
     }
 }
 

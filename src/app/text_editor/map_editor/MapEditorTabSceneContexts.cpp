@@ -219,6 +219,11 @@ MapEditorSceneRefreshContext MapEditorTab::sceneRefreshContext()
                 self->updateHelpPanel();
             }
         },
+        .recordSceneProjectionRefreshCompleted = [self](quint64 generation) {
+            if (self != nullptr && generation > 0 && self->sceneGeneration_.isCurrent(generation)) {
+                self->lastCompletedSceneProjectionGeneration_ = generation;
+            }
+        },
     };
 }
 }

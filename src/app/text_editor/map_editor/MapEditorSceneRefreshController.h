@@ -75,6 +75,7 @@ struct MapEditorSceneRefreshContext
     std::function<void()> refreshStatus;
     std::function<void()> refreshObjectDetailsPanel;
     std::function<void()> updateHelpPanel;
+    std::function<void(quint64)> recordSceneProjectionRefreshCompleted;
 };
 
 class MapEditorSceneRefreshController final

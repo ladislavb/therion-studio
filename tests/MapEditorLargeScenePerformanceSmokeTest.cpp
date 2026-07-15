@@ -105,6 +105,7 @@ int runLargeSceneRefreshSmoke()
     QString selectedKind = QStringLiteral("line control");
     int currentLineNumber = targetLine.lineNumber;
     bool restoredSelection = false;
+    quint64 completedSceneGeneration = 0;
 
     auto clearScene = [&]() {
         itemsByLine.clear();
@@ -187,6 +188,9 @@ int runLargeSceneRefreshSmoke()
         .refreshStatus = []() {},
         .refreshObjectDetailsPanel = []() {},
         .updateHelpPanel = []() {},
+        .recordSceneProjectionRefreshCompleted = [&completedSceneGeneration](quint64 generation) {
+            completedSceneGeneration = generation;
+        },
     };
 
     QElapsedTimer timer;
@@ -219,6 +223,10 @@ int runLargeSceneRefreshSmoke()
         return 1;
     }
     if (!expect(restoredSelection, "Large map refresh should update geometry selection presentation.")) {
+        return 1;
+    }
+    if (!expect(completedSceneGeneration == sceneGeneration.current() && completedSceneGeneration > 0,
+                "Large map refresh should publish its current scene generation after selection restoration.")) {
         return 1;
     }
 

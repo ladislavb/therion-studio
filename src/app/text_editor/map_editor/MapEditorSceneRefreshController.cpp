@@ -209,9 +209,9 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
         stageTimer.start();
     }
     const int beforeItemCount = logTiming ? mapScene->items().size() : -1;
-    if (context_.sceneGeneration != nullptr) {
-        context_.sceneGeneration->beginRefresh();
-    }
+    const quint64 sceneGeneration = context_.sceneGeneration != nullptr
+        ? context_.sceneGeneration->beginRefresh()
+        : 0;
     const bool canPreserveViewport = preserveViewport
         && context_.view != nullptr
         && context_.view->viewport() != nullptr;
@@ -380,6 +380,10 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
     context_.updateHelpPanel();
     context_.refreshObjectDetailsPanel();
     const qint64 finalUiMs = logTiming ? stageTimer.restart() : 0;
+
+    if (context_.recordSceneProjectionRefreshCompleted) {
+        context_.recordSceneProjectionRefreshCompleted(sceneGeneration);
+    }
 
     if (logTiming) {
         const int afterItemCount = mapScene->items().size();

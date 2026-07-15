@@ -130,6 +130,12 @@ MapEditorCanvasEditContext MapEditorTab::canvasEditContext()
         .refreshObjectDetailsPanel = [this]() {
             refreshObjectDetailsPanel();
         },
+        .sceneProjectionRefreshCompleted = [this](quint64 generation) {
+            if (generation > 0 && sceneGeneration_.isCurrent(generation)) {
+                lastCompletedSceneProjectionGeneration_ = generation;
+                emit sceneProjectionRefreshCompleted(generation);
+            }
+        },
         .mapPreviewBounds = [this]() {
             return mapPreviewBounds();
         },

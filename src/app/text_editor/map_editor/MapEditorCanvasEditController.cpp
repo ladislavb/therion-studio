@@ -858,9 +858,9 @@ std::function<void()> deferredMapGeometryPartialRefreshHook(const MapEditorCanva
                             diagnosticName,
                             previousSourceBounds,
                             selectionRestoreHook = std::move(selectionRestoreHook)]() mutable {
-            if (context.sceneGeneration != nullptr) {
-                context.sceneGeneration->beginRefresh();
-            }
+            const quint64 sceneGeneration = context.sceneGeneration != nullptr
+                ? context.sceneGeneration->beginRefresh()
+                : 0;
             const bool logTiming = diagnosticMapInputLoggingEnabled();
             QElapsedTimer totalTimer;
             QElapsedTimer stageTimer;
@@ -1021,6 +1021,9 @@ std::function<void()> deferredMapGeometryPartialRefreshHook(const MapEditorCanva
                 context.updateGeometrySelectionPresentation();
             }
             selectionMs = logTiming ? stageTimer.restart() : 0;
+            if (context.sceneProjectionRefreshCompleted) {
+                context.sceneProjectionRefreshCompleted(sceneGeneration);
+            }
             logPartialRefresh(false, QStringLiteral("ok"));
         };
         if (context.callbackContext != nullptr) {
