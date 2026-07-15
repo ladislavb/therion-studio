@@ -120,6 +120,13 @@ Acceptance:
 Stop condition: do not expose references to a mutable cache entry whose lifetime can end during deferred work. Use
 `std::shared_ptr<const ...>` or an equivalent explicit lifetime contract.
 
+Implementation status (2026-07-15): M0A is complete. `MapEditorSourceProjectionCache` publishes one immutable
+`MapEditorSourceProjectionSnapshot` identity for each document revision. It owns logical commands, TH2 geometry,
+and source bounds; `MapEditorSceneRefreshController` consumes the handle directly and records whether it used a
+snapshot and whether the handle was reused. Legacy value-returning callbacks remain only as a compatibility path for
+non-refresh consumers while they migrate. Focused QTest coverage proves same-revision identity reuse and
+new-revision replacement.
+
 ### Slice M0B - Scene Generation Completion
 
 Assign a monotonically increasing scene projection generation to each accepted full/partial refresh. Completion and

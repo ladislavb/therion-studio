@@ -510,6 +510,7 @@ private:
     bool undoInteractiveDrawStep();
     QVector<TherionParsedLine> parsedLinesForCurrentDocument() const;
     MapEditorLogicalSourceContext logicalSourceContext() const;
+    MapEditorSourceProjectionSnapshotPtr sourceProjectionSnapshotForCurrentDocument() const;
     QVector<TherionSourceLogicalCommand> logicalCommandsForCurrentDocument() const;
     Th2GeometryProjection geometryProjectionForCurrentDocument() const;
     QRectF mapSourceBoundsForCurrentDocument() const;
@@ -826,18 +827,10 @@ private:
     bool autoFitEnabled_ = true;
     qreal zoomFactor_ = 1.0;
     bool fitBackgroundRequested_ = false;
-    mutable bool cachedMapSourceBoundsValid_ = false;
-    mutable int cachedMapSourceBoundsRevision_ = -1;
-    mutable QRectF cachedMapSourceBounds_;
     mutable bool cachedParsedLinesValid_ = false;
     mutable int cachedParsedLinesRevision_ = -1;
     mutable QVector<TherionParsedLine> cachedParsedLines_;
-    mutable bool cachedLogicalCommandsValid_ = false;
-    mutable int cachedLogicalCommandsRevision_ = -1;
-    mutable QVector<TherionSourceLogicalCommand> cachedLogicalCommands_;
-    mutable bool cachedGeometryProjectionValid_ = false;
-    mutable int cachedGeometryProjectionRevision_ = -1;
-    mutable Th2GeometryProjection cachedGeometryProjection_;
+    mutable MapEditorSourceProjectionCache sourceProjectionCache_;
     bool mapPanActive_ = false;
     bool mapPanMoved_ = false;
     bool mapSpacePanKeyDown_ = false;

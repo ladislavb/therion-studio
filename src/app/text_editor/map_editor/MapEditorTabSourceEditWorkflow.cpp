@@ -66,6 +66,12 @@ QVector<TherionParsedLine> MapEditorTab::parsedLinesForCurrentDocument() const
 MapEditorLogicalSourceContext MapEditorTab::logicalSourceContext() const
 {
     return MapEditorLogicalSourceContext{
+        .projectionSnapshotForCurrentDocument = [this]() {
+            return sourceProjectionSnapshotForCurrentDocument();
+        },
+        .projectionSnapshotWasReused = [this]() {
+            return sourceProjectionCache_.lastRequestWasCacheHit();
+        },
         .logicalCommandsForCurrentDocument = [this]() {
             return logicalCommandsForCurrentDocument();
         },
@@ -75,53 +81,48 @@ MapEditorLogicalSourceContext MapEditorTab::logicalSourceContext() const
     };
 }
 
-QVector<TherionSourceLogicalCommand> MapEditorTab::logicalCommandsForCurrentDocument() const
+MapEditorSourceProjectionSnapshotPtr MapEditorTab::sourceProjectionSnapshotForCurrentDocument() const
 {
     if (textEditor_ == nullptr) {
         return {};
     }
 
     const int currentRevision = textEditor_->documentRevision();
-    if (cachedLogicalCommandsValid_ && cachedLogicalCommandsRevision_ == currentRevision) {
-        return cachedLogicalCommands_;
-    }
+    return sourceProjectionCache_.snapshotFor(currentRevision, [this, currentRevision]() {
+        const QString currentText = textEditor_->text();
+        TherionSourceDocumentMetadata metadata;
+        metadata.sourceType = TherionSourceDocumentType::TherionMap;
+        metadata.revisionId = currentRevision;
+        const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(currentText, metadata);
+        const TherionSourceLogicalDocument logicalDocument =
+            TherionSourceLogicalDocument::fromSourceDocument(sourceDocument);
 
-    TherionSourceDocumentMetadata metadata;
-    metadata.sourceType = TherionSourceDocumentType::TherionMap;
-    metadata.revisionId = currentRevision;
-    const TherionSourceLogicalDocument logicalDocument =
-        TherionSourceLogicalDocument::fromText(textEditor_->text(), metadata);
-    cachedLogicalCommands_ = logicalDocument.commands();
-    cachedLogicalCommandsRevision_ = currentRevision;
-    cachedLogicalCommandsValid_ = true;
-    return cachedLogicalCommands_;
+        QRectF sourceBounds;
+        const TherionAreaAdjust areaAdjust = parseTherionAreaAdjust(currentText);
+        if (areaAdjust.valid && areaAdjust.modelRect.isValid()) {
+            sourceBounds = areaAdjust.modelRect;
+        } else {
+            sourceBounds = xtherionAutoAreaAdjustRect();
+        }
+
+        return MapEditorSourceProjectionSnapshot{
+            .revision = currentRevision,
+            .logicalCommands = logicalDocument.commands(),
+            .geometryProjection = Th2GeometryProjection::fromDocuments(sourceDocument, logicalDocument),
+            .sourceBounds = sourceBounds};
+    });
+}
+
+QVector<TherionSourceLogicalCommand> MapEditorTab::logicalCommandsForCurrentDocument() const
+{
+    const MapEditorSourceProjectionSnapshotPtr snapshot = sourceProjectionSnapshotForCurrentDocument();
+    return snapshot != nullptr ? snapshot->logicalCommands : QVector<TherionSourceLogicalCommand>();
 }
 
 Th2GeometryProjection MapEditorTab::geometryProjectionForCurrentDocument() const
 {
-    if (textEditor_ == nullptr) {
-        return {};
-    }
-
-    const int currentRevision = textEditor_->documentRevision();
-    if (cachedGeometryProjectionValid_ && cachedGeometryProjectionRevision_ == currentRevision) {
-        return cachedGeometryProjection_;
-    }
-
-    TherionSourceDocumentMetadata metadata;
-    metadata.sourceType = TherionSourceDocumentType::TherionMap;
-    metadata.revisionId = currentRevision;
-    const TherionSourceDocument sourceDocument =
-        TherionSourceDocument::fromText(textEditor_->text(), metadata);
-    const TherionSourceLogicalDocument logicalDocument =
-        TherionSourceLogicalDocument::fromSourceDocument(sourceDocument);
-    cachedLogicalCommands_ = logicalDocument.commands();
-    cachedLogicalCommandsRevision_ = currentRevision;
-    cachedLogicalCommandsValid_ = true;
-    cachedGeometryProjection_ = Th2GeometryProjection::fromDocuments(sourceDocument, logicalDocument);
-    cachedGeometryProjectionRevision_ = currentRevision;
-    cachedGeometryProjectionValid_ = true;
-    return cachedGeometryProjection_;
+    const MapEditorSourceProjectionSnapshotPtr snapshot = sourceProjectionSnapshotForCurrentDocument();
+    return snapshot != nullptr ? snapshot->geometryProjection : Th2GeometryProjection();
 }
 
 std::optional<MapEditorInteractiveLineControlHandleRef> MapEditorTab::interactiveLineControlAt(
@@ -133,28 +134,8 @@ std::optional<MapEditorInteractiveLineControlHandleRef> MapEditorTab::interactiv
 
 QRectF MapEditorTab::mapSourceBoundsForCurrentDocument() const
 {
-    if (textEditor_ == nullptr) {
-        return QRectF();
-    }
-
-    const int currentRevision = textEditor_->documentRevision();
-    if (cachedMapSourceBoundsValid_ && cachedMapSourceBoundsRevision_ == currentRevision) {
-        return cachedMapSourceBounds_;
-    }
-
-    const QString currentText = textEditor_->text();
-    QRectF resolvedBounds;
-    const TherionAreaAdjust areaAdjust = parseTherionAreaAdjust(currentText);
-    if (areaAdjust.valid && areaAdjust.modelRect.isValid()) {
-        resolvedBounds = areaAdjust.modelRect;
-    } else {
-        resolvedBounds = xtherionAutoAreaAdjustRect();
-    }
-
-    cachedMapSourceBoundsValid_ = true;
-    cachedMapSourceBoundsRevision_ = currentRevision;
-    cachedMapSourceBounds_ = resolvedBounds;
-    return cachedMapSourceBounds_;
+    const MapEditorSourceProjectionSnapshotPtr snapshot = sourceProjectionSnapshotForCurrentDocument();
+    return snapshot != nullptr ? snapshot->sourceBounds : QRectF();
 }
 
 std::optional<QRectF> MapEditorTab::initialAreaAdjustRectForDraftInsertion() const

@@ -200,6 +200,9 @@ Therion command, option, help, style, and symbol metadata should be data-driven.
 - `MapEditorBackgroundAssetLoader` owns cached background-source reads and the deterministic XVI/SVG decoding needed
   to produce immutable asset payloads. `MapEditorBackgroundLayers` owns placement, graphics-item application, and
   background UI lifecycle; neither responsibility owns the other’s state.
+- A Map source revision is handed to scene refresh through `MapEditorSourceProjectionSnapshot`, held as a
+  `shared_ptr<const ...>`. It owns the logical commands, TH2 geometry projection, and source bounds for that one
+  revision, so scene refresh shares one immutable identity rather than copying separately cached projections.
 - Project watcher mutations invalidate matching background assets in every attached or detached Map tab. The source
   identity is a normalized absolute path so invalidation remains stable after a file is removed; raster reload stays
   asynchronous, while vector items replace only their immutable source payload or derived geometry.

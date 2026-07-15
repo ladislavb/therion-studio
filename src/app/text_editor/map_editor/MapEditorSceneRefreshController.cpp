@@ -244,11 +244,22 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
     context_.clearMapScene();
     const qint64 clearMs = logTiming ? stageTimer.restart() : 0;
 
-    const QVector<TherionSourceLogicalCommand> logicalCommands =
-        context_.logicalSource.logicalCommandsForCurrentDocument
-            ? context_.logicalSource.logicalCommandsForCurrentDocument()
-            : QVector<TherionSourceLogicalCommand>();
-    const bool hasLogicalSource = context_.logicalSource.logicalCommandsForCurrentDocument != nullptr;
+    const MapEditorSourceProjectionSnapshotPtr projectionSnapshot =
+        context_.logicalSource.projectionSnapshotForCurrentDocument
+            ? context_.logicalSource.projectionSnapshotForCurrentDocument()
+            : MapEditorSourceProjectionSnapshotPtr();
+    const bool projectionSnapshotWasReused = projectionSnapshot != nullptr
+        && context_.logicalSource.projectionSnapshotWasReused
+        && context_.logicalSource.projectionSnapshotWasReused();
+    QVector<TherionSourceLogicalCommand> compatibilityLogicalCommands;
+    const bool hasLogicalSource = projectionSnapshot != nullptr
+        || context_.logicalSource.logicalCommandsForCurrentDocument != nullptr;
+    if (projectionSnapshot == nullptr && context_.logicalSource.logicalCommandsForCurrentDocument) {
+        compatibilityLogicalCommands = context_.logicalSource.logicalCommandsForCurrentDocument();
+    }
+    const QVector<TherionSourceLogicalCommand> &logicalCommands = projectionSnapshot != nullptr
+        ? projectionSnapshot->logicalCommands
+        : compatibilityLogicalCommands;
     std::optional<QVector<TherionParsedLine>> parsedLines;
     auto parsedLinesForRefresh = [&]() -> const QVector<TherionParsedLine> & {
         if (!parsedLines.has_value()) {
@@ -263,11 +274,10 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
         ? collectMapSceneEntries(logicalCommands)
         : collectMapSceneEntries(parsedLinesForRefresh());
     QVector<MapGeometryFeature> geometryFeatures;
-    if (context_.logicalSource.geometryProjectionForCurrentDocument
-        && hasLogicalSource) {
-        const Th2GeometryProjection geometryProjection =
-            context_.logicalSource.geometryProjectionForCurrentDocument();
-        geometryFeatures = collectGeometryFeatures(geometryProjection, logicalCommands);
+    if (projectionSnapshot != nullptr) {
+        geometryFeatures = collectGeometryFeatures(projectionSnapshot->geometryProjection, logicalCommands);
+    } else if (context_.logicalSource.geometryProjectionForCurrentDocument && hasLogicalSource) {
+        geometryFeatures = collectGeometryFeatures(context_.logicalSource.geometryProjectionForCurrentDocument(), logicalCommands);
     } else {
         geometryFeatures = collectGeometryFeatures(parsedLinesForRefresh());
     }
@@ -293,7 +303,9 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
         }
     }
     const qint64 collectMs = logTiming ? stageTimer.restart() : 0;
-    const QRectF sourceBounds = context_.mapSourceBoundsForCurrentDocument();
+    const QRectF sourceBounds = projectionSnapshot != nullptr
+        ? projectionSnapshot->sourceBounds
+        : context_.mapSourceBoundsForCurrentDocument();
     const std::optional<QRectF> sourceBoundsOverride = sourceBounds.isValid()
         ? std::optional<QRectF>(sourceBounds)
         : std::nullopt;
@@ -376,7 +388,7 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
                    "map-scene-refresh preserve_viewport=%1 before_items=%2 after_items=%3 parsed_lines=%4 entries=%5 "
                    "geometry=%6 restored_selection=%7 preserve_ms=%8 command_surface_before_ms=%9 clear_ms=%10 "
                    "parse_ms=%11 collect_ms=%12 render_ms=%13 background_ms=%14 selection_ms=%15 presentation_ms=%16 "
-                   "viewport_ms=%17 final_ui_ms=%18 total_ms=%19")
+                   "viewport_ms=%17 final_ui_ms=%18 total_ms=%19 projection_snapshot=%20 projection_cache_reused=%21")
                    .arg(preserveViewport ? 1 : 0)
                    .arg(beforeItemCount)
                    .arg(afterItemCount)
@@ -395,7 +407,9 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
                    .arg(presentationMs)
                    .arg(viewportMs)
                    .arg(finalUiMs)
-                   .arg(totalTimer.elapsed());
+                   .arg(totalTimer.elapsed())
+                   .arg(projectionSnapshot != nullptr ? 1 : 0)
+                   .arg(projectionSnapshotWasReused ? 1 : 0);
     }
 }
 
