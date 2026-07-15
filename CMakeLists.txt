@@ -663,6 +663,8 @@ set(THERION_TEXT_EDITOR_SHARED_SOURCES
 set(THERION_MAP_EDITOR_SOURCES
     src/app/text_editor/map_editor/MapEditorBackgroundAssetCache.cpp
     src/app/text_editor/map_editor/MapEditorBackgroundAssetCache.h
+    src/app/text_editor/map_editor/MapEditorBackgroundAssetLoader.cpp
+    src/app/text_editor/map_editor/MapEditorBackgroundAssetLoader.h
     src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp
     src/app/text_editor/map_editor/MapEditorAreaReferenceResolver.cpp
     src/app/text_editor/map_editor/MapEditorAreaReferenceResolver.h

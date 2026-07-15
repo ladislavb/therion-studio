@@ -115,6 +115,10 @@ Only after R2-R4 provide a real seam, extract asset loading/cache coordination f
 `MapEditorBackgroundLayers.cpp`. Do not mechanically split by line count. Dialog intent, source transaction wiring,
 placement state, and graphics-item application remain separate named responsibilities.
 
+Implementation status (2026-07-15): R5 is complete. `MapEditorBackgroundAssetLoader` owns cache-key construction,
+source reads, and deterministic XVI/SVG parsing. `MapEditorBackgroundLayers` retains background placement, graphics-item
+application, dialog intent, source transactions, and UI lifecycle; it no longer duplicates source-load/cache logic.
+
 ## U1 — Measure Undo Memory Without Behavior Change
 
 Instrument transaction diagnostics or a focused benchmark to record:

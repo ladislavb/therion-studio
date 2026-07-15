@@ -197,6 +197,9 @@ Therion command, option, help, style, and symbol metadata should be data-driven.
 - Background asset caching is an application-owned, byte-bounded LRU policy. Cache keys shall include stable normalized
   absolute source identity, asset format, and decode/projection options; cached values retain revision/error state but no graphics-item,
   inspector, or source-transaction state.
+- `MapEditorBackgroundAssetLoader` owns cached background-source reads and the deterministic XVI/SVG decoding needed
+  to produce immutable asset payloads. `MapEditorBackgroundLayers` owns placement, graphics-item application, and
+  background UI lifecycle; neither responsibility owns the other’s state.
 - Project watcher mutations invalidate matching background assets in every attached or detached Map tab. The source
   identity is a normalized absolute path so invalidation remains stable after a file is removed; raster reload stays
   asynchronous, while vector items replace only their immutable source payload or derived geometry.

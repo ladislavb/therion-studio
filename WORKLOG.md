@@ -15,8 +15,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ### 2026.7.2 Planning
 
-- Keep the `2026.7.2` scope open for the focused performance sequence: complete Map runtime ownership R4-R5, establish
-  map refresh M0 measurements/immutable generation contracts, then widen only measured-safe partial refresh paths.
+- Keep the `2026.7.2` scope open for the focused performance sequence: Map runtime ownership R4-R5 is complete;
+  establish map refresh M0 measurements/immutable generation contracts, then widen only measured-safe partial refresh paths.
   Treat range-based undo as a separate measured decision; do not add unrelated user-facing feature work merely to fill
   the release.
 - Treat Unified Source DOM implementation as closed for `2026.7.2`; the completed M0-M9 plan is archived at
@@ -287,8 +287,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Backlog
 
-- Continue the Map runtime-ownership plan with R5 responsibility extraction, then proceed to M0 map-refresh
-  measurements and the immutable DOM projection/generation contract before widening partial refresh.
+- Begin M0 map-refresh measurements and the immutable DOM projection/generation contract before widening partial refresh.
 - Optional Structure graph view for relationships such as `preview`, `revise`, `join`, `equate`, relationship status, and station-network edges.
 - Compiler-confirmed project-index comparison once lightweight indexing is no longer sufficient.
 - Broaden retained project validation cache coverage only if fresh logs show repeated scans still rebuilding unchanged

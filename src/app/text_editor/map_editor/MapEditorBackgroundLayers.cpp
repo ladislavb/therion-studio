@@ -47,6 +47,7 @@
 
 #include "MapEditorRasterBackgroundImage.h"
 #include "MapEditorRasterBackgroundPlacement.h"
+#include "MapEditorBackgroundAssetLoader.h"
 #include "MapEditorSceneSupport.h"
 #include "MapEditorSvgBackgroundItem.h"
 #include "MapEditorSvgBackgroundMetadata.h"
@@ -240,113 +241,6 @@ QRectF rasterPlacementModelBoundsForReference(const XtherionBackgroundReference 
         return areaAdjust.modelRect;
     }
     return rasterMetadataModelBounds(areaAdjust, sourceBounds);
-}
-
-bool parseXviDocumentFileCached(MapEditorBackgroundAssetCache *assetCache,
-                                const QString &absolutePath,
-                                XviDocument *document)
-{
-    if (assetCache == nullptr || document == nullptr || absolutePath.isEmpty()) {
-        return false;
-    }
-
-    QFileInfo fileInfo(absolutePath);
-    if (!fileInfo.exists() || !fileInfo.isFile()) {
-        return false;
-    }
-
-    const QString pathKey = normalizedPathKey(fileInfo.absoluteFilePath());
-    if (pathKey.isEmpty()) {
-        return false;
-    }
-
-    const MapEditorBackgroundAssetRequest request{
-        .key = MapEditorBackgroundAssetKey{
-            .canonicalSourcePath = pathKey,
-            .format = MapEditorBackgroundAssetFormat::Xvi,
-            .decodeOptions = QStringLiteral("therion-xvi-v1")},
-        .revision = MapEditorBackgroundAssetRevision{
-            .byteSize = fileInfo.size(),
-            .modifiedMilliseconds = fileInfo.lastModified().toMSecsSinceEpoch()}};
-    const MapEditorBackgroundAssetCacheResult cacheResult = assetCache->load(
-        request,
-        [filePath = fileInfo.absoluteFilePath()](const MapEditorBackgroundAssetRequest &) {
-            QFile file(filePath);
-            if (!file.open(QIODevice::ReadOnly)) {
-                return MapEditorBackgroundAssetLoadResult{
-                    .error = QStringLiteral("Unable to read XVI background source.")};
-            }
-            const QByteArray fileBytes = file.readAll();
-            auto parsed = std::make_shared<XviDocument>();
-            if (!parseTherionXviDocumentText(QString::fromUtf8(fileBytes), parsed.get())) {
-                return MapEditorBackgroundAssetLoadResult{
-                    .error = QStringLiteral("Unable to parse XVI background source.")};
-            }
-            return MapEditorBackgroundAssetLoadResult{
-                .payload = std::move(parsed),
-                .byteCost = static_cast<std::size_t>(fileBytes.size())};
-        });
-    if (!cacheResult.loadResult.payload) {
-        return false;
-    }
-
-    *document = *std::static_pointer_cast<const XviDocument>(cacheResult.loadResult.payload);
-    return true;
-}
-
-struct SvgBackgroundAsset
-{
-    QByteArray sourceData;
-    MapEditorSvgBackgroundMetadata metadata;
-};
-
-bool loadSvgBackgroundAssetCached(MapEditorBackgroundAssetCache *assetCache,
-                                  const QString &absolutePath,
-                                  SvgBackgroundAsset *asset)
-{
-    if (assetCache == nullptr || asset == nullptr || absolutePath.isEmpty()) {
-        return false;
-    }
-
-    const QFileInfo fileInfo(absolutePath);
-    if (!fileInfo.exists() || !fileInfo.isFile()) {
-        return false;
-    }
-
-    const MapEditorBackgroundAssetRequest request{
-        .key = MapEditorBackgroundAssetKey{
-            .canonicalSourcePath = normalizedPathKey(fileInfo.absoluteFilePath()),
-            .format = MapEditorBackgroundAssetFormat::Svg,
-            .decodeOptions = QStringLiteral("therion-svg-source-v1")},
-        .revision = MapEditorBackgroundAssetRevision{
-            .byteSize = fileInfo.size(),
-            .modifiedMilliseconds = fileInfo.lastModified().toMSecsSinceEpoch()}};
-    const MapEditorBackgroundAssetCacheResult cacheResult = assetCache->load(
-        request,
-        [filePath = fileInfo.absoluteFilePath()](const MapEditorBackgroundAssetRequest &) {
-            QFile file(filePath);
-            if (!file.open(QIODevice::ReadOnly)) {
-                return MapEditorBackgroundAssetLoadResult{.error = QStringLiteral("Unable to read SVG background.")};
-            }
-
-            const QByteArray sourceData = file.readAll();
-            const MapEditorSvgBackgroundMetadata metadata = parseMapEditorSvgBackgroundMetadata(sourceData);
-            if (!metadata.valid) {
-                return MapEditorBackgroundAssetLoadResult{.error = QStringLiteral("Invalid SVG background.")};
-            }
-
-            return MapEditorBackgroundAssetLoadResult{
-                .payload = std::make_shared<const SvgBackgroundAsset>(SvgBackgroundAsset{
-                    .sourceData = sourceData,
-                    .metadata = metadata}),
-                .byteCost = static_cast<std::size_t>(sourceData.size())};
-        });
-    if (!cacheResult.loadResult.payload) {
-        return false;
-    }
-
-    *asset = *std::static_pointer_cast<const SvgBackgroundAsset>(cacheResult.loadResult.payload);
-    return true;
 }
 
 void cacheRasterSourceImage(QGraphicsPixmapItem *item, const QImage &sourceImage)
@@ -1349,8 +1243,9 @@ bool createAndAppendSvgBackgroundItem(QGraphicsScene *scene,
         return false;
     }
 
-    SvgBackgroundAsset asset;
-    if (!loadSvgBackgroundAssetCached(assetCache, absolutePath, &asset)) {
+    MapEditorSvgBackgroundAsset asset;
+    if (assetCache == nullptr
+        || !MapEditorBackgroundAssetLoader::loadSvg(*assetCache, absolutePath, &asset)) {
         return false;
     }
 
@@ -1781,7 +1676,8 @@ void MapEditorTab::browseAndAddBackgroundImages()
                 ? areaAdjust.modelRect
                 : sourceBounds;
             if (!generatedXviDocument.has_value()
-                && !parseXviDocumentFileCached(&backgroundAssetCache_, QFileInfo(xviPath).absoluteFilePath(), &xviDocument)) {
+                && !MapEditorBackgroundAssetLoader::loadXvi(
+                    backgroundAssetCache_, QFileInfo(xviPath).absoluteFilePath(), &xviDocument)) {
                 continue;
             }
             if (generatedXviDocument.has_value()) {
@@ -1993,7 +1889,7 @@ void MapEditorTab::setSelectedBackgroundLayerPosition(const QPointF &position)
     if (isMapEditorXviBackgroundPath(item->data(0).toString())) {
         const QString layerPath = QFileInfo(item->data(0).toString()).absoluteFilePath();
         XviDocument xviDocument;
-        if (!parseXviDocumentFileCached(&backgroundAssetCache_, layerPath, &xviDocument)) {
+        if (!MapEditorBackgroundAssetLoader::loadXvi(backgroundAssetCache_, layerPath, &xviDocument)) {
             return;
         }
 
@@ -2767,7 +2663,8 @@ void MapEditorTab::loadBackgroundLayersFromSession()
             const QRectF xviModelBounds = areaAdjust.valid && areaAdjust.modelRect.isValid()
                 ? areaAdjust.modelRect
                 : sourceBounds;
-            if (!parseXviDocumentFileCached(&backgroundAssetCache_, QFileInfo(layerPath).absoluteFilePath(), &xviDocument)
+            if (!MapEditorBackgroundAssetLoader::loadXvi(
+                    backgroundAssetCache_, QFileInfo(layerPath).absoluteFilePath(), &xviDocument)
                 || !createAndAppendXviBackgroundItem(mapScene_,
                                                      &backgroundImageItems_,
                                                      QFileInfo(layerPath).absoluteFilePath(),
@@ -3010,7 +2907,7 @@ void MapEditorTab::syncAutoBackgroundLayersFromCurrentDocument()
 
         if (reference.xviReference) {
             XviDocument xviDocument;
-            if (!parseXviDocumentFileCached(&backgroundAssetCache_, referencePath, &xviDocument)) {
+            if (!MapEditorBackgroundAssetLoader::loadXvi(backgroundAssetCache_, referencePath, &xviDocument)) {
                 continue;
             }
 
@@ -3182,7 +3079,7 @@ void MapEditorTab::reprojectMetadataBackgroundLayersForCurrentDocument()
 
         if (metadataReference->xviReference) {
             XviDocument xviDocument;
-            if (!parseXviDocumentFileCached(&backgroundAssetCache_, layerPath, &xviDocument)) {
+            if (!MapEditorBackgroundAssetLoader::loadXvi(backgroundAssetCache_, layerPath, &xviDocument)) {
                 continue;
             }
 
@@ -3680,8 +3577,8 @@ void MapEditorTab::invalidateBackgroundAsset(const QString &sourcePath)
         invalidateBackgroundLayerRasterJobs(item);
         const QString layerPath = item->data(0).toString();
         if (auto *svgItem = dynamic_cast<MapEditorSvgBackgroundItem *>(item)) {
-            SvgBackgroundAsset asset;
-            if (loadSvgBackgroundAssetCached(&backgroundAssetCache_, layerPath, &asset)) {
+            MapEditorSvgBackgroundAsset asset;
+            if (MapEditorBackgroundAssetLoader::loadSvg(backgroundAssetCache_, layerPath, &asset)) {
                 svgItem->reloadSourceData(asset.sourceData);
             }
             continue;
@@ -3779,8 +3676,8 @@ bool MapEditorTab::addSvgBackgroundImage(const QString &imagePath)
     }
 
     const QString absolutePath = QFileInfo(imagePath).absoluteFilePath();
-    SvgBackgroundAsset svgAsset;
-    if (!loadSvgBackgroundAssetCached(&backgroundAssetCache_, absolutePath, &svgAsset)) {
+    MapEditorSvgBackgroundAsset svgAsset;
+    if (!MapEditorBackgroundAssetLoader::loadSvg(backgroundAssetCache_, absolutePath, &svgAsset)) {
         toolbarStatusNote_ = tr("Could not load SVG background metadata.");
         return false;
     }
