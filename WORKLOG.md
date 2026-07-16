@@ -283,6 +283,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Blocked / Needs Input
 
+- Resolved Linux/macOS Map UI crash: immutable map source-snapshot construction recursively requested the same snapshot
+  through XTherion automatic area-adjust bounds. The builder now supplies its already-built geometry projection to the
+  bounds calculation; the seven affected offscreen Map UI regressions pass locally.
 - Old Therion/Metapost crash fixture: parked until a reproducible project or minimal fixture is available.
 - Stylus/Sidecar behavior: needs hardware-specific manual validation.
 

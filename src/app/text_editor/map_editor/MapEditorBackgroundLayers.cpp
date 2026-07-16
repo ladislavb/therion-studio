@@ -3186,6 +3186,21 @@ void MapEditorTab::reprojectMetadataBackgroundLayersForCurrentDocument()
 
 QRectF MapEditorTab::xtherionAutoAreaAdjustRect() const
 {
+    QVector<MapGeometryFeature> features;
+    if (textEditor_ != nullptr) {
+        const MapEditorLogicalSourceContext logicalSource = logicalSourceContext();
+        const QVector<TherionSourceLogicalCommand> logicalCommands = logicalSource.logicalCommandsForCurrentDocument
+            ? logicalSource.logicalCommandsForCurrentDocument()
+            : QVector<TherionSourceLogicalCommand>();
+        features = logicalSource.logicalCommandsForCurrentDocument
+            ? collectGeometryFeatures(geometryProjectionForCurrentDocument(), logicalCommands)
+            : collectGeometryFeatures(parsedLinesForCurrentDocument());
+    }
+    return xtherionAutoAreaAdjustRect(features);
+}
+
+QRectF MapEditorTab::xtherionAutoAreaAdjustRect(const QVector<MapGeometryFeature> &geometryFeatures) const
+{
     QRectF limits;
     bool hasLimits = false;
 
@@ -3212,17 +3227,8 @@ QRectF MapEditorTab::xtherionAutoAreaAdjustRect() const
         includeRect(backgroundLayerModelRectForItem(item, currentSourceBounds, previewBounds));
     }
 
-    if (textEditor_ != nullptr) {
-        const MapEditorLogicalSourceContext logicalSource = logicalSourceContext();
-        const QVector<TherionSourceLogicalCommand> logicalCommands = logicalSource.logicalCommandsForCurrentDocument
-            ? logicalSource.logicalCommandsForCurrentDocument()
-            : QVector<TherionSourceLogicalCommand>();
-        const QVector<MapGeometryFeature> features = logicalSource.logicalCommandsForCurrentDocument
-            ? collectGeometryFeatures(geometryProjectionForCurrentDocument(), logicalCommands)
-            : collectGeometryFeatures(parsedLinesForCurrentDocument());
-        if (!features.isEmpty()) {
-            includeRect(geometryBoundsForFeatures(features));
-        }
+    if (!geometryFeatures.isEmpty()) {
+        includeRect(geometryBoundsForFeatures(geometryFeatures));
     }
 
     if (!hasLimits) {

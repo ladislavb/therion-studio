@@ -96,19 +96,22 @@ MapEditorSourceProjectionSnapshotPtr MapEditorTab::sourceProjectionSnapshotForCu
         const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(currentText, metadata);
         const TherionSourceLogicalDocument logicalDocument =
             TherionSourceLogicalDocument::fromSourceDocument(sourceDocument);
+        const Th2GeometryProjection geometryProjection =
+            Th2GeometryProjection::fromDocuments(sourceDocument, logicalDocument);
 
         QRectF sourceBounds;
         const TherionAreaAdjust areaAdjust = parseTherionAreaAdjust(currentText);
         if (areaAdjust.valid && areaAdjust.modelRect.isValid()) {
             sourceBounds = areaAdjust.modelRect;
         } else {
-            sourceBounds = xtherionAutoAreaAdjustRect();
+            sourceBounds = xtherionAutoAreaAdjustRect(
+                collectGeometryFeatures(geometryProjection, logicalDocument.commands()));
         }
 
         return MapEditorSourceProjectionSnapshot{
             .revision = currentRevision,
             .logicalCommands = logicalDocument.commands(),
-            .geometryProjection = Th2GeometryProjection::fromDocuments(sourceDocument, logicalDocument),
+            .geometryProjection = geometryProjection,
             .sourceBounds = sourceBounds};
     });
 }

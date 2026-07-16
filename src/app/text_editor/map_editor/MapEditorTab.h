@@ -575,6 +575,7 @@ private:
     void reprojectMetadataBackgroundLayersForCurrentDocument();
     void updateEmptyDocumentGuideVisibility();
     QRectF xtherionAutoAreaAdjustRect() const;
+    QRectF xtherionAutoAreaAdjustRect(const QVector<MapGeometryFeature> &geometryFeatures) const;
     void syncBackgroundLayerXtherionMetadata(QGraphicsPixmapItem *item, const QString &label, bool preserveExistingPlacement = false);
     bool syncBackgroundLayerXtherionGammaMetadata(QGraphicsPixmapItem *item, const QString &label);
     void syncBackgroundLayerMapiahMetadata(QGraphicsPixmapItem *item,

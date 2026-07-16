@@ -127,6 +127,11 @@ snapshot and whether the handle was reused. Legacy value-returning callbacks rem
 non-refresh consumers while they migrate. Focused QTest coverage proves same-revision identity reuse and
 new-revision replacement.
 
+Regression note (2026-07-16): snapshot construction shall not call a helper that obtains logical commands or geometry
+through the same snapshot cache. The XTherion automatic area-adjust calculation now accepts geometry features supplied
+by the in-progress snapshot builder, preventing recursive cache entry and stack overflow. The affected Map UI smoke
+tests cover snapshot construction through normal Map tab workflows.
+
 ### Slice M0B - Scene Generation Completion
 
 Assign a monotonically increasing scene projection generation to each accepted full/partial refresh. Completion and
