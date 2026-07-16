@@ -121,6 +121,28 @@ int countVertexIndexEntriesForLine(const QHash<QString, QGraphicsItem *> &itemsB
     return count;
 }
 
+QStringList geometryItemMetadataForLine(const QGraphicsScene &scene, int lineNumber)
+{
+    QStringList metadata;
+    for (QGraphicsItem *item : scene.items()) {
+        if (item == nullptr
+            || item->data(kMapItemRole).toInt() != kMapItemGeometryValue
+            || item->data(kMapSceneLineNumberRole).toInt() != lineNumber) {
+            continue;
+        }
+
+        metadata.append(QStringLiteral("%1|%2|%3|%4|%5|%6")
+                            .arg(item->type())
+                            .arg(QString::number(item->zValue(), 'f', 2))
+                            .arg(item->flags().testFlag(QGraphicsItem::ItemIsSelectable))
+                            .arg(item->data(kMapSceneSelectionGatedRole).toBool())
+                            .arg(item->data(kMapSceneSelectionSubtypeRole).toInt())
+                            .arg(item->data(kMapSceneOwnerVertexRole).toInt()));
+    }
+    metadata.sort(Qt::CaseSensitive);
+    return metadata;
+}
+
 int runPointTypeAndLabelOptionParsingTest()
 {
     const QString text =
@@ -590,6 +612,7 @@ int runLineGeometryItemGroupRemovalTest()
     const int otherLineGeometryBefore = countGeometryItemsForLine(scene, otherLine->lineNumber);
     const int pointGeometryBefore = countGeometryItemsForLine(scene, point->lineNumber);
     const int targetVertexEntriesBefore = countVertexIndexEntriesForLine(vertexItemsByKey, targetLine->lineNumber);
+    const QStringList targetItemMetadataBefore = geometryItemMetadataForLine(scene, targetLine->lineNumber);
     if (!expect(targetGeometryBefore > 1,
                 "Expected styled target line to render a multi-item geometry group before removal.")) {
         return 1;
@@ -696,6 +719,10 @@ int runLineGeometryItemGroupRemovalTest()
     if (!expect(countVertexIndexEntriesForLine(vertexItemsByKey, targetLine->lineNumber) == targetVertexEntriesBefore
                     && countVertexIndexEntriesForLine(vertexItemsByKey, otherLine->lineNumber) > 0,
                 "Expected vertex index to include target and neighboring handles after single-feature render.")) {
+        return 1;
+    }
+    if (!expect(geometryItemMetadataForLine(scene, targetLine->lineNumber) == targetItemMetadataBefore,
+                "Expected full-scene and single-feature line rendering to produce equivalent item metadata.")) {
         return 1;
     }
 

@@ -217,8 +217,10 @@ Goal: reuse the existing line rendering branch without requiring a full scene re
 Slice 2A - Direct Target-Scene Rendering - Complete (2026-07-15)
 
 - `renderMapGeometryItemGroupForFeature()` now invokes the established workspace feature branch directly in the target
-  scene, with local per-feature indexes. It removes only the transient canvas frame afterwards; geometry items stay in
-  place and are never rendered into a temporary scene and reparented.
+  scene, with local per-feature indexes. Geometry items stay in place and are never rendered into a temporary scene or
+  reparented.
+- The single-feature path now explicitly bypasses canvas-frame creation, so it does not add/remove a non-geometry item
+  or reset the target scene rectangle during local item-group replacement.
 - This preserves the full renderer's style, preview-callback, and item-metadata behavior while removing temporary-scene
   allocation, item transfer, and transfer-time ownership churn from partial replacement.
 - The existing `MapGeometryFeatureParsingTest` item-count/index restoration coverage guards the direct path.
@@ -241,6 +243,11 @@ Slice 2B - Extract Line Feature Renderer - Next
   - item metadata and z-values
 - Keep the full-scene renderer and direct partial path calling the same helper for all line features.
 - Add focused tests proving full-scene rendering and single-line rendering produce equivalent item metadata for a representative line.
+
+Implementation progress (2026-07-17): the existing geometry item-group regression now captures the representative
+styled line's full-scene metadata and requires the single-feature replacement to reproduce its item type, z-order,
+selectability, selection-gated role, selection subtype, and owner-vertex role. The actual branch extraction remains
+pending; this baseline must stay green throughout it.
 
 Slice 2C - Keep Point/Area Out Of Scope
 

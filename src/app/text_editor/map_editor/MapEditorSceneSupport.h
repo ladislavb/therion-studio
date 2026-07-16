@@ -330,7 +330,8 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                              const std::function<void(int, const QString &, int, const QPointF &, const QPointF &)> &recordLineAreaVertexMove,
                              const std::function<void(int, qreal)> &recordPointOrientationHandleChange,
                              const std::function<void(int, int, qreal, qreal)> &recordLinePointLeftHandleChange,
-                             const MapEditorObjectStyleCatalog &styleCatalog);
+                             const MapEditorObjectStyleCatalog &styleCatalog,
+                             bool renderCanvasFrame = true);
 MapGeometryItemGroupRemovalResult removeMapGeometryItemGroupForLine(QGraphicsScene *scene,
                                                                     int lineNumber,
                                                                     QHash<int, QGraphicsItem *> *mapItemsByLine,

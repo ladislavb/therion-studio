@@ -210,6 +210,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
   through instead of suppressing platform handling.
 - Line partial refresh now keeps one-line item replacement on the existing source-bounds projection and falls back to a
   full scene refresh when a vertex edit expands map source bounds, preventing mixed projection coordinates.
+- M2B is in progress: the line item-group regression now compares full-scene and single-feature item metadata before
+  the renderer branch is extracted, guarding type, z-order, and interactive-selection roles during the refactor.
+- Single-feature partial rendering now bypasses the workspace canvas frame entirely, so it neither allocates/removes a
+  transient non-geometry item nor resets the existing scene rectangle during an otherwise local replacement.
 - Line partial refresh now preflights that the target geometry item group still has a live primary scene index before
   removing scene items, falling back to the pending full refresh when scene metadata is incomplete.
 - Point geometry moves now use the same one-feature partial-refresh item replacement path as line moves when source bounds

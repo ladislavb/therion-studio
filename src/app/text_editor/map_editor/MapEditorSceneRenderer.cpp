@@ -1915,7 +1915,8 @@ MapGeometryItemGroupRenderResult renderMapGeometryItemGroupForFeature(
                             recordLineAreaVertexMove,
                             recordPointOrientationHandleChange,
                             recordLinePointLeftHandleChange,
-                            styleCatalog);
+                            styleCatalog,
+                            false);
 
     auto isGeometryItemForFeature = [&feature](const QGraphicsItem *item) {
         return item != nullptr
@@ -2127,7 +2128,8 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                              const std::function<void(int, const QString &, int, const QPointF &, const QPointF &)> &recordLineAreaVertexMove,
                              const std::function<void(int, qreal)> &recordPointOrientationHandleChange,
                              const std::function<void(int, int, qreal, qreal)> &recordLinePointLeftHandleChange,
-                             const MapEditorObjectStyleCatalog &styleCatalog)
+                             const MapEditorObjectStyleCatalog &styleCatalog,
+                             bool renderCanvasFrame)
 {
     Q_UNUSED(documentPath);
     Q_UNUSED(recordCardMove);
@@ -2157,12 +2159,14 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
 
     const MapCanvasTheme canvasTheme = mapCanvasThemeForScene(scene);
     const QRectF sceneFrame = mapEditorCanvasSceneFrame();
-    scene->setSceneRect(sceneFrame);
     const QRectF geometryCanvas = sceneFrame.adjusted(kMapEditorCanvasFrameInset,
                                                        kMapEditorCanvasFrameInset,
                                                        -kMapEditorCanvasFrameInset,
                                                        -kMapEditorCanvasFrameInset);
-    if (showEmptyDocumentGuides || !geometryFeatures.isEmpty()) {
+    if (renderCanvasFrame) {
+        scene->setSceneRect(sceneFrame);
+    }
+    if (renderCanvasFrame && (showEmptyDocumentGuides || !geometryFeatures.isEmpty())) {
         QGraphicsRectItem *canvasItem =
             makeMouseTransparent(scene->addRect(geometryCanvas, QPen(canvasTheme.canvasBorder, 1.2), QBrush(canvasTheme.canvasFill)));
         if (canvasItem != nullptr && geometryFeatures.isEmpty()) {
@@ -2184,7 +2188,7 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
         }
     };
 
-    if (geometryFeatures.isEmpty() && showEmptyDocumentGuides) {
+    if (renderCanvasFrame && geometryFeatures.isEmpty() && showEmptyDocumentGuides) {
         auto *emptyGeometryItem = makeMouseTransparent(scene->addText(QObject::tr("No parseable point, line, or area geometry was found in this document yet."), QFont(QStringLiteral("Menlo"), 11)));
         emptyGeometryItem->setData(kMapSceneEmptyDocumentGuideRole, true);
         emptyGeometryItem->setDefaultTextColor(canvasTheme.mutedText);
