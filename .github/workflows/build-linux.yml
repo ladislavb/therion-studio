@@ -10,6 +10,11 @@ on:
         required: false
         type: boolean
         default: true
+      debug_map_ui_test:
+        description: Run MapEditorDetachedPaneTest under gdb instead of the UI smoke suite
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   ubuntu-24:
@@ -28,6 +33,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             libgl1-mesa-dev \
+            gdb \
             libsqlite3-dev \
             libxkbcommon-x11-0 \
             ninja-build \
@@ -81,7 +87,7 @@ jobs:
         run: cmake --build build --config Debug --target therion_ui_tests
 
       - name: Run UI smoke tests
-        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.run_ui_smoke_tests)
+        if: (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.run_ui_smoke_tests)) && !(github.event_name == 'workflow_dispatch' && inputs.debug_map_ui_test)
         run: >
           cmake -E env QT_QPA_PLATFORM=offscreen
           ctest --test-dir build
@@ -90,3 +96,12 @@ jobs:
           -L ui
           --output-on-failure
           --timeout 300
+
+      - name: Debug Map UI crash
+        if: github.event_name == 'workflow_dispatch' && inputs.debug_map_ui_test
+        run: |
+          ulimit -c unlimited
+          QT_QPA_PLATFORM=offscreen gdb --batch \
+            -ex run \
+            -ex "thread apply all bt full" \
+            --args "$GITHUB_WORKSPACE/build/MapEditorDetachedPaneTest"
