@@ -5,8 +5,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ## Current Focus
 
 1. `2026.7.2` is a performance and unified-source-DOM release: prioritize measured map refresh, explicit runtime ownership, and repeated project-workflow responsiveness over unrelated feature breadth.
-2. Complete watcher W4 in `PROJECT_ASYNC_COORDINATION_PLAN.md`: verify large-tree responsiveness, root replacement,
-   directory mutations, and cross-platform watcher behavior. SQL S1-S5 and watcher W1-W3 are complete.
+2. Continue measured Map partial-refresh work with M2B in `MAP_PARTIAL_REFRESH_PLAN.md`: extract the shared
+   single-line renderer while preserving full-refresh fallback and current scene-item metadata.
 3. Real-project smoke testing for Raw, Blocks, Map, Validation, Structure, and Compiler navigation after DOM closure.
 4. Plan-driven follow-ups for map partial refresh, validation/cache tuning, GUI cleanup, SVG backgrounds, reporting, LiDAR design, and 3D viewer refinement, including palette-regression coverage for inspector controls.
 5. Verify the Windows unit-test stabilization and keep session restore working for accessible projects in standard macOS user folders; unit CTest cases now identify individual QTest suites without multiplying test binaries. The Windows workflow reruns failed suites directly with verbose QTest output written to and explicitly printed from a file; the diagnostic path has a local PowerShell fixture check. Current Windows portability follow-up covers CSV newline output and platform-correct filesystem test fixtures, including platform-specific link assertions. On failures, verify production code before considering any test change, which requires explicit approval.
@@ -20,6 +20,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
   measured-safe render-item replacement paths, preserving full refresh as the fallback.
   Treat range-based undo as a separate measured decision; do not add unrelated user-facing feature work merely to fill
   the release.
+- Watcher W1-W4 verification is complete: generated deep/wide-tree, skipped-path, symlink, responsive-worker,
+  latest-request, and delta tests pass locally; the focused Windows, Linux, and macOS CI runs are green. Keep future
+  watcher policy changes measurement-led rather than widening the current inventory scope.
 - Treat Unified Source DOM implementation as closed for `2026.7.2`; the completed M0-M9 plan is archived at
   `plans/archive/UNIFIED_SOURCE_DOM_PLAN.md`. Future parser/source-model work should treat the DOM as the current
   architecture and extend it through focused regressions rather than reviving the migration queue.

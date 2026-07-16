@@ -4,7 +4,7 @@ Date: 2026-07-13
 
 Review findings: P1-3, P1-5.
 
-Status: active; A1-A3 and W1-W3 complete, W4 verification is next.
+Status: complete; A1-A3 and W1-W4 are complete.
 
 Scope: make Structure/Outputs result publication monotonic and move recursive project-watch inventory discovery off the
 GUI thread. This plan does not redesign project source snapshots, validation caches, or platform watcher policy.
@@ -187,11 +187,12 @@ watch setup into a synthetic mutation. `ProjectFileWatchDeltaPlanner` provides f
 - changed Therion file still invalidates shared scan cache and requests Structure/Outputs/Validation refresh;
 - macOS, Windows, and Linux focused CI.
 
-Local outcome (2026-07-14, macOS): `QTemporaryDir` coverage builds a 61-directory / 60-source-file deep and wide tree,
+Outcome (2026-07-14 to 2026-07-17): `QTemporaryDir` coverage builds a 61-directory / 60-source-file deep and wide tree,
 verifies skipped VCS/build and symlink paths remain excluded, and confirms that a heartbeat timer continues while worker
 inventory collection is intentionally held. The existing W2 test covers rapid same-root and changed-root replacement;
 W3 preserves the existing invalidation path after a real same-root inventory delta. The app/service runner passed ten
-consecutive release runs. Windows and Linux CI remain the cross-platform completion gate for this verification step.
+consecutive release runs. The focused watcher tests also pass in the local release build, and Windows, Linux, and macOS
+CI are green.
 
 ## Relationship To Other Plans
 
