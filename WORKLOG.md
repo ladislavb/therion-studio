@@ -169,6 +169,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
   project-validation signature exists, allowing unchanged follow-up results to use the model-skip path.
 - Project validation controller now suppresses scanner results from superseded request serials before they reach the UI,
   so queued automatic refreshes cannot briefly republish stale diagnostics while a newer validation request is pending.
+- Project validation now starts a superseding scan through the next Qt event-loop turn after worker completion, avoiding
+  a `QFutureWatcher` completion-state race that could leave repeated debounced requests queued indefinitely on Windows.
 - Project validation scanner now checks superseding request serials during collection/local-validation boundaries and
   suppresses superseded worker results instead of finishing and emitting stale scans.
 - Project validation now passes scanner cancellation into project-index scans, allowing superseded workers to abort before

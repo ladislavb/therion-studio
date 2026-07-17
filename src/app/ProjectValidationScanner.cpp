@@ -15,6 +15,7 @@
 #include <QElapsedTimer>
 #include <QFutureWatcher>
 #include <QDebug>
+#include <QMetaObject>
 #include <QSet>
 #include <QStringList>
 #include <QTimer>
@@ -839,7 +840,12 @@ void ProjectValidationScanner::handleScanFinished()
     if (hasSupersedingRequest) {
         queuedScan_ = false;
         debounceTimer_->stop();
-        startScan();
+        QMetaObject::invokeMethod(this, [this]() {
+            if (!hasPendingRequest_) {
+                return;
+            }
+            startScan();
+        }, Qt::QueuedConnection);
     }
 }
 }
