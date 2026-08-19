@@ -5362,8 +5362,8 @@ Přesto bod smazat?</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1758"/>
-        <source>Added %1 background layer(s), but PocketTopo metadata sync was skipped because the document changed.</source>
-        <translation>Přidáno %1 vrstev pozadí, ale synchronizace metadat PocketTopo byla přeskočena, protože dokument se změnil.</translation>
+        <source>Added %1 background layer(s), but XVI metadata sync was skipped because the document changed.</source>
+        <translation>Přidáno %1 vrstev pozadí, ale synchronizace metadat XVI byla přeskočena, protože dokument se změnil.</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1760"/>

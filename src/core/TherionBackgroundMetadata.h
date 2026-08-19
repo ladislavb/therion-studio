@@ -6,6 +6,8 @@
 #include <QString>
 #include <QVector>
 
+#include <optional>
+
 namespace TherionStudio
 {
 enum class TherionBackgroundMetadataFormat
@@ -58,6 +60,10 @@ struct TherionAreaAdjust
 QVector<TherionBackgroundReference> parseTherionBackgroundReferences(const QString &documentText,
                                                                      const QString &documentPath);
 TherionAreaAdjust parseTherionAreaAdjust(const QString &documentText);
+bool isTherionDefaultAreaAdjust(const QRectF &modelRect);
+std::optional<QRectF> initialTherionAreaAdjustForXviImport(const TherionAreaAdjust &existingAreaAdjust,
+                                                           const QRectF &otherContentBounds,
+                                                           const QRectF &placedXviBounds);
 QString therionMapiahImageInsertMetadataLine(const QString &absolutePath,
                                              const QString &documentPath,
                                              TherionBackgroundLayerFormat layerFormat,

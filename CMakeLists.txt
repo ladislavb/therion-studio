@@ -179,6 +179,7 @@ set(THERION_CORE_QTEST_SUITES
     Th2GeometryProjectionTest
     TherionFileTypesTest
     TherionXviPassageTest
+    TherionXviAreaAdjustTest
     ThreeDViewerCameraTest
     ThreeDViewerLoxLoaderTest
     ThreeDViewerLoxCorpusPolicyTest
@@ -1188,6 +1189,7 @@ therion_add_core_qtest_runner(TherionCoreQTests
     tests/core/ThreeDViewerCameraTest.cpp
     tests/core/TherionFileTypesTest.cpp
     tests/core/TherionXviPassageTest.cpp
+    tests/core/TherionXviAreaAdjustTest.cpp
     tests/core/ThreeDViewerLoxCorpusFixtures.h
     tests/core/ThreeDViewerLoxCorpusPolicyTest.cpp
     tests/core/ThreeDViewerLoxLoaderTest.cpp

@@ -511,6 +511,7 @@ The rules below define the expected day-to-day interaction model. If a later req
 - `.xvi` vector background references shall render as background layers when present.
 - `.xvi` vector background rendering shall draw embedded `XVIgrid` lines as background content when present.
 - `.xvi` vector background rendering shall preserve and render the four LRUD passage-outline vertices appended to a valid `XVIshots` record, and its background bounds shall include that envelope.
+- Adding an `.xvi` background shall persist an XTherion-compatible `xth_me_image_insert` reference. When the TH2 document has no area-adjust metadata or still has the default `0 0 256 256` rectangle, the same source transaction shall replace that placeholder with the placed `.xvi` bounds plus existing map geometry or non-XVI background bounds. A non-default area-adjust rectangle shall remain unchanged.
 - The map editor shall not expose a dedicated touch-controls toolbar mode; mouse, touchpad, Magic Mouse, pinch, stylus, and platform touch gestures shall use automatic input-policy handling.
 - After reparsing the document, the map editor shall restore the selected object when that object can still be resolved in the updated document.
 - Geometry editing shall support point placement, line vertex editing, area editing, and selection of individual vertices or control points.

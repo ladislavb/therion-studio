@@ -543,6 +543,35 @@ TherionAreaAdjust parseTherionAreaAdjust(const QString &documentText)
     return TherionAreaAdjust{};
 }
 
+bool isTherionDefaultAreaAdjust(const QRectF &modelRect)
+{
+    constexpr qreal epsilon = 0.0001;
+    const QRectF normalized = modelRect.normalized();
+    return normalized.isValid()
+        && qAbs(normalized.left()) <= epsilon
+        && qAbs(normalized.top()) <= epsilon
+        && qAbs(normalized.width() - 256.0) <= epsilon
+        && qAbs(normalized.height() - 256.0) <= epsilon;
+}
+
+std::optional<QRectF> initialTherionAreaAdjustForXviImport(const TherionAreaAdjust &existingAreaAdjust,
+                                                            const QRectF &otherContentBounds,
+                                                            const QRectF &placedXviBounds)
+{
+    if (existingAreaAdjust.valid && !isTherionDefaultAreaAdjust(existingAreaAdjust.modelRect)) {
+        return std::nullopt;
+    }
+    if (!placedXviBounds.isValid() || placedXviBounds.width() <= 0.0 || placedXviBounds.height() <= 0.0) {
+        return std::nullopt;
+    }
+
+    QRectF result = placedXviBounds.normalized();
+    if (otherContentBounds.isValid() && !isTherionDefaultAreaAdjust(otherContentBounds)) {
+        result = result.united(otherContentBounds.normalized());
+    }
+    return result;
+}
+
 QString therionMapiahImageInsertMetadataLine(const QString &absolutePath,
                                              const QString &documentPath,
                                              TherionBackgroundLayerFormat layerFormat,

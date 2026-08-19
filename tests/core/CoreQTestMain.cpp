@@ -22,6 +22,7 @@ int runThreeDViewerSceneModelTest(int argc, char **argv);
 int runThreeDViewerSceneStatisticsTest(int argc, char **argv);
 int runTherionFileTypesTest(int argc, char **argv);
 int runTherionXviPassageTest(int argc, char **argv);
+int runTherionXviAreaAdjustTest(int argc, char **argv);
 
 int main(int argc, char **argv)
 {
@@ -31,6 +32,7 @@ int main(int argc, char **argv)
         {"Th2GeometryProjectionTest", runTh2GeometryProjectionTest},
         {"TherionFileTypesTest", runTherionFileTypesTest},
         {"TherionXviPassageTest", runTherionXviPassageTest},
+        {"TherionXviAreaAdjustTest", runTherionXviAreaAdjustTest},
         {"ThreeDViewerCameraTest", runThreeDViewerCameraTest},
         {"ThreeDViewerLoxLoaderTest", runThreeDViewerLoxLoaderTest},
         {"ThreeDViewerLoxCorpusPolicyTest", runThreeDViewerLoxCorpusPolicyTest},

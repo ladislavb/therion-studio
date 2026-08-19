@@ -1677,7 +1677,7 @@ void MapEditorTab::browseAndAddBackgroundImages()
     int pendingRasterLayerCount = 0;
     bool addedPocketTopoXviLayer = false;
     bool addedSvgLayer = false;
-    bool pocketTopoMetadataSkipped = false;
+    bool xviMetadataSkipped = false;
     PocketTopoXviImportOptions pocketTopoOptions;
     for (const QString &imagePath : imagePaths) {
         if (QFileInfo(imagePath).suffix().compare(QStringLiteral("svg"), Qt::CaseInsensitive) == 0) {
@@ -1745,7 +1745,7 @@ void MapEditorTab::browseAndAddBackgroundImages()
             applyBackgroundLayerStackingOrder();
             setSelectedBackgroundLayerIndexInternal(backgroundImageItems_.size() - 1);
             refreshBackgroundLayerControls();
-            if (pocketTopoImport && textEditor_ != nullptr) {
+            if (textEditor_ != nullptr) {
                 const QString beforeText = textEditor_->text();
                 const QString metadataLine = xtherionImageInsertLine(absoluteXviPath,
                                                                      filePath(),
@@ -1755,16 +1755,17 @@ void MapEditorTab::browseAndAddBackgroundImages()
                                                                      insertionPlacement.rootStationName);
                 QString afterMetadataText = beforeText;
                 const TherionAreaAdjust existingAreaAdjust = parseTherionAreaAdjust(beforeText);
-                if (!existingAreaAdjust.valid || !existingAreaAdjust.modelRect.isValid()) {
-                    const QRectF placedBounds = xviPlacedModelBounds(xviDocument, insertionPlacement);
-                    if (placedBounds.isValid()) {
-                        afterMetadataText = upsertXtherionSimpleCommandLine(afterMetadataText,
-                                                                            QStringLiteral("xth_me_area_adjust"),
-                                                                            therionAreaAdjustMetadataLine(placedBounds));
-                        afterMetadataText = upsertXtherionSimpleCommandLine(afterMetadataText,
-                                                                            QStringLiteral("xth_me_area_zoom_to"),
-                                                                            therionAreaZoomToMetadataLine());
-                    }
+                if (const std::optional<QRectF> initialAreaAdjust = initialTherionAreaAdjustForXviImport(
+                        existingAreaAdjust,
+                        xtherionAutoAreaAdjustRect(),
+                        xviPlacedModelBounds(xviDocument, insertionPlacement));
+                    initialAreaAdjust.has_value()) {
+                    afterMetadataText = upsertXtherionSimpleCommandLine(afterMetadataText,
+                                                                        QStringLiteral("xth_me_area_adjust"),
+                                                                        therionAreaAdjustMetadataLine(*initialAreaAdjust));
+                    afterMetadataText = upsertXtherionSimpleCommandLine(afterMetadataText,
+                                                                        QStringLiteral("xth_me_area_zoom_to"),
+                                                                        therionAreaZoomToMetadataLine());
                 }
                 const QString afterText = upsertXtherionImageMetadataLine(afterMetadataText,
                                                                           filePath(),
@@ -1773,12 +1774,12 @@ void MapEditorTab::browseAndAddBackgroundImages()
                                                                           false);
                 if (afterText != beforeText) {
                     const TextEditorSourceTransactionResult transactionResult =
-                        applySourceTextChangeWithSnapshot(tr("Import PocketTopo Background"),
+                        applySourceTextChangeWithSnapshot(tr("Add Background Layers"),
                                                           beforeText,
                                                           afterText,
                                                           0);
                     if (transactionResult != TextEditorSourceTransactionResult::Applied) {
-                        pocketTopoMetadataSkipped = true;
+                        xviMetadataSkipped = true;
                     }
                 }
             }
@@ -1793,8 +1794,8 @@ void MapEditorTab::browseAndAddBackgroundImages()
 
     const int addedLayerCount = backgroundImageItems_.size() - previousLayerCount;
     if (addedLayerCount > 0) {
-        toolbarStatusNote_ = pocketTopoMetadataSkipped
-            ? tr("Added %1 background layer(s), but PocketTopo metadata sync was skipped because the document changed.")
+        toolbarStatusNote_ = xviMetadataSkipped
+            ? tr("Added %1 background layer(s), but XVI metadata sync was skipped because the document changed.")
                   .arg(addedLayerCount)
             : tr("Added %1 background layer(s).").arg(addedLayerCount);
         saveBackgroundLayersToSession();

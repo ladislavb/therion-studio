@@ -367,6 +367,8 @@ Therion Studio also reads and writes Mapiah `##MAPIAH## image_insert_v1` backgro
 
 An `.xvi` background can also include LRUD passage envelopes. Therion Studio shows these as a subtle filled and outlined shape behind the centreline, so they can be used directly as a drawing reference. The normal background-layer visibility and opacity controls apply to the complete `.xvi` reference.
 
+When you add an `.xvi` background to a new map, Therion Studio updates the XTherion drawing extent automatically so the whole reference is available for drawing. An existing non-default drawing extent is preserved.
+
 A background is restored as map content only when the current TH2 source declares it through XTherion or Mapiah metadata. Local session settings may restore its display state, but cannot add a background to an otherwise unrelated or empty TH2 file.
 
 When you add a PocketTopo Therion export (`.txt`) as a map background, Therion Studio asks for XVI scale, resolution, grid spacing, and plan or extended-elevation projection. It writes a generated `_p.xvi` or `_e.xvi` file next to the PocketTopo export, adds that `.xvi` as the background layer, and stores XTherion-compatible image metadata in the `.th2` source.
