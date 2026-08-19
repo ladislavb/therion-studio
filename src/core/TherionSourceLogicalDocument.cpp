@@ -126,7 +126,7 @@ void populateArgumentAndOptionRanges(TherionSourceLogicalCommand *command)
     int tokenIndex = 1;
     while (tokenIndex < command->parsed.tokens.size()) {
         const QString token = command->parsed.tokens.at(tokenIndex);
-        if (!commandTokenStartsNewOption(token)) {
+        if (!commandTokenActsAsOptionBoundary(command->parsed, tokenIndex)) {
             command->positionalArgumentRanges.append(argumentRangeForToken(*command, tokenIndex));
             ++tokenIndex;
             continue;
@@ -151,10 +151,10 @@ void populateArgumentAndOptionRanges(TherionSourceLogicalCommand *command)
             continue;
         }
 
-        const int nextOptionIndex = nextCommandOptionIndex(command->parsed.tokens, tokenIndex);
+        const int nextOptionIndex = nextCommandOptionIndex(command->parsed, tokenIndex);
         entry.nextTokenIndex = nextOptionIndex;
-        entry.rawValueTokens = commandLogicalOptionValueTokens(command->parsed.tokens, tokenIndex);
-        entry.logicalValueCount = commandLogicalOptionValueCount(command->parsed.tokens, tokenIndex);
+        entry.rawValueTokens = commandLogicalOptionValueTokens(command->parsed, tokenIndex);
+        entry.logicalValueCount = commandLogicalOptionValueCount(command->parsed, tokenIndex);
         if (!entry.rawValueTokens.isEmpty()) {
             entry.firstValueTokenIndex = tokenIndex + 1;
             entry.lastValueTokenIndex = nextOptionIndex - 1;

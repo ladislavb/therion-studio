@@ -10,6 +10,7 @@ Therion Studio is an editor and early-feedback tool. The Therion compiler remain
 - Preserve source text losslessly unless the user performs an explicit edit. Comments, blank lines, unknown but valid directives, ordering, continuation lines, indentation where practical, source encoding, and newline style are part of document integrity.
 - Prefer conservative diagnostics over speculative errors. If Therion accepts a construct or the rule is not fully modeled, avoid blocking or alarming the user.
 - Prefer source-range-aware core parsing over UI heuristics. Completion, highlighting, context help, validation, Structure, and map-editor projections should consume shared logical command/source metadata.
+- Quoted option values remain values even when their text begins with `-`; projections shall preserve token quoting information rather than reclassifying a quoted value as an option from its text alone.
 - Use real Therion examples or reduced fixtures from real patterns when adding or changing parser, namespace, reference, or validation behavior.
 
 ## File Roles

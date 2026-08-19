@@ -3290,7 +3290,7 @@ QVector<MapGeometryFeature> collectGeometryFeatures(const QVector<TherionParsedL
             feature.label = pointType.isEmpty() ? mapEntryTitleForLine(parsedLine) : geometryFeatureTypePart(pointType);
             feature.subtype = geometryFeatureSubtypeFromParsedLine(parsedLine, pointType);
             feature.subtitle = mapEntrySubtitleForLine(parsedLine);
-            feature.optionValues = commandOptionValuesByName(parsedLine.tokens);
+            feature.optionValues = commandOptionValuesByName(parsedLine);
             feature.accent = mapEntryAccentForCategory(feature.category);
             feature.sourceAnchor = pointTokens.first();
             feature.anchor = feature.sourceAnchor;
@@ -3323,7 +3323,7 @@ QVector<MapGeometryFeature> collectGeometryFeatures(const QVector<TherionParsedL
             feature.label = mapEntryTitleForLine(parsedLine);
             feature.subtype = geometryFeatureSubtypeFromParsedLine(parsedLine, pointTypeTokenFromLine(parsedLine));
             feature.subtitle = mapEntrySubtitleForLine(parsedLine);
-            feature.optionValues = commandOptionValuesByName(parsedLine.tokens);
+            feature.optionValues = commandOptionValuesByName(parsedLine);
             feature.accent = mapEntryAccentForCategory(feature.category);
             feature.sourceAnchor = pointTokens.first();
             feature.anchor = feature.sourceAnchor;
@@ -3344,7 +3344,7 @@ QVector<MapGeometryFeature> collectGeometryFeatures(const QVector<TherionParsedL
             currentFeature.subtype = geometryFeatureSubtypeFromParsedLine(parsedLine, parsedLine.tokens.value(1));
             currentLineSegmentSubtype = currentFeature.subtype.trimmed().toLower();
             currentFeature.subtitle = mapEntrySubtitleForLine(parsedLine);
-            currentFeature.optionValues = commandOptionValuesByName(parsedLine.tokens);
+            currentFeature.optionValues = commandOptionValuesByName(parsedLine);
             currentFeature.accent = mapEntryAccentForCategory(currentFeature.category);
             currentFeature.closed = commandOptionToggleValue(parsedLine.tokens, QStringLiteral("-close")).value_or(false);
             currentFeature.reversed = commandOptionToggleValue(parsedLine.tokens, QStringLiteral("-reverse")).value_or(false);

@@ -1,5 +1,6 @@
 #include "../src/core/TherionCommandLineModel.h"
 #include "../src/core/TherionCommandSyntax.h"
+#include "../src/core/TherionDocumentParser.h"
 
 #include <QCoreApplication>
 #include <QHash>
@@ -170,6 +171,17 @@ void keepsDashPrefixedQuotedTextValuesAsOptionValues()
             "dash-prefixed text value should be preserved as the -text option value");
 }
 
+void keepsQuotedSingleTokenDashTextValuesAsOptionValues()
+{
+    const TherionStudio::TherionParsedLine parsed = TherionStudio::TherionDocumentParser::parseLine(
+        QStringLiteral("point 4505.0 -1446.0 label -text \"-sump\""));
+
+    require(commandOptionValue(parsed, QStringLiteral("-text")) == QStringLiteral("-sump"),
+            "quoted single-token dash-prefixed text should stay with the preceding option");
+    require(commandOptionValuesByName(parsed).value(QStringLiteral("text")) == QStringLiteral("-sump"),
+            "quoted single-token dash-prefixed text should be available to source projections");
+}
+
 void deduplicatesLegacySingleTokenOptionRows()
 {
     QHash<QString, int> arity;
@@ -329,6 +341,7 @@ int main(int argc, char **argv)
     serializesFixedArityOptionValues();
     detectsSingleTokenOptionsWithEmbeddedValues();
     keepsDashPrefixedQuotedTextValuesAsOptionValues();
+    keepsQuotedSingleTokenDashTextValuesAsOptionValues();
     deduplicatesLegacySingleTokenOptionRows();
     keepsLeadingValueSeparateWhenAllowed();
     doesNotTreatDashPrefixedTokenAsLeadingValue();

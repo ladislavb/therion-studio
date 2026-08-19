@@ -809,9 +809,9 @@ std::optional<InspectorObjectQuickFields> inspectorObjectQuickFieldsFromParsedLi
         fields.type = inspectorTypePart(pointTypeToken);
         fields.subtype = inspectorObjectSubtype(parsedLine, pointTypeToken);
         const bool station = fields.type.compare(QStringLiteral("station"), Qt::CaseInsensitive) == 0;
-        fields.identifier = commandOptionValue(parsedLine.tokens, QStringLiteral("-id"));
-        fields.name = commandOptionValue(parsedLine.tokens, QStringLiteral("-name"));
-        fields.text = commandOptionValue(parsedLine.tokens, QStringLiteral("-text"));
+        fields.identifier = commandOptionValue(parsedLine, QStringLiteral("-id"));
+        fields.name = commandOptionValue(parsedLine, QStringLiteral("-name"));
+        fields.text = commandOptionValue(parsedLine, QStringLiteral("-text"));
         fields.value = inspectorBracketedOptionValue(parsedLine.tokens, QStringLiteral("-value"));
         if (fields.name.isEmpty() && station) {
             fields.name = inspectorStationNameToken(parsedLine);
@@ -832,8 +832,8 @@ std::optional<InspectorObjectQuickFields> inspectorObjectQuickFieldsFromParsedLi
         fields.commandKind = parsedLine.directive;
         fields.type = inspectorTypePart(typeToken);
         fields.subtype = inspectorObjectSubtype(parsedLine, typeToken);
-        fields.identifier = commandOptionValue(parsedLine.tokens, QStringLiteral("-id"));
-        fields.text = commandOptionValue(parsedLine.tokens, QStringLiteral("-text"));
+        fields.identifier = commandOptionValue(parsedLine, QStringLiteral("-id"));
+        fields.text = commandOptionValue(parsedLine, QStringLiteral("-text"));
         fields.textVisible = inspectorObjectUsesTextField(fields.commandKind, fields.type, fields.text);
         return fields;
     }

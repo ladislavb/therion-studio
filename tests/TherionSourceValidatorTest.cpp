@@ -535,11 +535,11 @@ void doesNotTreatZeroFixedArityAsValidationError()
 
 void keepsDashPrefixedPointTextAsTextValue()
 {
-    const QString contents = QStringLiteral("point 4505.0 -1446.0 label -text \"-21 m\"\n");
+    const QString contents = QStringLiteral("point 4505.0 -1446.0 label -text \"-sump\"\n");
     const TherionSourceValidationResult result = TherionSourceValidator::validate(contents, basicCatalog());
 
     require(!containsDiagnostic(result, QStringLiteral("unknown-option")),
-            "Dash-prefixed quoted point text values should not be reported as unknown options.");
+            "Dash-prefixed quoted single-token point text values should not be reported as unknown options.");
 }
 
 void acceptsOptionAliasesExtractedFromCatalogSignature()

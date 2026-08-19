@@ -396,7 +396,7 @@ The rules below define the expected day-to-day interaction model. If a later req
   `area` fixes shall insert `endline` / `endarea` before the next `point`, `line`, `area`, `endscrap`, or at end of file.
   These fixes shall preserve the document line-ending style, show the planned insertion target before the user applies
   the fix, and shall not be applied silently.
-- Dash-prefixed free-text option values, including quoted point labels such as `-text "-21 m"`, shall remain values and shall not be reinterpreted as new command options.
+- Dash-prefixed free-text option values, including quoted point labels such as `-text "-21 m"` and `-text "-sump"`, shall remain values and shall not be reinterpreted as new command options.
 - Raw and Blocks modes shall use the same contextual-help renderer and metadata scope for command-level help, including syntax, arguments, accepted values, options, summaries, and related keyword data where available.
 - Contextual help inspector content shall be wrapped in a standard inspector panel whose header reflects the current command, validation context, or special help target; the help content shall use the available panel height without adding a redundant inner `Contextual Help` heading.
 - Inspector views shall use one outer view-level vertical scrollbar for overflow content; inner content widgets such as contextual help renderers shall not introduce a second nested scrollbar when they are hosted inside an inspector view.

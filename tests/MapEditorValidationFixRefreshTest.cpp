@@ -8,6 +8,8 @@
 #include <QCryptographicHash>
 #include <QEventLoop>
 #include <QFile>
+#include <QGraphicsView>
+#include <QLineEdit>
 #include <QMainWindow>
 #include <QTemporaryDir>
 #include <QTest>
@@ -42,6 +44,7 @@ class MapEditorValidationFixRefreshTest final : public QObject
 
 private slots:
     void applyValidationFixesRefreshesMapScene();
+    void keepsQuotedDashPrefixedPointLabelVisibleAndEditable();
 };
 
 void MapEditorValidationFixRefreshTest::applyValidationFixesRefreshesMapScene()
@@ -98,6 +101,51 @@ void MapEditorValidationFixRefreshTest::applyValidationFixesRefreshesMapScene()
     QVERIFY2(!mapTab->testHasMapSceneItemForLine(3),
              "Validation fix application should refresh the map scene immediately.");
     QVERIFY2(mapTab->canUndo(), "Validation fix application should remain undoable.");
+}
+
+void MapEditorValidationFixRefreshTest::keepsQuotedDashPrefixedPointLabelVisibleAndEditable()
+{
+    QTemporaryDir tempDir;
+    QVERIFY2(tempDir.isValid(), "Failed to create temporary directory.");
+
+    const QString contents = QStringLiteral("encoding utf-8\n"
+                                            "scrap s1 -projection plan\n"
+                                            "point 10 20 label -text \"-sump\"\n"
+                                            "endscrap\n");
+    const QString filePath = createTestFile(tempDir, contents.toUtf8());
+    QVERIFY2(!filePath.isEmpty(), "Failed to create dash-prefixed label fixture.");
+
+    QtFileSystem fileSystem;
+    FakeSessionStore sessionStore;
+    QMainWindow hostWindow;
+    hostWindow.resize(800, 600);
+    auto *central = new QWidget(&hostWindow);
+    auto *layout = new QVBoxLayout(central);
+    layout->setContentsMargins(0, 0, 0, 0);
+    auto *mapTab = new MapEditorTab(fileSystem, sessionStore, CommandCatalogStore(), central);
+    layout->addWidget(mapTab);
+    hostWindow.setCentralWidget(central);
+    hostWindow.show();
+
+    QString errorMessage;
+    QVERIFY2(mapTab->loadFile(filePath, &errorMessage), qPrintable(errorMessage));
+    pumpEvents();
+
+    auto *mapView = mapTab->findChild<QGraphicsView *>(QStringLiteral("mapCanvasView"));
+    QVERIFY2(mapView != nullptr && mapView->scene() != nullptr, "Map graphics view was not found.");
+    mapTab->goToLine(3);
+    pumpEvents();
+
+    const QList<QGraphicsItem *> selectedItems = mapView->scene()->selectedItems();
+    QVERIFY2(!selectedItems.isEmpty(), "Dash-prefixed label point should remain selectable in the map scene.");
+    QVERIFY2(selectedItems.constFirst()->boundingRect().width() > 40.0,
+             "Dash-prefixed label text should contribute to the rendered point bounds.");
+
+    auto *textEditor = mapTab->findChild<QWidget *>(QStringLiteral("mapObjectQuickTextEditor"));
+    QVERIFY2(textEditor != nullptr && textEditor->isVisible(), "Selection inspector text field was not shown.");
+    auto *textEdit = textEditor->findChild<QLineEdit *>();
+    QVERIFY2(textEdit != nullptr, "Selection inspector text editor was not found.");
+    QCOMPARE(textEdit->text(), QStringLiteral("-sump"));
 }
 
 int main(int argc, char **argv)
