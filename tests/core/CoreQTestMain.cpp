@@ -4,6 +4,7 @@
 
 int runCommandCatalogStoreTest(int argc, char **argv);
 int runCommandOptionParserTest(int argc, char **argv);
+int runMapBackgroundPlacementTest(int argc, char **argv);
 int runPocketTopoImportTest(int argc, char **argv);
 int runTh2GeometryProjectionTest(int argc, char **argv);
 int runTherionSourceTextTest(int argc, char **argv);
@@ -33,6 +34,7 @@ int main(int argc, char **argv)
     return runSelectedQTestSuites(argc, argv, {
         {"CommandCatalogStoreTest", runCommandCatalogStoreTest},
         {"CommandOptionParserTest", runCommandOptionParserTest},
+        {"MapBackgroundPlacementTest", runMapBackgroundPlacementTest},
         {"PocketTopoImportTest", runPocketTopoImportTest},
         {"Th2GeometryProjectionTest", runTh2GeometryProjectionTest},
         {"TherionFileTypesTest", runTherionFileTypesTest},

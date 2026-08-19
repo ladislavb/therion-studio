@@ -176,6 +176,7 @@ endfunction()
 set(THERION_CORE_QTEST_SUITES
     CommandCatalogStoreTest
     CommandOptionParserTest
+    MapBackgroundPlacementTest
     PocketTopoImportTest
     Th2GeometryProjectionTest
     TherionFileTypesTest
@@ -1189,6 +1190,7 @@ therion_add_core_qtest_runner(TherionCoreQTests
     tests/core/CoreQTestMain.cpp
     tests/CommandCatalogStoreTest.cpp
     tests/core/CommandOptionParserTest.cpp
+    tests/core/MapBackgroundPlacementTest.cpp
     tests/PocketTopoImportTest.cpp
     tests/core/Th2GeometryProjectionTest.cpp
     tests/core/ThreeDViewerCameraTest.cpp
@@ -1227,9 +1229,6 @@ endif()
 
 therion_add_core_unit_test(TherionProjectStructureIndexTest
     tests/ProjectStructureIndexTest.cpp)
-
-therion_add_core_unit_test(MapBackgroundPlacementTest
-    tests/MapBackgroundPlacementTest.cpp)
 
 qt_add_executable(ApplicationIdentityTest
     tests/ApplicationIdentityTest.cpp)
@@ -1795,7 +1794,6 @@ set(THERION_UNIT_TEST_TARGETS
     TherionCoreQTests
     ApplicationIdentityTest
     TherionProjectStructureIndexTest
-    MapBackgroundPlacementTest
     MapGeometryFeatureParsingTest
     MapEditorSourceReferenceResolverTest
     DocumentFileEncodingTest
