@@ -179,6 +179,7 @@ set(THERION_CORE_QTEST_SUITES
     Th2GeometryProjectionTest
     TherionFileTypesTest
     TherionBackgroundMetadataTest
+    TherionDocumentParserTest
     TherionXviPassageTest
     TherionXviAreaAdjustTest
     ThreeDViewerCameraTest
@@ -1182,9 +1183,6 @@ therion_add_core_unit_test(TherionDocumentEditorTest
 therion_add_core_unit_test(TherionSourceValidatorTest
     tests/TherionSourceValidatorTest.cpp)
 
-therion_add_core_unit_test(TherionDocumentParserTest
-    tests/TherionDocumentParserTest.cpp)
-
 therion_add_core_qtest_runner(TherionCoreQTests
     tests/core/CoreQTestMain.cpp
     tests/CommandCatalogStoreTest.cpp
@@ -1193,6 +1191,7 @@ therion_add_core_qtest_runner(TherionCoreQTests
     tests/core/ThreeDViewerCameraTest.cpp
     tests/core/TherionFileTypesTest.cpp
     tests/core/TherionBackgroundMetadataTest.cpp
+    tests/core/TherionDocumentParserTest.cpp
     tests/core/TherionXviPassageTest.cpp
     tests/core/TherionXviAreaAdjustTest.cpp
     tests/core/ThreeDViewerLoxCorpusFixtures.h
@@ -1796,7 +1795,6 @@ set(THERION_UNIT_TEST_TARGETS
     CommandOptionParserTest
     TherionDocumentEditorTest
     TherionSourceValidatorTest
-    TherionDocumentParserTest
     TherionCoreQTests
     ApplicationIdentityTest
     TherionProjectStructureIndexTest
