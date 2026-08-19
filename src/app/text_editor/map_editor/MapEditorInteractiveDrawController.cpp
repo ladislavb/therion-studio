@@ -340,9 +340,19 @@ bool MapEditorInteractiveDrawController::handleInteractiveDrawClick(const QPoint
         int insertedLineNumber = 0;
         const QString beforeText = context_.textEditor->text();
         QString afterText;
-        const TherionDraftObjectOptions objectOptions = draftObjectOptionsFor(context_, QStringLiteral("point"));
+        TherionDraftObjectOptions objectOptions = draftObjectOptionsFor(context_, QStringLiteral("point"));
+        QPointF sourcePoint = context_.sourcePointFromScenePosition(scenePosition);
+        if (objectOptions.type.trimmed().compare(QStringLiteral("station"), Qt::CaseInsensitive) == 0
+            && context_.xviStationSnapAtScenePosition) {
+            if (const std::optional<MapEditorXviStationSnapCandidate> snap =
+                    context_.xviStationSnapAtScenePosition(scenePosition)) {
+                sourcePoint = context_.sourcePointFromScenePosition(snap->scenePosition);
+                objectOptions.name = snap->name;
+                objectOptions.nameEnabled = true;
+            }
+        }
         if (!planPointInsert(beforeText,
-                             context_.sourcePointFromScenePosition(scenePosition),
+                             sourcePoint,
                              objectOptions,
                              draftInitialAreaAdjustRect(context_),
                              &afterText,

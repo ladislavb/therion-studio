@@ -378,6 +378,28 @@ void MapEditorXviBackgroundItem::paint(QPainter *painter,
         }
     }
 
+    if (!geometry_.stations.isEmpty() && lod >= 0.25) {
+        const qreal inverseLod = 1.0 / qMax<qreal>(0.01, lod);
+        const qreal ringRadius = 3.6 * inverseLod;
+        const qreal centerRadius = 1.15 * inverseLod;
+        QPen stationPen(QColor(0, 104, 194, 224));
+        stationPen.setWidthF(1.35 * zoomOutScale);
+        stationPen.setCosmetic(true);
+        painter->setPen(stationPen);
+        painter->setBrush(QColor(226, 244, 255, 210));
+
+        for (const MapEditorXviStationData &station : geometry_.stations) {
+            const QPointF position = station.position;
+            if (!clipRect.contains(position)) {
+                continue;
+            }
+            painter->drawEllipse(position, ringRadius, ringRadius);
+            painter->setBrush(QColor(0, 104, 194, 235));
+            painter->drawEllipse(position, centerRadius, centerRadius);
+            painter->setBrush(QColor(226, 244, 255, 210));
+        }
+    }
+
     painter->restore();
 }
 }

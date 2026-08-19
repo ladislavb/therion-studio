@@ -13,6 +13,7 @@ class MapEditorXviBackgroundItemTest final : public QObject
 
 private slots:
     void paintsLrudPassageEnvelope();
+    void paintsStationMarkers();
 };
 
 void MapEditorXviBackgroundItemTest::paintsLrudPassageEnvelope()
@@ -41,6 +42,28 @@ void MapEditorXviBackgroundItemTest::paintsLrudPassageEnvelope()
     const QColor insidePassage = image.pixelColor(50, 50);
     QVERIFY(insidePassage != QColor(Qt::white));
     QVERIFY(insidePassage.blue() > insidePassage.red());
+}
+
+void MapEditorXviBackgroundItemTest::paintsStationMarkers()
+{
+    MapEditorXviLayerGeometryData geometry;
+    geometry.contentBounds = QRectF(0.0, 0.0, 100.0, 100.0);
+    geometry.stations.append({QStringLiteral("12"), QPointF(50.0, 50.0)});
+
+    MapEditorXviBackgroundItem item;
+    item.setGeometryData(geometry);
+
+    QImage image(QSize(120, 120), QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::white);
+    QPainter painter(&image);
+    QStyleOptionGraphicsItem option;
+    option.exposedRect = QRectF(0.0, 0.0, 120.0, 120.0);
+    item.paint(&painter, &option);
+    painter.end();
+
+    const QColor stationCenter = image.pixelColor(50, 50);
+    QVERIFY(stationCenter != QColor(Qt::white));
+    QVERIFY(stationCenter.blue() > stationCenter.red());
 }
 
 QTEST_MAIN(MapEditorXviBackgroundItemTest)

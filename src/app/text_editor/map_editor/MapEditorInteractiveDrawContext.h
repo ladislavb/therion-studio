@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MapEditorInteractiveDrawLogic.h"
+#include "MapEditorXviStationSnapLogic.h"
 #include "../TextEditorSourceTransactionController.h"
 #include "../../../core/TherionDocumentEditor.h"
 
@@ -63,6 +64,7 @@ struct MapEditorInteractiveDrawContext
     std::function<QString(const char *)> translate;
     std::function<void()> emitModeStatusChanged;
     std::function<QPointF(const QPointF &)> sourcePointFromScenePosition;
+    std::function<std::optional<MapEditorXviStationSnapCandidate>(const QPointF &)> xviStationSnapAtScenePosition;
     std::function<TextEditorSourceTransactionResult(const QString &, const QString &, const QString &, int, std::function<void()>)>
         applySourceTextChangeWithSnapshot;
     std::function<TextEditorSourceTransactionResult(const QString &, const QString &, const QString &, int, std::function<void()>)>

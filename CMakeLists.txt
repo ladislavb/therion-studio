@@ -240,6 +240,7 @@ set(THERION_MAP_EDITOR_QTEST_SUITES
     MapEditorSceneGenerationTest
     MapEditorSourceProjectionCacheTest
     MapEditorSvgBackgroundMetadataTest
+    MapEditorXviStationSnapLogicTest
     MapEditorUndoArbitrationServiceTest)
 
 set(THERION_TEXT_EDITOR_DOCUMENT_QTEST_SUITES
@@ -732,6 +733,8 @@ set(THERION_MAP_EDITOR_SOURCES
     src/app/text_editor/map_editor/MapEditorInteractiveDrawContext.h
     src/app/text_editor/map_editor/MapEditorInteractiveDrawController.cpp
     src/app/text_editor/map_editor/MapEditorInteractiveDrawController.h
+    src/app/text_editor/map_editor/MapEditorXviStationSnapLogic.cpp
+    src/app/text_editor/map_editor/MapEditorXviStationSnapLogic.h
     src/app/text_editor/map_editor/MapEditorInteractiveDrawLogic.cpp
     src/app/text_editor/map_editor/MapEditorInteractiveDrawLogic.h
     src/app/text_editor/map_editor/MapEditorInputPolicy.cpp
@@ -1297,6 +1300,7 @@ qt_add_executable(MapEditorLogicQTests
     tests/MapEditorSceneGenerationTest.cpp
     tests/MapEditorSourceProjectionCacheTest.cpp
     tests/MapEditorSvgBackgroundMetadataTest.cpp
+    tests/MapEditorXviStationSnapLogicTest.cpp
     tests/MapEditorUndoArbitrationServiceTest.cpp
     src/app/text_editor/map_editor/MapEditorAreaReferenceResolver.cpp
     src/app/text_editor/map_editor/MapEditorAreaReferenceResolver.h
@@ -1308,6 +1312,8 @@ qt_add_executable(MapEditorLogicQTests
     src/app/text_editor/map_editor/MapEditorInputPolicy.h
     src/app/text_editor/map_editor/MapEditorSvgBackgroundMetadata.cpp
     src/app/text_editor/map_editor/MapEditorSvgBackgroundMetadata.h
+    src/app/text_editor/map_editor/MapEditorXviStationSnapLogic.cpp
+    src/app/text_editor/map_editor/MapEditorXviStationSnapLogic.h
     src/app/text_editor/map_editor/MapEditorObjectDeletePlanner.cpp
     src/app/text_editor/map_editor/MapEditorObjectDeletePlanner.h
     src/app/text_editor/map_editor/MapEditorObjectMovePlanner.cpp

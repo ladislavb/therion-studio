@@ -938,6 +938,9 @@ bool buildXviLayerGeometry(const XviDocument &xvi,
                 includeModelPoint(point + offset);
             }
         }
+        for (const TherionXviStation &station : xvi.stationEntries) {
+            includeModelPoint(station.position + offset);
+        }
 
         if (hasSourceBounds) {
             effectiveModelBounds = sourceBounds.normalized().adjusted(-128.0, -128.0, 128.0, 128.0);
@@ -1006,6 +1009,15 @@ bool buildXviLayerGeometry(const XviDocument &xvi,
 
     QVector<QLineF> traverseShotLines;
     QVector<QLineF> splayShotLines;
+    QVector<MapEditorXviStationData> stations;
+    stations.reserve(xvi.stationEntries.size());
+    for (const TherionXviStation &station : xvi.stationEntries) {
+        const QPointF projectedPosition = mapEditorModelToPreviewPoint(station.position + offset,
+                                                                         effectiveModelBounds,
+                                                                         previewBounds);
+        includePoint(projectedPosition);
+        stations.append(MapEditorXviStationData{station.name, projectedPosition});
+    }
     QVector<MapEditorXviPassagePolygonData> passagePolygons;
     passagePolygons.reserve(xvi.shots.size());
     for (const TherionXviShot &shot : xvi.shots) {
@@ -1137,6 +1149,11 @@ bool buildXviLayerGeometry(const XviDocument &xvi,
             normalizedSketchPaths.append(normalizedSketch);
         }
     }
+    QVector<MapEditorXviStationData> normalizedStations;
+    normalizedStations.reserve(stations.size());
+    for (const MapEditorXviStationData &station : stations) {
+        normalizedStations.append(MapEditorXviStationData{station.name, station.position - layerTopLeft});
+    }
 
     MapEditorXviLayerGeometryData result;
     result.gridLines = normalizedGridLines;
@@ -1144,6 +1161,7 @@ bool buildXviLayerGeometry(const XviDocument &xvi,
     result.splayShotLines = normalizedSplayShots;
     result.passagePolygons = normalizedPassagePolygons;
     result.sketchPaths = normalizedSketchPaths;
+    result.stations = normalizedStations;
     result.contentBounds = QRectF(QPointF(0.0, 0.0), layerBounds.size());
     if (!result.hasContent()) {
         return false;
@@ -2211,6 +2229,43 @@ qreal MapEditorTab::backgroundLayerYScaleValue(const QGraphicsPixmapItem *item) 
 qreal MapEditorTab::backgroundLayerRotationDegValue(const QGraphicsPixmapItem *item) const
 {
     return backgroundItemRotationDegValue(item);
+}
+
+std::optional<MapEditorXviStationSnapCandidate> MapEditorTab::xviStationSnapAtScenePosition(
+    const QPointF &scenePosition) const
+{
+    if (mapView_ == nullptr) {
+        return std::nullopt;
+    }
+
+    constexpr qreal snapRadiusPixels = 12.0;
+    const QPoint clickViewportPosition = mapView_->mapFromScene(scenePosition);
+    QVector<MapEditorXviStationSnapCandidate> candidates;
+
+    for (QGraphicsPixmapItem *backgroundItem : backgroundImageItems_) {
+        auto *xviItem = dynamic_cast<MapEditorXviBackgroundItem *>(backgroundItem);
+        if (xviItem == nullptr || !xviItem->isVisible()) {
+            continue;
+        }
+
+        for (const MapEditorXviStationData &station : xviItem->geometryData().stations) {
+            const QString stationName = station.name.trimmed();
+            if (stationName.isEmpty()) {
+                continue;
+            }
+
+            const QPointF stationScenePosition = xviItem->mapToScene(station.position);
+            if (QLineF(clickViewportPosition, mapView_->mapFromScene(stationScenePosition)).length() > snapRadiusPixels) {
+                continue;
+            }
+
+            candidates.append(MapEditorXviStationSnapCandidate{stationName,
+                                                                 stationScenePosition,
+                                                                 mapView_->mapFromScene(stationScenePosition)});
+        }
+    }
+
+    return mapEditorUniqueXviStationSnap(clickViewportPosition, candidates, snapRadiusPixels);
 }
 
 QPointF MapEditorTab::backgroundLayerBaseModelPosition(QGraphicsPixmapItem *item) const

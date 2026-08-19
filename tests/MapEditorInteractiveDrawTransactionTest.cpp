@@ -208,6 +208,131 @@ int runPointInsertStaleTransactionStatusTest()
     return 0;
 }
 
+int runStationPointInsertUsesXviSnapTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "Failed to create temporary directory.")) {
+        return 1;
+    }
+
+    const QString filePath = createTestFile(tempDir,
+                                            "scrap s1 -projection plan\n"
+                                            "endscrap\n");
+    if (!expect(!filePath.isEmpty(), "Failed to create interactive-draw snap test file.")) {
+        return 1;
+    }
+
+    QtFileSystem fileSystem;
+    TextEditorTab tab{fileSystem, CommandCatalogStore()};
+    if (!expect(loadTestTab(&tab, filePath), "Failed to load interactive-draw snap test tab.")) {
+        return 1;
+    }
+
+    QString toolbarStatus;
+    bool selectModeActive = true;
+    bool commandApplyInProgress = false;
+    bool panActive = false;
+    QVector<QPointF> sourceVertices;
+    QVector<QPointF> sceneVertices;
+    QVector<MapEditorInteractiveLineDraftVertex> lineVertices;
+    bool strokeActive = false;
+    bool anchorPressActive = false;
+    QPointF anchorPressScenePoint;
+    bool anchorDragActive = false;
+    QPointF anchorDragScenePoint;
+    bool controlDragActive = false;
+    bool hoverActive = false;
+    QPointF hoverScenePoint;
+    bool hoverSnapActive = false;
+    QPointF hoverSnapScenePoint;
+    QGraphicsPathItem *previewPath = nullptr;
+    QVector<QGraphicsItem *> previewMarkers;
+    MapEditorInteractiveDrawMode mode = MapEditorInteractiveDrawMode::None;
+    QString plannedAfterText;
+    TherionDraftObjectOptions committedOptions;
+
+    MapEditorInteractiveDrawContext context;
+    context.textEditor = &tab;
+    context.toolbarStatusNote = &toolbarStatus;
+    context.selectModeActive = &selectModeActive;
+    context.commandApplyInProgress = &commandApplyInProgress;
+    context.panActive = &panActive;
+    context.sourceVertices = &sourceVertices;
+    context.sceneVertices = &sceneVertices;
+    context.lineVertices = &lineVertices;
+    context.strokeActive = &strokeActive;
+    context.anchorPressActive = &anchorPressActive;
+    context.anchorPressScenePoint = &anchorPressScenePoint;
+    context.anchorDragActive = &anchorDragActive;
+    context.anchorDragScenePoint = &anchorDragScenePoint;
+    context.controlDragActive = &controlDragActive;
+    context.hoverActive = &hoverActive;
+    context.hoverScenePoint = &hoverScenePoint;
+    context.hoverSnapActive = &hoverSnapActive;
+    context.hoverSnapScenePoint = &hoverSnapScenePoint;
+    context.previewPath = &previewPath;
+    context.previewMarkers = &previewMarkers;
+    context.drawMode = [&mode]() { return mode; };
+    context.setDrawMode = [&mode](MapEditorInteractiveDrawMode newMode) { mode = newMode; };
+    context.translate = [](const char *text) { return QString::fromUtf8(text); };
+    context.emitModeStatusChanged = []() {};
+    context.sourcePointFromScenePosition = [](const QPointF &point) { return point; };
+    context.xviStationSnapAtScenePosition = [](const QPointF &) -> std::optional<MapEditorXviStationSnapCandidate> {
+        return MapEditorXviStationSnapCandidate{QStringLiteral("12@survey"), QPointF(100.0, 200.0), QPointF(0.0, 0.0)};
+    };
+    context.applySourceTextChangeWithSnapshot = [&](const QString &,
+                                                    const QString &,
+                                                    const QString &afterText,
+                                                    int,
+                                                    std::function<void()>) {
+        plannedAfterText = afterText;
+        return TextEditorSourceTransactionResult::Applied;
+    };
+    context.draftObjectOptions = [](const QString &) {
+        TherionDraftObjectOptions options;
+        options.type = QStringLiteral("station");
+        options.name = QStringLiteral("unrelated");
+        options.nameEnabled = true;
+        return options;
+    };
+    context.recordCommittedDraftObjectOptions = [&](const QString &, const TherionDraftObjectOptions &options) {
+        committedOptions = options;
+    };
+    context.initialAreaAdjustRectForDraftInsertion = []() -> std::optional<QRectF> { return std::nullopt; };
+    context.lineCoordinateRowsForInteractiveDraft = []() { return QStringList{}; };
+    context.areaCoordinateRowsForInteractiveDraft = []() { return QStringList{}; };
+    context.captureInteractiveLineAnchor = [](const QPointF &, const std::optional<QPointF> &) {};
+    context.previewSmartAreaAt = [](const QPointF &) { return false; };
+    context.hasSmartAreaPreview = []() { return false; };
+    context.commitSmartAreaPreview = []() { return false; };
+    context.hasCompletableInteractiveDrawSession = []() { return false; };
+    context.refreshObjectDetailsPanel = []() {};
+    context.refreshToolbarSummary = []() {};
+    context.updateCommandSurfaceState = []() {};
+    context.updateHelpPanel = []() {};
+
+    MapEditorInteractiveDrawController controller(context);
+    controller.setInteractiveDrawMode(MapEditorInteractiveDrawMode::Point);
+    if (!expect(controller.handleInteractiveDrawClick(QPointF(10.0, 20.0)),
+                "Interactive station insert should handle an XVI snap click.")) {
+        return 1;
+    }
+    if (!expect(plannedAfterText.contains(QStringLiteral("-name 12@survey")),
+                "Station point insertion should write the snapped XVI station name.")) {
+        return 1;
+    }
+    if (!expect(plannedAfterText.contains(QStringLiteral("100.0 200.0")),
+                "Station point insertion should use the snapped coordinate.")) {
+        return 1;
+    }
+    if (!expect(committedOptions.name == QStringLiteral("12@survey") && committedOptions.nameEnabled,
+                "Station point insertion should commit the snapped XVI station name.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 int runDraftAnchorMovePreservesControlOffsetsTest()
 {
     QVector<MapEditorInteractiveLineDraftVertex> vertices;
@@ -579,6 +704,9 @@ int main(int argc, char **argv)
     QApplication app(argc, argv);
 
     if (runPointInsertStaleTransactionStatusTest() != 0) {
+        return 1;
+    }
+    if (runStationPointInsertUsesXviSnapTest() != 0) {
         return 1;
     }
     if (runDraftAnchorMovePreservesControlOffsetsTest() != 0) {

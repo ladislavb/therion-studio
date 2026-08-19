@@ -20,6 +20,7 @@
 #include <optional>
 
 #include "MapEditorInspectorData.h"
+#include "MapEditorInteractiveDrawContext.h"
 #include "MapEditorInteractiveDrawLogic.h"
 #include "MapEditorBackgroundAssetCache.h"
 #include "MapEditorLogicalSourceContext.h"
@@ -77,7 +78,6 @@ class TextEditorTab;
 class DocumentFileInspector;
 class DocumentInspectorPanel;
 struct MapEditorCanvasEditContext;
-struct MapEditorInteractiveDrawContext;
 class MapEditorInspectorBackgroundController;
 struct MapEditorInspectorBackgroundContext;
 class MapEditorInspectorObjectController;
@@ -594,6 +594,7 @@ private:
     qreal backgroundLayerRotationDegValue(const QGraphicsPixmapItem *item) const;
     QPointF backgroundLayerBaseModelPosition(QGraphicsPixmapItem *item) const;
     QPointF backgroundLayerPivotScenePosition(QGraphicsPixmapItem *item) const;
+    std::optional<MapEditorXviStationSnapCandidate> xviStationSnapAtScenePosition(const QPointF &scenePosition) const;
     void refreshBackgroundPivotMarkerVisibility();
     void setSelectedBackgroundLayerPivotAtScenePosition(const QPointF &scenePosition);
     void cancelBackgroundPivotPickMode();

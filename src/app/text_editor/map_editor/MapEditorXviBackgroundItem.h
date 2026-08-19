@@ -5,6 +5,7 @@
 #include <QLineF>
 #include <QPolygonF>
 #include <QRectF>
+#include <QString>
 #include <QVector>
 
 namespace TherionStudio
@@ -35,6 +36,12 @@ struct MapEditorXviPassageTile
     QVector<int> polygonIndexes;
 };
 
+struct MapEditorXviStationData
+{
+    QString name;
+    QPointF position;
+};
+
 struct MapEditorXviLayerGeometryData
 {
     QVector<QLineF> gridLines;
@@ -46,6 +53,7 @@ struct MapEditorXviLayerGeometryData
     QVector<MapEditorXviPassagePolygonData> passagePolygons;
     QVector<MapEditorXviPassageTile> passageTiles;
     QVector<MapEditorXviSketchPathData> sketchPaths;
+    QVector<MapEditorXviStationData> stations;
     QRectF contentBounds;
 
     bool hasContent() const
@@ -62,7 +70,8 @@ struct MapEditorXviLayerGeometryData
                 || !traverseShotLines.isEmpty()
                 || !splayShotLines.isEmpty()
                 || !passagePolygons.isEmpty()
-                || hasSketch);
+                || hasSketch
+                || !stations.isEmpty());
     }
 };
 
