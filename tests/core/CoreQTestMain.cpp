@@ -23,6 +23,7 @@ int runThreeDViewerSceneStatisticsTest(int argc, char **argv);
 int runTherionFileTypesTest(int argc, char **argv);
 int runTherionBackgroundMetadataTest(int argc, char **argv);
 int runTherionDocumentParserTest(int argc, char **argv);
+int runTherionXviParserTest(int argc, char **argv);
 int runTherionXviPassageTest(int argc, char **argv);
 int runTherionXviAreaAdjustTest(int argc, char **argv);
 
@@ -35,6 +36,7 @@ int main(int argc, char **argv)
         {"TherionFileTypesTest", runTherionFileTypesTest},
         {"TherionBackgroundMetadataTest", runTherionBackgroundMetadataTest},
         {"TherionDocumentParserTest", runTherionDocumentParserTest},
+        {"TherionXviParserTest", runTherionXviParserTest},
         {"TherionXviPassageTest", runTherionXviPassageTest},
         {"TherionXviAreaAdjustTest", runTherionXviAreaAdjustTest},
         {"ThreeDViewerCameraTest", runThreeDViewerCameraTest},

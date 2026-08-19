@@ -251,7 +251,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Keep `tests/core/` and `TherionCoreQTests` as the baseline pattern for small core-only QTest cases.
 - Keep app/service/editor aggregate QTest runners grouped by dependency/runtime boundary rather than creating one
   executable per tiny class.
-- Continue migrating touched hand-rolled tests to QTest where the dependency/runtime boundary is already clear; core background-metadata and document-parser coverage now runs as named slots in `TherionCoreQTests`.
+- Continue migrating touched hand-rolled tests to QTest where the dependency/runtime boundary is already clear; core background-metadata, document-parser, and XVI-parser coverage now runs as named slots in `TherionCoreQTests`.
 - Keep `python3 scripts/check_structure_constraints.py` green and preserve guardrails against map-editor source mutation
   bypasses.
 - Keep mandatory `.lox` coverage on the committed fixture root, optional real-project rows behind the `corpus` label,
