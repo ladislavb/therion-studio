@@ -5,20 +5,12 @@
 #include <QFileInfo>
 #include <QTemporaryDir>
 
-#include <iostream>
+#include <QtTest/QtTest>
 
 using namespace TherionStudio;
 
 namespace
 {
-bool expect(bool condition, const char *message)
-{
-    if (!condition) {
-        std::cerr << message << '\n';
-    }
-    return condition;
-}
-
 bool writeFile(const QString &filePath, const QByteArray &contents)
 {
     const QFileInfo fileInfo(filePath);
@@ -32,13 +24,19 @@ bool writeFile(const QString &filePath, const QByteArray &contents)
     return file.write(contents) == contents.size();
 }
 
-int runCreateProjectFromTemplateTest()
+class ProjectTemplateServiceTest final : public QObject
+{
+    Q_OBJECT
+
+private slots:
+    void createsProjectFromTemplate();
+};
+
+void ProjectTemplateServiceTest::createsProjectFromTemplate()
 {
     QTemporaryDir sourceDir;
     QTemporaryDir targetParentDir;
-    if (!expect(sourceDir.isValid() && targetParentDir.isValid(), "Temporary directories should be available.")) {
-        return 1;
-    }
+    QVERIFY2(sourceDir.isValid() && targetParentDir.isValid(), "Temporary directories should be available.");
 
     const QString templateRoot = sourceDir.path();
     const QByteArray manifest = R"({
@@ -48,72 +46,43 @@ int runCreateProjectFromTemplateTest()
   "directories": ["output"],
   "files": ["thconfig", "index.th", "surveys/survey1.th", "scraps/scrap1.th2"]
 })";
-    if (!expect(writeFile(QDir(templateRoot).filePath(QStringLiteral("template.json")), manifest),
-                "Template manifest should be writable.")) {
-        return 1;
-    }
-    if (!expect(writeFile(QDir(templateRoot).filePath(QStringLiteral("thconfig")), "source index.th\n"),
-                "Template thconfig should be writable.")) {
-        return 1;
-    }
-    if (!expect(writeFile(QDir(templateRoot).filePath(QStringLiteral("index.th")), "encoding utf-8\n"),
-                "Template index should be writable.")) {
-        return 1;
-    }
-    if (!expect(writeFile(QDir(templateRoot).filePath(QStringLiteral("surveys/survey1.th")), "survey survey1\nendsurvey\n"),
-                "Template survey should be writable.")) {
-        return 1;
-    }
-    if (!expect(writeFile(QDir(templateRoot).filePath(QStringLiteral("scraps/scrap1.th2")), "scrap scrap1\nendscrap\n"),
-                "Template scrap should be writable.")) {
-        return 1;
-    }
+    QVERIFY2(writeFile(QDir(templateRoot).filePath(QStringLiteral("template.json")), manifest),
+             "Template manifest should be writable.");
+    QVERIFY2(writeFile(QDir(templateRoot).filePath(QStringLiteral("thconfig")), "source index.th\n"),
+             "Template thconfig should be writable.");
+    QVERIFY2(writeFile(QDir(templateRoot).filePath(QStringLiteral("index.th")), "encoding utf-8\n"),
+             "Template index should be writable.");
+    QVERIFY2(writeFile(QDir(templateRoot).filePath(QStringLiteral("surveys/survey1.th")), "survey survey1\nendsurvey\n"),
+             "Template survey should be writable.");
+    QVERIFY2(writeFile(QDir(templateRoot).filePath(QStringLiteral("scraps/scrap1.th2")), "scrap scrap1\nendscrap\n"),
+             "Template scrap should be writable.");
 
     const QString targetRoot = QDir(targetParentDir.path()).filePath(QStringLiteral("New Project"));
     const auto result = ProjectTemplateService::createProjectFromTemplate(templateRoot, targetRoot);
-    if (!expect(result.success, "Template project creation should succeed.")) {
-        std::cerr << result.errorMessage.toStdString() << '\n';
-        return 1;
-    }
-    if (!expect(QFileInfo::exists(QDir(targetRoot).filePath(QStringLiteral("thconfig"))),
-                "Created project should contain thconfig.")) {
-        return 1;
-    }
-    if (!expect(QFileInfo::exists(QDir(targetRoot).filePath(QStringLiteral("surveys/survey1.th"))),
-                "Created project should contain nested survey source.")) {
-        return 1;
-    }
-    if (!expect(QFileInfo(QDir(targetRoot).filePath(QStringLiteral("output"))).isDir(),
-                "Created project should contain declared output directory.")) {
-        return 1;
-    }
-    if (!expect(result.targetConfigPath == QDir(targetRoot).filePath(QStringLiteral("thconfig")),
-                "Created project should report target config path.")) {
-        return 1;
-    }
-    if (!expect(result.openFilePaths.size() == 4,
-                "Created project should report manifest open files.")) {
-        return 1;
-    }
-    if (!expect(result.openFilePaths.at(0) == QDir(targetRoot).filePath(QStringLiteral("thconfig"))
-                    && result.openFilePaths.at(1) == QDir(targetRoot).filePath(QStringLiteral("index.th"))
-                    && result.openFilePaths.at(2) == QDir(targetRoot).filePath(QStringLiteral("surveys/survey1.th"))
-                    && result.openFilePaths.at(3) == QDir(targetRoot).filePath(QStringLiteral("scraps/scrap1.th2")),
-                "Created project should preserve manifest open-file order when the project folder contains spaces.")) {
-        return 1;
-    }
+    QVERIFY2(result.success, qPrintable(result.errorMessage));
+    QVERIFY2(QFileInfo::exists(QDir(targetRoot).filePath(QStringLiteral("thconfig"))),
+             "Created project should contain thconfig.");
+    QVERIFY2(QFileInfo::exists(QDir(targetRoot).filePath(QStringLiteral("surveys/survey1.th"))),
+             "Created project should contain nested survey source.");
+    QVERIFY2(QFileInfo(QDir(targetRoot).filePath(QStringLiteral("output"))).isDir(),
+             "Created project should contain declared output directory.");
+    QCOMPARE(result.targetConfigPath, QDir(targetRoot).filePath(QStringLiteral("thconfig")));
+    QCOMPARE(result.openFilePaths.size(), 4);
+    QCOMPARE(result.openFilePaths,
+             QStringList({QDir(targetRoot).filePath(QStringLiteral("thconfig")),
+                          QDir(targetRoot).filePath(QStringLiteral("index.th")),
+                          QDir(targetRoot).filePath(QStringLiteral("surveys/survey1.th")),
+                          QDir(targetRoot).filePath(QStringLiteral("scraps/scrap1.th2"))}));
 
     const auto secondResult = ProjectTemplateService::createProjectFromTemplate(templateRoot, targetRoot);
-    if (!expect(!secondResult.success,
-                "Template project creation should reject non-empty target folders.")) {
-        return 1;
-    }
-
-    return 0;
+    QVERIFY(!secondResult.success);
 }
 }
 
-int main()
+int runProjectTemplateServiceTest(int argc, char **argv)
 {
-    return runCreateProjectFromTemplateTest();
+    ProjectTemplateServiceTest test;
+    return QTest::qExec(&test, argc, argv);
 }
+
+#include "ProjectTemplateServiceTest.moc"

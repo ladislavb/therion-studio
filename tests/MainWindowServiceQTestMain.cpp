@@ -19,6 +19,7 @@ int runTherionSqlReportWorkerTest(int argc, char **argv);
 int runMainWindowHelpDocumentTest(int argc, char **argv);
 int runMainWindowRecentFilesServiceTest(int argc, char **argv);
 int runMainWindowRecentProjectsServiceTest(int argc, char **argv);
+int runProjectTemplateServiceTest(int argc, char **argv);
 int runProjectFileWatchInventoryTest(int argc, char **argv);
 int runProjectFileWatchInventoryServiceTest(int argc, char **argv);
 int runProjectFileWatchDeltaTest(int argc, char **argv);
@@ -38,6 +39,7 @@ int main(int argc, char **argv)
         {"MainWindowProjectWorkspaceServiceTest", runMainWindowProjectWorkspaceServiceTest},
         {"MainWindowRecentFilesServiceTest", runMainWindowRecentFilesServiceTest},
         {"MainWindowRecentProjectsServiceTest", runMainWindowRecentProjectsServiceTest},
+        {"ProjectTemplateServiceTest", runProjectTemplateServiceTest},
         {"ProjectFileWatchInventoryTest", runProjectFileWatchInventoryTest},
         {"ProjectFileWatchInventoryServiceTest", runProjectFileWatchInventoryServiceTest},
         {"ProjectFileWatchDeltaTest", runProjectFileWatchDeltaTest},

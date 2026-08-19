@@ -209,6 +209,7 @@ set(THERION_MAIN_WINDOW_QTEST_SUITES
     MainWindowProjectWorkspaceServiceTest
     MainWindowRecentFilesServiceTest
     MainWindowRecentProjectsServiceTest
+    ProjectTemplateServiceTest
     ProjectFileWatchInventoryTest
     ProjectFileWatchInventoryServiceTest
     ProjectFileWatchDeltaTest
@@ -1482,6 +1483,7 @@ qt_add_executable(MainWindowServiceQTests
     tests/MainWindowProjectWorkspaceServiceTest.cpp
     tests/MainWindowRecentFilesServiceTest.cpp
     tests/MainWindowRecentProjectsServiceTest.cpp
+    tests/ProjectTemplateServiceTest.cpp
     tests/ProjectFileWatchInventoryTest.cpp
     tests/ProjectFileWatchInventoryServiceTest.cpp
     tests/ProjectFileWatchDeltaTest.cpp
@@ -1514,9 +1516,6 @@ qt_add_resources(TherionSqlReportTabTest TherionSqlReportTabTestResources
     PREFIX "/"
     FILES
         resources/sql_report_presets.json)
-
-therion_add_app_unit_test(ProjectTemplateServiceTest
-    tests/ProjectTemplateServiceTest.cpp)
 
 therion_add_app_unit_test(MainWindowValidationFixApplyServiceTest
     tests/MainWindowValidationFixApplyServiceTest.cpp)
@@ -1818,7 +1817,6 @@ set(THERION_UNIT_TEST_TARGETS
     MainWindowSessionDocumentControllerTest
     MainWindowSessionControllerTest
     MainWindowProjectControllerTest
-    ProjectTemplateServiceTest
     MainWindowDocumentControllerTest
     MainWindowDocumentOpenControllerTest
     MainWindowDocumentTabOpenControllerTest
