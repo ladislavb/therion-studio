@@ -175,6 +175,7 @@ endfunction()
 
 set(THERION_CORE_QTEST_SUITES
     CommandCatalogStoreTest
+    CommandOptionParserTest
     PocketTopoImportTest
     Th2GeometryProjectionTest
     TherionFileTypesTest
@@ -1187,6 +1188,7 @@ therion_add_core_unit_test(TherionSourceValidatorTest
 therion_add_core_qtest_runner(TherionCoreQTests
     tests/core/CoreQTestMain.cpp
     tests/CommandCatalogStoreTest.cpp
+    tests/core/CommandOptionParserTest.cpp
     tests/PocketTopoImportTest.cpp
     tests/core/Th2GeometryProjectionTest.cpp
     tests/core/ThreeDViewerCameraTest.cpp
@@ -1222,9 +1224,6 @@ if(THERION_STUDIO_ENABLE_LOX_CORPUS_TESTS)
     target_compile_definitions(ThreeDViewerLoxCorpusTest PRIVATE
         THERION_STUDIO_LOX_CORPUS_ROOT="${THERION_STUDIO_LOX_CORPUS_ROOT}")
 endif()
-
-therion_add_core_unit_test(CommandOptionParserTest
-    tests/CommandOptionParserTest.cpp)
 
 therion_add_core_unit_test(TherionProjectStructureIndexTest
     tests/ProjectStructureIndexTest.cpp)
@@ -1791,7 +1790,6 @@ target_link_libraries(MapEditorXviBackgroundItemTest PRIVATE
     Qt6::Widgets)
 
 set(THERION_UNIT_TEST_TARGETS
-    CommandOptionParserTest
     TherionDocumentEditorTest
     TherionSourceValidatorTest
     TherionCoreQTests
