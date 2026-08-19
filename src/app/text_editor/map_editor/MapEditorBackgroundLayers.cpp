@@ -1975,10 +1975,24 @@ void MapEditorTab::setSelectedBackgroundLayerPosition(const QPointF &position)
         }
 
         item->setData(kBackgroundLayerXviBasePositionRole, position);
-        item->setData(kMapEditorBackgroundMetadataFormatRole,
-                      static_cast<int>(TherionBackgroundMetadataFormat::Mapiah));
         applyBackgroundLayerTransform(item);
-        syncBackgroundLayerMapiahMetadata(item, tr("Move Background Image"), false);
+        TherionBackgroundMetadataFormat metadataFormat = TherionBackgroundMetadataFormat::XTherion;
+        if (textEditor_ != nullptr) {
+            const QString layerPathKey = normalizedPathKey(item->data(0).toString());
+            for (const XtherionBackgroundReference &reference :
+                 parseXtherionBackgroundReferences(textEditor_->text(), filePath())) {
+                if (!layerPathKey.isEmpty()
+                    && normalizedPathKey(reference.absolutePath) == layerPathKey) {
+                    metadataFormat = reference.metadataFormat;
+                }
+            }
+        }
+        item->setData(kMapEditorBackgroundMetadataFormatRole, static_cast<int>(metadataFormat));
+        if (metadataFormat == TherionBackgroundMetadataFormat::Mapiah) {
+            syncBackgroundLayerMapiahMetadata(item, tr("Move Background Image"), false);
+        } else {
+            syncBackgroundLayerXtherionMetadata(item, tr("Move Background Image"), false);
+        }
         saveBackgroundLayersToSession();
         refreshBackgroundLayerPropertyControls();
         return;
@@ -3345,9 +3359,10 @@ void MapEditorTab::syncBackgroundLayerXtherionMetadata(QGraphicsPixmapItem *item
     }
 
     const QString layerPath = QFileInfo(item->data(0).toString()).absoluteFilePath();
-    if (layerPath.isEmpty() || layerPath.endsWith(QStringLiteral(".xvi"), Qt::CaseInsensitive)) {
+    if (layerPath.isEmpty()) {
         return;
     }
+    const bool xviLayer = isMapEditorXviBackgroundPath(layerPath);
 
     const QString beforeText = textEditor_->text();
     std::optional<XtherionBackgroundReference> existingReference;
@@ -3369,11 +3384,15 @@ void MapEditorTab::syncBackgroundLayerXtherionMetadata(QGraphicsPixmapItem *item
         && hasExistingAreaAdjust;
 
     QPointF basePosition;
-    const QVariant requestedRasterBasePosition = item->data(kBackgroundLayerRasterBasePositionRole);
-    if (requestedRasterBasePosition.canConvert<QPointF>()) {
-        basePosition = requestedRasterBasePosition.toPointF();
+    const QVariant requestedBasePosition = item->data(xviLayer
+                                                           ? kBackgroundLayerXviBasePositionRole
+                                                           : kBackgroundLayerRasterBasePositionRole);
+    if (requestedBasePosition.canConvert<QPointF>()) {
+        basePosition = requestedBasePosition.toPointF();
     } else if (preserveExistingPlacement && existingReference.has_value() && existingReference->hasBasePosition) {
         basePosition = existingReference->basePosition;
+    } else if (xviLayer) {
+        basePosition = backgroundLayerBaseModelPosition(item);
     } else {
         QRectF sourceBounds = mapSourceBoundsForCurrentDocument();
         const QRectF previewBounds = mapPreviewBounds();
@@ -3398,7 +3417,10 @@ void MapEditorTab::syncBackgroundLayerXtherionMetadata(QGraphicsPixmapItem *item
                                                         filePath(),
                                                         basePosition,
                                                         item->isVisible(),
-                                                        backgroundLayerGammaValue(item));
+                                                        xviLayer ? 1.0 : backgroundLayerGammaValue(item),
+                                                        xviLayer
+                                                            ? item->data(kBackgroundLayerXviRootStationRole).toString()
+                                                            : QString());
 
     QString afterMetadataText = beforeText;
     if (!hasExistingAreaAdjust) {

@@ -2141,15 +2141,16 @@ int runMetadataXviPlacementIgnoresSessionScenePositionTest()
         bool foundMovedXviReference = false;
         for (const TherionBackgroundReference &reference : movedReferences) {
             if (reference.layerFormat == TherionBackgroundLayerFormat::Xvi
-                && reference.metadataFormat == TherionBackgroundMetadataFormat::Mapiah
+                && reference.metadataFormat == TherionBackgroundMetadataFormat::XTherion
                 && nearlyEqual(reference.basePosition.x(), movedPosition.x())
-                && nearlyEqual(reference.basePosition.y(), movedPosition.y())) {
+                && nearlyEqual(reference.basePosition.y(), movedPosition.y())
+                && reference.rootStationName == QStringLiteral("1.4")) {
                 foundMovedXviReference = true;
                 break;
             }
         }
         if (!expect(foundMovedXviReference,
-                    "Moving an XVI background should write Mapiah XVI metadata with the new base position.")) {
+                    "Moving an XVI background should preserve its XTherion metadata and root station.")) {
             return 1;
         }
     }
