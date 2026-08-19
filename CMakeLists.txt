@@ -178,6 +178,7 @@ set(THERION_CORE_QTEST_SUITES
     PocketTopoImportTest
     Th2GeometryProjectionTest
     TherionFileTypesTest
+    TherionBackgroundMetadataTest
     TherionXviPassageTest
     TherionXviAreaAdjustTest
     ThreeDViewerCameraTest
@@ -1191,6 +1192,7 @@ therion_add_core_qtest_runner(TherionCoreQTests
     tests/core/Th2GeometryProjectionTest.cpp
     tests/core/ThreeDViewerCameraTest.cpp
     tests/core/TherionFileTypesTest.cpp
+    tests/core/TherionBackgroundMetadataTest.cpp
     tests/core/TherionXviPassageTest.cpp
     tests/core/TherionXviAreaAdjustTest.cpp
     tests/core/ThreeDViewerLoxCorpusFixtures.h
@@ -1228,9 +1230,6 @@ therion_add_core_unit_test(TherionProjectStructureIndexTest
 
 therion_add_core_unit_test(MapBackgroundPlacementTest
     tests/MapBackgroundPlacementTest.cpp)
-
-therion_add_core_unit_test(TherionBackgroundMetadataTest
-    tests/TherionBackgroundMetadataTest.cpp)
 
 therion_add_core_unit_test(TherionXviParserTest
     tests/TherionXviParserTest.cpp)
@@ -1802,7 +1801,6 @@ set(THERION_UNIT_TEST_TARGETS
     ApplicationIdentityTest
     TherionProjectStructureIndexTest
     MapBackgroundPlacementTest
-    TherionBackgroundMetadataTest
     TherionXviParserTest
     MapGeometryFeatureParsingTest
     MapEditorSourceReferenceResolverTest
