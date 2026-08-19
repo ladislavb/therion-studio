@@ -11,6 +11,7 @@
 #include "TherionTokenRules.h"
 
 #include <QCoreApplication>
+#include <QCryptographicHash>
 #include <QSet>
 
 #include <algorithm>
@@ -36,6 +37,11 @@ struct UnclosedBlockFixPlan
     QString replacementText;
     QString suggestedText;
 };
+
+QByteArray sourceDigest(const QString &contents)
+{
+    return QCryptographicHash::hash(contents.toUtf8(), QCryptographicHash::Sha256);
+}
 
 QString leadingWhitespace(const QString &text)
 {
@@ -1480,6 +1486,13 @@ TherionSourceValidationResult validateSourceDocuments(const TherionSourceDocumen
         appendBlockDiagnostics(&result, sourceDocument);
         appendCodeBoundaryDiagnostics(&result, sourceDocument, validationCatalog);
     }
+
+    const QByteArray expectedSourceDigest = sourceDigest(sourceDocument.toText());
+    for (TherionSourceDiagnostic &diagnostic : result.diagnostics) {
+        if (diagnostic.hasFix) {
+            diagnostic.fix.expectedSourceDigest = expectedSourceDigest;
+        }
+    }
     return result;
 }
 }
@@ -1532,13 +1545,20 @@ QVector<TherionSourceTextEdit> TherionSourceValidator::validationFixEdits(
 
     QVector<TherionSourceTextEdit> edits;
     edits.reserve(sortedFixes.size());
+    const QByteArray currentSourceDigest = sourceDigest(contents);
+    int nextStartOffset = contents.size() + 1;
     for (const TherionSourceDiagnosticFix &fix : std::as_const(sortedFixes)) {
-        if (fix.startOffset < 0
+        if (fix.expectedSourceDigest.isEmpty()
+            || fix.expectedSourceDigest != currentSourceDigest
+            || fix.startOffset < 0
             || fix.length < 0
-            || fix.startOffset + fix.length > contents.size()) {
-            continue;
+            || fix.startOffset + fix.length > contents.size()
+            || fix.startOffset + fix.length > nextStartOffset
+            || fix.startOffset == nextStartOffset) {
+            return {};
         }
         edits.append(TherionSourceTextEdit{fix.startOffset, fix.length, fix.replacementText});
+        nextStartOffset = fix.startOffset;
     }
     return edits;
 }

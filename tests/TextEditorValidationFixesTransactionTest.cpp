@@ -3,6 +3,7 @@
 #include "../src/core/QtFileSystem.h"
 
 #include <QApplication>
+#include <QCryptographicHash>
 #include <QCoreApplication>
 #include <QEventLoop>
 #include <QFile>
@@ -82,6 +83,7 @@ int runValidationFixApplyUndoRedoTest()
     fix.length = QStringLiteral("-foo bar").size();
     fix.replacementText = QString();
     fix.description = QStringLiteral("Drop unsupported option");
+    fix.expectedSourceDigest = QCryptographicHash::hash(beforeText.toUtf8(), QCryptographicHash::Sha256);
 
     const bool applied = tab.applyValidationFixes({fix});
     pumpEvents();

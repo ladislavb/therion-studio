@@ -5,6 +5,7 @@
 
 #include <QApplication>
 #include <QCoreApplication>
+#include <QCryptographicHash>
 #include <QEventLoop>
 #include <QFile>
 #include <QMainWindow>
@@ -86,6 +87,7 @@ void MapEditorValidationFixRefreshTest::applyValidationFixesRefreshesMapScene()
     fix.length = QStringLiteral("point 10 20 label -text visible\n").size();
     fix.replacementText = QString();
     fix.description = QStringLiteral("Remove test point");
+    fix.expectedSourceDigest = QCryptographicHash::hash(beforeText.toUtf8(), QCryptographicHash::Sha256);
 
     QVERIFY2(mapTab->applyValidationFixes({fix}),
              "Map editor validation fix application should report success.");

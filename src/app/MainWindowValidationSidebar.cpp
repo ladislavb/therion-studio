@@ -1390,6 +1390,17 @@ void MainWindow::applySelectedValidationFix()
             pendingValidationFixNavigation_ = true;
             triggerValidateDocumentForActiveDocument();
         }
+        return;
+    }
+
+    if (validationProjectMode_) {
+        requestProjectValidation(TherionStudio::ProjectValidationController::Trigger::FixApplied, true);
+    } else {
+        triggerValidateDocumentForActiveDocument();
+    }
+    if (validationStatusLabel_ != nullptr) {
+        validationStatusLabel_->setText(
+            tr("Validation fix was not applied. Refreshing validation results."));
     }
 }
 

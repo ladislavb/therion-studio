@@ -4,6 +4,7 @@
 #include "TherionSourceLogicalDocument.h"
 #include "TherionSourceValidationCatalog.h"
 
+#include <QByteArray>
 #include <QString>
 #include <QVector>
 
@@ -23,6 +24,8 @@ struct TherionSourceDiagnosticFix
     int length = 0;
     QString replacementText;
     QString description;
+    // Validator-issued fixes bind to the source snapshot that supplied their offsets.
+    QByteArray expectedSourceDigest;
 };
 
 struct TherionSourceDiagnostic

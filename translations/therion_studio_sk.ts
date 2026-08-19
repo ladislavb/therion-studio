@@ -2017,6 +2017,11 @@ Ak je súbor otvorený, najprv sa zavrie.</translation>
         <translation>Výsledky validácie boli exportované do %1.</translation>
     </message>
     <message>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1403"/>
+        <source>Validation fix was not applied. Refreshing validation results.</source>
+        <translation>Validačná oprava nebola použitá. Obnovujú sa výsledky validácie.</translation>
+    </message>
+    <message>
         <location filename="../src/app/MainWindowOutputsSidebar.cpp" line="31"/>
         <source>Model</source>
         <translation>Model</translation>
@@ -2231,47 +2236,47 @@ Očakávané súbory sú `docs/USER_MANUAL.&lt;language&gt;.md` alebo `docs/USER
         <location filename="../src/app/text_editor/map_editor/MapEditorDetachedPaneWindow.cpp" line="97"/>
         <location filename="../src/app/text_editor/map_editor/MapEditorSceneItems.cpp" line="710"/>
         <location filename="../src/app/text_editor/map_editor/MapEditorSceneItems.cpp" line="717"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="1983"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="2064"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="1997"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="2078"/>
         <source>Point</source>
         <translation>Bod</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorDetachedPaneWindow.cpp" line="98"/>
         <location filename="../src/app/text_editor/map_editor/MapEditorSceneItems.cpp" line="712"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="1971"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="2055"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="1985"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="2069"/>
         <source>Line</source>
         <translation>Línia</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorDetachedPaneWindow.cpp" line="100"/>
         <location filename="../src/app/text_editor/map_editor/MapEditorSceneItems.cpp" line="714"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="1974"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="2058"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="1988"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="2072"/>
         <source>Area</source>
         <translation>Plocha</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="1968"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="2052"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="1982"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="2066"/>
         <source>Scrap</source>
         <translation>Scrap</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="1965"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="2049"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="1979"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="2063"/>
         <source>Map</source>
         <translation>Mapa</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="1538"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="1540"/>
         <source>Source line %1</source>
         <translation>Zdrojový riadok %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="1962"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="2046"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="1976"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="2060"/>
         <source>Survey</source>
         <translation>Survey</translation>
     </message>
@@ -2529,29 +2534,29 @@ Line-point options: %1</translation>
         <translation>Obrys navrhovanej plochy</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="1977"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="1980"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="2061"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="1991"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="1994"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="2075"/>
         <source>Station</source>
         <translation>Stanica</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="2028"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="2042"/>
         <source>closed</source>
         <translation>uzavreté</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="2031"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="2045"/>
         <source>reversed</source>
         <translation>obrátené</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="2175"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="2192"/>
         <source>No parseable point, line, or area geometry was found in this document yet.</source>
         <translation>V tomto dokumente zatiaľ nebola nájdená spracovateľná geometria bodov, línií ani plôch.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="3130"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorSceneRenderer.cpp" line="3147"/>
         <source>No Therion map objects were detected in this document.</source>
         <translation>V tomto dokumente neboli zistené žiadne mapové objekty Therion.</translation>
     </message>
@@ -2616,141 +2621,138 @@ Line-point options: %1</translation>
         <translation>Zadajte hľadaný text.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="172"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="173"/>
         <source>Unknown map scrap reference</source>
         <translation>Neznámy odkaz na mapový scrap</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="173"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="174"/>
         <source>Map references scrap `%1`, but no matching scrap was found in the project index.</source>
         <translation>Mapa odkazuje na scrap `%1`, ale v indexe projektu sa nenašiel zodpovedajúci scrap.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="178"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="179"/>
         <source>Unknown map reference</source>
         <translation>Neznámy odkaz na mapu</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="179"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="180"/>
         <source>Map references child map `%1`, but no matching map was found in the project index.</source>
         <translation>Mapa odkazuje na podradenú mapu `%1`, ale v indexe projektu sa nenašla zodpovedajúca mapa.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="184"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="185"/>
         <source>Ambiguous map scrap reference</source>
         <translation>Nejednoznačný odkaz na mapový scrap</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="185"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="186"/>
         <source>Map scrap reference `%1` matches %2 scraps in the project index.</source>
         <translation>Odkaz na mapový scrap `%1` zodpovedá %2 scrapom v indexe projektu.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="191"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="192"/>
         <source>Ambiguous map reference</source>
         <translation>Nejednoznačný odkaz na mapu</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="192"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="193"/>
         <source>Map reference `%1` matches %2 maps in the project index.</source>
         <translation>Odkaz na mapu `%1` zodpovedá %2 mapám v indexe projektu.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="199"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="200"/>
         <source>Mixed map and scrap references</source>
         <translation>Zmiešané odkazy na mapy a scrapy</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="200"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="201"/>
         <source>Map composition mixes child map and scrap references; `%1` changes the content kind.</source>
         <translation>Mapová kompozícia mieša odkazy na podradené mapy a scrapy; `%1` mení druh obsahu.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="205"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="206"/>
         <source>Unknown join reference</source>
         <translation>Neznámy odkaz join</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="206"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="207"/>
         <source>Join references `%1`, but no matching scrap, line, or point was found in the project index.</source>
         <translation>Join odkazuje na `%1`, ale v indexe projektu sa nenašiel zodpovedajúci scrap, línia ani bod.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="211"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="212"/>
         <source>Unknown join line-point mark</source>
         <translation>Neznáma značka line-point v join</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="212"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="213"/>
         <source>Join references `%1`, but the resolved line does not define that line-point mark.</source>
         <translation>Join odkazuje na `%1`, ale vyriešená línia túto značku line-point nedefinuje.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="217"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="218"/>
         <source>Ambiguous join reference</source>
         <translation>Nejednoznačný odkaz join</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="218"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="219"/>
         <source>Join reference `%1` matches %2 objects in the project index.</source>
         <translation>Odkaz join `%1` zodpovedá %2 objektom v indexe projektu.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="224"/>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="378"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="225"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="367"/>
         <source>Unknown station reference</source>
         <translation>Neznámy odkaz na stanicu</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="225"/>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="380"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="226"/>
         <source>Station reference `%1` has no matching station in the project index.</source>
         <translation>Odkaz na stanicu `%1` nemá v indexe projektu zodpovedajúcu stanicu.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="230"/>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="372"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="231"/>
         <source>Ambiguous station reference</source>
         <translation>Nejednoznačný odkaz na stanicu</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="231"/>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="373"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="232"/>
         <source>Station reference `%1` matches %2 stations in the project index.</source>
         <translation>Odkaz na stanicu `%1` zodpovedá %2 staniciam v indexe projektu.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="237"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="238"/>
         <source>Duplicate object id</source>
         <translation>Duplicitné ID objektu</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="238"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="239"/>
         <source>Object id `%1` is already used by another object in this namespace.</source>
         <translation>ID objektu `%1` už v tomto namespace používa iný objekt.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="382"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="368"/>
         <source>Station reference `%1` cannot be resolved because this file is not included in the project source graph.</source>
         <translation>Odkaz na stanicu `%1` nemožno vyriešiť, pretože tento súbor nie je zahrnutý v zdrojovom grafe projektu.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="416"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="401"/>
         <source>Project index unavailable</source>
         <translation>Index projektu nie je dostupný</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="538"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="523"/>
         <source>Missing referenced source file</source>
         <translation>Chýba odkazovaný zdrojový súbor</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="539"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="524"/>
         <source>Command `%1` references `%2`, but no matching project file was found.</source>
         <translation>Príkaz `%1` odkazuje na `%2`, ale nenašiel sa zodpovedajúci projektový súbor.</translation>
     </message>
     <message>
-        <location filename="../src/app/ProjectValidationScanner.cpp" line="628"/>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="613"/>
         <source>Open a project before validating.</source>
         <translation>Pred validáciou otvorte projekt.</translation>
     </message>
@@ -3832,47 +3834,47 @@ Použite Prehliadať a vyberte ho ručne.</translation>
         <translation type="vanished">Presun zviazaného vrcholu objektu %1 zlyhal: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="209"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="210"/>
         <source>Removed inserted map object at source line %1.</source>
         <translation>Vložený mapový objekt na zdrojovom riadku %1 bol odstránený.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="212"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="213"/>
         <source>Removed inserted map object.</source>
         <translation>Vložený mapový objekt bol odstránený.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="219"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="220"/>
         <source>Restored inserted map object at source line %1.</source>
         <translation>Vložený mapový objekt na zdrojovom riadku %1 bol obnovený.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="222"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="223"/>
         <source>Restored inserted map object.</source>
         <translation>Vložený mapový objekt bol obnovený.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="229"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="230"/>
         <source>Reverted completed draft at source line %1.</source>
         <translation>Dokončený náčrt na zdrojovom riadku %1 bol vrátený späť.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="232"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="233"/>
         <source>Reverted completed draft.</source>
         <translation>Dokončený náčrt bol vrátený späť.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="239"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="240"/>
         <source>Restored completed draft at source line %1.</source>
         <translation>Dokončený náčrt na zdrojovom riadku %1 bol obnovený.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="242"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="243"/>
         <source>Restored completed draft.</source>
         <translation>Dokončený náčrt bol obnovený.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="266"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="267"/>
         <source>Map source change skipped: document changed.</source>
         <translation>Zmena mapového zdroja preskočená: dokument sa zmenil.</translation>
     </message>
@@ -3880,7 +3882,7 @@ Použite Prehliadať a vyberte ho ručne.</translation>
 <context>
     <name>TherionStudio::MapEditorCanvasEditController</name>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="194"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="195"/>
         <source>This vertex has additional line-point options (for example altitude/direction settings).
 
 Line %1, point %2:
@@ -3895,365 +3897,365 @@ Delete the vertex anyway?</source>
 Napriek tomu bod zmazať?</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="200"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="201"/>
         <source>Delete Point</source>
         <translation>Odstrániť bod</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1265"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1308"/>
         <source>Geometry move failed: unsupported geometry kind &apos;%1&apos;.</source>
         <translation>Presun geometrie zlyhal: nepodporovaný typ geometrie &apos;%1&apos;.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1221"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1264"/>
         <source>Point move failed.</source>
         <translation>Presun bodu zlyhal.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1222"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1265"/>
         <source>Point move failed: %1</source>
         <translation>Presun bodu zlyhal: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1237"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1280"/>
         <source>Move Point</source>
         <translation>Presunúť bod</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1246"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1289"/>
         <source>Updated point geometry at source line %1.</source>
         <translation>Geometria bodu na zdrojovom riadku %1 bola aktualizovaná.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1315"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1358"/>
         <source>%1 vertex move failed.</source>
         <translation>Presun vrcholu objektu %1 zlyhal.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1316"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1359"/>
         <source>%1 vertex move failed: %2</source>
         <translation>Presun vrcholu objektu %1 zlyhal: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1336"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1379"/>
         <source>%1 coupled vertex move failed.</source>
         <translation>Presun zviazaného vrcholu objektu %1 zlyhal.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1337"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1380"/>
         <source>%1 coupled vertex move failed: %2</source>
         <translation>Presun zviazaného vrcholu objektu %1 zlyhal: %2</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1357"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1400"/>
         <source>Move %1 Vertex</source>
         <translation>Presunúť vrchol objektu %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1374"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1417"/>
         <source>Updated %1 vertex %2 at source line %3.</source>
         <translation>Vrchol %2 objektu %1 na zdrojovom riadku %3 bol aktualizovaný.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1401"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1444"/>
         <source>Point orientation update failed.</source>
         <translation>Aktualizácia orientácie bodu zlyhala.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1402"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1445"/>
         <source>Point orientation update failed: %1</source>
         <translation>Aktualizácia orientácie bodu zlyhala: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1417"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1460"/>
         <source>Edit Point Orientation</source>
         <translation>Upraviť orientáciu bodu</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1423"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1466"/>
         <source>Updated point orientation to %1 degrees.</source>
         <translation>Orientácia bodu aktualizovaná na %1 stupňov.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1452"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1495"/>
         <source>Line point orientation update failed.</source>
         <translation>Aktualizácia orientácie bodu línie zlyhala.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1453"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1496"/>
         <source>Line point orientation update failed: %1</source>
         <translation>Aktualizácia orientácie bodu línie zlyhala: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1468"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1511"/>
         <source>Line point l-size update failed.</source>
         <translation>Aktualizácia l-size bodu línie zlyhala.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1469"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1512"/>
         <source>Line point l-size update failed: %1</source>
         <translation>Aktualizácia l-size bodu línie zlyhala: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1484"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1527"/>
         <source>Edit Line Point Options</source>
         <translation>Upraviť voľby bodu línie</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1490"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1533"/>
         <source>Updated line point orientation %1 deg and l-size %2.</source>
         <translation>Aktualizovaná orientácia bodu línie %1° a l-size %2.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1672"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1761"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1715"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1804"/>
         <source>Insert vertex failed: line geometry could not be resolved.</source>
         <translation>Vloženie vrcholu zlyhalo: geometriu línie nemožno určiť.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1679"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1722"/>
         <source>Insert vertex failed: selected line anchor could not be resolved.</source>
         <translation>Vloženie vrcholu zlyhalo: vybranú kotvu línie nemožno určiť.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1694"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1737"/>
         <source>Extend line failed: selected endpoint could not start continuation mode.</source>
         <translation>Predĺženie línie zlyhalo: vybraný koncový bod nemohol spustiť režim pokračovania.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1702"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1745"/>
         <source>Insert vertex failed: selected line vertex has no adjacent segment in that direction.</source>
         <translation>Vloženie vrcholu zlyhalo: vybraný vrchol línie nemá v tomto smere susedný segment.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1710"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1791"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1753"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1834"/>
         <source>Insert vertex failed: segment split could not be computed.</source>
         <translation>Vloženie vrcholu zlyhalo: rozdelenie segmentu sa nepodarilo vypočítať.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1720"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1801"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1763"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1844"/>
         <source>Insert vertex failed.</source>
         <translation>Vloženie vrcholu zlyhalo.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1721"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1802"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1764"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1845"/>
         <source>Insert vertex failed: %1</source>
         <translation>Vloženie vrcholu zlyhalo: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1732"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1813"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1775"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1856"/>
         <source>Insert Line Vertex</source>
         <translation>Vložiť bod čiary</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1739"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1820"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1782"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1863"/>
         <source>Inserted line vertex %1 on source line %2.</source>
         <translation>Vložený vrchol línie %1 na zdrojovom riadku %2.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1783"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1826"/>
         <source>Insert vertex failed: no line segment could be resolved.</source>
         <translation>Vloženie vertexu zlyhalo: nepodarilo sa určiť žiadny segment línie.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1856"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1899"/>
         <source>Split line failed: line geometry could not be resolved.</source>
         <translation>Rozdelenie línie zlyhalo: geometriu línie nemožno určiť.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1861"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1904"/>
         <source>Split line failed: closed lines cannot be split yet.</source>
         <translation>Rozdelenie línie zlyhalo: uzavreté línie zatiaľ nemožno deliť.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1868"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1911"/>
         <source>Split line failed: select an interior line vertex.</source>
         <translation>Rozdelenie línie zlyhalo: vyberte vnútorný vrchol línie.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1880"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1923"/>
         <source>Split line failed: split produced invalid line geometry.</source>
         <translation>Rozdelenie línie zlyhalo: rozdelenie vytvorilo neplatnú geometriu línie.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1889"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1932"/>
         <source>Split line failed.</source>
         <translation>Rozdelenie línie zlyhalo.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1890"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1933"/>
         <source>Split line failed: %1</source>
         <translation>Rozdelenie línie zlyhalo: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1905"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1948"/>
         <source>Split Line</source>
         <translation>Rozdeliť líniu</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1913"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1956"/>
         <source>Split line at vertex %1 on source line %2 and updated area references.</source>
         <translation>Línia rozdelená vo vrchole %1 na zdrojovom riadku %2 a odkazy plôch boli aktualizované.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1914"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1957"/>
         <source>Split line at vertex %1 on source line %2.</source>
         <translation>Línia rozdelená vo vrchole %1 na zdrojovom riadku %2.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1948"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1991"/>
         <source>Delete vertex failed: line geometry could not be resolved.</source>
         <translation>Odstránenie vrcholu zlyhalo: geometriu línie nemožno určiť.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1955"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1998"/>
         <source>Delete vertex failed: selected line anchor could not be resolved.</source>
         <translation>Odstránenie vrcholu zlyhalo: vybranú kotvu línie nemožno určiť.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1963"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2006"/>
         <source>Vertex delete canceled.</source>
         <translation>Mazanie bodu zrušené.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1969"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2012"/>
         <source>Delete vertex failed: line needs at least two vertices.</source>
         <translation>Odstránenie vrcholu zlyhalo: línia musí mať aspoň dva vrcholy.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1976"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2019"/>
         <source>Delete vertex failed: selected anchor could not be removed while keeping a valid line.</source>
         <translation>Odstránenie vrcholu zlyhalo: vybranú kotvu nemožno odstrániť pri zachovaní platnej línie.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1996"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2039"/>
         <source>Delete vertex failed.</source>
         <translation>Odstránenie vrcholu zlyhalo.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="1997"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2040"/>
         <source>Delete vertex failed: %1</source>
         <translation>Odstránenie vrcholu zlyhalo: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2008"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2051"/>
         <source>Delete Line Vertex</source>
         <translation>Odstrániť bod čiary</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2014"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2057"/>
         <source>Removed line vertex %1 on source line %2.</source>
         <translation>Odstránený vrchol línie %1 na zdrojovom riadku %2.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2034"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2077"/>
         <source>Toggle smooth failed: line geometry could not be resolved.</source>
         <translation>Prepnutie smooth zlyhalo: geometriu línie nemožno určiť.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2041"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2084"/>
         <source>Toggle smooth failed: selected line vertex could not be resolved.</source>
         <translation>Prepnutie smooth zlyhalo: vybraný vrchol línie nemožno určiť.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2062"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2105"/>
         <source>Toggle smooth failed.</source>
         <translation>Prepnutie smooth zlyhalo.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2063"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2106"/>
         <source>Toggle smooth failed: %1</source>
         <translation>Prepnutie smooth zlyhalo: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2073"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2116"/>
         <source>Toggle Line Vertex Smooth</source>
         <translation>Prepnúť smooth bodu čiary</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2081"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2154"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2124"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2197"/>
         <source>Line vertex %1 on source line %2 set to smooth.</source>
         <translation>Vrchol línie %1 na zdrojovom riadku %2 nastavený ako smooth.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2082"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2155"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2125"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2198"/>
         <source>Line vertex %1 on source line %2 set to corner (smooth off).</source>
         <translation>Vrchol línie %1 na zdrojovom riadku %2 nastavený ako roh (smooth vypnuté).</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2102"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2145"/>
         <source>Set smooth failed: line geometry could not be resolved.</source>
         <translation>Nastavenie smooth zlyhalo: geometriu línie nemožno určiť.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2109"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2152"/>
         <source>Set smooth failed: selected line vertex could not be resolved.</source>
         <translation>Nastavenie smooth zlyhalo: vybraný vrchol línie nemožno určiť.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2135"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2178"/>
         <source>Set smooth failed.</source>
         <translation>Nastavenie smooth zlyhalo.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2136"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2179"/>
         <source>Set smooth failed: %1</source>
         <translation>Nastavenie smooth zlyhalo: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2146"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2189"/>
         <source>Set Line Vertex Smooth</source>
         <translation>Nastaviť smooth bodu čiary</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2175"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2218"/>
         <source>Set control handle failed: line geometry could not be resolved.</source>
         <translation>Nastavenie riadiaceho úchytu zlyhalo: geometriu línie nemožno určiť.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2182"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2225"/>
         <source>Set control handle failed: selected line vertex could not be resolved.</source>
         <translation>Nastavenie riadiaceho úchytu zlyhalo: vybraný vrchol línie nemožno určiť.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2218"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2261"/>
         <source>Set control handle failed.</source>
         <translation>Nastavenie riadiaceho úchytu zlyhalo.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2219"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2262"/>
         <source>Set control handle failed: %1</source>
         <translation>Nastavenie riadiaceho úchytu zlyhalo: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2229"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2272"/>
         <source>Set Line Vertex Control Handle</source>
         <translation>Nastaviť kontrolný bod čiary</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2236"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2279"/>
         <source>previous</source>
         <translation>predchádzajúci</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2236"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2279"/>
         <source>next</source>
         <translation>ďalší</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2238"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2281"/>
         <source>Line vertex %1 on source line %2 now uses %3 control handle.</source>
         <translation>Vrchol línie %1 na zdrojovom riadku %2 teraz používa riadiaci úchyt %3.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2239"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorCanvasEditController.cpp" line="2282"/>
         <source>Line vertex %1 on source line %2 no longer uses %3 control handle.</source>
         <translation>Vrchol línie %1 na zdrojovom riadku %2 už nepoužíva riadiaci úchyt %3.</translation>
     </message>
@@ -4624,339 +4626,339 @@ Napriek tomu bod zmazať?</translation>
 <context>
     <name>TherionStudio::MapEditorObjectDetailsEditController</name>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="365"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="373"/>
         <source>Select a scrap to edit its scale.</source>
         <translation>Na úpravu mierky vyberte scrap.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="382"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="390"/>
         <source>Scrap scale requires two distinct picture points and two distinct real points.</source>
         <translation>Mierka scrapu vyžaduje dva rôzne obrazové body a dva rôzne reálne body.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="398"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="406"/>
         <source>Failed to update scrap scale.</source>
         <translation>Nepodarilo sa aktualizovať mierku scrapu.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="399"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="407"/>
         <source>Failed to update scrap scale: %1</source>
         <translation>Nepodarilo sa aktualizovať mierku scrapu: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="408"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="416"/>
         <source>Cannot update scrap scale without map source transaction support.</source>
         <translation>Mierku scrapu nemožno aktualizovať bez podpory transakcií mapového zdroja.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="413"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="421"/>
         <source>Set Scrap Scale</source>
         <translation>Nastaviť mierku scrapu</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="419"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="427"/>
         <source>Updated scrap scale.</source>
         <translation>Mierka scrapu bola aktualizovaná.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="446"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="454"/>
         <source>Object settings are available for scrap, point, line, and area commands.</source>
         <translation>Nastavenia objektu sú k dispozícii pre príkazy `scrap`, `point`, `line` a `area`.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="452"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="459"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="460"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="467"/>
         <source>Selected map object is out of range.</source>
         <translation>Vybraný mapový objekt je mimo rozsahu.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="467"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="475"/>
         <source>Selected map object source line no longer matches the selection.</source>
         <translation>Zdrojový riadok vybraného mapového objektu už nezodpovedá výberu.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="499"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="507"/>
         <source>Selected map object source line no longer exists.</source>
         <translation>Zdrojový riadok vybraného mapového objektu už neexistuje.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="504"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="512"/>
         <source>Cannot edit object settings without map source transaction support.</source>
         <translation>Nastavenia objektu nemožno upraviť bez podpory transakcií mapového zdroja.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="509"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="517"/>
         <source>Edit All Object Settings</source>
         <translation>Upraviť všetky nastavenia objektu</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="540"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="548"/>
         <source>Failed to update line closed state.</source>
         <translation>Nepodarilo sa aktualizovať stav uzavretia línie.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="541"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="549"/>
         <source>Failed to update line closed state: %1</source>
         <translation>Nepodarilo sa aktualizovať stav uzavretia línie: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="551"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="559"/>
         <source>Cannot update line closed state without map source transaction support.</source>
         <translation>Stav uzavretia línie nemožno aktualizovať bez podpory transakcií mapového zdroja.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="556"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="564"/>
         <source>Edit Line Closed</source>
         <translation>Upraviť uzavretie čiary</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="590"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="598"/>
         <source>Failed to update line reverse state.</source>
         <translation>Nepodarilo sa aktualizovať stav obrátenia línie.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="591"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="599"/>
         <source>Failed to update line reverse state: %1</source>
         <translation>Nepodarilo sa aktualizovať stav obrátenia línie: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="601"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="609"/>
         <source>Cannot update line reversed state without map source transaction support.</source>
         <translation>Stav obrátenia línie nemožno aktualizovať bez podpory transakcií mapového zdroja.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="606"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="614"/>
         <source>Edit Line Reversed</source>
         <translation>Upraviť otočenie čiary</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="645"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="653"/>
         <source>Failed to update object clipping.</source>
         <translation>Nepodarilo sa aktualizovať clipping objektu.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="646"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="654"/>
         <source>Failed to update object clipping: %1</source>
         <translation>Nepodarilo sa aktualizovať clipping objektu: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="656"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="664"/>
         <source>Cannot update object clipping without map source transaction support.</source>
         <translation>Clipping objektu nemožno aktualizovať bez podpory transakcií mapového zdroja.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="670"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="678"/>
         <source>Edit Object Clipping</source>
         <translation>Upraviť clipping objektu</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="700"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="708"/>
         <source>Failed to update point align.</source>
         <translation>Nepodarilo sa aktualizovať zarovnanie bodu.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="701"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="709"/>
         <source>Failed to update point align: %1</source>
         <translation>Nepodarilo sa aktualizovať zarovnanie bodu: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="711"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="719"/>
         <source>Cannot update point align without map source transaction support.</source>
         <translation>Zarovnanie bodu nemožno aktualizovať bez podpory transakcií mapového zdroja.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="721"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="729"/>
         <source>Edit Point Align</source>
         <translation>Upraviť zarovnanie bodu</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="781"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="789"/>
         <source>Orientation is not supported for this point type.</source>
         <translation>Orientácia nie je pre tento typ bodu podporovaná.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="802"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="810"/>
         <source>Orientation editing is available only for selected line anchor vertices.</source>
         <translation>Úprava orientácie je dostupná iba pre vybrané kotviace vrcholy línie.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="815"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="823"/>
         <source>Orientation is not supported for this line type.</source>
         <translation>Orientácia nie je pre tento typ línie podporovaná.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="846"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="854"/>
         <source>Failed to update orientation.</source>
         <translation>Nepodarilo sa aktualizovať orientáciu.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="847"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="855"/>
         <source>Failed to update orientation: %1</source>
         <translation>Nepodarilo sa aktualizovať orientáciu: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="867"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="875"/>
         <source>Cannot update object orientation without map source transaction support.</source>
         <translation>Orientáciu objektu nemožno aktualizovať bez podpory transakcií mapového zdroja.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="871"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="879"/>
         <source>Edit Object Orientation</source>
         <translation>Upraviť orientáciu objektu</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="881"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="889"/>
         <source>Updated line point options.</source>
         <translation>Voľby bodu línie boli aktualizované.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="884"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="892"/>
         <source>Updated orientation to %1 degrees.</source>
         <translation>Orientácia bola aktualizovaná na %1 stupňov.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="885"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="893"/>
         <source>Cleared orientation override.</source>
         <translation>Prepísanie orientácie bolo zrušené.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="982"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="990"/>
         <source>This line is used as an area border. Delete the area instead.</source>
         <translation>Táto línia sa používa ako hranica plochy. Namiesto nej odstráňte plochu.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="974"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="991"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="982"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="999"/>
         <source>Object deletion failed.</source>
         <translation>Odstránenie objektu zlyhalo.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="992"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1000"/>
         <source>Object deletion failed: %1</source>
         <translation>Odstránenie objektu zlyhalo: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="997"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1005"/>
         <source>Cannot delete map object without map source transaction support.</source>
         <translation>Mapový objekt nemožno zmazať bez podpory transakcií mapového zdroja.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1002"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1010"/>
         <source>Delete Map Object</source>
         <translation>Odstrániť mapový objekt</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1013"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1021"/>
         <source>Deleted selected object from source.</source>
         <translation>Vybraný objekt bol odstránený zo zdroja.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1073"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1081"/>
         <source>Failed to update object fields.</source>
         <translation>Nepodarilo sa aktualizovať polia objektu.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1074"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1082"/>
         <source>Failed to update object fields: %1</source>
         <translation>Nepodarilo sa aktualizovať polia objektu: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1090"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1098"/>
         <source>Failed to update label text.</source>
         <translation>Nepodarilo sa aktualizovať text labelu.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1091"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1099"/>
         <source>Failed to update label text: %1</source>
         <translation>Nepodarilo sa aktualizovať text labelu: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1109"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1117"/>
         <source>Failed to update point value.</source>
         <translation>Nepodarilo sa aktualizovať hodnotu bodu.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1110"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1118"/>
         <source>Failed to update point value: %1</source>
         <translation>Nepodarilo sa aktualizovať hodnotu bodu: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1120"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1128"/>
         <source>Cannot update object fields without map source transaction support.</source>
         <translation>Polia objektu nemožno aktualizovať bez podpory transakcií mapového zdroja.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1128"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1136"/>
         <source>Edit Object Fields</source>
         <translation>Upraviť polia objektu</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1141"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1149"/>
         <source>Updated object fields.</source>
         <translation>Polia objektu boli aktualizované.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1186"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1194"/>
         <source>Failed to update scrap projection.</source>
         <translation>Nepodarilo sa aktualizovať projekciu scrapu.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1187"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1195"/>
         <source>Failed to update scrap projection: %1</source>
         <translation>Nepodarilo sa aktualizovať projekciu scrapu: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1197"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1205"/>
         <source>Cannot update scrap projection without map source transaction support.</source>
         <translation>Projekciu scrapu nemožno aktualizovať bez podpory transakcií mapového zdroja.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1202"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1210"/>
         <source>Edit Scrap Projection</source>
         <translation>Upraviť projekciu scrapu</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1208"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1216"/>
         <source>Updated scrap projection.</source>
         <translation>Projekcia scrapu bola aktualizovaná.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1330"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1338"/>
         <source>Edit line-point options failed: line geometry could not be resolved.</source>
         <translation>Úprava line-point options zlyhala: geometriu čiary sa nepodarilo rozpoznať.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1337"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1345"/>
         <source>Edit line-point options failed: selected line point could not be resolved.</source>
         <translation>Úprava line-point options zlyhala: vybraný bod čiary sa nepodarilo rozpoznať.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1353"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1361"/>
         <source>Edit line-point options failed.</source>
         <translation>Úprava line-point options zlyhala.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1354"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1362"/>
         <source>Edit line-point options failed: %1</source>
         <translation>Úprava line-point options zlyhala: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1362"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1370"/>
         <source>Cannot update line-point options without map source transaction support.</source>
         <translation>Voľby line-point nemožno aktualizovať bez podpory transakcií mapového zdroja.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1376"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1384"/>
         <source>Edit Line Point Options</source>
         <translation>Upraviť line-point options</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1390"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1398"/>
         <source>Cleared additional line-point options for line %1, point %2.</source>
         <translation>Ďalšie line-point options pre čiaru %1, bod %2 boli vymazané.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1391"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectDetailsEditController.cpp" line="1399"/>
         <source>Updated additional line-point options for line %1, point %2.</source>
         <translation>Ďalšie line-point options pre čiaru %1, bod %2 boli aktualizované.</translation>
     </message>
@@ -5210,7 +5212,7 @@ Napriek tomu bod zmazať?</translation>
 <context>
     <name>TherionStudio::MapEditorStylePreviewWidget</name>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorStylePreviewWidget.cpp" line="891"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorStylePreviewWidget.cpp" line="893"/>
         <source>No style preview</source>
         <translation>Bez náhľadu štýlu</translation>
     </message>
@@ -5268,12 +5270,12 @@ Napriek tomu bod zmazať?</translation>
         <translation>Ľavá veľkosť bodu línie pre kreslenie zrušená.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1542"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1492"/>
         <source>Background</source>
         <translation>Pozadie</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1675"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1625"/>
         <source>Add Background Layers</source>
         <translation>Pridať vrstvy pozadia</translation>
     </message>
@@ -5282,252 +5284,252 @@ Napriek tomu bod zmazať?</translation>
         <translation type="vanished">Vrstvy pozadia (*.png *.jpg *.jpeg *.bmp *.tif *.tiff *.gif *.webp *.xvi)</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="416"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="359"/>
         <source>XVI Properties</source>
         <translation>Vlastnosti XVI</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="426"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="369"/>
         <source>Scale</source>
         <translation>Mierka</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="432"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="375"/>
         <source>Resolution</source>
         <translation>Rozlíšenie</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="439"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="382"/>
         <source>Grid spacing</source>
         <translation>Rozstup mriežky</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="441"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="384"/>
         <source>Plan</source>
         <translation>Plán</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="442"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="385"/>
         <source>Extended elevation</source>
         <translation>Rozvinutý profil</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="479"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="422"/>
         <source>Could not read %1.</source>
         <translation>Nepodarilo sa prečítať %1.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="492"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="435"/>
         <source>No PocketTopo %1 data was found in %2.</source>
         <translation>V %2 sa nenašli žiadne dáta PocketTopo pre %1.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="495"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="438"/>
         <source>extended elevation</source>
         <translation>rozvinutý profil</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="496"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="439"/>
         <source>plan</source>
         <translation>plán</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="506"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="449"/>
         <source>Could not write %1.</source>
         <translation>Nepodarilo sa zapísať %1.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="518"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="461"/>
         <source>Generated XVI could not be parsed: %1.</source>
         <translation>Vygenerované XVI sa nepodarilo parsovať: %1.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1677"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1627"/>
         <source>Background layers (*.png *.jpg *.jpeg *.bmp *.tif *.tiff *.gif *.webp *.svg *.xvi *.txt *.TXT)</source>
         <translation>Vrstvy pozadia (*.png *.jpg *.jpeg *.bmp *.tif *.tiff *.gif *.webp *.svg *.xvi *.txt *.TXT)</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1682"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1814"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1632"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1765"/>
         <source>No background layers were added.</source>
         <translation>Neboli pridané žiadne vrstvy pozadia.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1710"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1786"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1660"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1737"/>
         <source>Import PocketTopo Background</source>
         <translation>Importovať PocketTopo pozadie</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1807"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1758"/>
         <source>Added %1 background layer(s), but PocketTopo metadata sync was skipped because the document changed.</source>
         <translation>Pridaných %1 vrstiev pozadia, ale synchronizácia metadát PocketTopo bola preskočená, pretože dokument sa zmenil.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1809"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1760"/>
         <source>Added %1 background layer(s).</source>
         <translation>Pridaných %1 vrstiev pozadia.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1812"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1763"/>
         <source>Adding %1 background layer(s)...</source>
         <translation>Pridáva sa %1 vrstiev pozadia...</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1842"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1793"/>
         <source>Removed selected background layer.</source>
         <translation>Vybraná vrstva pozadia odstránená.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1843"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1794"/>
         <source>Remove Background Image</source>
         <translation>Odstrániť obrázok pozadia</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1920"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1921"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1871"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1872"/>
         <source>Set Background Gamma</source>
         <translation>Nastaviť Gamma pozadia</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1972"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2012"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2015"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2085"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2087"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1923"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1963"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1966"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2036"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2038"/>
         <source>Move Background Image</source>
         <translation>Presunúť obrázok pozadia</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2032"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2048"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1983"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="1999"/>
         <source>Scale Background Image</source>
         <translation>Zmeniť mierku obrázka pozadia</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2067"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2018"/>
         <source>Rotate Background Image</source>
         <translation>Otočiť obrázok pozadia</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2375"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2326"/>
         <source>Select a background layer before setting its pivot.</source>
         <translation>Pred nastavením pivotu vyberte vrstvu pozadia.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2382"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2333"/>
         <source>Set pivot: click in the map to choose the rotation center. Esc cancels.</source>
         <translation>Nastavenie pivotu: kliknutím v mape vyberte stred otáčania. Esc zruší akciu.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2401"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2352"/>
         <source>Set pivot canceled.</source>
         <translation>Nastavenie pivotu zrušené.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2421"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2434"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2372"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2385"/>
         <source>Set pivot failed: map bounds are not available.</source>
         <translation>Nastavenie pivotu zlyhalo: nie sú dostupné hranice mapy.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2455"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2406"/>
         <source>Set Background Pivot</source>
         <translation>Nastaviť pivot pozadia</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2458"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2409"/>
         <source>Background pivot set.</source>
         <translation>Pivot pozadia nastavený.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2480"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2431"/>
         <source>Reset Background Pivot</source>
         <translation>Resetovať pivot pozadia</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2483"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2434"/>
         <source>Background pivot reset.</source>
         <translation>Pivot pozadia resetovaný.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3069"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3023"/>
         <source>Auto-loaded %1 background layer(s), but could not load SVG background: %2.</source>
         <translation>Automaticky načítaných %1 vrstiev pozadia, ale nepodarilo sa načítať SVG pozadie: %2.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3072"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3026"/>
         <source>Could not load SVG background: %1.</source>
         <translation>Nepodarilo sa načítať SVG pozadie: %1.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3499"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3459"/>
         <source>Background transform metadata sync skipped: document changed.</source>
         <translation>Synchronizácia metadát transformácie pozadia bola preskočená: dokument sa zmenil.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2097"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2048"/>
         <source>Fit + BG: no background layers loaded, fitting geometry only.</source>
         <translation>Prispôsobiť + pozadie: nie sú načítané žiadne vrstvy pozadia, prispôsobuje sa iba geometria.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2098"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="2049"/>
         <source>Fit + BG: fitting geometry plus %1 background layer(s).</source>
         <translation>Prispôsobiť + pozadie: prispôsobuje sa geometria a %1 vrstiev pozadia.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3063"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3017"/>
         <source>Auto-loaded %1 background layer(s) from xth_me_image_insert metadata.</source>
         <translation>Automaticky načítaných %1 vrstiev pozadia z metadát xth_me_image_insert.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3379"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3339"/>
         <source>Background metadata sync skipped: document changed.</source>
         <translation>Synchronizácia metadát pozadia preskočená: dokument sa zmenil.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3542"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3502"/>
         <source>Background gamma metadata sync skipped: document changed.</source>
         <translation>Synchronizácia metadát gamma pozadia preskočená: dokument sa zmenil.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3585"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3545"/>
         <source>Background metadata removal skipped: document changed.</source>
         <translation>Odstránenie metadát pozadia preskočené: dokument sa zmenil.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3639"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3790"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3663"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3816"/>
         <source>Could not load background image.</source>
         <translation>Nepodarilo sa načítať obrázok pozadia.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3646"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3670"/>
         <source>Added background layer.</source>
         <translation>Vrstva pozadia pridaná.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3663"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3687"/>
         <source>Could not load SVG background metadata.</source>
         <translation>Nepodarilo sa načítať metadáta SVG pozadia.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3701"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3727"/>
         <source>Could not load SVG background.</source>
         <translation>Nepodarilo sa načítať SVG pozadie.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3708"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3734"/>
         <source>Add SVG Background</source>
         <translation>Pridať SVG pozadie</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3791"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3817"/>
         <source>Could not load background image: %1.</source>
         <translation>Nepodarilo sa načítať obrázok pozadia: %1.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3861"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorBackgroundLayers.cpp" line="3887"/>
         <source>Add Background Image</source>
         <translation>Pridať obrázok pozadia</translation>
     </message>
@@ -6188,7 +6190,7 @@ subtype blocks</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorTabSelectionInspectorWorkflow.cpp" line="214"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="293"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="277"/>
         <source>Complete Draft failed: no active TH2 text editor.</source>
         <translation>Dokončenie návrhu zlyhalo: žiadny aktívny textový editor TH2.</translation>
     </message>
@@ -6200,54 +6202,54 @@ subtype blocks</translation>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorTabSelectionInspectorWorkflow.cpp" line="252"/>
         <location filename="../src/app/text_editor/map_editor/MapEditorTabSelectionInspectorWorkflow.cpp" line="261"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="334"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="356"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="318"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="340"/>
         <source>Complete Draft failed.</source>
         <translation>Dokončenie návrhu zlyhalo.</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorTabSelectionInspectorWorkflow.cpp" line="253"/>
         <location filename="../src/app/text_editor/map_editor/MapEditorTabSelectionInspectorWorkflow.cpp" line="262"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="335"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="357"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="319"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="341"/>
         <source>Complete Draft failed: %1</source>
         <translation>Dokončenie návrhu zlyhalo: %1</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorTabSelectionInspectorWorkflow.cpp" line="268"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="377"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="361"/>
         <source>Complete Draft</source>
         <translation>Dokončiť návrh</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorTabSelectionInspectorWorkflow.cpp" line="270"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="385"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="369"/>
         <source>Complete Draft wrote %1 geometry at source line %2.</source>
         <translation>Dokončenie návrhu zapísalo geometriu %1 na zdrojový riadok %2.</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorTabSelectionInspectorWorkflow.cpp" line="271"/>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="386"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="370"/>
         <source>Complete Draft wrote %1 geometry to source.</source>
         <translation>Dokončenie návrhu zapísalo geometriu %1 do zdroja.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabWorkspace.cpp" line="160"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabWorkspace.cpp" line="164"/>
         <source>Mode:</source>
         <translation>Režim:</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabWorkspace.cpp" line="161"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabWorkspace.cpp" line="165"/>
         <source>Visual</source>
         <translation>Vizuálne</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabWorkspace.cpp" line="163"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabWorkspace.cpp" line="167"/>
         <source>Raw</source>
         <translation>Zdroj</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabWorkspace.cpp" line="178"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabWorkspace.cpp" line="182"/>
         <source>Ready</source>
         <translation>Pripravené</translation>
     </message>
@@ -6302,32 +6304,32 @@ subtype blocks</translation>
         <translation>Mapový panel je oddelený: zdrojový editor zostáva na tejto karte a vizuálna mapa je v oddelenom okne.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="509"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="493"/>
         <source>Smart Area candidate %1 of %2 selected. Press Enter or Complete Draft to insert.</source>
         <translation>Vybraný kandidát Smart Area %1 z %2. Na vloženie stlačte Enter alebo Dokončiť návrh.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="543"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="527"/>
         <source>Smart Area insert failed.</source>
         <translation>Vloženie Smart Area zlyhalo.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="544"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="528"/>
         <source>Smart Area insert failed: %1</source>
         <translation>Vloženie Smart Area zlyhalo: %1</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="550"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="534"/>
         <source>Insert Smart Area</source>
         <translation>Vložiť Smart Area</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="556"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="540"/>
         <source>Smart Area inserted at source line %1.</source>
         <translation>Smart Area vložená na zdrojový riadok %1.</translation>
     </message>
     <message>
-        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="557"/>
+        <location filename="../src/app/text_editor/map_editor/MapEditorTabSourceEditWorkflow.cpp" line="541"/>
         <source>Smart Area inserted.</source>
         <translation>Smart Area vložená.</translation>
     </message>
@@ -7257,67 +7259,67 @@ subtype blocks</translation>
 <context>
     <name>TherionStudio::TherionSourceValidator</name>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="598"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="604"/>
         <source>Empty scrap object</source>
         <translation>Prázdny objekt v scrape</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="599"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="605"/>
         <source>This `%1` object in a scrap has no geometry rows.</source>
         <translation>Tento objekt `%1` v scrape nemá žiadne geometrické riadky.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="608"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="614"/>
         <source>Remove empty %1 block</source>
         <translation>Odstrániť prázdny blok %1</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="668"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="674"/>
         <source>Duplicate object id</source>
         <translation>Duplicitné ID objektu</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="669"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="675"/>
         <source>Object id `%1` is already used by another object in this namespace.</source>
         <translation>ID objektu `%1` už v tomto namespace používa iný objekt.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="705"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="711"/>
         <source>Unknown area line reference</source>
         <translation>Neznámy odkaz na líniu plochy</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="706"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="712"/>
         <source>Area references line `%1`, but no line with this id exists in the current scrap.</source>
         <translation>Plocha odkazuje na líniu `%1`, ale v aktuálnom scrape neexistuje línia s týmto ID.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="727"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="733"/>
         <source>Duplicate line-point smooth option</source>
         <translation>Duplicitná voľba smooth bodu línie</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="728"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="734"/>
         <source>This line point already has a `smooth off` option before the next coordinate row.</source>
         <translation>Tento bod línie už má pred ďalším súradnicovým riadkom voľbu `smooth off`.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="735"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="741"/>
         <source>Remove duplicate smooth off on line %1</source>
         <translation>Odstrániť duplicitné smooth off na riadku %1</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="914"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="920"/>
         <source>Malformed or duplicate option token</source>
         <translation>Chybný alebo duplicitný token voľby</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="915"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="921"/>
         <source>This command contains an option-like token or duplicate option/value pair that Therion may reject.</source>
         <translation>Tento príkaz obsahuje token vyzerajúci ako voľba alebo duplicitnú dvojicu voľba/hodnota, ktorú môže Therion odmietnuť.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="922"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="928"/>
         <source>Rewrite line %1</source>
         <translation>Prepísať riadok %1</translation>
     </message>
@@ -7334,167 +7336,167 @@ subtype blocks</translation>
         <translation type="vanished">Previesť oddeľovače ciest na /</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1082"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1088"/>
         <source>Unknown command</source>
         <translation>Neznámy príkaz</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1083"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1089"/>
         <source>Command `%1` is not present in the Therion command catalog.</source>
         <translation>Príkaz `%1` nie je v katalógu príkazov Therion.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1093"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1099"/>
         <source>Unexpected command context</source>
         <translation>Neočakávaný kontext príkazu</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1094"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1100"/>
         <source>Command `%1` is not listed for context `%2`. Expected context: %3.</source>
         <translation>Príkaz `%1` nie je uvedený pre kontext `%2`. Očakávaný kontext: %3.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1107"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1113"/>
         <source>Unexpected document type</source>
         <translation>Neočakávaný typ dokumentu</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1108"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1114"/>
         <source>Command `%1` is not listed for document type `%2`. Expected document type: %3.</source>
         <translation>Príkaz `%1` nie je uvedený pre typ dokumentu `%2`. Očakávaný typ dokumentu: %3.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1119"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1125"/>
         <source>Missing argument</source>
         <translation>Chýbajúci argument</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1120"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1126"/>
         <source>Command `%1` expects at least %2 positional argument(s), but %3 provided.</source>
         <translation>Príkaz `%1` očakáva aspoň %2 pozičných argumentov, ale zadaných je %3.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1134"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1140"/>
         <source>Extra argument</source>
         <translation>Nadbytočný argument</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1135"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1141"/>
         <source>Command `%1` declares %2 positional argument(s), but %3 provided.</source>
         <translation>Príkaz `%1` deklaruje %2 pozičných argumentov, ale zadaných je %3.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1154"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1160"/>
         <source>Unknown argument value</source>
         <translation>Neznáma hodnota argumentu</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1155"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1161"/>
         <source>Command `%1` does not list `%2` as a known value. Known values: %3.</source>
         <translation>Príkaz `%1` neuvádza `%2` ako známu hodnotu. Známe hodnoty: %3.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1168"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1174"/>
         <source>Unknown option</source>
         <translation>Neznáma voľba</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1169"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1175"/>
         <source>Command `%1` does not list option `%2` in the Therion command catalog.</source>
         <translation>Príkaz `%1` v katalógu príkazov Therion neuvádza voľbu `%2`.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1180"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1186"/>
         <source>Missing option value</source>
         <translation>Chýbajúca hodnota voľby</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1181"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1187"/>
         <source>Option `%1` on command `%2` expects a value.</source>
         <translation>Voľba `%1` pri príkaze `%2` očakáva hodnotu.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1188"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1194"/>
         <source>Unexpected option value count</source>
         <translation>Neočakávaný počet hodnôt voľby</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1189"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1195"/>
         <source>Option `%1` on command `%2` expects exactly %3 value(s), but %4 provided.</source>
         <translation>Voľba `%1` pri príkaze `%2` očakáva presne %3 hodnôt, ale zadaných je %4.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1211"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1217"/>
         <source>Unknown option value</source>
         <translation>Neznáma hodnota voľby</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1212"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1218"/>
         <source>Option `%1` on command `%2` does not list `%3` as a known value. Known values: %4.</source>
         <translation>Voľba `%1` pri príkaze `%2` neuvádza `%3` ako známu hodnotu. Známe hodnoty: %4.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1233"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1239"/>
         <source>Unmatched block close</source>
         <translation>Nezodpovedajúce uzavretie bloku</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1234"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1240"/>
         <source>Closing directive `%1` does not match the currently open block.</source>
         <translation>Uzatváracia direktíva `%1` nezodpovedá aktuálne otvorenému bloku.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1246"/>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1292"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1252"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1298"/>
         <source>Unclosed block</source>
         <translation>Neuzavretý blok</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1247"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1253"/>
         <source>Block `%1` is not closed before the end of the document. Expected `%2`.</source>
         <translation>Blok `%1` nie je pred koncom dokumentu uzavretý. Očakáva sa `%2`.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1293"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1299"/>
         <source>Block `%1` should be closed with `%2` before command `%3` in `%4` context.</source>
         <translation>Blok `%1` by mal byť uzavretý pomocou `%2` pred príkazom `%3` v kontexte `%4`.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="139"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="145"/>
         <source>Insert before line %1:
 %2</source>
         <translation>Vložiť pred riadok %1:
 %2</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="142"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="148"/>
         <source>Insert at end of file:
 %1</source>
         <translation>Vložiť na koniec súboru:
 %1</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1000"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1006"/>
         <source>Portable path separator</source>
         <translation>Prenositeľný oddeľovač cesty</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1001"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1007"/>
         <source>Path `%1` uses backslash separators. Use `/` separators for portable Therion projects.</source>
         <translation>Cesta `%1` používa spätné lomky. Pre prenositeľné projekty Therionu používajte oddeľovače `/`.</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1018"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1024"/>
         <source>Convert selected path to /</source>
         <translation>Previesť vybranú cestu na /</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1258"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1264"/>
         <source>Insert %1 before line %2</source>
         <translation>Vložiť %1 pred riadok %2</translation>
     </message>
     <message>
-        <location filename="../src/core/TherionSourceValidator.cpp" line="1261"/>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1267"/>
         <source>Insert %1 at end of file</source>
         <translation>Vložiť %1 na koniec súboru</translation>
     </message>

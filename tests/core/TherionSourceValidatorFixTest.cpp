@@ -125,6 +125,62 @@ private slots:
         QCOMPARE(diagnostic.code, QStringLiteral("unclosed-block"));
         QVERIFY(!diagnostic.hasFix);
     }
+
+    void refusesFixFromStaleSourceSnapshot()
+    {
+        const QString contents = QStringLiteral("scrap s\n"
+                                                "area water\n"
+                                                "endarea\n"
+                                                "line wall\n"
+                                                "  0 0\n"
+                                                "  1 1\n"
+                                                "endline\n"
+                                                "endscrap\n");
+        const TherionSourceValidationResult result = TherionSourceValidator::validate(contents, basicCatalog());
+        const TherionSourceDiagnostic diagnostic =
+            diagnosticByCodeAtLine(result, QStringLiteral("empty-scrap-object"), 2);
+
+        QCOMPARE(diagnostic.code, QStringLiteral("empty-scrap-object"));
+        QVERIFY(diagnostic.hasFix);
+        QVERIFY(!diagnostic.fix.expectedSourceDigest.isEmpty());
+
+        const QString changedContents = QStringLiteral("# source changed after validation\n") + contents;
+        QCOMPARE(TherionSourceValidator::applyFixes(changedContents, {diagnostic.fix}), changedContents);
+
+        const QString onceFixed = TherionSourceValidator::applyFixes(contents, {diagnostic.fix});
+        QCOMPARE(onceFixed,
+                 QStringLiteral("scrap s\n"
+                                "line wall\n"
+                                "  0 0\n"
+                                "  1 1\n"
+                                "endline\n"
+                                "endscrap\n"));
+        QCOMPARE(TherionSourceValidator::applyFixes(onceFixed, {diagnostic.fix}), onceFixed);
+    }
+
+    void refusesUnprotectedOrOverlappingFixes()
+    {
+        const QString contents = QStringLiteral("scrap s\n"
+                                                "area water\n"
+                                                "endarea\n"
+                                                "endscrap\n");
+        const TherionSourceValidationResult result = TherionSourceValidator::validate(contents, basicCatalog());
+        const TherionSourceDiagnostic diagnostic =
+            diagnosticByCodeAtLine(result, QStringLiteral("empty-scrap-object"), 2);
+
+        QCOMPARE(diagnostic.code, QStringLiteral("empty-scrap-object"));
+        QVERIFY(diagnostic.hasFix);
+
+        TherionSourceDiagnosticFix unprotectedFix = diagnostic.fix;
+        unprotectedFix.expectedSourceDigest.clear();
+        QCOMPARE(TherionSourceValidator::applyFixes(contents, {unprotectedFix}), contents);
+
+        TherionSourceDiagnosticFix overlappingFix = diagnostic.fix;
+        ++overlappingFix.startOffset;
+        overlappingFix.length = 1;
+        overlappingFix.replacementText = QStringLiteral("x");
+        QCOMPARE(TherionSourceValidator::applyFixes(contents, {diagnostic.fix, overlappingFix}), contents);
+    }
 };
 
 int runTherionSourceValidatorFixTest(int argc, char **argv)

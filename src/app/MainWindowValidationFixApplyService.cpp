@@ -10,6 +10,11 @@ bool MainWindowValidationFixApplyService::applyValidationFixes(const QString &fi
     if (fixes.isEmpty()) {
         return false;
     }
+    for (const TherionSourceDiagnosticFix &fix : fixes) {
+        if (fix.expectedSourceDigest.isEmpty()) {
+            return false;
+        }
+    }
 
     const QString targetPath = filePath.isEmpty() ? validationDocumentPath : filePath;
     if (!targetPath.isEmpty()) {

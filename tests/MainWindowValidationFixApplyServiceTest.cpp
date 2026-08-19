@@ -23,6 +23,7 @@ QVector<TherionSourceDiagnosticFix> sampleFixes()
     fix.length = 3;
     fix.replacementText = QStringLiteral("survey");
     fix.description = QStringLiteral("Sample fix");
+    fix.expectedSourceDigest = QByteArrayLiteral("sample-source-digest");
     return {fix};
 }
 
@@ -38,6 +39,34 @@ int runRejectsEmptyFixesTest()
                                                                             {},
                                                                             context),
                 "Validation-fix apply service should reject empty fix sets.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int runRejectsFixWithoutSourceSnapshotTest()
+{
+    int textCalls = 0;
+    MainWindowValidationFixApplyContext context;
+    context.applyFixesToTextPath = [&textCalls](const QString &, const QVector<TherionSourceDiagnosticFix> &) {
+        ++textCalls;
+        return true;
+    };
+
+    TherionSourceDiagnosticFix fix;
+    fix.startOffset = 0;
+    fix.length = 1;
+    fix.replacementText = QStringLiteral("x");
+    if (!expect(!MainWindowValidationFixApplyService::applyValidationFixes(QStringLiteral("/tmp/example.th"),
+                                                                            QString(),
+                                                                            {fix},
+                                                                            context),
+                "Validation-fix apply service should reject a fix without a source snapshot.")) {
+        return 1;
+    }
+    if (!expect(textCalls == 0,
+                "Validation-fix apply service should not route an unprotected fix to an editor.")) {
         return 1;
     }
 
@@ -181,6 +210,9 @@ int main(int argc, char **argv)
     QCoreApplication app(argc, argv);
 
     if (runRejectsEmptyFixesTest() != 0) {
+        return 1;
+    }
+    if (runRejectsFixWithoutSourceSnapshotTest() != 0) {
         return 1;
     }
     if (runMapPathRoutingTest() != 0) {
