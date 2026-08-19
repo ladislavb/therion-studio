@@ -3,6 +3,7 @@
 #include <QColor>
 #include <QGraphicsPixmapItem>
 #include <QLineF>
+#include <QPolygonF>
 #include <QRectF>
 #include <QVector>
 
@@ -22,6 +23,18 @@ struct MapEditorXviSketchPathData
     Qt::PenStyle style = Qt::SolidLine;
 };
 
+struct MapEditorXviPassagePolygonData
+{
+    QPolygonF polygon;
+    QRectF bounds;
+};
+
+struct MapEditorXviPassageTile
+{
+    QRectF bounds;
+    QVector<int> polygonIndexes;
+};
+
 struct MapEditorXviLayerGeometryData
 {
     QVector<QLineF> gridLines;
@@ -30,6 +43,8 @@ struct MapEditorXviLayerGeometryData
     QVector<MapEditorXviLineTile> traverseShotTiles;
     QVector<QLineF> splayShotLines;
     QVector<MapEditorXviLineTile> splayShotTiles;
+    QVector<MapEditorXviPassagePolygonData> passagePolygons;
+    QVector<MapEditorXviPassageTile> passageTiles;
     QVector<MapEditorXviSketchPathData> sketchPaths;
     QRectF contentBounds;
 
@@ -46,6 +61,7 @@ struct MapEditorXviLayerGeometryData
             && (!gridLines.isEmpty()
                 || !traverseShotLines.isEmpty()
                 || !splayShotLines.isEmpty()
+                || !passagePolygons.isEmpty()
                 || hasSketch);
     }
 };

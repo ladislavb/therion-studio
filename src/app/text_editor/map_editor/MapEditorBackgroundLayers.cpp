@@ -167,7 +167,7 @@ QString xviGeometryCacheKey(const QString &absolutePath,
                             const QRectF &modelBounds,
                             const QRectF &previewBounds)
 {
-    return QStringLiteral("xvi-geometry-v4|%1|%2|%3|%4|%5|%6|%7|%8|%9|%10|%11")
+    return QStringLiteral("xvi-geometry-v5|%1|%2|%3|%4|%5|%6|%7|%8|%9|%10|%11")
         .arg(normalizedPathKey(absolutePath),
              rootStationName.normalized(QString::NormalizationForm_C),
              quantizedNumberToken(anchoredBasePosition.x()),
@@ -527,9 +527,12 @@ QRectF xviPlacedModelBounds(const XviDocument &xviDocument,
         includePoint(gridP00 + (xviDocument.gridVectorY * spanY));
         includePoint(gridP00 + (xviDocument.gridVectorX * spanX) + (xviDocument.gridVectorY * spanY));
     }
-    for (const QLineF &shot : xviDocument.shots) {
-        includePoint(shot.p1() + offset);
-        includePoint(shot.p2() + offset);
+    for (const TherionXviShot &shot : xviDocument.shots) {
+        includePoint(shot.centerLine.p1() + offset);
+        includePoint(shot.centerLine.p2() + offset);
+        for (const QPointF &point : shot.passageOutline) {
+            includePoint(point + offset);
+        }
     }
     for (const auto &line : xviDocument.sketchLines) {
         for (const QPointF &point : line.points) {
@@ -923,9 +926,12 @@ bool buildXviLayerGeometry(const XviDocument &xvi,
             includeModelPoint(gridP01);
             includeModelPoint(gridP11);
         }
-        for (const QLineF &shot : xvi.shots) {
-            includeModelPoint(shot.p1() + offset);
-            includeModelPoint(shot.p2() + offset);
+        for (const TherionXviShot &shot : xvi.shots) {
+            includeModelPoint(shot.centerLine.p1() + offset);
+            includeModelPoint(shot.centerLine.p2() + offset);
+            for (const QPointF &point : shot.passageOutline) {
+                includeModelPoint(point + offset);
+            }
         }
         for (const auto &line : xvi.sketchLines) {
             for (const QPointF &point : line.points) {
@@ -1000,9 +1006,11 @@ bool buildXviLayerGeometry(const XviDocument &xvi,
 
     QVector<QLineF> traverseShotLines;
     QVector<QLineF> splayShotLines;
-    for (const QLineF &shot : xvi.shots) {
-        const QPointF rawStart = shot.p1();
-        const QPointF rawEnd = shot.p2();
+    QVector<MapEditorXviPassagePolygonData> passagePolygons;
+    passagePolygons.reserve(xvi.shots.size());
+    for (const TherionXviShot &shot : xvi.shots) {
+        const QPointF rawStart = shot.centerLine.p1();
+        const QPointF rawEnd = shot.centerLine.p2();
         const bool fromStation = matchesStation(rawStart);
         const bool toStation = matchesStation(rawEnd);
         const bool isSplay = fromStation != toStation;
@@ -1013,6 +1021,22 @@ bool buildXviLayerGeometry(const XviDocument &xvi,
         includePoint(projectedEnd);
         QVector<QLineF> &targetLines = isSplay ? splayShotLines : traverseShotLines;
         targetLines.append(QLineF(projectedStart, projectedEnd));
+
+        if (shot.passageOutline.size() == 4) {
+            MapEditorXviPassagePolygonData passage;
+            passage.polygon.reserve(shot.passageOutline.size());
+            for (const QPointF &point : shot.passageOutline) {
+                const QPointF projectedPoint = mapEditorModelToPreviewPoint(point + offset,
+                                                                             effectiveModelBounds,
+                                                                             previewBounds);
+                passage.polygon.append(projectedPoint);
+                includePoint(projectedPoint);
+            }
+            passage.bounds = passage.polygon.boundingRect();
+            if (passage.bounds.isValid() && passage.bounds.width() > 0.0 && passage.bounds.height() > 0.0) {
+                passagePolygons.append(passage);
+            }
+        }
     }
 
     QHash<QString, int> sketchPathIndexByStyle;
@@ -1057,7 +1081,8 @@ bool buildXviLayerGeometry(const XviDocument &xvi,
         }
     }
 
-    if (gridLines.isEmpty() && traverseShotLines.isEmpty() && splayShotLines.isEmpty() && !hasSketchPaths) {
+    if (gridLines.isEmpty() && traverseShotLines.isEmpty() && splayShotLines.isEmpty()
+        && passagePolygons.isEmpty() && !hasSketchPaths) {
         return false;
     }
 
@@ -1085,6 +1110,19 @@ bool buildXviLayerGeometry(const XviDocument &xvi,
     const QVector<QLineF> normalizedTraverseShots = normalizedLines(traverseShotLines);
     const QVector<QLineF> normalizedSplayShots = normalizedLines(splayShotLines);
     const QVector<QLineF> normalizedGridLines = normalizedLines(gridLines);
+    QVector<MapEditorXviPassagePolygonData> normalizedPassagePolygons;
+    normalizedPassagePolygons.reserve(passagePolygons.size());
+    for (const MapEditorXviPassagePolygonData &passage : passagePolygons) {
+        MapEditorXviPassagePolygonData normalizedPassage;
+        normalizedPassage.polygon.reserve(passage.polygon.size());
+        for (const QPointF &point : passage.polygon) {
+            normalizedPassage.polygon.append(point - layerTopLeft);
+        }
+        normalizedPassage.bounds = normalizedPassage.polygon.boundingRect();
+        if (normalizedPassage.bounds.isValid()) {
+            normalizedPassagePolygons.append(normalizedPassage);
+        }
+    }
     QVector<MapEditorXviSketchPathData> normalizedSketchPaths;
     normalizedSketchPaths.reserve(sketchPaths.size());
     for (const MapEditorXviSketchPathData &sketchPath : sketchPaths) {
@@ -1104,6 +1142,7 @@ bool buildXviLayerGeometry(const XviDocument &xvi,
     result.gridLines = normalizedGridLines;
     result.traverseShotLines = normalizedTraverseShots;
     result.splayShotLines = normalizedSplayShots;
+    result.passagePolygons = normalizedPassagePolygons;
     result.sketchPaths = normalizedSketchPaths;
     result.contentBounds = QRectF(QPointF(0.0, 0.0), layerBounds.size());
     if (!result.hasContent()) {

@@ -194,7 +194,7 @@ Required capabilities:
 - support fitting the viewport to geometry only or to geometry plus background layers
 - support background imagery and sketch references used by TH2 documents, including multiple layers and `.xvi` vector references
 - `.xvi` vector background references loaded from `##XTHERION## xth_me_image_insert` metadata shall follow XTherion placement semantics: when a referenced root station resolves in the `.xvi` station table, the station shall be aligned to the metadata base position; otherwise the metadata base position shall anchor the `.xvi` grid origin.
-- `.xvi` vector background references shall apply the XTherion placement offset in TH2 model coordinates and then render `XVIgrid`, `XVIshots`, and `XVIsketchlines` through the same TH2 scene projection as map geometry; they shall not be independently fitted like raster preview imagery.
+- `.xvi` vector background references shall apply the XTherion placement offset in TH2 model coordinates and then render `XVIgrid`, `XVIshots`, and `XVIsketchlines` through the same TH2 scene projection as map geometry; they shall not be independently fitted like raster preview imagery. An `XVIshots` record with the XTherion LRUD passage vertices after its centreline endpoints shall render a filled, outlined passage envelope behind the shot line.
 - `.xvi` station table rows shall be interpreted using XTherion field semantics, where the first two fields are station coordinates and the third field is the station name used for root-station matching; when duplicate station names occur, root-station placement shall use the first matching station table row, matching XTherion.
 - support freehand line drawing with simplified bezier output
 - support automatic input behavior for mouse, touchpad, stylus, and platform touch gestures
@@ -510,6 +510,7 @@ The rules below define the expected day-to-day interaction model. If a later req
 - Background sketch or image layers declared by TH2 source metadata shall be restorable when reopening the document.
 - `.xvi` vector background references shall render as background layers when present.
 - `.xvi` vector background rendering shall draw embedded `XVIgrid` lines as background content when present.
+- `.xvi` vector background rendering shall preserve and render the four LRUD passage-outline vertices appended to a valid `XVIshots` record, and its background bounds shall include that envelope.
 - The map editor shall not expose a dedicated touch-controls toolbar mode; mouse, touchpad, Magic Mouse, pinch, stylus, and platform touch gestures shall use automatic input-policy handling.
 - After reparsing the document, the map editor shall restore the selected object when that object can still be resolved in the updated document.
 - Geometry editing shall support point placement, line vertex editing, area editing, and selection of individual vertices or control points.

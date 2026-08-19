@@ -12,6 +12,7 @@ Active planning only. Completed history belongs in archive files. Stable archite
 5. Verify the Windows unit-test stabilization and keep session restore working for accessible projects in standard macOS user folders; unit CTest cases now identify individual QTest suites without multiplying test binaries. The Windows workflow reruns failed suites directly with verbose QTest output written to and explicitly printed from a file; the diagnostic path has a local PowerShell fixture check. Current Windows portability follow-up covers CSV newline output and platform-correct filesystem test fixtures, including platform-specific link assertions. On failures, verify production code before considering any test change, which requires explicit approval.
 6. Keep validator-issued source fixes bound to their originating source snapshots so a stale diagnostic cannot apply an offset-based edit to changed source.
 7. Preserve quoted dash-prefixed option values through shared Map and inspector projections so labels such as `-text "-sump"` remain visible and editable.
+8. Keep `.xvi` vector backgrounds XTherion-compatible by preserving LRUD passage envelopes encoded after centreline coordinates in `XVIshots` records, including their visible bounds and efficient map rendering.
 
 ## Active Work
 

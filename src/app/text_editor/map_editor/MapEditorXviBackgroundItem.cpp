@@ -1,5 +1,6 @@
 #include "MapEditorXviBackgroundItem.h"
 
+#include <QBrush>
 #include <QPainter>
 #include <QPen>
 #include <QSet>
@@ -136,6 +137,107 @@ void drawExposedLines(QPainter *painter,
         painter->drawLines(exposedLines.constData(), static_cast<int>(exposedLines.size()));
     }
 }
+
+QVector<MapEditorXviPassageTile> buildPassageTiles(const QVector<MapEditorXviPassagePolygonData> &polygons,
+                                                    const QRectF &bounds)
+{
+    if (polygons.isEmpty() || !bounds.isValid() || bounds.width() <= 0.0 || bounds.height() <= 0.0) {
+        return {};
+    }
+
+    const qreal tileSize = qMax(kXviLineTileTargetSize,
+                                qMax(bounds.width(), bounds.height()) / kXviLineTileMaxAxisCount);
+    const int columnCount = qMax(1, static_cast<int>(std::ceil(bounds.width() / tileSize)));
+    const int rowCount = qMax(1, static_cast<int>(std::ceil(bounds.height() / tileSize)));
+
+    QVector<MapEditorXviPassageTile> tiles;
+    tiles.resize(rowCount * columnCount);
+    for (int row = 0; row < rowCount; ++row) {
+        for (int column = 0; column < columnCount; ++column) {
+            const QRectF tileBounds(bounds.left() + (column * tileSize),
+                                    bounds.top() + (row * tileSize),
+                                    tileSize,
+                                    tileSize);
+            tiles[row * columnCount + column].bounds = tileBounds.adjusted(-2.0, -2.0, 2.0, 2.0);
+        }
+    }
+
+    auto tileColumn = [&](qreal x) {
+        return qBound(0, static_cast<int>(std::floor((x - bounds.left()) / tileSize)), columnCount - 1);
+    };
+    auto tileRow = [&](qreal y) {
+        return qBound(0, static_cast<int>(std::floor((y - bounds.top()) / tileSize)), rowCount - 1);
+    };
+
+    for (int polygonIndex = 0; polygonIndex < polygons.size(); ++polygonIndex) {
+        const QRectF polygonRect = polygons.at(polygonIndex).bounds.adjusted(-2.0, -2.0, 2.0, 2.0);
+        if (!polygonRect.isValid() || !polygonRect.intersects(bounds)) {
+            continue;
+        }
+
+        const int firstColumn = tileColumn(polygonRect.left());
+        const int lastColumn = tileColumn(polygonRect.right());
+        const int firstRow = tileRow(polygonRect.top());
+        const int lastRow = tileRow(polygonRect.bottom());
+        for (int row = firstRow; row <= lastRow; ++row) {
+            for (int column = firstColumn; column <= lastColumn; ++column) {
+                tiles[row * columnCount + column].polygonIndexes.append(polygonIndex);
+            }
+        }
+    }
+
+    tiles.erase(std::remove_if(tiles.begin(),
+                               tiles.end(),
+                               [](const MapEditorXviPassageTile &tile) {
+                                   return tile.polygonIndexes.isEmpty();
+                               }),
+                tiles.end());
+    return tiles;
+}
+
+void drawExposedPassagePolygons(QPainter *painter,
+                                const QVector<MapEditorXviPassagePolygonData> &polygons,
+                                const QVector<MapEditorXviPassageTile> &tiles,
+                                const QRectF &clipRect,
+                                const QRectF &paintBounds)
+{
+    if (painter == nullptr || polygons.isEmpty()) {
+        return;
+    }
+
+    if (clipRect.contains(paintBounds)) {
+        for (const MapEditorXviPassagePolygonData &passage : polygons) {
+            painter->drawPolygon(passage.polygon);
+        }
+        return;
+    }
+
+    QSet<int> polygonIndexes;
+    polygonIndexes.reserve(qMin<qsizetype>(polygons.size(), 4096));
+    if (tiles.isEmpty()) {
+        for (int polygonIndex = 0; polygonIndex < polygons.size(); ++polygonIndex) {
+            if (polygons.at(polygonIndex).bounds.intersects(clipRect)) {
+                polygonIndexes.insert(polygonIndex);
+            }
+        }
+    } else {
+        for (const MapEditorXviPassageTile &tile : tiles) {
+            if (!tile.bounds.intersects(clipRect)) {
+                continue;
+            }
+            for (const int polygonIndex : tile.polygonIndexes) {
+                if (polygonIndex >= 0 && polygonIndex < polygons.size()
+                    && polygons.at(polygonIndex).bounds.intersects(clipRect)) {
+                    polygonIndexes.insert(polygonIndex);
+                }
+            }
+        }
+    }
+
+    for (const int polygonIndex : polygonIndexes) {
+        painter->drawPolygon(polygons.at(polygonIndex).polygon);
+    }
+}
 }
 
 MapEditorXviBackgroundItem::MapEditorXviBackgroundItem(QGraphicsItem *parent)
@@ -152,6 +254,7 @@ void MapEditorXviBackgroundItem::setGeometryData(const MapEditorXviLayerGeometry
     geometry_.gridTiles = buildLineTiles(geometry_.gridLines, paintBounds_);
     geometry_.traverseShotTiles = buildLineTiles(geometry_.traverseShotLines, paintBounds_);
     geometry_.splayShotTiles = buildLineTiles(geometry_.splayShotLines, paintBounds_);
+    geometry_.passageTiles = buildPassageTiles(geometry_.passagePolygons, paintBounds_);
     for (MapEditorXviSketchPathData &sketchPath : geometry_.sketchPaths) {
         sketchPath.tiles = buildLineTiles(sketchPath.lines, paintBounds_);
     }
@@ -191,6 +294,16 @@ void MapEditorXviBackgroundItem::paint(QPainter *painter,
         ? option->exposedRect.adjusted(-exposedPadding, -exposedPadding, exposedPadding, exposedPadding)
         : paintBounds_;
 
+    if (!geometry_.passagePolygons.isEmpty()) {
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(89, 128, 164, 45));
+        drawExposedPassagePolygons(painter,
+                                   geometry_.passagePolygons,
+                                   geometry_.passageTiles,
+                                   clipRect,
+                                   paintBounds_);
+    }
+
     QPen gridPen(QColor(88, 114, 143, 92));
     gridPen.setWidthF(1.0 * zoomOutScale);
     gridPen.setCosmetic(true);
@@ -199,6 +312,21 @@ void MapEditorXviBackgroundItem::paint(QPainter *painter,
     painter->setPen(gridPen);
     if (!geometry_.gridLines.isEmpty()) {
         drawExposedLines(painter, geometry_.gridLines, geometry_.gridTiles, clipRect, paintBounds_, exposedPadding);
+    }
+
+    if (!geometry_.passagePolygons.isEmpty()) {
+        QPen passageOutlinePen(QColor(41, 72, 108, 138));
+        passageOutlinePen.setWidthF(1.0 * zoomOutScale);
+        passageOutlinePen.setCosmetic(true);
+        passageOutlinePen.setCapStyle(Qt::RoundCap);
+        passageOutlinePen.setJoinStyle(Qt::RoundJoin);
+        painter->setPen(passageOutlinePen);
+        painter->setBrush(Qt::NoBrush);
+        drawExposedPassagePolygons(painter,
+                                   geometry_.passagePolygons,
+                                   geometry_.passageTiles,
+                                   clipRect,
+                                   paintBounds_);
     }
 
     QPen traverseShotPen(QColor(18, 44, 88, 130));

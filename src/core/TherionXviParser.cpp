@@ -202,7 +202,17 @@ bool parseTherionXviDocumentText(const QString &content, TherionXviDocument *doc
         if (block == Block::Shots) {
             const QVector<QPointF> points = parsePointPairs(tokens, 0);
             if (points.size() >= 2) {
-                document->shots.append(QLineF(points.at(0), points.at(1)));
+                TherionXviShot shot;
+                shot.centerLine = QLineF(points.at(0), points.at(1));
+                // XTherion draws the first four points after the centreline as a
+                // passage quadrilateral whenever the record has 12 values.
+                if (points.size() >= 6) {
+                    shot.passageOutline.reserve(4);
+                    for (int index = 2; index < 6; ++index) {
+                        shot.passageOutline.append(points.at(index));
+                    }
+                }
+                document->shots.append(shot);
             }
             continue;
         }

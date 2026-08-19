@@ -178,6 +178,7 @@ set(THERION_CORE_QTEST_SUITES
     PocketTopoImportTest
     Th2GeometryProjectionTest
     TherionFileTypesTest
+    TherionXviPassageTest
     ThreeDViewerCameraTest
     ThreeDViewerLoxLoaderTest
     ThreeDViewerLoxCorpusPolicyTest
@@ -1186,6 +1187,7 @@ therion_add_core_qtest_runner(TherionCoreQTests
     tests/core/Th2GeometryProjectionTest.cpp
     tests/core/ThreeDViewerCameraTest.cpp
     tests/core/TherionFileTypesTest.cpp
+    tests/core/TherionXviPassageTest.cpp
     tests/core/ThreeDViewerLoxCorpusFixtures.h
     tests/core/ThreeDViewerLoxCorpusPolicyTest.cpp
     tests/core/ThreeDViewerLoxLoaderTest.cpp
@@ -1775,6 +1777,14 @@ target_compile_definitions(MapEditorValidationFixRefreshTest PRIVATE
 target_link_libraries(MapEditorValidationFixRefreshTest PRIVATE
     Qt6::Test)
 
+qt_add_executable(MapEditorXviBackgroundItemTest
+    tests/MapEditorXviBackgroundItemTest.cpp
+    src/app/text_editor/map_editor/MapEditorXviBackgroundItem.cpp
+    src/app/text_editor/map_editor/MapEditorXviBackgroundItem.h)
+target_link_libraries(MapEditorXviBackgroundItemTest PRIVATE
+    Qt6::Test
+    Qt6::Widgets)
+
 set(THERION_UNIT_TEST_TARGETS
     CommandOptionParserTest
     TherionDocumentEditorTest
@@ -1842,6 +1852,7 @@ set(THERION_UI_TEST_TARGETS
     MapEditorInteractiveDrawTransactionTest
     MapEditorLineExtensionTransactionTest
     MapEditorValidationFixRefreshTest
+    MapEditorXviBackgroundItemTest
     MapEditorViewportInputControllerTest
     MapEditorViewportTabletInputTest)
 

@@ -20,6 +20,15 @@ struct TherionXviStation
     QPointF position;
 };
 
+struct TherionXviShot
+{
+    QLineF centerLine;
+    // Therion appends four LRUD-derived passage-outline vertices to an XVI shot.
+    // They are retained in the order used by XTherion: from-left, to-left,
+    // to-right, from-right.
+    QVector<QPointF> passageOutline;
+};
+
 struct TherionXviDocument
 {
     QPointF gridOrigin;
@@ -31,7 +40,7 @@ struct TherionXviDocument
     bool hasGridDefinition = false;
     QVector<TherionXviStation> stationEntries;
     QHash<QString, QPointF> stations;
-    QVector<QLineF> shots;
+    QVector<TherionXviShot> shots;
     QVector<TherionXviSketchLine> sketchLines;
 };
 
