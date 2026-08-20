@@ -2188,6 +2188,726 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
         }
     };
 
+    // Full-scene and one-feature refresh both use this branch so that styled
+    // line artifacts and their interactive metadata stay exactly in sync.
+    const auto renderLineFeature = [&](const MapGeometryFeature &feature) {
+        if (feature.lineVertices.size() < 2) {
+            return;
+        }
+        const QString featureTooltip = geometryTooltipForFeature(feature);
+
+        const MapEditorResolvedLineStyle lineStyle = resolveMapEditorLineStyle(styleCatalog,
+                                                                               feature.label,
+                                                                               feature.subtype);
+        const qreal thickLineWidth = qBound(0.8, lineStyle.strokeWidth, 24.0);
+        const QPainterPath path = linePathForFeature(feature, sourceBounds, previewBounds);
+        const QVector<StyledLinePath> styledSegmentPaths = styledLinePathsForFeature(feature,
+                                                                                     sourceBounds,
+                                                                                     previewBounds);
+        const bool renderSegmentStyles = std::any_of(styledSegmentPaths.cbegin(),
+                                                     styledSegmentPaths.cend(),
+                                                     [&](const StyledLinePath &styledPath) {
+            return styledPath.subtype != feature.subtype.trimmed().toLower();
+        });
+        QColor geometryStroke = lineStyle.strokeColor.value_or(canvasTheme.geometryStroke);
+        QColor baseLineStroke = geometryStroke;
+        if (!lineStyle.strokeVisible || renderSegmentStyles) {
+            baseLineStroke.setAlpha(0);
+        }
+
+        if (feature.closed && feature.lineVertices.size() >= 2) {
+            if (const std::optional<QColor> closedFillColor = closedLineFillColor(lineStyle, canvasTheme)) {
+                QPainterPath closedFillPath = path;
+                closedFillPath.closeSubpath();
+                closedFillPath.setFillRule(Qt::OddEvenFill);
+                auto *closedFillItem = new MapZoomAwarePathItem(closedFillPath,
+                                                                QPen(Qt::NoPen),
+                                                                QBrush(closedFillColor.value()));
+                scene->addItem(closedFillItem);
+                closedFillItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
+                closedFillItem->setZValue(2.49);
+                closedFillItem->setToolTip(featureTooltip);
+                markGeometryItem(closedFillItem);
+                closedFillItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+            }
+        }
+
+        auto *lineItem = new MapZoomAwarePathItem(path,
+                                                  styledGeometricPen(baseLineStroke,
+                                                                     thickLineWidth,
+                                                                     lineStyle.strokeVisible ? lineStyle.penStyle : Qt::SolidLine,
+                                                                     lineStyle.strokeVisible ? lineStyle.dashPattern : QVector<qreal>{},
+                                                                     Qt::RoundCap,
+                                                                     Qt::RoundJoin));
+        scene->addItem(lineItem);
+        lineItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
+        lineItem->setZValue(2.5);
+        lineItem->setToolTip(featureTooltip);
+        markGeometryItem(lineItem);
+        lineItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+        auto styledLineItems = std::make_shared<QVector<StyledPathItemBinding>>();
+        auto styledDecorationItems = std::make_shared<QVector<StyledLineDecorationBinding>>();
+        auto styledGuideItems = std::make_shared<QVector<StyledPathItemBinding>>();
+        if (renderSegmentStyles) {
+            for (int styledPathIndex = 0; styledPathIndex < styledSegmentPaths.size(); ++styledPathIndex) {
+                const StyledLinePath &styledPath = styledSegmentPaths.at(styledPathIndex);
+                const MapEditorResolvedLineStyle segmentStyle =
+                    resolveMapEditorLineStyle(styleCatalog, feature.label, styledPath.subtype);
+                QColor segmentStroke = segmentStyle.strokeColor.value_or(canvasTheme.geometryStroke);
+                if (!segmentStyle.strokeVisible) {
+                    segmentStroke.setAlpha(0);
+                }
+                auto *segmentItem = new MapZoomAwarePathItem(styledPath.path,
+                                                             styledGeometricPen(segmentStroke,
+                                                                                qBound(0.8, segmentStyle.strokeWidth, 24.0),
+                                                                                segmentStyle.strokeVisible ? segmentStyle.penStyle : Qt::SolidLine,
+                                                                                segmentStyle.strokeVisible ? segmentStyle.dashPattern : QVector<qreal>{},
+                                                                                Qt::RoundCap,
+                                                                                Qt::RoundJoin));
+                scene->addItem(segmentItem);
+                segmentItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
+                segmentItem->setZValue(2.5);
+                segmentItem->setToolTip(featureTooltip);
+                markGeometryItem(segmentItem);
+                segmentItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+                styledLineItems->append(StyledPathItemBinding{styledPathIndex, segmentItem});
+            }
+        }
+        auto addGuideSpineItem = [&](const QPainterPath &guidePath, qreal referenceStrokeWidth) {
+            QColor guideStroke = canvasTheme.mutedText;
+            guideStroke.setAlpha(210);
+            QVector<qreal> guideDashPattern;
+            guideDashPattern << 2.0 << 2.4;
+            auto *guideItem = new MapZoomAwarePathItem(guidePath,
+                                                       styledGeometricPen(guideStroke,
+                                                                          qBound(0.7,
+                                                                                 referenceStrokeWidth * 0.34,
+                                                                                 2.2),
+                                                                          Qt::DashLine,
+                                                                          guideDashPattern,
+                                                                          Qt::RoundCap,
+                                                                          Qt::RoundJoin));
+            scene->addItem(guideItem);
+            guideItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
+            guideItem->setHoverInteractionOverlayStroke(1.3, 0.15);
+            guideItem->setZValue(2.58);
+            guideItem->setToolTip(featureTooltip);
+            markGeometryItem(guideItem);
+            guideItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+            guideItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineDetail);
+            return guideItem;
+        };
+        const bool renderLineGuideSpine = lineStyle.guideSpineVisible || !lineStyle.decorations.isEmpty();
+        MapEditorLineDecorationItem *lineDecorationItem = nullptr;
+        QGraphicsPathItem *lineGuideSpineItem = nullptr;
+        if (renderSegmentStyles) {
+            for (int styledPathIndex = 0; styledPathIndex < styledSegmentPaths.size(); ++styledPathIndex) {
+                const StyledLinePath &styledPath = styledSegmentPaths.at(styledPathIndex);
+                const MapEditorResolvedLineStyle segmentStyle =
+                    resolveMapEditorLineStyle(styleCatalog, feature.label, styledPath.subtype);
+                if (segmentStyle.decorations.isEmpty()) {
+                    continue;
+                }
+
+                QColor segmentGeometryStroke = segmentStyle.strokeColor.value_or(canvasTheme.geometryStroke);
+                auto *segmentDecorationItem = new MapEditorLineDecorationItem(styledPath.path,
+                                                                              segmentStyle.decorations,
+                                                                              segmentGeometryStroke,
+                                                                              feature.reversed,
+                                                                              feature.lineNumber,
+                                                                              {},
+                                                                              mapScale);
+                scene->addItem(segmentDecorationItem);
+                segmentDecorationItem->setZValue(2.55);
+                markGeometryItem(segmentDecorationItem);
+                segmentDecorationItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
+                segmentDecorationItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+                segmentDecorationItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineDetail);
+                styledDecorationItems->append(StyledLineDecorationBinding{styledPathIndex, segmentDecorationItem});
+            }
+            for (int styledPathIndex = 0; styledPathIndex < styledSegmentPaths.size(); ++styledPathIndex) {
+                const StyledLinePath &styledPath = styledSegmentPaths.at(styledPathIndex);
+                const MapEditorResolvedLineStyle segmentStyle =
+                    resolveMapEditorLineStyle(styleCatalog, feature.label, styledPath.subtype);
+                if (!lineSegmentNeedsGuideSpine(segmentStyle, feature.label, styledPath.subtype)) {
+                    continue;
+                }
+
+                styledGuideItems->append(StyledPathItemBinding{
+                    styledPathIndex,
+                    addGuideSpineItem(styledPath.path, qBound(0.8, segmentStyle.strokeWidth, 24.0))});
+            }
+        } else if (!lineStyle.decorations.isEmpty()) {
+            lineDecorationItem = new MapEditorLineDecorationItem(path,
+                                                                 lineStyle.decorations,
+                                                                 geometryStroke,
+                                                                 feature.reversed,
+                                                                 feature.lineNumber,
+                                                                 lineDecorationVerticesForFeature(feature,
+                                                                                                  sourceBounds,
+                                                                                                  previewBounds),
+                                                                 mapScale);
+            scene->addItem(lineDecorationItem);
+            lineDecorationItem->setZValue(2.55);
+            markGeometryItem(lineDecorationItem);
+            lineDecorationItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
+            lineDecorationItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+            lineDecorationItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineDetail);
+        }
+        if (renderLineGuideSpine) {
+            lineGuideSpineItem = addGuideSpineItem(path, thickLineWidth);
+        }
+        const qreal lineDirectionTickLength = qBound(12.0, 18.0 * mapScale, 24.0);
+        auto *directionTickItem = new QGraphicsLineItem;
+        directionTickItem->setPen(cosmeticPen(mapEditorDirectionTickColor(),
+                                              3.4,
+                                              Qt::SolidLine,
+                                              Qt::RoundCap,
+                                              Qt::RoundJoin));
+        directionTickItem->setZValue(4.8);
+        markGeometryItem(directionTickItem);
+        makeMouseTransparent(directionTickItem);
+        directionTickItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+        directionTickItem->setData(kMapSceneSelectionGatedRole, true);
+        directionTickItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineDetail);
+        directionTickItem->setVisible(false);
+        if (const std::optional<QLineF> tickLine = lineDirectionTickLineForFeature(feature,
+                                                                                   sourceBounds,
+                                                                                   previewBounds,
+                                                                                   lineDirectionTickLength)) {
+            directionTickItem->setLine(tickLine.value());
+        }
+        scene->addItem(directionTickItem);
+        if (mapItemsByLine != nullptr && feature.lineNumber > 0) {
+            mapItemsByLine->insert(feature.lineNumber, lineItem);
+        }
+
+        MapPathLabelItem *lineLabelItem = nullptr;
+        if (lineStyle.labelField.has_value()) {
+            const QString labelText = optionValueForFieldName(feature.optionValues, lineStyle.labelField.value());
+            if (!labelText.isEmpty()) {
+                QFont labelFont(QStringLiteral("Menlo"), 10);
+                lineLabelItem = new MapPathLabelItem(lineLabelPathText(labelText),
+                                                     path,
+                                                     labelFont,
+                                                     canvasTheme.labelText);
+                scene->addItem(lineLabelItem);
+                lineLabelItem->setZValue(3.1);
+                markGeometryItem(lineLabelItem);
+                makeMouseTransparent(lineLabelItem);
+                lineLabelItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+            }
+        }
+
+        auto anchorItemsByOrder = std::make_shared<QVector<MapEditableGeometryVertexItem *>>(feature.lineVertices.size(), nullptr);
+        auto controlItemsBySourceVertex = std::make_shared<QHash<int, MapEditableGeometryVertexItem *>>();
+        auto controlConnectors = std::make_shared<QVector<LineControlConnectorBinding>>();
+
+        for (int vertexIndex = 0; vertexIndex < feature.lineVertices.size(); ++vertexIndex) {
+            const MapGeometryFeature::TH2LineVertex &vertex = feature.lineVertices.at(vertexIndex);
+            if (linePointRowsShouldHighlightVertexMetadata(vertex.standaloneOptionRows)) {
+                const QPointF markerCenter = mapGeometryPointToPreview(vertex.anchor, sourceBounds, previewBounds);
+                const QRectF markerRect(-6.0, -6.0, 12.0, 12.0);
+                auto *metadataShadow = new QGraphicsEllipseItem(markerRect);
+                QColor shadowColor(QStringLiteral("#1f2937"));
+                shadowColor.setAlpha(75);
+                metadataShadow->setPen(cosmeticPen(shadowColor, 1.4));
+                metadataShadow->setBrush(Qt::NoBrush);
+                metadataShadow->setFlag(QGraphicsItem::ItemIgnoresTransformations, true);
+                metadataShadow->setAcceptedMouseButtons(Qt::NoButton);
+                metadataShadow->setPos(markerCenter);
+                metadataShadow->setZValue(3.86);
+                markGeometryItem(metadataShadow);
+                makeMouseTransparent(metadataShadow);
+                metadataShadow->setData(kMapSceneLineNumberRole, feature.lineNumber);
+                scene->addItem(metadataShadow);
+
+                auto *metadataRing = new QGraphicsEllipseItem(markerRect);
+                QColor ringColor(QStringLiteral("#f59e0b"));
+                ringColor.setAlpha(115);
+                metadataRing->setPen(cosmeticPen(ringColor, 0.8));
+                metadataRing->setBrush(Qt::NoBrush);
+                metadataRing->setFlag(QGraphicsItem::ItemIgnoresTransformations, true);
+                metadataRing->setAcceptedMouseButtons(Qt::NoButton);
+                metadataRing->setPos(markerCenter);
+                metadataRing->setZValue(3.87);
+                markGeometryItem(metadataRing);
+                makeMouseTransparent(metadataRing);
+                metadataRing->setData(kMapSceneLineNumberRole, feature.lineNumber);
+                scene->addItem(metadataRing);
+            }
+
+            auto *vertexItem = new MapEditableGeometryVertexItem(feature.lineNumber,
+                                                                 QStringLiteral("line"),
+                                                                 vertex.anchorSourceVertexIndex >= 0 ? vertex.anchorSourceVertexIndex : vertexIndex,
+                                                                 vertex.anchor,
+                                                                 sourceBounds,
+                                                                 previewBounds);
+            vertexItem->setRect(QRectF(-vertexRadius, -vertexRadius, vertexRadius * 2.0, vertexRadius * 2.0));
+            QColor vertexFill = feature.accent;
+            vertexFill.setAlpha(185);
+            QColor vertexOutline = feature.accent.darker(220);
+            vertexOutline.setAlpha(220);
+            vertexItem->setPen(cosmeticPen(vertexOutline, 1.0));
+            vertexItem->setBrush(QBrush(vertexFill));
+            vertexItem->setStandaloneOptionRows(vertex.standaloneOptionRows);
+            vertexItem->setMoveCommittedCallback(recordLineAreaVertexMove);
+            scene->addItem(vertexItem);
+            vertexItem->setZValue(4.0);
+            markGeometryItem(vertexItem);
+            const int anchorSourceVertexIndex = vertex.anchorSourceVertexIndex >= 0 ? vertex.anchorSourceVertexIndex : vertexIndex;
+            vertexItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+            vertexItem->setData(kMapSceneSelectionGatedRole, true);
+            vertexItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineAnchor);
+            vertexItem->setData(kMapSceneOwnerVertexRole, anchorSourceVertexIndex);
+            vertexItem->setVisible(false);
+            registerVertexItem(vertexItem);
+            anchorItemsByOrder->operator[](vertexIndex) = vertexItem;
+        }
+
+        const bool slopeLine = feature.label.trimmed().toLower() == QStringLiteral("slope");
+        if (slopeLine && recordLinePointLeftHandleChange) {
+            for (int vertexIndex = 0; vertexIndex < feature.lineVertices.size(); ++vertexIndex) {
+                const MapGeometryFeature::TH2LineVertex &vertex = feature.lineVertices.at(vertexIndex);
+                if (!explicitOrientation(vertex.orientationDegrees)) {
+                    continue;
+                }
+                const int anchorSourceVertexIndex = vertex.anchorSourceVertexIndex >= 0
+                    ? vertex.anchorSourceVertexIndex
+                    : vertexIndex;
+                const QPointF anchorPreview = mapGeometryPointToPreview(vertex.anchor, sourceBounds, previewBounds);
+                const qreal orientationDegrees = vertex.orientationDegrees.value();
+                const qreal leftSize = vertex.leftSize.value_or(40.0);
+                auto *leftHandle = new MapLinePointSizeHandleItem(feature.lineNumber,
+                                                                  anchorSourceVertexIndex,
+                                                                  anchorPreview,
+                                                                  orientationDegrees,
+                                                                  leftSize,
+                                                                  mapScale);
+                leftHandle->setChangeCommittedCallback(recordLinePointLeftHandleChange);
+                scene->addItem(leftHandle);
+                leftHandle->setZValue(4.7);
+                markGeometryItem(leftHandle);
+                leftHandle->setData(kMapSceneLineNumberRole, feature.lineNumber);
+                leftHandle->setData(kMapSceneSelectionGatedRole, true);
+                leftHandle->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControlConnector);
+                leftHandle->setData(kMapSceneOwnerVertexRole, anchorSourceVertexIndex);
+                leftHandle->setVisible(false);
+            }
+        }
+
+        const qreal controlRadius = 2.8;
+        const qreal controlConnectorWidth = qBound<qreal>(1.4, 1.8 * mapScale, 2.4);
+        for (int segmentIndex = 1; segmentIndex < feature.lineVertices.size(); ++segmentIndex) {
+            const MapGeometryFeature::TH2LineVertex &previousVertex = feature.lineVertices.at(segmentIndex - 1);
+            const MapGeometryFeature::TH2LineVertex &currentVertex = feature.lineVertices.at(segmentIndex);
+
+            if (previousVertex.outgoingControl.has_value() && previousVertex.outgoingSourceVertexIndex >= 0) {
+                const QPointF anchorPreview = mapGeometryPointToPreview(previousVertex.anchor, sourceBounds, previewBounds);
+                const QPointF controlPreview = mapGeometryPointToPreview(previousVertex.outgoingControl.value(), sourceBounds, previewBounds);
+                auto *connector = scene->addLine(QLineF(anchorPreview, controlPreview),
+                                                 cosmeticPen(canvasTheme.controlConnector, controlConnectorWidth, Qt::DashLine, Qt::RoundCap));
+                connector->setZValue(3.2);
+                markGeometryItem(connector);
+                makeMouseTransparent(connector);
+                const int ownerAnchorVertexIndex = previousVertex.anchorSourceVertexIndex >= 0
+                    ? previousVertex.anchorSourceVertexIndex
+                    : (segmentIndex - 1);
+                connector->setData(kMapSceneLineNumberRole, feature.lineNumber);
+                connector->setData(kMapSceneSelectionGatedRole, true);
+                connector->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControlConnector);
+                connector->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
+                connector->setVisible(false);
+                LineControlConnectorBinding binding;
+                binding.anchorVertexOrder = segmentIndex - 1;
+                binding.controlSourceVertexIndex = previousVertex.outgoingSourceVertexIndex;
+                binding.lineItem = connector;
+                controlConnectors->append(binding);
+
+                auto *controlItem = new MapEditableGeometryVertexItem(feature.lineNumber,
+                                                                      QStringLiteral("line control"),
+                                                                      previousVertex.outgoingSourceVertexIndex,
+                                                                      previousVertex.outgoingControl.value(),
+                                                                      sourceBounds,
+                                                                      previewBounds);
+                controlItem->setRect(QRectF(-controlRadius, -controlRadius, controlRadius * 2.0, controlRadius * 2.0));
+                controlItem->setPen(cosmeticPen(canvasTheme.controlHandleStroke, 1.0));
+                controlItem->setBrush(QBrush(canvasTheme.controlHandleFill));
+                controlItem->setMoveCommittedCallback(recordLineAreaVertexMove);
+                scene->addItem(controlItem);
+                controlItem->setZValue(4.2);
+                markGeometryItem(controlItem);
+                controlItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+                controlItem->setData(kMapSceneSelectionGatedRole, true);
+                controlItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControl);
+                controlItem->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
+                controlItem->setVisible(false);
+                registerVertexItem(controlItem);
+                controlItemsBySourceVertex->insert(previousVertex.outgoingSourceVertexIndex, controlItem);
+            }
+
+            if (currentVertex.incomingControl.has_value() && currentVertex.incomingSourceVertexIndex >= 0) {
+                const QPointF anchorPreview = mapGeometryPointToPreview(currentVertex.anchor, sourceBounds, previewBounds);
+                const QPointF controlPreview = mapGeometryPointToPreview(currentVertex.incomingControl.value(), sourceBounds, previewBounds);
+                auto *connector = scene->addLine(QLineF(anchorPreview, controlPreview),
+                                                 cosmeticPen(canvasTheme.controlConnector, controlConnectorWidth, Qt::DashLine, Qt::RoundCap));
+                connector->setZValue(3.2);
+                markGeometryItem(connector);
+                makeMouseTransparent(connector);
+                const int ownerAnchorVertexIndex = currentVertex.anchorSourceVertexIndex >= 0
+                    ? currentVertex.anchorSourceVertexIndex
+                    : segmentIndex;
+                connector->setData(kMapSceneLineNumberRole, feature.lineNumber);
+                connector->setData(kMapSceneSelectionGatedRole, true);
+                connector->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControlConnector);
+                connector->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
+                connector->setVisible(false);
+                LineControlConnectorBinding binding;
+                binding.anchorVertexOrder = segmentIndex;
+                binding.controlSourceVertexIndex = currentVertex.incomingSourceVertexIndex;
+                binding.lineItem = connector;
+                controlConnectors->append(binding);
+
+                auto *controlItem = new MapEditableGeometryVertexItem(feature.lineNumber,
+                                                                      QStringLiteral("line control"),
+                                                                      currentVertex.incomingSourceVertexIndex,
+                                                                      currentVertex.incomingControl.value(),
+                                                                      sourceBounds,
+                                                                      previewBounds);
+                controlItem->setRect(QRectF(-controlRadius, -controlRadius, controlRadius * 2.0, controlRadius * 2.0));
+                controlItem->setPen(cosmeticPen(canvasTheme.controlHandleStroke, 1.0));
+                controlItem->setBrush(QBrush(canvasTheme.controlHandleFill));
+                controlItem->setMoveCommittedCallback(recordLineAreaVertexMove);
+                scene->addItem(controlItem);
+                controlItem->setZValue(4.2);
+                markGeometryItem(controlItem);
+                controlItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+                controlItem->setData(kMapSceneSelectionGatedRole, true);
+                controlItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControl);
+                controlItem->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
+                controlItem->setVisible(false);
+                registerVertexItem(controlItem);
+                controlItemsBySourceVertex->insert(currentVertex.incomingSourceVertexIndex, controlItem);
+            }
+        }
+        if (feature.closed && feature.lineVertices.size() >= 2) {
+            const MapGeometryFeature::TH2LineVertex &lastVertex = feature.lineVertices.last();
+            const MapGeometryFeature::TH2LineVertex &firstVertex = feature.lineVertices.first();
+
+            if (lastVertex.outgoingControl.has_value() && lastVertex.outgoingSourceVertexIndex >= 0) {
+                const QPointF anchorPreview = mapGeometryPointToPreview(lastVertex.anchor, sourceBounds, previewBounds);
+                const QPointF controlPreview = mapGeometryPointToPreview(lastVertex.outgoingControl.value(), sourceBounds, previewBounds);
+                auto *connector = scene->addLine(QLineF(anchorPreview, controlPreview),
+                                                 cosmeticPen(canvasTheme.controlConnector, controlConnectorWidth, Qt::DashLine, Qt::RoundCap));
+                connector->setZValue(3.2);
+                markGeometryItem(connector);
+                makeMouseTransparent(connector);
+                const int ownerAnchorVertexIndex = lastVertex.anchorSourceVertexIndex >= 0
+                    ? lastVertex.anchorSourceVertexIndex
+                    : (feature.lineVertices.size() - 1);
+                connector->setData(kMapSceneLineNumberRole, feature.lineNumber);
+                connector->setData(kMapSceneSelectionGatedRole, true);
+                connector->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControlConnector);
+                connector->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
+                connector->setVisible(false);
+                LineControlConnectorBinding binding;
+                binding.anchorVertexOrder = feature.lineVertices.size() - 1;
+                binding.controlSourceVertexIndex = lastVertex.outgoingSourceVertexIndex;
+                binding.lineItem = connector;
+                controlConnectors->append(binding);
+
+                auto *controlItem = new MapEditableGeometryVertexItem(feature.lineNumber,
+                                                                      QStringLiteral("line control"),
+                                                                      lastVertex.outgoingSourceVertexIndex,
+                                                                      lastVertex.outgoingControl.value(),
+                                                                      sourceBounds,
+                                                                      previewBounds);
+                controlItem->setRect(QRectF(-controlRadius, -controlRadius, controlRadius * 2.0, controlRadius * 2.0));
+                controlItem->setPen(cosmeticPen(canvasTheme.controlHandleStroke, 1.0));
+                controlItem->setBrush(QBrush(canvasTheme.controlHandleFill));
+                controlItem->setMoveCommittedCallback(recordLineAreaVertexMove);
+                scene->addItem(controlItem);
+                controlItem->setZValue(4.2);
+                markGeometryItem(controlItem);
+                controlItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+                controlItem->setData(kMapSceneSelectionGatedRole, true);
+                controlItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControl);
+                controlItem->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
+                controlItem->setVisible(false);
+                registerVertexItem(controlItem);
+                controlItemsBySourceVertex->insert(lastVertex.outgoingSourceVertexIndex, controlItem);
+            }
+
+            if (firstVertex.incomingControl.has_value() && firstVertex.incomingSourceVertexIndex >= 0) {
+                const QPointF anchorPreview = mapGeometryPointToPreview(firstVertex.anchor, sourceBounds, previewBounds);
+                const QPointF controlPreview = mapGeometryPointToPreview(firstVertex.incomingControl.value(), sourceBounds, previewBounds);
+                auto *connector = scene->addLine(QLineF(anchorPreview, controlPreview),
+                                                 cosmeticPen(canvasTheme.controlConnector, controlConnectorWidth, Qt::DashLine, Qt::RoundCap));
+                connector->setZValue(3.2);
+                markGeometryItem(connector);
+                makeMouseTransparent(connector);
+                const int ownerAnchorVertexIndex = firstVertex.anchorSourceVertexIndex >= 0
+                    ? firstVertex.anchorSourceVertexIndex
+                    : 0;
+                connector->setData(kMapSceneLineNumberRole, feature.lineNumber);
+                connector->setData(kMapSceneSelectionGatedRole, true);
+                connector->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControlConnector);
+                connector->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
+                connector->setVisible(false);
+                LineControlConnectorBinding binding;
+                binding.anchorVertexOrder = 0;
+                binding.controlSourceVertexIndex = firstVertex.incomingSourceVertexIndex;
+                binding.lineItem = connector;
+                controlConnectors->append(binding);
+
+                auto *controlItem = new MapEditableGeometryVertexItem(feature.lineNumber,
+                                                                      QStringLiteral("line control"),
+                                                                      firstVertex.incomingSourceVertexIndex,
+                                                                      firstVertex.incomingControl.value(),
+                                                                      sourceBounds,
+                                                                      previewBounds);
+                controlItem->setRect(QRectF(-controlRadius, -controlRadius, controlRadius * 2.0, controlRadius * 2.0));
+                controlItem->setPen(cosmeticPen(canvasTheme.controlHandleStroke, 1.0));
+                controlItem->setBrush(QBrush(canvasTheme.controlHandleFill));
+                controlItem->setMoveCommittedCallback(recordLineAreaVertexMove);
+                scene->addItem(controlItem);
+                controlItem->setZValue(4.2);
+                markGeometryItem(controlItem);
+                controlItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+                controlItem->setData(kMapSceneSelectionGatedRole, true);
+                controlItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControl);
+                controlItem->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
+                controlItem->setVisible(false);
+                registerVertexItem(controlItem);
+                controlItemsBySourceVertex->insert(firstVertex.incomingSourceVertexIndex, controlItem);
+            }
+        }
+
+        const auto previewToSource = [sourceBounds, previewBounds](const QPointF &previewPoint) {
+            return sceneCoordsPreviewToSource(previewPoint, sourceBounds, previewBounds);
+        };
+        const auto sourceToPreview = [sourceBounds, previewBounds](const QPointF &sourcePoint) {
+            return mapGeometryPointToPreview(sourcePoint, sourceBounds, previewBounds);
+        };
+        auto couplingGuard = std::make_shared<bool>(false);
+        const auto currentInteractiveLineFeature = [feature,
+                                                    previewToSource,
+                                                    anchorItemsByOrder,
+                                                    controlItemsBySourceVertex]() {
+            MapGeometryFeature interactiveFeature = feature;
+            for (int index = 0; index < interactiveFeature.lineVertices.size(); ++index) {
+                MapGeometryFeature::TH2LineVertex &vertex = interactiveFeature.lineVertices[index];
+                if (anchorItemsByOrder != nullptr && index >= 0 && index < anchorItemsByOrder->size()) {
+                    if (MapEditableGeometryVertexItem *item = anchorItemsByOrder->at(index)) {
+                        vertex.anchor = previewToSource(item->pos());
+                    }
+                }
+                if (vertex.incomingSourceVertexIndex >= 0 && controlItemsBySourceVertex != nullptr) {
+                    if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(vertex.incomingSourceVertexIndex, nullptr)) {
+                        vertex.incomingControl = previewToSource(control->pos());
+                    }
+                }
+                if (vertex.outgoingSourceVertexIndex >= 0 && controlItemsBySourceVertex != nullptr) {
+                    if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(vertex.outgoingSourceVertexIndex, nullptr)) {
+                        vertex.outgoingControl = previewToSource(control->pos());
+                    }
+                }
+            }
+            return interactiveFeature;
+        };
+        const auto updateInteractiveLinePreview = [lineItem,
+                                                   lineDecorationItem,
+                                                   lineGuideSpineItem,
+                                                   styledLineItems,
+                                                   styledDecorationItems,
+                                                   styledGuideItems,
+                                                   lineLabelItem,
+                                                   directionTickItem,
+                                                   lineDirectionTickLength,
+                                                   feature,
+                                                   sourceBounds,
+                                                   previewBounds,
+                                                   anchorItemsByOrder,
+                                                   controlItemsBySourceVertex,
+                                                   controlConnectors,
+                                                   currentInteractiveLineFeature]() {
+            if (lineItem == nullptr || anchorItemsByOrder == nullptr) {
+                return;
+            }
+            if (anchorItemsByOrder->size() < 2) {
+                return;
+            }
+
+            auto anchorPreviewAt = [&](int index) -> QPointF {
+                if (index >= 0 && index < anchorItemsByOrder->size()) {
+                    if (MapEditableGeometryVertexItem *item = anchorItemsByOrder->at(index)) {
+                        return item->pos();
+                    }
+                }
+                if (index >= 0 && index < feature.lineVertices.size()) {
+                    return mapGeometryPointToPreview(feature.lineVertices.at(index).anchor, sourceBounds, previewBounds);
+                }
+                return QPointF();
+            };
+
+            const MapGeometryFeature interactiveFeature = currentInteractiveLineFeature();
+            const QPainterPath interactivePath = linePathForFeature(interactiveFeature, sourceBounds, previewBounds);
+            lineItem->setPath(interactivePath);
+            if (lineDecorationItem != nullptr) {
+                lineDecorationItem->setDecorationPath(interactivePath);
+            }
+            if (lineGuideSpineItem != nullptr) {
+                lineGuideSpineItem->setPath(interactivePath);
+            }
+            if (lineLabelItem != nullptr) {
+                lineLabelItem->setPath(interactivePath);
+            }
+            const QVector<StyledLinePath> interactiveStyledPaths =
+                styledLinePathsForFeature(interactiveFeature, sourceBounds, previewBounds);
+            if (styledLineItems != nullptr) {
+                for (const StyledPathItemBinding &binding : *styledLineItems) {
+                    if (binding.pathItem == nullptr
+                        || binding.styledPathIndex < 0
+                        || binding.styledPathIndex >= interactiveStyledPaths.size()) {
+                        continue;
+                    }
+                    binding.pathItem->setPath(interactiveStyledPaths.at(binding.styledPathIndex).path);
+                }
+            }
+            if (styledDecorationItems != nullptr) {
+                for (const StyledLineDecorationBinding &binding : *styledDecorationItems) {
+                    if (binding.decorationItem == nullptr
+                        || binding.styledPathIndex < 0
+                        || binding.styledPathIndex >= interactiveStyledPaths.size()) {
+                        continue;
+                    }
+                    binding.decorationItem->setDecorationPath(interactiveStyledPaths.at(binding.styledPathIndex).path);
+                }
+            }
+            if (styledGuideItems != nullptr) {
+                for (const StyledPathItemBinding &binding : *styledGuideItems) {
+                    if (binding.pathItem == nullptr
+                        || binding.styledPathIndex < 0
+                        || binding.styledPathIndex >= interactiveStyledPaths.size()) {
+                        continue;
+                    }
+                    binding.pathItem->setPath(interactiveStyledPaths.at(binding.styledPathIndex).path);
+                }
+            }
+            std::optional<QPointF> outgoingControlPreview;
+            const MapGeometryFeature::TH2LineVertex &firstVertex = interactiveFeature.lineVertices.first();
+            if (firstVertex.outgoingSourceVertexIndex >= 0 && controlItemsBySourceVertex != nullptr) {
+                if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(firstVertex.outgoingSourceVertexIndex, nullptr)) {
+                    outgoingControlPreview = control->pos();
+                }
+            } else if (firstVertex.outgoingControl.has_value()) {
+                outgoingControlPreview = mapGeometryPointToPreview(firstVertex.outgoingControl.value(), sourceBounds, previewBounds);
+            }
+            if (directionTickItem != nullptr) {
+                if (const std::optional<QLineF> tickLine = lineDirectionTickLine(anchorPreviewAt(0),
+                                                                                outgoingControlPreview,
+                                                                                anchorPreviewAt(1),
+                                                                                feature.reversed,
+                                                                                lineDirectionTickLength)) {
+                    directionTickItem->setLine(tickLine.value());
+                } else {
+                    directionTickItem->setLine(QLineF(anchorPreviewAt(0), anchorPreviewAt(0)));
+                }
+            }
+
+            if (controlConnectors != nullptr) {
+                for (const LineControlConnectorBinding &binding : *controlConnectors) {
+                    if (binding.lineItem == nullptr) {
+                        continue;
+                    }
+                    const QPointF anchorPoint = anchorPreviewAt(binding.anchorVertexOrder);
+                    QPointF controlPoint = anchorPoint;
+                    if (controlItemsBySourceVertex != nullptr) {
+                        if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(binding.controlSourceVertexIndex, nullptr)) {
+                            controlPoint = control->pos();
+                        }
+                    }
+                    binding.lineItem->setLine(QLineF(anchorPoint, controlPoint));
+                }
+            }
+        };
+
+        const auto previewLineMove = [feature,
+                                      controlItemsBySourceVertex,
+                                      previewToSource,
+                                      sourceToPreview,
+                                      couplingGuard,
+                                      updateInteractiveLinePreview,
+                                      currentInteractiveLineFeature](MapEditableGeometryVertexItem *movedItem,
+                                                                    const QPointF &previousSourcePoint,
+                                                                    const QPointF &newSourcePoint,
+                                                                    bool dragActive) {
+            if (movedItem == nullptr) {
+                updateInteractiveLinePreview();
+                return;
+            }
+            if (*couplingGuard || !dragActive) {
+                updateInteractiveLinePreview();
+                return;
+            }
+            if (movedItem->geometryKind() != QStringLiteral("line")
+                && movedItem->geometryKind() != QStringLiteral("line control")) {
+                updateInteractiveLinePreview();
+                return;
+            }
+
+            const int movedSourceVertexIndex = movedItem->vertexIndex();
+            if (movedSourceVertexIndex < 0 || controlItemsBySourceVertex == nullptr) {
+                updateInteractiveLinePreview();
+                return;
+            }
+
+            QHash<int, QPointF> currentControlPoints;
+            currentControlPoints.reserve(controlItemsBySourceVertex->size());
+            for (auto it = controlItemsBySourceVertex->cbegin(); it != controlItemsBySourceVertex->cend(); ++it) {
+                if (it.value() == nullptr) {
+                    continue;
+                }
+                currentControlPoints.insert(it.key(), previewToSource(it.value()->pos()));
+            }
+
+            const MapGeometryFeature interactiveFeature = currentInteractiveLineFeature();
+            const QVector<MapLineSecondaryMove> moves = collectLinePreviewCoupledUpdatesForVertexDrag(interactiveFeature,
+                                                                                                       movedSourceVertexIndex,
+                                                                                                       previousSourcePoint,
+                                                                                                       newSourcePoint,
+                                                                                                       currentControlPoints);
+            if (moves.isEmpty()) {
+                updateInteractiveLinePreview();
+                return;
+            }
+
+            *couplingGuard = true;
+            for (const MapLineSecondaryMove &move : moves) {
+                if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(move.sourceVertexIndex, nullptr)) {
+                    if (control != movedItem) {
+                        control->setPos(sourceToPreview(move.newPoint));
+                    }
+                }
+            }
+            *couplingGuard = false;
+            updateInteractiveLinePreview();
+        };
+
+        for (MapEditableGeometryVertexItem *vertexItem : *anchorItemsByOrder) {
+            if (vertexItem != nullptr) {
+                vertexItem->setMovePreviewCallback(previewLineMove);
+            }
+        }
+        for (MapEditableGeometryVertexItem *controlItem : controlItemsBySourceVertex->values()) {
+            if (controlItem != nullptr) {
+                controlItem->setMovePreviewCallback(previewLineMove);
+            }
+        }
+
+
+    };
+
     if (renderCanvasFrame && geometryFeatures.isEmpty() && showEmptyDocumentGuides) {
         auto *emptyGeometryItem = makeMouseTransparent(scene->addText(QObject::tr("No parseable point, line, or area geometry was found in this document yet."), QFont(QStringLiteral("Menlo"), 11)));
         emptyGeometryItem->setData(kMapSceneEmptyDocumentGuideRole, true);
@@ -2275,723 +2995,9 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                 }
                 break;
             }
-            case MapGeometryFeature::Kind::Line: {
-                if (feature.lineVertices.size() < 2) {
-                    break;
-                }
-                const QString featureTooltip = geometryTooltipForFeature(feature);
-
-                const MapEditorResolvedLineStyle lineStyle = resolveMapEditorLineStyle(styleCatalog,
-                                                                                       feature.label,
-                                                                                       feature.subtype);
-                const qreal thickLineWidth = qBound(0.8, lineStyle.strokeWidth, 24.0);
-                const QPainterPath path = linePathForFeature(feature, sourceBounds, previewBounds);
-                const QVector<StyledLinePath> styledSegmentPaths = styledLinePathsForFeature(feature,
-                                                                                             sourceBounds,
-                                                                                             previewBounds);
-                const bool renderSegmentStyles = std::any_of(styledSegmentPaths.cbegin(),
-                                                             styledSegmentPaths.cend(),
-                                                             [&](const StyledLinePath &styledPath) {
-                    return styledPath.subtype != feature.subtype.trimmed().toLower();
-                });
-                QColor geometryStroke = lineStyle.strokeColor.value_or(canvasTheme.geometryStroke);
-                QColor baseLineStroke = geometryStroke;
-                if (!lineStyle.strokeVisible || renderSegmentStyles) {
-                    baseLineStroke.setAlpha(0);
-                }
-
-                if (feature.closed && feature.lineVertices.size() >= 2) {
-                    if (const std::optional<QColor> closedFillColor = closedLineFillColor(lineStyle, canvasTheme)) {
-                        QPainterPath closedFillPath = path;
-                        closedFillPath.closeSubpath();
-                        closedFillPath.setFillRule(Qt::OddEvenFill);
-                        auto *closedFillItem = new MapZoomAwarePathItem(closedFillPath,
-                                                                        QPen(Qt::NoPen),
-                                                                        QBrush(closedFillColor.value()));
-                        scene->addItem(closedFillItem);
-                        closedFillItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
-                        closedFillItem->setZValue(2.49);
-                        closedFillItem->setToolTip(featureTooltip);
-                        markGeometryItem(closedFillItem);
-                        closedFillItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                    }
-                }
-
-                auto *lineItem = new MapZoomAwarePathItem(path,
-                                                          styledGeometricPen(baseLineStroke,
-                                                                             thickLineWidth,
-                                                                             lineStyle.strokeVisible ? lineStyle.penStyle : Qt::SolidLine,
-                                                                             lineStyle.strokeVisible ? lineStyle.dashPattern : QVector<qreal>{},
-                                                                             Qt::RoundCap,
-                                                                             Qt::RoundJoin));
-                scene->addItem(lineItem);
-                lineItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
-                lineItem->setZValue(2.5);
-                lineItem->setToolTip(featureTooltip);
-                markGeometryItem(lineItem);
-                lineItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                auto styledLineItems = std::make_shared<QVector<StyledPathItemBinding>>();
-                auto styledDecorationItems = std::make_shared<QVector<StyledLineDecorationBinding>>();
-                auto styledGuideItems = std::make_shared<QVector<StyledPathItemBinding>>();
-                if (renderSegmentStyles) {
-                    for (int styledPathIndex = 0; styledPathIndex < styledSegmentPaths.size(); ++styledPathIndex) {
-                        const StyledLinePath &styledPath = styledSegmentPaths.at(styledPathIndex);
-                        const MapEditorResolvedLineStyle segmentStyle =
-                            resolveMapEditorLineStyle(styleCatalog, feature.label, styledPath.subtype);
-                        QColor segmentStroke = segmentStyle.strokeColor.value_or(canvasTheme.geometryStroke);
-                        if (!segmentStyle.strokeVisible) {
-                            segmentStroke.setAlpha(0);
-                        }
-                        auto *segmentItem = new MapZoomAwarePathItem(styledPath.path,
-                                                                     styledGeometricPen(segmentStroke,
-                                                                                        qBound(0.8, segmentStyle.strokeWidth, 24.0),
-                                                                                        segmentStyle.strokeVisible ? segmentStyle.penStyle : Qt::SolidLine,
-                                                                                        segmentStyle.strokeVisible ? segmentStyle.dashPattern : QVector<qreal>{},
-                                                                                        Qt::RoundCap,
-                                                                                        Qt::RoundJoin));
-                        scene->addItem(segmentItem);
-                        segmentItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
-                        segmentItem->setZValue(2.5);
-                        segmentItem->setToolTip(featureTooltip);
-                        markGeometryItem(segmentItem);
-                        segmentItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                        styledLineItems->append(StyledPathItemBinding{styledPathIndex, segmentItem});
-                    }
-                }
-                auto addGuideSpineItem = [&](const QPainterPath &guidePath, qreal referenceStrokeWidth) {
-                    QColor guideStroke = canvasTheme.mutedText;
-                    guideStroke.setAlpha(210);
-                    QVector<qreal> guideDashPattern;
-                    guideDashPattern << 2.0 << 2.4;
-                    auto *guideItem = new MapZoomAwarePathItem(guidePath,
-                                                               styledGeometricPen(guideStroke,
-                                                                                  qBound(0.7,
-                                                                                         referenceStrokeWidth * 0.34,
-                                                                                         2.2),
-                                                                                  Qt::DashLine,
-                                                                                  guideDashPattern,
-                                                                                  Qt::RoundCap,
-                                                                                  Qt::RoundJoin));
-                    scene->addItem(guideItem);
-                    guideItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
-                    guideItem->setHoverInteractionOverlayStroke(1.3, 0.15);
-                    guideItem->setZValue(2.58);
-                    guideItem->setToolTip(featureTooltip);
-                    markGeometryItem(guideItem);
-                    guideItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                    guideItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineDetail);
-                    return guideItem;
-                };
-                const bool renderLineGuideSpine = lineStyle.guideSpineVisible || !lineStyle.decorations.isEmpty();
-                MapEditorLineDecorationItem *lineDecorationItem = nullptr;
-                QGraphicsPathItem *lineGuideSpineItem = nullptr;
-                if (renderSegmentStyles) {
-                    for (int styledPathIndex = 0; styledPathIndex < styledSegmentPaths.size(); ++styledPathIndex) {
-                        const StyledLinePath &styledPath = styledSegmentPaths.at(styledPathIndex);
-                        const MapEditorResolvedLineStyle segmentStyle =
-                            resolveMapEditorLineStyle(styleCatalog, feature.label, styledPath.subtype);
-                        if (segmentStyle.decorations.isEmpty()) {
-                            continue;
-                        }
-
-                        QColor segmentGeometryStroke = segmentStyle.strokeColor.value_or(canvasTheme.geometryStroke);
-                        auto *segmentDecorationItem = new MapEditorLineDecorationItem(styledPath.path,
-                                                                                      segmentStyle.decorations,
-                                                                                      segmentGeometryStroke,
-                                                                                      feature.reversed,
-                                                                                      feature.lineNumber,
-                                                                                      {},
-                                                                                      mapScale);
-                        scene->addItem(segmentDecorationItem);
-                        segmentDecorationItem->setZValue(2.55);
-                        markGeometryItem(segmentDecorationItem);
-                        segmentDecorationItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
-                        segmentDecorationItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                        segmentDecorationItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineDetail);
-                        styledDecorationItems->append(StyledLineDecorationBinding{styledPathIndex, segmentDecorationItem});
-                    }
-                    for (int styledPathIndex = 0; styledPathIndex < styledSegmentPaths.size(); ++styledPathIndex) {
-                        const StyledLinePath &styledPath = styledSegmentPaths.at(styledPathIndex);
-                        const MapEditorResolvedLineStyle segmentStyle =
-                            resolveMapEditorLineStyle(styleCatalog, feature.label, styledPath.subtype);
-                        if (!lineSegmentNeedsGuideSpine(segmentStyle, feature.label, styledPath.subtype)) {
-                            continue;
-                        }
-
-                        styledGuideItems->append(StyledPathItemBinding{
-                            styledPathIndex,
-                            addGuideSpineItem(styledPath.path, qBound(0.8, segmentStyle.strokeWidth, 24.0))});
-                    }
-                } else if (!lineStyle.decorations.isEmpty()) {
-                    lineDecorationItem = new MapEditorLineDecorationItem(path,
-                                                                         lineStyle.decorations,
-                                                                         geometryStroke,
-                                                                         feature.reversed,
-                                                                         feature.lineNumber,
-                                                                         lineDecorationVerticesForFeature(feature,
-                                                                                                          sourceBounds,
-                                                                                                          previewBounds),
-                                                                         mapScale);
-                    scene->addItem(lineDecorationItem);
-                    lineDecorationItem->setZValue(2.55);
-                    markGeometryItem(lineDecorationItem);
-                    lineDecorationItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
-                    lineDecorationItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                    lineDecorationItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineDetail);
-                }
-                if (renderLineGuideSpine) {
-                    lineGuideSpineItem = addGuideSpineItem(path, thickLineWidth);
-                }
-                const qreal lineDirectionTickLength = qBound(12.0, 18.0 * mapScale, 24.0);
-                auto *directionTickItem = new QGraphicsLineItem;
-                directionTickItem->setPen(cosmeticPen(mapEditorDirectionTickColor(),
-                                                      3.4,
-                                                      Qt::SolidLine,
-                                                      Qt::RoundCap,
-                                                      Qt::RoundJoin));
-                directionTickItem->setZValue(4.8);
-                markGeometryItem(directionTickItem);
-                makeMouseTransparent(directionTickItem);
-                directionTickItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                directionTickItem->setData(kMapSceneSelectionGatedRole, true);
-                directionTickItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineDetail);
-                directionTickItem->setVisible(false);
-                if (const std::optional<QLineF> tickLine = lineDirectionTickLineForFeature(feature,
-                                                                                           sourceBounds,
-                                                                                           previewBounds,
-                                                                                           lineDirectionTickLength)) {
-                    directionTickItem->setLine(tickLine.value());
-                }
-                scene->addItem(directionTickItem);
-                if (mapItemsByLine != nullptr && feature.lineNumber > 0) {
-                    mapItemsByLine->insert(feature.lineNumber, lineItem);
-                }
-
-                MapPathLabelItem *lineLabelItem = nullptr;
-                if (lineStyle.labelField.has_value()) {
-                    const QString labelText = optionValueForFieldName(feature.optionValues, lineStyle.labelField.value());
-                    if (!labelText.isEmpty()) {
-                        QFont labelFont(QStringLiteral("Menlo"), 10);
-                        lineLabelItem = new MapPathLabelItem(lineLabelPathText(labelText),
-                                                             path,
-                                                             labelFont,
-                                                             canvasTheme.labelText);
-                        scene->addItem(lineLabelItem);
-                        lineLabelItem->setZValue(3.1);
-                        markGeometryItem(lineLabelItem);
-                        makeMouseTransparent(lineLabelItem);
-                        lineLabelItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                    }
-                }
-
-                auto anchorItemsByOrder = std::make_shared<QVector<MapEditableGeometryVertexItem *>>(feature.lineVertices.size(), nullptr);
-                auto controlItemsBySourceVertex = std::make_shared<QHash<int, MapEditableGeometryVertexItem *>>();
-                auto controlConnectors = std::make_shared<QVector<LineControlConnectorBinding>>();
-
-                for (int vertexIndex = 0; vertexIndex < feature.lineVertices.size(); ++vertexIndex) {
-                    const MapGeometryFeature::TH2LineVertex &vertex = feature.lineVertices.at(vertexIndex);
-                    if (linePointRowsShouldHighlightVertexMetadata(vertex.standaloneOptionRows)) {
-                        const QPointF markerCenter = mapGeometryPointToPreview(vertex.anchor, sourceBounds, previewBounds);
-                        const QRectF markerRect(-6.0, -6.0, 12.0, 12.0);
-                        auto *metadataShadow = new QGraphicsEllipseItem(markerRect);
-                        QColor shadowColor(QStringLiteral("#1f2937"));
-                        shadowColor.setAlpha(75);
-                        metadataShadow->setPen(cosmeticPen(shadowColor, 1.4));
-                        metadataShadow->setBrush(Qt::NoBrush);
-                        metadataShadow->setFlag(QGraphicsItem::ItemIgnoresTransformations, true);
-                        metadataShadow->setAcceptedMouseButtons(Qt::NoButton);
-                        metadataShadow->setPos(markerCenter);
-                        metadataShadow->setZValue(3.86);
-                        markGeometryItem(metadataShadow);
-                        makeMouseTransparent(metadataShadow);
-                        metadataShadow->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                        scene->addItem(metadataShadow);
-
-                        auto *metadataRing = new QGraphicsEllipseItem(markerRect);
-                        QColor ringColor(QStringLiteral("#f59e0b"));
-                        ringColor.setAlpha(115);
-                        metadataRing->setPen(cosmeticPen(ringColor, 0.8));
-                        metadataRing->setBrush(Qt::NoBrush);
-                        metadataRing->setFlag(QGraphicsItem::ItemIgnoresTransformations, true);
-                        metadataRing->setAcceptedMouseButtons(Qt::NoButton);
-                        metadataRing->setPos(markerCenter);
-                        metadataRing->setZValue(3.87);
-                        markGeometryItem(metadataRing);
-                        makeMouseTransparent(metadataRing);
-                        metadataRing->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                        scene->addItem(metadataRing);
-                    }
-
-                    auto *vertexItem = new MapEditableGeometryVertexItem(feature.lineNumber,
-                                                                         QStringLiteral("line"),
-                                                                         vertex.anchorSourceVertexIndex >= 0 ? vertex.anchorSourceVertexIndex : vertexIndex,
-                                                                         vertex.anchor,
-                                                                         sourceBounds,
-                                                                         previewBounds);
-                    vertexItem->setRect(QRectF(-vertexRadius, -vertexRadius, vertexRadius * 2.0, vertexRadius * 2.0));
-                    QColor vertexFill = feature.accent;
-                    vertexFill.setAlpha(185);
-                    QColor vertexOutline = feature.accent.darker(220);
-                    vertexOutline.setAlpha(220);
-                    vertexItem->setPen(cosmeticPen(vertexOutline, 1.0));
-                    vertexItem->setBrush(QBrush(vertexFill));
-                    vertexItem->setStandaloneOptionRows(vertex.standaloneOptionRows);
-                    vertexItem->setMoveCommittedCallback(recordLineAreaVertexMove);
-                    scene->addItem(vertexItem);
-                    vertexItem->setZValue(4.0);
-                    markGeometryItem(vertexItem);
-                    const int anchorSourceVertexIndex = vertex.anchorSourceVertexIndex >= 0 ? vertex.anchorSourceVertexIndex : vertexIndex;
-                    vertexItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                    vertexItem->setData(kMapSceneSelectionGatedRole, true);
-                    vertexItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineAnchor);
-                    vertexItem->setData(kMapSceneOwnerVertexRole, anchorSourceVertexIndex);
-                    vertexItem->setVisible(false);
-                    registerVertexItem(vertexItem);
-                    anchorItemsByOrder->operator[](vertexIndex) = vertexItem;
-                }
-
-                const bool slopeLine = feature.label.trimmed().toLower() == QStringLiteral("slope");
-                if (slopeLine && recordLinePointLeftHandleChange) {
-                    for (int vertexIndex = 0; vertexIndex < feature.lineVertices.size(); ++vertexIndex) {
-                        const MapGeometryFeature::TH2LineVertex &vertex = feature.lineVertices.at(vertexIndex);
-                        if (!explicitOrientation(vertex.orientationDegrees)) {
-                            continue;
-                        }
-                        const int anchorSourceVertexIndex = vertex.anchorSourceVertexIndex >= 0
-                            ? vertex.anchorSourceVertexIndex
-                            : vertexIndex;
-                        const QPointF anchorPreview = mapGeometryPointToPreview(vertex.anchor, sourceBounds, previewBounds);
-                        const qreal orientationDegrees = vertex.orientationDegrees.value();
-                        const qreal leftSize = vertex.leftSize.value_or(40.0);
-                        auto *leftHandle = new MapLinePointSizeHandleItem(feature.lineNumber,
-                                                                          anchorSourceVertexIndex,
-                                                                          anchorPreview,
-                                                                          orientationDegrees,
-                                                                          leftSize,
-                                                                          mapScale);
-                        leftHandle->setChangeCommittedCallback(recordLinePointLeftHandleChange);
-                        scene->addItem(leftHandle);
-                        leftHandle->setZValue(4.7);
-                        markGeometryItem(leftHandle);
-                        leftHandle->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                        leftHandle->setData(kMapSceneSelectionGatedRole, true);
-                        leftHandle->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControlConnector);
-                        leftHandle->setData(kMapSceneOwnerVertexRole, anchorSourceVertexIndex);
-                        leftHandle->setVisible(false);
-                    }
-                }
-
-                const qreal controlRadius = 2.8;
-                const qreal controlConnectorWidth = qBound<qreal>(1.4, 1.8 * mapScale, 2.4);
-                for (int segmentIndex = 1; segmentIndex < feature.lineVertices.size(); ++segmentIndex) {
-                    const MapGeometryFeature::TH2LineVertex &previousVertex = feature.lineVertices.at(segmentIndex - 1);
-                    const MapGeometryFeature::TH2LineVertex &currentVertex = feature.lineVertices.at(segmentIndex);
-
-                    if (previousVertex.outgoingControl.has_value() && previousVertex.outgoingSourceVertexIndex >= 0) {
-                        const QPointF anchorPreview = mapGeometryPointToPreview(previousVertex.anchor, sourceBounds, previewBounds);
-                        const QPointF controlPreview = mapGeometryPointToPreview(previousVertex.outgoingControl.value(), sourceBounds, previewBounds);
-                        auto *connector = scene->addLine(QLineF(anchorPreview, controlPreview),
-                                                         cosmeticPen(canvasTheme.controlConnector, controlConnectorWidth, Qt::DashLine, Qt::RoundCap));
-                        connector->setZValue(3.2);
-                        markGeometryItem(connector);
-                        makeMouseTransparent(connector);
-                        const int ownerAnchorVertexIndex = previousVertex.anchorSourceVertexIndex >= 0
-                            ? previousVertex.anchorSourceVertexIndex
-                            : (segmentIndex - 1);
-                        connector->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                        connector->setData(kMapSceneSelectionGatedRole, true);
-                        connector->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControlConnector);
-                        connector->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
-                        connector->setVisible(false);
-                        LineControlConnectorBinding binding;
-                        binding.anchorVertexOrder = segmentIndex - 1;
-                        binding.controlSourceVertexIndex = previousVertex.outgoingSourceVertexIndex;
-                        binding.lineItem = connector;
-                        controlConnectors->append(binding);
-
-                        auto *controlItem = new MapEditableGeometryVertexItem(feature.lineNumber,
-                                                                              QStringLiteral("line control"),
-                                                                              previousVertex.outgoingSourceVertexIndex,
-                                                                              previousVertex.outgoingControl.value(),
-                                                                              sourceBounds,
-                                                                              previewBounds);
-                        controlItem->setRect(QRectF(-controlRadius, -controlRadius, controlRadius * 2.0, controlRadius * 2.0));
-                        controlItem->setPen(cosmeticPen(canvasTheme.controlHandleStroke, 1.0));
-                        controlItem->setBrush(QBrush(canvasTheme.controlHandleFill));
-                        controlItem->setMoveCommittedCallback(recordLineAreaVertexMove);
-                        scene->addItem(controlItem);
-                        controlItem->setZValue(4.2);
-                        markGeometryItem(controlItem);
-                        controlItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                        controlItem->setData(kMapSceneSelectionGatedRole, true);
-                        controlItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControl);
-                        controlItem->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
-                        controlItem->setVisible(false);
-                        registerVertexItem(controlItem);
-                        controlItemsBySourceVertex->insert(previousVertex.outgoingSourceVertexIndex, controlItem);
-                    }
-
-                    if (currentVertex.incomingControl.has_value() && currentVertex.incomingSourceVertexIndex >= 0) {
-                        const QPointF anchorPreview = mapGeometryPointToPreview(currentVertex.anchor, sourceBounds, previewBounds);
-                        const QPointF controlPreview = mapGeometryPointToPreview(currentVertex.incomingControl.value(), sourceBounds, previewBounds);
-                        auto *connector = scene->addLine(QLineF(anchorPreview, controlPreview),
-                                                         cosmeticPen(canvasTheme.controlConnector, controlConnectorWidth, Qt::DashLine, Qt::RoundCap));
-                        connector->setZValue(3.2);
-                        markGeometryItem(connector);
-                        makeMouseTransparent(connector);
-                        const int ownerAnchorVertexIndex = currentVertex.anchorSourceVertexIndex >= 0
-                            ? currentVertex.anchorSourceVertexIndex
-                            : segmentIndex;
-                        connector->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                        connector->setData(kMapSceneSelectionGatedRole, true);
-                        connector->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControlConnector);
-                        connector->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
-                        connector->setVisible(false);
-                        LineControlConnectorBinding binding;
-                        binding.anchorVertexOrder = segmentIndex;
-                        binding.controlSourceVertexIndex = currentVertex.incomingSourceVertexIndex;
-                        binding.lineItem = connector;
-                        controlConnectors->append(binding);
-
-                        auto *controlItem = new MapEditableGeometryVertexItem(feature.lineNumber,
-                                                                              QStringLiteral("line control"),
-                                                                              currentVertex.incomingSourceVertexIndex,
-                                                                              currentVertex.incomingControl.value(),
-                                                                              sourceBounds,
-                                                                              previewBounds);
-                        controlItem->setRect(QRectF(-controlRadius, -controlRadius, controlRadius * 2.0, controlRadius * 2.0));
-                        controlItem->setPen(cosmeticPen(canvasTheme.controlHandleStroke, 1.0));
-                        controlItem->setBrush(QBrush(canvasTheme.controlHandleFill));
-                        controlItem->setMoveCommittedCallback(recordLineAreaVertexMove);
-                        scene->addItem(controlItem);
-                        controlItem->setZValue(4.2);
-                        markGeometryItem(controlItem);
-                        controlItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                        controlItem->setData(kMapSceneSelectionGatedRole, true);
-                        controlItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControl);
-                        controlItem->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
-                        controlItem->setVisible(false);
-                        registerVertexItem(controlItem);
-                        controlItemsBySourceVertex->insert(currentVertex.incomingSourceVertexIndex, controlItem);
-                    }
-                }
-                if (feature.closed && feature.lineVertices.size() >= 2) {
-                    const MapGeometryFeature::TH2LineVertex &lastVertex = feature.lineVertices.last();
-                    const MapGeometryFeature::TH2LineVertex &firstVertex = feature.lineVertices.first();
-
-                    if (lastVertex.outgoingControl.has_value() && lastVertex.outgoingSourceVertexIndex >= 0) {
-                        const QPointF anchorPreview = mapGeometryPointToPreview(lastVertex.anchor, sourceBounds, previewBounds);
-                        const QPointF controlPreview = mapGeometryPointToPreview(lastVertex.outgoingControl.value(), sourceBounds, previewBounds);
-                        auto *connector = scene->addLine(QLineF(anchorPreview, controlPreview),
-                                                         cosmeticPen(canvasTheme.controlConnector, controlConnectorWidth, Qt::DashLine, Qt::RoundCap));
-                        connector->setZValue(3.2);
-                        markGeometryItem(connector);
-                        makeMouseTransparent(connector);
-                        const int ownerAnchorVertexIndex = lastVertex.anchorSourceVertexIndex >= 0
-                            ? lastVertex.anchorSourceVertexIndex
-                            : (feature.lineVertices.size() - 1);
-                        connector->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                        connector->setData(kMapSceneSelectionGatedRole, true);
-                        connector->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControlConnector);
-                        connector->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
-                        connector->setVisible(false);
-                        LineControlConnectorBinding binding;
-                        binding.anchorVertexOrder = feature.lineVertices.size() - 1;
-                        binding.controlSourceVertexIndex = lastVertex.outgoingSourceVertexIndex;
-                        binding.lineItem = connector;
-                        controlConnectors->append(binding);
-
-                        auto *controlItem = new MapEditableGeometryVertexItem(feature.lineNumber,
-                                                                              QStringLiteral("line control"),
-                                                                              lastVertex.outgoingSourceVertexIndex,
-                                                                              lastVertex.outgoingControl.value(),
-                                                                              sourceBounds,
-                                                                              previewBounds);
-                        controlItem->setRect(QRectF(-controlRadius, -controlRadius, controlRadius * 2.0, controlRadius * 2.0));
-                        controlItem->setPen(cosmeticPen(canvasTheme.controlHandleStroke, 1.0));
-                        controlItem->setBrush(QBrush(canvasTheme.controlHandleFill));
-                        controlItem->setMoveCommittedCallback(recordLineAreaVertexMove);
-                        scene->addItem(controlItem);
-                        controlItem->setZValue(4.2);
-                        markGeometryItem(controlItem);
-                        controlItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                        controlItem->setData(kMapSceneSelectionGatedRole, true);
-                        controlItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControl);
-                        controlItem->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
-                        controlItem->setVisible(false);
-                        registerVertexItem(controlItem);
-                        controlItemsBySourceVertex->insert(lastVertex.outgoingSourceVertexIndex, controlItem);
-                    }
-
-                    if (firstVertex.incomingControl.has_value() && firstVertex.incomingSourceVertexIndex >= 0) {
-                        const QPointF anchorPreview = mapGeometryPointToPreview(firstVertex.anchor, sourceBounds, previewBounds);
-                        const QPointF controlPreview = mapGeometryPointToPreview(firstVertex.incomingControl.value(), sourceBounds, previewBounds);
-                        auto *connector = scene->addLine(QLineF(anchorPreview, controlPreview),
-                                                         cosmeticPen(canvasTheme.controlConnector, controlConnectorWidth, Qt::DashLine, Qt::RoundCap));
-                        connector->setZValue(3.2);
-                        markGeometryItem(connector);
-                        makeMouseTransparent(connector);
-                        const int ownerAnchorVertexIndex = firstVertex.anchorSourceVertexIndex >= 0
-                            ? firstVertex.anchorSourceVertexIndex
-                            : 0;
-                        connector->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                        connector->setData(kMapSceneSelectionGatedRole, true);
-                        connector->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControlConnector);
-                        connector->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
-                        connector->setVisible(false);
-                        LineControlConnectorBinding binding;
-                        binding.anchorVertexOrder = 0;
-                        binding.controlSourceVertexIndex = firstVertex.incomingSourceVertexIndex;
-                        binding.lineItem = connector;
-                        controlConnectors->append(binding);
-
-                        auto *controlItem = new MapEditableGeometryVertexItem(feature.lineNumber,
-                                                                              QStringLiteral("line control"),
-                                                                              firstVertex.incomingSourceVertexIndex,
-                                                                              firstVertex.incomingControl.value(),
-                                                                              sourceBounds,
-                                                                              previewBounds);
-                        controlItem->setRect(QRectF(-controlRadius, -controlRadius, controlRadius * 2.0, controlRadius * 2.0));
-                        controlItem->setPen(cosmeticPen(canvasTheme.controlHandleStroke, 1.0));
-                        controlItem->setBrush(QBrush(canvasTheme.controlHandleFill));
-                        controlItem->setMoveCommittedCallback(recordLineAreaVertexMove);
-                        scene->addItem(controlItem);
-                        controlItem->setZValue(4.2);
-                        markGeometryItem(controlItem);
-                        controlItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                        controlItem->setData(kMapSceneSelectionGatedRole, true);
-                        controlItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControl);
-                        controlItem->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
-                        controlItem->setVisible(false);
-                        registerVertexItem(controlItem);
-                        controlItemsBySourceVertex->insert(firstVertex.incomingSourceVertexIndex, controlItem);
-                    }
-                }
-
-                const auto previewToSource = [sourceBounds, previewBounds](const QPointF &previewPoint) {
-                    return sceneCoordsPreviewToSource(previewPoint, sourceBounds, previewBounds);
-                };
-                const auto sourceToPreview = [sourceBounds, previewBounds](const QPointF &sourcePoint) {
-                    return mapGeometryPointToPreview(sourcePoint, sourceBounds, previewBounds);
-                };
-                auto couplingGuard = std::make_shared<bool>(false);
-                const auto currentInteractiveLineFeature = [feature,
-                                                            previewToSource,
-                                                            anchorItemsByOrder,
-                                                            controlItemsBySourceVertex]() {
-                    MapGeometryFeature interactiveFeature = feature;
-                    for (int index = 0; index < interactiveFeature.lineVertices.size(); ++index) {
-                        MapGeometryFeature::TH2LineVertex &vertex = interactiveFeature.lineVertices[index];
-                        if (anchorItemsByOrder != nullptr && index >= 0 && index < anchorItemsByOrder->size()) {
-                            if (MapEditableGeometryVertexItem *item = anchorItemsByOrder->at(index)) {
-                                vertex.anchor = previewToSource(item->pos());
-                            }
-                        }
-                        if (vertex.incomingSourceVertexIndex >= 0 && controlItemsBySourceVertex != nullptr) {
-                            if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(vertex.incomingSourceVertexIndex, nullptr)) {
-                                vertex.incomingControl = previewToSource(control->pos());
-                            }
-                        }
-                        if (vertex.outgoingSourceVertexIndex >= 0 && controlItemsBySourceVertex != nullptr) {
-                            if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(vertex.outgoingSourceVertexIndex, nullptr)) {
-                                vertex.outgoingControl = previewToSource(control->pos());
-                            }
-                        }
-                    }
-                    return interactiveFeature;
-                };
-                const auto updateInteractiveLinePreview = [lineItem,
-                                                           lineDecorationItem,
-                                                           lineGuideSpineItem,
-                                                           styledLineItems,
-                                                           styledDecorationItems,
-                                                           styledGuideItems,
-                                                           lineLabelItem,
-                                                           directionTickItem,
-                                                           lineDirectionTickLength,
-                                                           feature,
-                                                           sourceBounds,
-                                                           previewBounds,
-                                                           anchorItemsByOrder,
-                                                           controlItemsBySourceVertex,
-                                                           controlConnectors,
-                                                           currentInteractiveLineFeature]() {
-                    if (lineItem == nullptr || anchorItemsByOrder == nullptr) {
-                        return;
-                    }
-                    if (anchorItemsByOrder->size() < 2) {
-                        return;
-                    }
-
-                    auto anchorPreviewAt = [&](int index) -> QPointF {
-                        if (index >= 0 && index < anchorItemsByOrder->size()) {
-                            if (MapEditableGeometryVertexItem *item = anchorItemsByOrder->at(index)) {
-                                return item->pos();
-                            }
-                        }
-                        if (index >= 0 && index < feature.lineVertices.size()) {
-                            return mapGeometryPointToPreview(feature.lineVertices.at(index).anchor, sourceBounds, previewBounds);
-                        }
-                        return QPointF();
-                    };
-
-                    const MapGeometryFeature interactiveFeature = currentInteractiveLineFeature();
-                    const QPainterPath interactivePath = linePathForFeature(interactiveFeature, sourceBounds, previewBounds);
-                    lineItem->setPath(interactivePath);
-                    if (lineDecorationItem != nullptr) {
-                        lineDecorationItem->setDecorationPath(interactivePath);
-                    }
-                    if (lineGuideSpineItem != nullptr) {
-                        lineGuideSpineItem->setPath(interactivePath);
-                    }
-                    if (lineLabelItem != nullptr) {
-                        lineLabelItem->setPath(interactivePath);
-                    }
-                    const QVector<StyledLinePath> interactiveStyledPaths =
-                        styledLinePathsForFeature(interactiveFeature, sourceBounds, previewBounds);
-                    if (styledLineItems != nullptr) {
-                        for (const StyledPathItemBinding &binding : *styledLineItems) {
-                            if (binding.pathItem == nullptr
-                                || binding.styledPathIndex < 0
-                                || binding.styledPathIndex >= interactiveStyledPaths.size()) {
-                                continue;
-                            }
-                            binding.pathItem->setPath(interactiveStyledPaths.at(binding.styledPathIndex).path);
-                        }
-                    }
-                    if (styledDecorationItems != nullptr) {
-                        for (const StyledLineDecorationBinding &binding : *styledDecorationItems) {
-                            if (binding.decorationItem == nullptr
-                                || binding.styledPathIndex < 0
-                                || binding.styledPathIndex >= interactiveStyledPaths.size()) {
-                                continue;
-                            }
-                            binding.decorationItem->setDecorationPath(interactiveStyledPaths.at(binding.styledPathIndex).path);
-                        }
-                    }
-                    if (styledGuideItems != nullptr) {
-                        for (const StyledPathItemBinding &binding : *styledGuideItems) {
-                            if (binding.pathItem == nullptr
-                                || binding.styledPathIndex < 0
-                                || binding.styledPathIndex >= interactiveStyledPaths.size()) {
-                                continue;
-                            }
-                            binding.pathItem->setPath(interactiveStyledPaths.at(binding.styledPathIndex).path);
-                        }
-                    }
-                    std::optional<QPointF> outgoingControlPreview;
-                    const MapGeometryFeature::TH2LineVertex &firstVertex = interactiveFeature.lineVertices.first();
-                    if (firstVertex.outgoingSourceVertexIndex >= 0 && controlItemsBySourceVertex != nullptr) {
-                        if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(firstVertex.outgoingSourceVertexIndex, nullptr)) {
-                            outgoingControlPreview = control->pos();
-                        }
-                    } else if (firstVertex.outgoingControl.has_value()) {
-                        outgoingControlPreview = mapGeometryPointToPreview(firstVertex.outgoingControl.value(), sourceBounds, previewBounds);
-                    }
-                    if (directionTickItem != nullptr) {
-                        if (const std::optional<QLineF> tickLine = lineDirectionTickLine(anchorPreviewAt(0),
-                                                                                        outgoingControlPreview,
-                                                                                        anchorPreviewAt(1),
-                                                                                        feature.reversed,
-                                                                                        lineDirectionTickLength)) {
-                            directionTickItem->setLine(tickLine.value());
-                        } else {
-                            directionTickItem->setLine(QLineF(anchorPreviewAt(0), anchorPreviewAt(0)));
-                        }
-                    }
-
-                    if (controlConnectors != nullptr) {
-                        for (const LineControlConnectorBinding &binding : *controlConnectors) {
-                            if (binding.lineItem == nullptr) {
-                                continue;
-                            }
-                            const QPointF anchorPoint = anchorPreviewAt(binding.anchorVertexOrder);
-                            QPointF controlPoint = anchorPoint;
-                            if (controlItemsBySourceVertex != nullptr) {
-                                if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(binding.controlSourceVertexIndex, nullptr)) {
-                                    controlPoint = control->pos();
-                                }
-                            }
-                            binding.lineItem->setLine(QLineF(anchorPoint, controlPoint));
-                        }
-                    }
-                };
-
-                const auto previewLineMove = [feature,
-                                              controlItemsBySourceVertex,
-                                              previewToSource,
-                                              sourceToPreview,
-                                              couplingGuard,
-                                              updateInteractiveLinePreview,
-                                              currentInteractiveLineFeature](MapEditableGeometryVertexItem *movedItem,
-                                                                            const QPointF &previousSourcePoint,
-                                                                            const QPointF &newSourcePoint,
-                                                                            bool dragActive) {
-                    if (movedItem == nullptr) {
-                        updateInteractiveLinePreview();
-                        return;
-                    }
-                    if (*couplingGuard || !dragActive) {
-                        updateInteractiveLinePreview();
-                        return;
-                    }
-                    if (movedItem->geometryKind() != QStringLiteral("line")
-                        && movedItem->geometryKind() != QStringLiteral("line control")) {
-                        updateInteractiveLinePreview();
-                        return;
-                    }
-
-                    const int movedSourceVertexIndex = movedItem->vertexIndex();
-                    if (movedSourceVertexIndex < 0 || controlItemsBySourceVertex == nullptr) {
-                        updateInteractiveLinePreview();
-                        return;
-                    }
-
-                    QHash<int, QPointF> currentControlPoints;
-                    currentControlPoints.reserve(controlItemsBySourceVertex->size());
-                    for (auto it = controlItemsBySourceVertex->cbegin(); it != controlItemsBySourceVertex->cend(); ++it) {
-                        if (it.value() == nullptr) {
-                            continue;
-                        }
-                        currentControlPoints.insert(it.key(), previewToSource(it.value()->pos()));
-                    }
-
-                    const MapGeometryFeature interactiveFeature = currentInteractiveLineFeature();
-                    const QVector<MapLineSecondaryMove> moves = collectLinePreviewCoupledUpdatesForVertexDrag(interactiveFeature,
-                                                                                                               movedSourceVertexIndex,
-                                                                                                               previousSourcePoint,
-                                                                                                               newSourcePoint,
-                                                                                                               currentControlPoints);
-                    if (moves.isEmpty()) {
-                        updateInteractiveLinePreview();
-                        return;
-                    }
-
-                    *couplingGuard = true;
-                    for (const MapLineSecondaryMove &move : moves) {
-                        if (MapEditableGeometryVertexItem *control = controlItemsBySourceVertex->value(move.sourceVertexIndex, nullptr)) {
-                            if (control != movedItem) {
-                                control->setPos(sourceToPreview(move.newPoint));
-                            }
-                        }
-                    }
-                    *couplingGuard = false;
-                    updateInteractiveLinePreview();
-                };
-
-                for (MapEditableGeometryVertexItem *vertexItem : *anchorItemsByOrder) {
-                    if (vertexItem != nullptr) {
-                        vertexItem->setMovePreviewCallback(previewLineMove);
-                    }
-                }
-                for (MapEditableGeometryVertexItem *controlItem : controlItemsBySourceVertex->values()) {
-                    if (controlItem != nullptr) {
-                        controlItem->setMovePreviewCallback(previewLineMove);
-                    }
-                }
-
+            case MapGeometryFeature::Kind::Line:
+                renderLineFeature(feature);
                 break;
-            }
             case MapGeometryFeature::Kind::Area: {
                 if (feature.vertices.size() < 3) {
                     break;

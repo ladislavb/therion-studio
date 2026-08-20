@@ -5,8 +5,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ## Current Focus
 
 1. `2026.7.2` is a performance and unified-source-DOM release: prioritize measured map refresh, explicit runtime ownership, and repeated project-workflow responsiveness over unrelated feature breadth.
-2. Continue measured Map partial-refresh work with M2B in `MAP_PARTIAL_REFRESH_PLAN.md`: extract the shared
-   single-line renderer while preserving full-refresh fallback and current scene-item metadata.
+2. Preserve the measured Map partial-refresh safety gates and full-refresh fallback; widen replacement paths only after
+   a fresh trace identifies a bottleneck and the corresponding renderer metadata has focused regression coverage.
 3. Real-project smoke testing for Raw, Blocks, Map, Validation, Structure, and Compiler navigation after DOM closure.
 4. Plan-driven follow-ups for map partial refresh, validation/cache tuning, GUI cleanup, SVG backgrounds, reporting, LiDAR design, and 3D viewer refinement, including palette-regression coverage for inspector controls.
 5. Verify the Windows unit-test stabilization and keep session restore working for accessible projects in standard macOS user folders; unit CTest cases now identify individual QTest suites without multiplying test binaries. The Windows workflow reruns failed suites directly with verbose QTest output written to and explicitly printed from a file; the diagnostic path has a local PowerShell fixture check. Current Windows portability follow-up covers CSV newline output and platform-correct filesystem test fixtures, including platform-specific link assertions. On failures, verify production code before considering any test change, which requires explicit approval.
@@ -214,8 +214,6 @@ Active planning only. Completed history belongs in archive files. Stable archite
   through instead of suppressing platform handling.
 - Line partial refresh now keeps one-line item replacement on the existing source-bounds projection and falls back to a
   full scene refresh when a vertex edit expands map source bounds, preventing mixed projection coordinates.
-- M2B is in progress: the line item-group regression now compares full-scene and single-feature item metadata before
-  the renderer branch is extracted, guarding type, z-order, and interactive-selection roles during the refactor.
 - Single-feature partial rendering now bypasses the workspace canvas frame entirely, so it neither allocates/removes a
   transient non-geometry item nor resets the existing scene rectangle during an otherwise local replacement.
 - Line partial refresh now preflights that the target geometry item group still has a live primary scene index before

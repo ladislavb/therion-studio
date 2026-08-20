@@ -226,7 +226,7 @@ Slice 2A - Direct Target-Scene Rendering - Complete (2026-07-15)
 - The existing `MapGeometryFeatureParsingTest` item-count/index restoration coverage guards the direct path.
 - Do not move source parsing, document text, or selection logic into this rendering boundary.
 
-Slice 2B - Extract Line Feature Renderer - Next
+Slice 2B - Extract Line Feature Renderer - Complete (2026-08-20)
 
 - Move the `MapGeometryFeature::Kind::Line` rendering branch into a helper that accepts one feature and a renderer-local
   context.
@@ -246,8 +246,14 @@ Slice 2B - Extract Line Feature Renderer - Next
 
 Implementation progress (2026-07-17): the existing geometry item-group regression now captures the representative
 styled line's full-scene metadata and requires the single-feature replacement to reproduce its item type, z-order,
-selectability, selection-gated role, selection subtype, and owner-vertex role. The actual branch extraction remains
-pending; this baseline must stay green throughout it.
+selectability, selection-gated role, selection subtype, and owner-vertex role.
+
+Implementation status (2026-08-20): `MapEditorSceneRenderer` now owns one renderer-local `renderLineFeature` helper.
+The full-scene loop invokes it for every line and the direct one-feature replacement path invokes the same workspace
+renderer with a one-feature projection. This removes the separate line branch while preserving segment styles,
+decorations, guide spines, labels, direction ticks, anchor/slope/Bezier handles, preview callbacks, scene metadata,
+and z-values. `MapGeometryFeatureParsingTest` retains the full-scene versus one-feature metadata equivalence check and
+`MapEditorLargeScenePerformanceSmokeTest` verifies replacement on the generated large-map fixture.
 
 Slice 2C - Keep Point/Area Out Of Scope
 
