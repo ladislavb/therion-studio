@@ -302,6 +302,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Backlog
 
+- Catalog generator does not decode TeX accent macros: `Bansk\'a Bystrica` in `thbook/ch03.tex` reaches
+  `symbol-set.summary` verbatim instead of `Banská Bystrica`. Handle the accent family (`\'`, `\v`, `\"`, `\c`, ...) in
+  `clean_tex_text` so help text stays readable for non-ASCII names. Distinct from the macro control-space fix, which is
+  already covered by `test_control_space_after_macro_leaves_no_backslash`.
 - Map partial refresh now renders the replacement feature directly into the target scene with local indexes, eliminating
   the temporary scene/item-reparenting step while preserving the existing workspace renderer branch. The generated
   340-line smoke now measures full refresh and replacement of one 18-item Bezier line group: local release macOS arm64
