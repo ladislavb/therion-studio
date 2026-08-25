@@ -404,6 +404,36 @@ class TherionCatalogGenerationTest(unittest.TestCase):
         self.assertNotIn("\\Nobreak", summary)
         self.assertNotIn("\\it", summary)
 
+    def test_control_space_after_macro_leaves_no_backslash(self) -> None:
+        clean_tex_text = self.generator.clean_tex_text
+        self.assertEqual(
+            clean_tex_text(r"Add/redefine \TeX\ and \MP\ sections"),
+            "Add/redefine and sections",
+        )
+        self.assertEqual(
+            clean_tex_text(r"(2)~\MP\ version is at least 1.000"),
+            "(2) version is at least 1.000",
+        )
+        self.assertEqual(clean_tex_text("trailing \\MP\\"), "trailing")
+        self.assertEqual(
+            clean_tex_text(r"keep \\ line breaks working"),
+            "keep line breaks working",
+        )
+
+    def test_no_command_text_field_keeps_control_space_backslash(self) -> None:
+        # A backslash directly before whitespace or end of text is always a
+        # leftover macro terminator. Backslashes kept as literal documented
+        # content (for example the line-continuation character) are followed by
+        # a non-space character and stay untouched.
+        control_space_re = re.compile(r"\\(?=\s|$)")
+        offenders = []
+        for name, command in self.commands_by_name.items():
+            for field in ("summary", "description"):
+                value = command.get(field, "")
+                if isinstance(value, str) and control_space_re.search(value):
+                    offenders.append(f"{name}.{field}")
+        self.assertFalse(offenders, f"Leftover macro terminator in: {sorted(offenders)}")
+
     def test_revise_contains_object_id_argument_and_object_options(self) -> None:
         revise = self.commands_by_name["revise"]
         arguments = revise.get("arguments", [])
