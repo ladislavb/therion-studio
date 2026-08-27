@@ -20,7 +20,7 @@ Do not translate:
 - accepted values, argument tokens, file-format keywords, command syntax examples, and serialized document content
 - generated or user-entered file paths, object IDs, project names, station names, labels, and editor text
 
-Localized UI may describe these concepts in Czech or Slovak, but canonical Therion spelling must remain visible where it represents file syntax.
+Localized UI may describe these concepts in Czech, French, or Slovak, but canonical Therion spelling must remain visible where it represents file syntax.
 
 ## Current Languages
 
@@ -29,11 +29,11 @@ The source language is English.
 Bundled application translations:
 
 - Czech: `translations/therion_studio_cs.ts`
+- French: `translations/therion_studio_fr.ts`
 - Slovak: `translations/therion_studio_sk.ts`
 
 Staged application translations are present for translation work but are not user-selectable or advertised as supported until they are complete:
 
-- French: `translations/therion_studio_fr.ts`
 - German: `translations/therion_studio_de.ts`
 - Italian: `translations/therion_studio_it.ts`
 - Spanish: `translations/therion_studio_es.ts`
@@ -119,6 +119,7 @@ Edit translations:
 
 ```sh
 linguist translations/therion_studio_cs.ts
+linguist translations/therion_studio_fr.ts
 linguist translations/therion_studio_sk.ts
 ```
 
@@ -146,7 +147,7 @@ Before committing localization changes:
 
 - `cmake --build build --target update_translations` finds no unexpected new strings
 - `cmake --build build --target release_translations` reports zero unfinished translations for bundled languages
-- `rg 'type="unfinished"' translations/therion_studio_cs.ts translations/therion_studio_sk.ts` returns no output
+- `rg 'type="unfinished"' translations/therion_studio_cs.ts translations/therion_studio_fr.ts translations/therion_studio_sk.ts` returns no output
 - `python3 scripts/check_localization.py` passes
 - placeholders in source and translation match
 - command syntax, accepted values, option names, and examples remain canonical Therion text
@@ -172,7 +173,7 @@ python3 - <<'PY'
 import re
 import xml.etree.ElementTree as ET
 
-for path in ["translations/therion_studio_cs.ts", "translations/therion_studio_sk.ts"]:
+for path in ["translations/therion_studio_cs.ts", "translations/therion_studio_fr.ts", "translations/therion_studio_sk.ts"]:
     root = ET.parse(path).getroot()
     for context in root.findall("context"):
         name = context.findtext("name") or ""
@@ -208,9 +209,10 @@ The Settings dialog exposes:
 - `System Default`
 - `English`
 - `Czech`
+- `French`
 - `Slovak`
 
-French, German, Italian, Spanish, and Portuguese are staged for translation work and must not be added here until their application catalogs and manuals pass `scripts/check_localization.py --strict-staged`.
+German, Italian, Spanish, and Portuguese are staged for translation work and must not be added here until their application catalogs and manuals pass `scripts/check_localization.py --strict-staged`.
 
 `System Default` means the application follows the operating system locale when a bundled translation is available.
 

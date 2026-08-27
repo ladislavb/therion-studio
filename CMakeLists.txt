@@ -989,12 +989,12 @@ add_custom_target(map_object_style_gallery
 
 set(THERION_STUDIO_TRANSLATION_FILES
     translations/therion_studio_cs.ts
+    translations/therion_studio_fr.ts
     translations/therion_studio_sk.ts)
 
 set(THERION_STUDIO_STAGED_TRANSLATION_FILES
     translations/therion_studio_de.ts
     translations/therion_studio_es.ts
-    translations/therion_studio_fr.ts
     translations/therion_studio_it.ts
     translations/therion_studio_pt.ts)
 

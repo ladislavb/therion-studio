@@ -11,8 +11,8 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SHIPPED_LANGUAGES = ("cs", "sk")
-STAGED_LANGUAGES = ("de", "es", "fr", "it", "pt")
+SHIPPED_LANGUAGES = ("cs", "fr", "sk")
+STAGED_LANGUAGES = ("de", "es", "it", "pt")
 SOURCE_LANGUAGE = "en"
 PLACEHOLDER_RE = re.compile(r"%\d+")
 

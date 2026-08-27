@@ -67,7 +67,8 @@ QLocale preferredApplicationLocale()
             .toString();
     }
     language = TherionStudio::Platform::normalizeApplicationLanguageSetting(language);
-    if (language == QStringLiteral("cs") || language == QStringLiteral("sk")) {
+    if (language == QStringLiteral("cs") || language == QStringLiteral("fr")
+        || language == QStringLiteral("sk")) {
         return QLocale(language);
     }
     if (language == QStringLiteral("en")) {
