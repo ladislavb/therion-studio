@@ -2,6 +2,7 @@
 
 #include "MapEditorSceneThemePolicy.h"
 
+#include <QCoreApplication>
 #include <QFont>
 #include <QGraphicsScene>
 #include <QGraphicsView>
@@ -160,6 +161,9 @@ void MapEditorMagnifierOverlay::paintEvent(QPaintEvent *event)
                             kCaptionHeight - 4);
     painter.drawText(captionRect,
                      Qt::AlignCenter,
-                     coordinateText_.isEmpty() ? tr("Cursor") : coordinateText_);
+                     coordinateText_.isEmpty()
+                         ? QCoreApplication::translate(
+                               "TherionStudio::MapEditorMagnifierOverlay", "Cursor")
+                         : coordinateText_);
 }
 }

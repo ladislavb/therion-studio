@@ -3,6 +3,7 @@
 #include "MapEditorObjectStyleCatalog.h"
 #include "MapEditorPointSymbolGeometry.h"
 
+#include <QCoreApplication>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPaintEvent>
@@ -890,7 +891,10 @@ void MapEditorStylePreviewWidget::paintEvent(QPaintEvent *event)
         painter.setPen(readablePreviewColor(pal.color(QPalette::Disabled, QPalette::Text),
                                             fillColor,
                                             QColor(96, 96, 96)));
-        painter.drawText(content, Qt::AlignCenter, tr("No style preview"));
+        painter.drawText(content,
+                         Qt::AlignCenter,
+                         QCoreApplication::translate(
+                             "TherionStudio::MapEditorStylePreviewWidget", "No style preview"));
         return;
     }
 
