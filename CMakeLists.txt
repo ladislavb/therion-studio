@@ -260,7 +260,8 @@ set(THERION_TEXT_EDITOR_RAW_QTEST_SUITES
     RawEditorCompletionInsertionControllerTest
     RawEditorCompletionContextAnalyzerTest
     RawEditorCompletionTokenContextTest
-    RawEditorFindShortcutTest)
+    RawEditorFindShortcutTest
+    TextEditorValidationCatalogTest)
 
 set(THERION_BLOCK_EDITOR_QTEST_SUITES
     BlockEditorDocumentOutlineBuilderTest
@@ -1640,9 +1641,15 @@ qt_add_executable(TextEditorRawEditorQTests
     tests/RawEditorCompletionContextAnalyzerTest.cpp
     tests/RawEditorCompletionInsertionControllerTest.cpp
     tests/RawEditorCompletionTokenContextTest.cpp
-    tests/RawEditorFindShortcutTest.cpp)
+    tests/RawEditorFindShortcutTest.cpp
+    tests/TextEditorValidationCatalogTest.cpp)
 
 target_link_libraries(TextEditorRawEditorQTests PRIVATE therion_text_editor_ui_test_support Qt6::Test)
+
+qt_add_resources(TextEditorRawEditorQTests TextEditorRawEditorQTestResources
+    PREFIX "/"
+    FILES
+        resources/therion_command_catalog.json)
 
 qt_add_resources(TextEditorRawEditorQTests TextEditorRawEditorQTestResources
     PREFIX "/"
