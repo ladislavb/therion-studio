@@ -250,6 +250,15 @@ public:
     {
         setSelectedBackgroundLayerPivotAtScenePosition(scenePosition);
     }
+    QPointF backgroundLayerPivotScenePositionForTest(int index) const
+    {
+        return backgroundLayerPivotScenePosition(backgroundLayerItemAt(index));
+    }
+    QRectF backgroundLayerSceneBoundingRectForTest(int index) const
+    {
+        const QGraphicsPixmapItem *item = backgroundLayerItemAt(index);
+        return item != nullptr ? item->sceneBoundingRect() : QRectF();
+    }
 #endif
     void removeSelectedBackgroundLayer();
     void moveSelectedBackgroundLayerUp();
