@@ -594,6 +594,8 @@ private:
     qreal backgroundLayerRotationDegValue(const QGraphicsPixmapItem *item) const;
     QPointF backgroundLayerBaseModelPosition(QGraphicsPixmapItem *item) const;
     QPointF backgroundLayerPivotScenePosition(QGraphicsPixmapItem *item) const;
+    void restoreBackgroundLayerPivotScenePosition(QGraphicsPixmapItem *item,
+                                                  const QPointF &pivotScenePosition);
     std::optional<MapEditorXviStationSnapCandidate> xviStationSnapAtScenePosition(const QPointF &scenePosition) const;
     void refreshBackgroundPivotMarkerVisibility();
     void setSelectedBackgroundLayerPivotAtScenePosition(const QPointF &scenePosition);

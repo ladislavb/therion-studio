@@ -7,6 +7,7 @@
 #include <QtMath>
 
 #include "MapEditorRasterBackgroundImage.h"
+#include "MapEditorRasterBackgroundTransform.h"
 #include "../../../core/MapBackgroundPlacement.h"
 #include "../../../core/TherionBackgroundMetadata.h"
 
@@ -161,38 +162,23 @@ void applyMapEditorRasterLayerTransform(QGraphicsPixmapItem *item)
         return;
     }
 
-    const qreal scaleX = viewRect.width() / static_cast<qreal>(pixmapSize.width());
-    const qreal scaleY = viewRect.height() / static_cast<qreal>(pixmapSize.height());
-    const qreal layerScaleX = item->data(kMapEditorBackgroundXScaleRole).isValid()
+    RasterBackgroundTransformInput input;
+    input.viewScaleX = viewRect.width() / static_cast<qreal>(pixmapSize.width());
+    input.viewScaleY = viewRect.height() / static_cast<qreal>(pixmapSize.height());
+    input.layerScaleX = item->data(kMapEditorBackgroundXScaleRole).isValid()
         ? qMax(0.01, item->data(kMapEditorBackgroundXScaleRole).toDouble())
         : 1.0;
-    const qreal layerScaleY = item->data(kMapEditorBackgroundYScaleRole).isValid()
+    input.layerScaleY = item->data(kMapEditorBackgroundYScaleRole).isValid()
         ? qMax(0.01, item->data(kMapEditorBackgroundYScaleRole).toDouble())
         : 1.0;
-    const qreal rotationDeg = item->data(kMapEditorBackgroundRotationDegRole).toDouble();
-    const bool pivotSet = item->data(kMapEditorBackgroundPivotSetRole).toBool();
-    const bool hasUserTransform = pivotSet
-        || !qFuzzyCompare(layerScaleX, 1.0)
-        || !qFuzzyCompare(layerScaleY, 1.0)
-        || !qFuzzyIsNull(rotationDeg);
-    QTransform transform;
-    if (!hasUserTransform) {
-        transform.scale(scaleX, scaleY);
-    } else {
-        const qreal pivotLocalX = pivotSet
-            ? item->data(kMapEditorBackgroundRotationCenterDxRole).toDouble()
-            : static_cast<qreal>(pixmapSize.width()) / 2.0;
-        const qreal pivotLocalY = pivotSet
-            ? item->data(kMapEditorBackgroundRotationCenterDyRole).toDouble()
-            : static_cast<qreal>(pixmapSize.height()) / 2.0;
-        const qreal pivotPreviewX = pivotLocalX * scaleX;
-        const qreal pivotPreviewY = pivotLocalY * scaleY;
-        transform.translate(pivotPreviewX, pivotPreviewY);
-        transform.rotate(rotationDeg);
-        transform.scale(layerScaleX, layerScaleY);
-        transform.translate(-pivotPreviewX, -pivotPreviewY);
-        transform.scale(scaleX, scaleY);
-    }
+    input.rotationDeg = item->data(kMapEditorBackgroundRotationDegRole).toDouble();
+    input.pivotSet = item->data(kMapEditorBackgroundPivotSetRole).toBool();
+    input.pivotLocalX = item->data(kMapEditorBackgroundRotationCenterDxRole).toDouble();
+    input.pivotLocalY = item->data(kMapEditorBackgroundRotationCenterDyRole).toDouble();
+    input.intrinsicWidth = pixmapSize.width();
+    input.intrinsicHeight = pixmapSize.height();
+
+    const QTransform transform = rasterBackgroundLayerTransform(input);
 
     item->setTransformationMode(Qt::SmoothTransformation);
     item->setTransformOriginPoint(0.0, 0.0);

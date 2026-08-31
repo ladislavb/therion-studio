@@ -689,6 +689,8 @@ set(THERION_MAP_EDITOR_SOURCES
     src/app/text_editor/map_editor/MapEditorSmartAreaPlanner.h
     src/app/text_editor/map_editor/MapEditorRasterBackgroundImage.cpp
     src/app/text_editor/map_editor/MapEditorRasterBackgroundImage.h
+    src/app/text_editor/map_editor/MapEditorRasterBackgroundTransform.cpp
+    src/app/text_editor/map_editor/MapEditorRasterBackgroundTransform.h
     src/app/text_editor/map_editor/MapEditorRasterBackgroundPlacement.cpp
     src/app/text_editor/map_editor/MapEditorRasterBackgroundPlacement.h
     src/app/text_editor/map_editor/MapEditorSvgBackgroundItem.cpp
