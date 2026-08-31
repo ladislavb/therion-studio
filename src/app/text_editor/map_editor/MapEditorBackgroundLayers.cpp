@@ -2041,6 +2041,47 @@ void MapEditorTab::setSelectedBackgroundLayerPosition(const QPointF &position)
     refreshBackgroundLayerPropertyControls();
 }
 
+// The layer transform scales from the `xx`/`yy` anchor, so changing the scale
+// moves the pivot with it. Interactive scaling is expected to turn around the
+// pivot the user can see, so the item is shifted back and the anchor recorded
+// in the metadata follows.
+void MapEditorTab::restoreBackgroundLayerPivotScenePosition(QGraphicsPixmapItem *item,
+                                                            const QPointF &pivotScenePosition)
+{
+    if (item == nullptr) {
+        return;
+    }
+
+    const QPointF sceneDelta = pivotScenePosition - backgroundLayerPivotScenePosition(item);
+    if (sceneDelta.isNull()) {
+        return;
+    }
+
+    const QRectF previewRect = item->data(kMapEditorRasterPreviewRectRole).toRectF();
+    if (previewRect.isValid()) {
+        item->setData(kMapEditorRasterPreviewRectRole, previewRect.translated(sceneDelta));
+    }
+    item->setPos(item->pos() + sceneDelta);
+
+    // The anchor written back to the metadata lives in model units and is read
+    // from its own role rather than from the item position, so it has to travel
+    // by the same amount or the next reload would undo the shift.
+    QRectF sourceBounds = mapSourceBoundsForCurrentDocument();
+    if (!sourceBounds.isValid()) {
+        sourceBounds = xtherionAutoAreaAdjustRect();
+    }
+    const QRectF previewBounds = mapPreviewBounds();
+    const QVariant baseValue = item->data(kBackgroundLayerRasterBasePositionRole);
+    if (!sourceBounds.isValid() || !previewBounds.isValid() || !baseValue.canConvert<QPointF>()) {
+        return;
+    }
+
+    const QPointF modelOrigin = mapEditorPreviewToModelPoint(QPointF(0.0, 0.0), sourceBounds, previewBounds);
+    const QPointF modelShifted = mapEditorPreviewToModelPoint(sceneDelta, sourceBounds, previewBounds);
+    item->setData(kBackgroundLayerRasterBasePositionRole,
+                  baseValue.toPointF() + (modelShifted - modelOrigin));
+}
+
 void MapEditorTab::setSelectedBackgroundLayerXScale(qreal scale)
 {
     QGraphicsPixmapItem *item = selectedBackgroundLayerItem();
@@ -2048,10 +2089,12 @@ void MapEditorTab::setSelectedBackgroundLayerXScale(qreal scale)
         return;
     }
 
+    const QPointF pivotScenePosition = backgroundLayerPivotScenePosition(item);
     item->setData(kMapEditorBackgroundXScaleRole, qBound(0.01, scale, 100.0));
     item->setData(kMapEditorBackgroundMetadataFormatRole,
                   static_cast<int>(TherionBackgroundMetadataFormat::Mapiah));
     applyBackgroundLayerTransform(item);
+    restoreBackgroundLayerPivotScenePosition(item, pivotScenePosition);
     syncBackgroundLayerMapiahMetadata(item, tr("Scale Background Image"), true);
     saveBackgroundLayersToSession();
     refreshBackgroundLayerPropertyControls();
@@ -2064,10 +2107,12 @@ void MapEditorTab::setSelectedBackgroundLayerYScale(qreal scale)
         return;
     }
 
+    const QPointF pivotScenePosition = backgroundLayerPivotScenePosition(item);
     item->setData(kMapEditorBackgroundYScaleRole, qBound(0.01, scale, 100.0));
     item->setData(kMapEditorBackgroundMetadataFormatRole,
                   static_cast<int>(TherionBackgroundMetadataFormat::Mapiah));
     applyBackgroundLayerTransform(item);
+    restoreBackgroundLayerPivotScenePosition(item, pivotScenePosition);
     syncBackgroundLayerMapiahMetadata(item, tr("Scale Background Image"), true);
     saveBackgroundLayersToSession();
     refreshBackgroundLayerPropertyControls();
@@ -2495,8 +2540,13 @@ void MapEditorTab::setSelectedBackgroundLayerPivotAtScenePosition(const QPointF 
             refreshToolbarSummary();
             return;
         }
-        const qreal scaleX = viewRect.width() / static_cast<qreal>(pixmapSize.width());
-        const qreal scaleY = viewRect.height() / static_cast<qreal>(pixmapSize.height());
+        // Inverse of the layer transform at the pivot, which maps a local point
+        // to pos + point * viewScale * layerScale. Both scales have to be
+        // undone, or the marker lands away from the point that was clicked.
+        const qreal scaleX = (viewRect.width() / static_cast<qreal>(pixmapSize.width()))
+            * backgroundLayerXScaleValue(item);
+        const qreal scaleY = (viewRect.height() / static_cast<qreal>(pixmapSize.height()))
+            * backgroundLayerYScaleValue(item);
         const QPointF pivotLocal((scenePosition.x() - item->pos().x()) / scaleX,
                                  (scenePosition.y() - item->pos().y()) / scaleY);
         item->setData(kMapEditorBackgroundRotationCenterDxRole, pivotLocal.x());

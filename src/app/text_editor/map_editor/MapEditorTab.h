@@ -250,6 +250,15 @@ public:
     {
         setSelectedBackgroundLayerPivotAtScenePosition(scenePosition);
     }
+    QPointF backgroundLayerPivotScenePositionForTest(int index) const
+    {
+        return backgroundLayerPivotScenePosition(backgroundLayerItemAt(index));
+    }
+    QRectF backgroundLayerSceneBoundingRectForTest(int index) const
+    {
+        const QGraphicsPixmapItem *item = backgroundLayerItemAt(index);
+        return item != nullptr ? item->sceneBoundingRect() : QRectF();
+    }
 #endif
     void removeSelectedBackgroundLayer();
     void moveSelectedBackgroundLayerUp();
@@ -594,6 +603,8 @@ private:
     qreal backgroundLayerRotationDegValue(const QGraphicsPixmapItem *item) const;
     QPointF backgroundLayerBaseModelPosition(QGraphicsPixmapItem *item) const;
     QPointF backgroundLayerPivotScenePosition(QGraphicsPixmapItem *item) const;
+    void restoreBackgroundLayerPivotScenePosition(QGraphicsPixmapItem *item,
+                                                  const QPointF &pivotScenePosition);
     std::optional<MapEditorXviStationSnapCandidate> xviStationSnapAtScenePosition(const QPointF &scenePosition) const;
     void refreshBackgroundPivotMarkerVisibility();
     void setSelectedBackgroundLayerPivotAtScenePosition(const QPointF &scenePosition);
