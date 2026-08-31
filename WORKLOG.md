@@ -274,6 +274,22 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Keep style policy, UI construction, presentation contracts, and source/model logic separated.
 - Do not combine GUI cleanup with source-model, parser, validation, file IO, or process execution changes.
 
+### Command Catalog Metadata
+
+- The validator rejected legitimate `statistics` commands: `explo-length off`, `carto-count on` and
+  `copyright 2` all reported `unknown-argument-value`. `thlayout.cxx` accepts two positional arguments and
+  eight item names, but the book writes both arguments inside one angle bracket group and factors the shared
+  suffix of the item names across three forms, so `infer_allowed_values` dropped `copyright` and promoted the
+  `number` type to an allowed value.
+- The three forms are extracted -- `layout.json` holds three `statistics` options -- but the deduplication in
+  `generate_therion_catalog.py` keeps the first and discards the rest, so only one reaches the validator.
+  Carrying every item would mean several signatures per command and a validator that tries each, which is a
+  data model decision rather than an extraction fix; the override states the two arguments instead.
+- The value stays unconstrained on purpose: the accepted values depend on the item, and the catalog format
+  cannot express that dependency. Constraining their union would trade the old false positives for new ones.
+- Open: remove the override if the catalog ever carries alternative signatures per command. Clarifying the
+  upstream book does not remove the need for it, since the deduplication still lets only one form through.
+
 ### SVG Backgrounds
 
 - Follow `plans/SVG_BACKGROUND_PLAN.md` for remaining SVG background work.
