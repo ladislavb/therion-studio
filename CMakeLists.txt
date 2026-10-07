@@ -243,7 +243,7 @@ set(THERION_MAP_EDITOR_QTEST_SUITES
     MapEditorObjectDeletePlannerTest
     MapEditorObjectMovePlannerTest
     MapEditorPointSymbolGeometryTest
-    MapEditorRasterBackgroundTransformTest
+    MapEditorBackgroundTransformTest
     MapEditorSceneGenerationTest
     MapEditorSourceProjectionCacheTest
     MapEditorSvgBackgroundMetadataTest
@@ -693,8 +693,8 @@ set(THERION_MAP_EDITOR_SOURCES
     src/app/text_editor/map_editor/MapEditorSmartAreaPlanner.h
     src/app/text_editor/map_editor/MapEditorRasterBackgroundImage.cpp
     src/app/text_editor/map_editor/MapEditorRasterBackgroundImage.h
-    src/app/text_editor/map_editor/MapEditorRasterBackgroundTransform.cpp
-    src/app/text_editor/map_editor/MapEditorRasterBackgroundTransform.h
+    src/app/text_editor/map_editor/MapEditorBackgroundTransform.cpp
+    src/app/text_editor/map_editor/MapEditorBackgroundTransform.h
     src/app/text_editor/map_editor/MapEditorRasterBackgroundPlacement.cpp
     src/app/text_editor/map_editor/MapEditorRasterBackgroundPlacement.h
     src/app/text_editor/map_editor/MapEditorSvgBackgroundItem.cpp
@@ -1299,7 +1299,7 @@ qt_add_executable(MapEditorLogicQTests
     tests/MapEditorObjectDeletePlannerTest.cpp
     tests/MapEditorObjectMovePlannerTest.cpp
     tests/MapEditorPointSymbolGeometryTest.cpp
-    tests/MapEditorRasterBackgroundTransformTest.cpp
+    tests/MapEditorBackgroundTransformTest.cpp
     tests/MapEditorSceneGenerationTest.cpp
     tests/MapEditorSourceProjectionCacheTest.cpp
     tests/MapEditorSvgBackgroundMetadataTest.cpp
@@ -1322,8 +1322,8 @@ qt_add_executable(MapEditorLogicQTests
     src/app/text_editor/map_editor/MapEditorObjectMovePlanner.cpp
     src/app/text_editor/map_editor/MapEditorObjectMovePlanner.h
     src/app/text_editor/map_editor/MapEditorPointSymbolGeometry.h
-    src/app/text_editor/map_editor/MapEditorRasterBackgroundTransform.cpp
-    src/app/text_editor/map_editor/MapEditorRasterBackgroundTransform.h
+    src/app/text_editor/map_editor/MapEditorBackgroundTransform.cpp
+    src/app/text_editor/map_editor/MapEditorBackgroundTransform.h
     src/app/text_editor/map_editor/MapEditorSceneGeneration.cpp
     src/app/text_editor/map_editor/MapEditorSceneGeneration.h
     src/app/text_editor/map_editor/MapEditorSourceProjectionCache.cpp
@@ -1877,6 +1877,9 @@ set(THERION_UI_TEST_TARGETS
     MapEditorViewportInputControllerTest
     MapEditorViewportTabletInputTest)
 
+set(THERION_UI_QTEST_AGGREGATE_TARGETS
+    MapEditorBackgroundUiQTests)
+
 set(THERION_CORPUS_TEST_TARGETS)
 if(TARGET ThreeDViewerLoxCorpusTest)
     list(APPEND THERION_CORPUS_TEST_TARGETS ThreeDViewerLoxCorpusTest)
@@ -1885,6 +1888,7 @@ endif()
 set(THERION_TEST_EXECUTABLE_TARGETS
     ${THERION_UNIT_TEST_TARGETS}
     ${THERION_UI_TEST_TARGETS}
+    ${THERION_UI_QTEST_AGGREGATE_TARGETS}
     ${THERION_CORPUS_TEST_TARGETS})
 
 set(THERION_TEST_SUPPORT_TARGETS
@@ -1895,7 +1899,9 @@ add_custom_target(therion_unit_tests
     DEPENDS ${THERION_UNIT_TEST_TARGETS})
 
 add_custom_target(therion_ui_tests
-    DEPENDS ${THERION_UI_TEST_TARGETS})
+    DEPENDS
+        ${THERION_UI_TEST_TARGETS}
+        ${THERION_UI_QTEST_AGGREGATE_TARGETS})
 
 if(THERION_CORPUS_TEST_TARGETS)
     add_custom_target(therion_corpus_tests
@@ -1915,7 +1921,7 @@ set(THERION_QTEST_AGGREGATE_TARGETS
     MainWindowServiceQTests
     ThreeDViewerQTests
     MapEditorLogicQTests
-    MapEditorBackgroundUiQTests
+    ${THERION_UI_QTEST_AGGREGATE_TARGETS}
     TextEditorDocumentServiceQTests
     TextEditorRawEditorQTests
     BlockEditorLogicQTests

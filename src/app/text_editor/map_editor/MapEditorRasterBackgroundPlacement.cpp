@@ -7,7 +7,7 @@
 #include <QtMath>
 
 #include "MapEditorRasterBackgroundImage.h"
-#include "MapEditorRasterBackgroundTransform.h"
+#include "MapEditorBackgroundTransform.h"
 #include "../../../core/MapBackgroundPlacement.h"
 #include "../../../core/TherionBackgroundMetadata.h"
 
@@ -162,7 +162,7 @@ void applyMapEditorRasterLayerTransform(QGraphicsPixmapItem *item)
         return;
     }
 
-    RasterBackgroundTransformInput input;
+    MapiahBackgroundTransformInput input;
     input.viewScaleX = viewRect.width() / static_cast<qreal>(pixmapSize.width());
     input.viewScaleY = viewRect.height() / static_cast<qreal>(pixmapSize.height());
     input.layerScaleX = item->data(kMapEditorBackgroundXScaleRole).isValid()
@@ -178,7 +178,7 @@ void applyMapEditorRasterLayerTransform(QGraphicsPixmapItem *item)
     input.intrinsicWidth = pixmapSize.width();
     input.intrinsicHeight = pixmapSize.height();
 
-    const QTransform transform = rasterBackgroundLayerTransform(input);
+    const QTransform transform = mapiahBackgroundLayerTransform(input);
 
     item->setTransformationMode(Qt::SmoothTransformation);
     item->setTransformOriginPoint(0.0, 0.0);

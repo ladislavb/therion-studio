@@ -3,7 +3,7 @@
 //     scale -> pivot restoration -> xx/yy mutation -> serialization
 //           -> parsing/reload
 //
-// The pure transform is covered by MapEditorRasterBackgroundTransformTest.
+// The pure transform is covered by MapEditorBackgroundTransformTest.
 // What matters here is that scaling a layer rewrites the anchor consistently,
 // that reloading the document reproduces the same geometry, and that saving a
 // second time leaves the metadata byte for byte identical.
@@ -65,6 +65,7 @@ class MapEditorBackgroundRoundTripTest final : public QObject
 private slots:
     void scaledLayerSurvivesReload_data();
     void scaledLayerSurvivesReload();
+    void xviScalingMatchesMapiahComposition();
 
 private:
     bool writeFixture(const QDir &directory, bool pivotSet, qreal rotationDeg, QString *filePath);
@@ -235,6 +236,152 @@ void MapEditorBackgroundRoundTripTest::scaledLayerSurvivesReload()
     QVERIFY(mapTab->save(&errorMessage));
     pumpEvents();
     QCOMPARE(mapiahMetadataLine(mapTab->text()), savedMetadata);
+}
+
+void MapEditorBackgroundRoundTripTest::xviScalingMatchesMapiahComposition()
+{
+    QTemporaryDir temporaryDirectory;
+    QVERIFY(temporaryDirectory.isValid());
+    const QDir directory(temporaryDirectory.path());
+
+    QFile xviFile(directory.filePath(QStringLiteral("background.xvi")));
+    QVERIFY(xviFile.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    xviFile.write("set XVIgrid {0 0}\n"
+                  "set XVIstations {\n"
+                  "  {0 0 root}\n"
+                  "}\n"
+                  "set XVIshots {\n"
+                  "  {0 0 100 0}\n"
+                  "}\n"
+                  "set XVIsketchlines {\n"
+                  "  {black 0 0 100 100}\n"
+                  "}\n");
+    xviFile.close();
+
+    const QString filePath = directory.filePath(QStringLiteral("xvi-roundtrip.th2"));
+    QFile documentFile(filePath);
+    QVERIFY(documentFile.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    documentFile.write(
+        "encoding utf-8\n"
+        "##XTHERION## xth_me_area_adjust -100 -100 500 500\n"
+        "##XTHERION## xth_me_area_zoom_to 100\n"
+        "##MAPIAH## image_insert_v1 {format=xvi;filename=background.xvi;xx=100;yy=200;"
+        "xScale=1;yScale=1;rotationCenterDx=25;rotationCenterDy=15;rotationDeg=0;"
+        "pivotSet=true;xviRoot=root}\n"
+        "\n"
+        "scrap xvi-roundtrip -projection plan\n"
+        "point 100 200 station -name root\n"
+        "endscrap\n");
+    documentFile.close();
+
+    QtFileSystem fileSystem;
+    FakeSessionStore sessionStore;
+    QMainWindow hostWindow;
+    hostWindow.resize(800, 600);
+    auto *central = new QWidget(&hostWindow);
+    auto *layout = new QVBoxLayout(central);
+    layout->setContentsMargins(0, 0, 0, 0);
+    auto *mapTab = new MapEditorTab(fileSystem, sessionStore, CommandCatalogStore(), central);
+    layout->addWidget(mapTab);
+    hostWindow.setCentralWidget(central);
+    hostWindow.show();
+    pumpEvents();
+
+    QString errorMessage;
+    QVERIFY2(mapTab->loadFile(filePath, &errorMessage), qPrintable(errorMessage));
+    for (int attempt = 0;
+         attempt < 200
+         && (mapTab->backgroundLayerCount() != 1
+             || !mapTab->backgroundLayerSceneBoundingRectForTest(0).isValid());
+         ++attempt) {
+        pumpEvents();
+    }
+    QCOMPARE(mapTab->backgroundLayerCount(), 1);
+    mapTab->setSelectedBackgroundLayerIndex(0);
+    pumpEvents();
+
+    const QVector<TherionBackgroundReference> referencesBefore =
+        parseTherionBackgroundReferences(mapTab->text(), filePath);
+    QCOMPARE(referencesBefore.size(), 1);
+    QCOMPARE(referencesBefore.first().layerFormat, TherionBackgroundLayerFormat::Xvi);
+    const QPointF anchorBefore = referencesBefore.first().basePosition;
+    const QPointF pivotBefore = mapTab->backgroundLayerPivotScenePositionForTest(0);
+    const QRectF boundsBefore = mapTab->backgroundLayerSceneBoundingRectForTest(0);
+    QVERIFY(boundsBefore.isValid());
+
+    mapTab->setSelectedBackgroundLayerXScale(2.0);
+    pumpEvents();
+    mapTab->setSelectedBackgroundLayerYScale(1.5);
+    pumpEvents();
+
+    const QPointF pivotAfter = mapTab->backgroundLayerPivotScenePositionForTest(0);
+    const QRectF boundsAfter = mapTab->backgroundLayerSceneBoundingRectForTest(0);
+    QVERIFY(std::abs(pivotAfter.x() - pivotBefore.x()) < 0.5);
+    QVERIFY(std::abs(pivotAfter.y() - pivotBefore.y()) < 0.5);
+    QVERIFY(std::abs(boundsAfter.width() - (boundsBefore.width() * 2.0)) < 0.5);
+    QVERIFY(std::abs(boundsAfter.height() - (boundsBefore.height() * 1.5)) < 0.5);
+
+    const QVector<TherionBackgroundReference> referencesAfter =
+        parseTherionBackgroundReferences(mapTab->text(), filePath);
+    QCOMPARE(referencesAfter.size(), 1);
+    QCOMPARE(referencesAfter.first().layerFormat, TherionBackgroundLayerFormat::Xvi);
+    QVERIFY(std::abs(referencesAfter.first().basePosition.x() - 75.0) < 1e-6);
+    QVERIFY(std::abs(referencesAfter.first().basePosition.y() - 192.5) < 1e-6);
+    QVERIFY(referencesAfter.first().basePosition != anchorBefore);
+    QCOMPARE(referencesAfter.first().xScale, 2.0);
+    QCOMPARE(referencesAfter.first().yScale, 1.5);
+
+    const QPointF pickedPivot = pivotAfter + QPointF(17.0, -11.0);
+    mapTab->setSelectedBackgroundLayerPivotAtScenePositionForTest(pickedPivot);
+    pumpEvents();
+    const QPointF pivotAfterPick = mapTab->backgroundLayerPivotScenePositionForTest(0);
+    QVERIFY(std::abs(pivotAfterPick.x() - pickedPivot.x()) < 0.5);
+    QVERIFY(std::abs(pivotAfterPick.y() - pickedPivot.y()) < 0.5);
+
+    mapTab->setSelectedBackgroundLayerRotationDeg(23.0);
+    pumpEvents();
+    const QPointF pivotAfterRotation = mapTab->backgroundLayerPivotScenePositionForTest(0);
+    QVERIFY(std::abs(pivotAfterRotation.x() - pickedPivot.x()) < 0.5);
+    QVERIFY(std::abs(pivotAfterRotation.y() - pickedPivot.y()) < 0.5);
+
+    const QVector<TherionBackgroundReference> referencesBeforeRotatedScale =
+        parseTherionBackgroundReferences(mapTab->text(), filePath);
+    QCOMPARE(referencesBeforeRotatedScale.size(), 1);
+    mapTab->setSelectedBackgroundLayerYScale(1.75);
+    pumpEvents();
+    const QPointF pivotAfterRotatedScale = mapTab->backgroundLayerPivotScenePositionForTest(0);
+    QVERIFY(std::abs(pivotAfterRotatedScale.x() - pickedPivot.x()) < 0.5);
+    QVERIFY(std::abs(pivotAfterRotatedScale.y() - pickedPivot.y()) < 0.5);
+    const QVector<TherionBackgroundReference> referencesAfterRotatedScale =
+        parseTherionBackgroundReferences(mapTab->text(), filePath);
+    QCOMPARE(referencesAfterRotatedScale.size(), 1);
+    QVERIFY(referencesAfterRotatedScale.first().basePosition
+            != referencesBeforeRotatedScale.first().basePosition);
+    QCOMPARE(referencesAfterRotatedScale.first().yScale, 1.75);
+    QCOMPARE(referencesAfterRotatedScale.first().rotationDeg, 23.0);
+    const QRectF boundsBeforeSave = mapTab->backgroundLayerSceneBoundingRectForTest(0);
+
+    const QString savedMetadata = mapiahMetadataLine(mapTab->text());
+    QVERIFY(!savedMetadata.isEmpty());
+    QVERIFY2(mapTab->save(&errorMessage), qPrintable(errorMessage));
+    pumpEvents();
+    QVERIFY2(mapTab->loadFile(filePath, &errorMessage), qPrintable(errorMessage));
+    for (int attempt = 0;
+         attempt < 200
+         && (mapTab->backgroundLayerCount() != 1
+             || !mapTab->backgroundLayerSceneBoundingRectForTest(0).isValid());
+         ++attempt) {
+        pumpEvents();
+    }
+    QCOMPARE(mapiahMetadataLine(mapTab->text()), savedMetadata);
+    const QPointF pivotReloaded = mapTab->backgroundLayerPivotScenePositionForTest(0);
+    const QRectF boundsReloaded = mapTab->backgroundLayerSceneBoundingRectForTest(0);
+    QVERIFY(std::abs(pivotReloaded.x() - pivotAfterRotatedScale.x()) < 0.5);
+    QVERIFY(std::abs(pivotReloaded.y() - pivotAfterRotatedScale.y()) < 0.5);
+    QVERIFY(std::abs(boundsReloaded.x() - boundsBeforeSave.x()) < 0.5);
+    QVERIFY(std::abs(boundsReloaded.y() - boundsBeforeSave.y()) < 0.5);
+    QVERIFY(std::abs(boundsReloaded.width() - boundsBeforeSave.width()) < 0.5);
+    QVERIFY(std::abs(boundsReloaded.height() - boundsBeforeSave.height()) < 0.5);
 }
 
 int runMapEditorBackgroundRoundTripTest(int argc, char **argv)

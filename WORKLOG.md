@@ -287,18 +287,18 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Mapiah raster layers were composed with the scale applied around the image centre, while Mapiah scales from the
   `xx`/`yy` anchor and only rotates around the pivot. The anchor therefore drifted by `(1 - scale) * size / 2`, which
   is the "scaled and shifted" symptom reported in `ladislavb/therion-studio#30`.
-- The composition now lives in `MapEditorRasterBackgroundTransform`, a pure geometry unit covered by
-  `MapEditorRasterBackgroundTransformTest` against the Mapiah formulas, with a non-uniform scale so a swapped
+- The composition now lives in `MapEditorBackgroundTransform`, a shared pure geometry unit covered by
+  `MapEditorBackgroundTransformTest` against the Mapiah formulas, with a non-uniform scale so a swapped
   rotation/scale order cannot pass unnoticed.
-- Two call sites assumed the centre pivot and were corrected with it: interactive scaling now compensates the recorded
-  anchor so the visible pivot marker stays put, and custom pivot picking undoes the layer scale as well as the view
-  scale when inverting a clicked scene point.
+- Raster, SVG, and XVI now share anchor-scaled Mapiah composition. Interactive scaling compensates the recorded anchor
+  so the visible pivot marker stays put, and custom pivot picking undoes the layer scale as well as the view/model
+  projection when inverting a clicked scene point.
 - `MapEditorBackgroundRoundTripTest` covers scale, pivot restoration, `xx`/`yy` mutation, serialization and reload,
   including a second save that must not drift the metadata. It runs in the new `MapEditorBackgroundUiQTests` runner,
-  the first QTest aggregate for map editor UI suites.
+  the first QTest aggregate for map editor UI suites, which is included in the aggregate UI build target used by CI.
 - Open: confirmation against a real survey document is still needed, since the current coverage rests on synthetic
-  fixtures and the reported figures; the maintainer has not yet commented on the direction. The specification wording
-  for the composition and the pivot-stays-fixed behaviour is a proposal for the maintainer to arbitrate.
+  fixtures and the reported figures. Focused UI coverage pins XVI to the same non-uniform anchor scaling, explicit-pivot
+  placement, metadata rewrite, and reload behavior as raster/SVG layers.
 
 ### 3D Viewer
 

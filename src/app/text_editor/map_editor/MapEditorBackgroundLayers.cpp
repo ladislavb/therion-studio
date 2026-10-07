@@ -47,6 +47,7 @@
 
 #include "MapEditorRasterBackgroundImage.h"
 #include "MapEditorRasterBackgroundPlacement.h"
+#include "MapEditorBackgroundTransform.h"
 #include "MapEditorBackgroundAssetLoader.h"
 #include "MapEditorSceneSupport.h"
 #include "MapEditorSvgBackgroundItem.h"
@@ -1502,17 +1503,27 @@ void applyXviBackgroundItemTransform(QGraphicsPixmapItem *item,
     const qreal rotationDeg = backgroundItemRotationDegValue(item);
     const bool pivotSet = item->data(kMapEditorBackgroundPivotSetRole).toBool();
 
+    const QPointF anchorPreview = mapEditorModelToPreviewPoint(basePosition, modelBounds, previewBounds);
     const QPointF pivotModel = pivotSet
         ? QPointF(basePosition.x() + rotationCenterDx, basePosition.y() + rotationCenterDy)
         : basePosition;
     const QPointF pivotPreview = mapEditorModelToPreviewPoint(pivotModel, modelBounds, previewBounds);
-    const QPointF pivotLocal = pivotPreview - item->pos();
 
-    QTransform transform;
-    transform.translate(pivotLocal.x(), pivotLocal.y());
-    transform.rotate(rotationDeg);
-    transform.scale(backgroundItemXScaleValue(item), backgroundItemYScaleValue(item));
-    transform.translate(-pivotLocal.x(), -pivotLocal.y());
+    MapiahBackgroundTransformInput input;
+    input.layerScaleX = backgroundItemXScaleValue(item);
+    input.layerScaleY = backgroundItemYScaleValue(item);
+    input.rotationDeg = rotationDeg;
+    const QPointF anchorLocal = anchorPreview - item->pos();
+    const QPointF pivotLocal = pivotPreview - item->pos();
+    input.anchorLocalX = anchorLocal.x();
+    input.anchorLocalY = anchorLocal.y();
+    // XVI uses its anchor as the default pivot, unlike raster/SVG layers,
+    // whose unset pivot defaults to the image centre.
+    input.pivotSet = true;
+    input.pivotLocalX = pivotLocal.x();
+    input.pivotLocalY = pivotLocal.y();
+    const QTransform transform = mapiahBackgroundLayerTransform(input);
+
     item->setTransformOriginPoint(0.0, 0.0);
     item->setScale(1.0);
     item->setRotation(0.0);
@@ -2041,10 +2052,10 @@ void MapEditorTab::setSelectedBackgroundLayerPosition(const QPointF &position)
     refreshBackgroundLayerPropertyControls();
 }
 
-// The layer transform scales from the `xx`/`yy` anchor, so changing the scale
+// Mapiah transforms scale from the `xx`/`yy` anchor, so changing the scale
 // moves the pivot with it. Interactive scaling is expected to turn around the
 // pivot the user can see, so the item is shifted back and the anchor recorded
-// in the metadata follows.
+// in the metadata follows for raster, SVG, and XVI layers alike.
 void MapEditorTab::restoreBackgroundLayerPivotScenePosition(QGraphicsPixmapItem *item,
                                                             const QPointF &pivotScenePosition)
 {
@@ -2066,20 +2077,40 @@ void MapEditorTab::restoreBackgroundLayerPivotScenePosition(QGraphicsPixmapItem 
     // The anchor written back to the metadata lives in model units and is read
     // from its own role rather than from the item position, so it has to travel
     // by the same amount or the next reload would undo the shift.
-    QRectF sourceBounds = mapSourceBoundsForCurrentDocument();
+    const bool xviLayer = isMapEditorXviBackgroundPath(item->data(0).toString());
+    QRectF sourceBounds;
+    if (xviLayer && textEditor_ != nullptr) {
+        const XtherionAreaAdjust areaAdjust = parseXtherionAreaAdjust(textEditor_->text());
+        if (areaAdjust.valid && areaAdjust.modelRect.isValid()) {
+            sourceBounds = areaAdjust.modelRect;
+        }
+    }
+    if (!sourceBounds.isValid()) {
+        sourceBounds = mapSourceBoundsForCurrentDocument();
+    }
     if (!sourceBounds.isValid()) {
         sourceBounds = xtherionAutoAreaAdjustRect();
     }
     const QRectF previewBounds = mapPreviewBounds();
-    const QVariant baseValue = item->data(kBackgroundLayerRasterBasePositionRole);
+    const int basePositionRole = xviLayer
+        ? kBackgroundLayerXviBasePositionRole
+        : kBackgroundLayerRasterBasePositionRole;
+    const QVariant baseValue = item->data(basePositionRole);
     if (!sourceBounds.isValid() || !previewBounds.isValid() || !baseValue.canConvert<QPointF>()) {
         return;
     }
 
     const QPointF modelOrigin = mapEditorPreviewToModelPoint(QPointF(0.0, 0.0), sourceBounds, previewBounds);
     const QPointF modelShifted = mapEditorPreviewToModelPoint(sceneDelta, sourceBounds, previewBounds);
-    item->setData(kBackgroundLayerRasterBasePositionRole,
-                  baseValue.toPointF() + (modelShifted - modelOrigin));
+    item->setData(basePositionRole, baseValue.toPointF() + (modelShifted - modelOrigin));
+    if (xviLayer) {
+        const QVariant expectedTopLeft = item->data(kBackgroundLayerXviExpectedTopLeftRole);
+        if (expectedTopLeft.canConvert<QPointF>()) {
+            item->setData(kBackgroundLayerXviExpectedTopLeftRole,
+                          expectedTopLeft.toPointF() + sceneDelta);
+        }
+        item->setData(kBackgroundLayerXviGeometryKeyRole, QString());
+    }
 }
 
 void MapEditorTab::setSelectedBackgroundLayerXScale(qreal scale)
@@ -2409,7 +2440,11 @@ QPointF MapEditorTab::backgroundLayerPivotScenePosition(QGraphicsPixmapItem *ite
     const QPointF basePosition = backgroundLayerBaseModelPosition(item);
     const QPointF pivotModel(basePosition.x() + item->data(kMapEditorBackgroundRotationCenterDxRole).toDouble(),
                              basePosition.y() + item->data(kMapEditorBackgroundRotationCenterDyRole).toDouble());
-    return mapEditorModelToPreviewPoint(pivotModel, sourceBounds, previewBounds);
+    const QPointF pivotPreview = mapEditorModelToPreviewPoint(pivotModel, sourceBounds, previewBounds);
+    if (isMapEditorXviBackgroundPath(layerPath)) {
+        return item->sceneTransform().map(pivotPreview - item->pos());
+    }
+    return pivotPreview;
 }
 
 void MapEditorTab::ensureBackgroundPivotMarker()
@@ -2528,8 +2563,15 @@ void MapEditorTab::setSelectedBackgroundLayerPivotAtScenePosition(const QPointF 
             return;
         }
 
-        const QPointF pivotModel = mapEditorPreviewToModelPoint(scenePosition, sourceBounds, previewBounds);
         const QPointF basePosition = backgroundLayerBaseModelPosition(item);
+        const QPointF anchorScene = mapEditorModelToPreviewPoint(basePosition, sourceBounds, previewBounds);
+        const QPointF unscaledPivotScene(
+            anchorScene.x()
+                + ((scenePosition.x() - anchorScene.x()) / backgroundLayerXScaleValue(item)),
+            anchorScene.y()
+                + ((scenePosition.y() - anchorScene.y()) / backgroundLayerYScaleValue(item)));
+        const QPointF pivotModel =
+            mapEditorPreviewToModelPoint(unscaledPivotScene, sourceBounds, previewBounds);
         item->setData(kMapEditorBackgroundRotationCenterDxRole, pivotModel.x() - basePosition.x());
         item->setData(kMapEditorBackgroundRotationCenterDyRole, pivotModel.y() - basePosition.y());
     } else {
@@ -3546,9 +3588,9 @@ void MapEditorTab::syncBackgroundLayerMapiahMetadata(QGraphicsPixmapItem *item,
     QPointF basePosition;
     if (xviLayer) {
         const QVariant baseValue = item->data(kBackgroundLayerXviBasePositionRole);
-        basePosition = existingReference.has_value()
-            ? existingReference->basePosition
-            : (baseValue.canConvert<QPointF>() ? baseValue.toPointF() : QPointF());
+        basePosition = baseValue.canConvert<QPointF>()
+            ? baseValue.toPointF()
+            : (existingReference.has_value() ? existingReference->basePosition : QPointF());
     } else {
         QRectF sourceBounds = mapSourceBoundsForCurrentDocument();
         const QRectF previewBounds = mapPreviewBounds();

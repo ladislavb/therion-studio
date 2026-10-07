@@ -1,11 +1,11 @@
-#include "MapEditorRasterBackgroundTransform.h"
+#include "MapEditorBackgroundTransform.h"
 
 #include <QtGlobal>
 
 namespace TherionStudio
 {
 
-QTransform rasterBackgroundLayerTransform(const RasterBackgroundTransformInput &input)
+QTransform mapiahBackgroundLayerTransform(const MapiahBackgroundTransformInput &input)
 {
     QTransform transform;
 
@@ -24,12 +24,17 @@ QTransform rasterBackgroundLayerTransform(const RasterBackgroundTransformInput &
     const qreal pivotLocalY = input.pivotSet ? input.pivotLocalY : (input.intrinsicHeight / 2.0);
     const qreal pivotPreviewX = pivotLocalX * input.viewScaleX;
     const qreal pivotPreviewY = pivotLocalY * input.viewScaleY;
+    const qreal anchorPreviewX = input.anchorLocalX * input.viewScaleX;
+    const qreal anchorPreviewY = input.anchorLocalY * input.viewScaleY;
+    const qreal pivotOffsetX = pivotPreviewX - anchorPreviewX;
+    const qreal pivotOffsetY = pivotPreviewY - anchorPreviewY;
 
     // Mapiah scales from the anchor, so the pivot is carried by that same
     // scaling before the rotation turns around it. Translating by the scaled
     // pivot -- rather than by the pivot itself -- is what keeps the `xx`/`yy`
     // anchor fixed when there is no rotation.
-    transform.translate(pivotPreviewX * input.layerScaleX, pivotPreviewY * input.layerScaleY);
+    transform.translate(anchorPreviewX + (pivotOffsetX * input.layerScaleX),
+                        anchorPreviewY + (pivotOffsetY * input.layerScaleY));
     transform.rotate(input.rotationDeg);
     transform.scale(input.layerScaleX, input.layerScaleY);
     transform.translate(-pivotPreviewX, -pivotPreviewY);
