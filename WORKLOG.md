@@ -15,11 +15,6 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Active Work
 
-### French Localization Promotion
-
-- Land the PR #32 review follow-up that keeps French manual packaging and runtime selection, shipped-language labels,
-  localization validation, and the normative supported-language requirements aligned.
-
 ### 2026.7.2 Planning
 
 - Keep the `2026.7.2` scope open for the focused performance sequence: Map runtime ownership R4-R5 and map refresh
