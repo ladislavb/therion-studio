@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generated_at_utc": "2026-06-13T14:32:18.012378+00:00",
+    "generated_at_utc": "2026-08-28T19:21:51.418624+00:00",
     "generator_version": "4",
     "source_repository": "snapshot-copy",
     "source_reference": "snapshot-copy",
@@ -8727,20 +8727,34 @@
       ],
       "arguments": [
         {
-          "raw": "<explo/topo/carto/copyright all/off/number>",
-          "name": "<explo/topo/carto/copyright all/off/number>",
-          "signature": "<explo/topo/carto/copyright all/off/number>",
+          "raw": "<item>",
+          "name": "<item>",
+          "signature": "<item>",
           "option_key": "",
           "value_arity": "1",
           "value_domain": "enum",
           "description": "",
           "allowed_values": [
-            "explo",
-            "topo",
             "carto",
-            "off",
-            "number"
+            "carto-count",
+            "copyright",
+            "copyright-count",
+            "explo",
+            "explo-length",
+            "topo",
+            "topo-length"
           ],
+          "dependencies": []
+        },
+        {
+          "raw": "<value>",
+          "name": "<value>",
+          "signature": "<value>",
+          "option_key": "",
+          "value_arity": "1",
+          "value_domain": "unknown",
+          "description": "",
+          "allowed_values": [],
           "dependencies": []
         }
       ],

@@ -7,6 +7,7 @@ int runRawEditorCompletionInsertionControllerTest(int argc, char **argv);
 int runRawEditorCompletionContextAnalyzerTest(int argc, char **argv);
 int runRawEditorCompletionTokenContextTest(int argc, char **argv);
 int runRawEditorFindShortcutTest(int argc, char **argv);
+int runTextEditorValidationCatalogTest(int argc, char **argv);
 
 int main(int argc, char **argv)
 {
@@ -16,5 +17,6 @@ int main(int argc, char **argv)
         {"RawEditorCompletionInsertionControllerTest", runRawEditorCompletionInsertionControllerTest},
         {"RawEditorCompletionContextAnalyzerTest", runRawEditorCompletionContextAnalyzerTest},
         {"RawEditorCompletionTokenContextTest", runRawEditorCompletionTokenContextTest},
-        {"RawEditorFindShortcutTest", runRawEditorFindShortcutTest}});
+        {"RawEditorFindShortcutTest", runRawEditorFindShortcutTest},
+        {"TextEditorValidationCatalogTest", runTextEditorValidationCatalogTest}});
 }

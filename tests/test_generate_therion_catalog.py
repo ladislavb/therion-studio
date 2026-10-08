@@ -69,6 +69,26 @@ class TherionCatalogGenerationTest(unittest.TestCase):
         aliases = centreline.get("aliases", [])
         self.assertIn("centerline", aliases)
 
+    def test_statistics_override_splits_item_and_value_arguments(self) -> None:
+        arguments = self.commands_by_name["statistics"]["arguments"]
+        self.assertEqual(len(arguments), 2)
+        self.assertEqual(
+            arguments[0]["allowed_values"],
+            [
+                "carto",
+                "carto-count",
+                "copyright",
+                "copyright-count",
+                "explo",
+                "explo-length",
+                "topo",
+                "topo-length",
+            ],
+        )
+        self.assertEqual(arguments[0]["value_arity"], "1")
+        self.assertEqual(arguments[1]["allowed_values"], [])
+        self.assertEqual(arguments[1]["value_arity"], "1")
+
     def test_known_context_examples(self) -> None:
         line_contexts = self.commands_by_name["line"].get("contexts", [])
         point_contexts = self.commands_by_name["point"].get("contexts", [])
