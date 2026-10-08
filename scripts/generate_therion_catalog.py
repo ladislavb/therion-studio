@@ -328,6 +328,10 @@ def clean_tex_text(value: str) -> str:
     stripped = PIPE_TOKEN_RE.sub(lambda match: match.group(1), stripped)
     stripped = TEX_CMD_RE.sub(" ", stripped)
     stripped = stripped.replace("\\\\", " ")
+    # Plain TeX terminates a macro name with a control space, as in "\MP\ variable"
+    # or "\TeX\ sections". TEX_CMD_RE removes the macro itself but leaves that
+    # trailing backslash behind, so drop any backslash left before whitespace.
+    stripped = re.sub(r"\\(?=\s|$)", " ", stripped)
     stripped = stripped.replace("|", " ")
     stripped = stripped.replace("{", " ").replace("}", " ")
     stripped = stripped.replace("with - print-encodings", "with --print-encodings")
