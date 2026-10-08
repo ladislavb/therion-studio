@@ -4,7 +4,7 @@ Last updated: 2026-07-14
 
 This guide covers everyday workflows in Therion Studio. It intentionally focuses on using the application, not on the full Therion language reference. Therion source syntax, command names, options, and serialized document content stay in canonical Therion form.
 
-The application follows the operating system language when a bundled translation is available. English, Czech, and Slovak are included. Use `File -> Settings...` (`Preferences...` in the native macOS application menu) to override the application language. Language changes take effect after restarting Therion Studio.
+The application follows the operating system language when a bundled translation is available. English, Czech, French, and Slovak are included. Use `File -> Settings...` (`Preferences...` in the native macOS application menu) to override the application language. Language changes take effect after restarting Therion Studio.
 
 ## Contents
 
@@ -419,7 +419,7 @@ Open settings from `File -> Settings...` or `Preferences...` on macOS.
 
 Settings include:
 
-- application language (`System Default`, English, Czech, Slovak)
+- application language (`System Default`, English, Czech, French, Slovak)
 - Therion executable path
 - default editor for newly opened `.th` and Therion config tabs (`Raw` or `Blocks`)
 - automatic full-project validation after project, document, and file changes

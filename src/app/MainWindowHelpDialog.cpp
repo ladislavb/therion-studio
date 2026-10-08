@@ -100,7 +100,8 @@ QStringList userManualLocaleTags()
         appendUnique(tags, QStringLiteral("en"));
         return tags;
     }
-    if (applicationLanguage == QStringLiteral("cs") || applicationLanguage == QStringLiteral("sk")) {
+    if (applicationLanguage == QStringLiteral("cs") || applicationLanguage == QStringLiteral("fr")
+        || applicationLanguage == QStringLiteral("sk")) {
         appendUnique(tags, applicationLanguage);
         return tags;
     }

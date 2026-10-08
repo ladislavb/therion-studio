@@ -833,13 +833,13 @@ The Qt application shall support a multilingual user interface and locale-aware 
 
 Required behavior:
 
-- the initial release language set shall include English (`en`), Czech (`cs`), and Slovak (`sk`)
+- the shipped language set shall include English (`en`), Czech (`cs`), French (`fr`), and Slovak (`sk`)
 - additional language catalogs may be staged before release, but staged languages shall not be advertised, user-selectable, or loaded automatically until their application catalog and localized user manual are complete
 - user-facing UI strings shall be localizable, including menus, toolbars, dialogs, alerts, empty states, inspector labels, search controls, console labels, and help-panel chrome
 - platform/Qt-provided standard menu items and standard dialog chrome shall participate in application localization when the relevant Qt translation catalogs are available
 - English shall be the required default source language and fallback language
 - the application shall default to the operating system language when a supported translation is available
-- the Settings dialog shall allow an explicit application-language override (`System Default`, `English`, `Czech`, `Slovak`); if immediate language switching is not practical, the change may take effect on next launch
+- the Settings dialog shall allow an explicit application-language override (`System Default`, `English`, `Czech`, `French`, `Slovak`); if immediate language switching is not practical, the change may take effect on next launch
 - where the platform exposes a native per-app language mechanism, the Settings dialog shall write the explicit application-language override through that native mechanism and shall clear it when `System Default` is selected
 - macOS application bundles shall advertise the shipped UI localizations to the operating system so the native per-app language selector can offer supported languages; macOS builds shall use the app-domain `AppleLanguages` override for explicit language choices
 - Therion language elements such as commands, options, keywords, file-format tokens, and serialized document content shall remain in canonical Therion syntax and shall not be translated
@@ -1286,14 +1286,14 @@ The criteria below are intended for implementation verification and QA.
 
 #### 8.1.12 Localization and Multi-language Support
 
-- The initial release ships with English, Czech, and Slovak UI coverage for the core application chrome and workflows.
+- The application ships with English, Czech, French, and Slovak UI coverage for the core application chrome and workflows.
 - The application displays translated UI strings when launched in a supported non-default language.
-- The Settings dialog can override the operating-system language with English, Czech, or Slovak, with the change applying no later than next launch.
-- On macOS, the packaged app appears in the system per-app language selector as supporting English, Czech, and Slovak, and explicit Settings language choices are reflected through the app-domain language override used by that selector.
+- The Settings dialog can override the operating-system language with English, Czech, French, or Slovak, with the change applying no later than next launch.
+- On macOS, the packaged app appears in the system per-app language selector as supporting English, Czech, French, and Slovak, and explicit Settings language choices are reflected through the app-domain language override used by that selector.
 - If a user-selected or system language is unsupported, the application falls back to English without missing labels or broken placeholders.
 - Menus, dialogs, toolbar labels, inspector labels, search controls, and console labels participate in localization.
 - Platform/Qt-provided standard actions such as the macOS application menu `Preferences...` item display in the selected application language when matching Qt translation catalogs are installed.
-- Bundled Czech and Slovak translation catalogs build with no unfinished application-string entries for the shipped UI coverage.
+- Bundled Czech, French, and Slovak translation catalogs build with no unfinished application-string entries for the shipped UI coverage.
 - Staged language catalogs can exist in the repository without being exposed to users; promoting a staged language to the supported set requires complete application translations, a localized user manual, placeholder validation, and runtime/packaging wiring.
 - Therion commands, options, keywords, and serialized file content remain in canonical Therion syntax and are not translated.
 - Unicode file paths, project names, and editor content can be opened, displayed, searched, and saved correctly.
@@ -1377,7 +1377,7 @@ The MVP shall include the following capabilities at a minimum:
 - edit and save Therion source files
 - provide Therion syntax highlighting and basic completion assistance
 - provide the inline find/replace controls, contextual help panel, and encoding visibility needed for daily text-editing workflows
-- provide localization-ready UI infrastructure and support the initial release language set of English, Czech, and Slovak without altering Therion syntax or serialized file content
+- provide localization-ready UI infrastructure and support the shipped language set of English, Czech, French, and Slovak without altering Therion syntax or serialized file content
 - provide the bundled Therion syntax-highlighting palette and bundled application-theme resources needed for consistent editor and UI presentation
 - support both light and dark appearance modes in the shipped application theme
 - open TH2 files in a graphical editor

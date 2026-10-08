@@ -16,6 +16,9 @@ inline QString normalizeApplicationLanguageSetting(const QString &language)
     if (normalized == QStringLiteral("cs") || normalized.startsWith(QStringLiteral("cs-"))) {
         return QStringLiteral("cs");
     }
+    if (normalized == QStringLiteral("fr") || normalized.startsWith(QStringLiteral("fr-"))) {
+        return QStringLiteral("fr");
+    }
     if (normalized == QStringLiteral("sk") || normalized.startsWith(QStringLiteral("sk-"))) {
         return QStringLiteral("sk");
     }

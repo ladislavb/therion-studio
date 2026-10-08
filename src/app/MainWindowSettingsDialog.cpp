@@ -41,6 +41,7 @@ MainWindowSettingsDialog::MainWindowSettingsDialog(const Settings &settings, QWi
     languageCombo_->addItem(tr("System Default"), QStringLiteral("system"));
     languageCombo_->addItem(tr("English"), QStringLiteral("en"));
     languageCombo_->addItem(tr("Czech"), QStringLiteral("cs"));
+    languageCombo_->addItem(tr("French"), QStringLiteral("fr"));
     languageCombo_->addItem(tr("Slovak"), QStringLiteral("sk"));
     selectComboData(languageCombo_, settings.applicationLanguage, QStringLiteral("system"));
     formLayout->addRow(tr("Language"), languageCombo_);

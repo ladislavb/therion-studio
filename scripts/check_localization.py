@@ -11,9 +11,10 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SHIPPED_LANGUAGES = ("cs", "sk")
-STAGED_LANGUAGES = ("de", "es", "fr", "it", "pt")
+SHIPPED_LANGUAGES = ("cs", "fr", "sk")
+STAGED_LANGUAGES = ("de", "es", "it", "pt")
 SOURCE_LANGUAGE = "en"
+SHIPPED_LANGUAGE_LABELS = ("English", "Czech", "French", "Slovak")
 PLACEHOLDER_RE = re.compile(r"%\d+")
 
 
@@ -63,11 +64,13 @@ def check_catalog(language: str, *, require_finished: bool) -> list[str]:
     message_count = 0
     unfinished_count = 0
     empty_finished_count = 0
+    source_texts: set[str] = set()
     for context in root.findall("context"):
         context_name = context.findtext("name") or ""
         for message in context.findall("message"):
             message_count += 1
             source = message_text(message.find("source"))
+            source_texts.add(source)
             translation_element = message.find("translation")
             translation = message_text(translation_element)
             unfinished = translation_element is None or translation_element.get("type") == "unfinished"
@@ -88,6 +91,12 @@ def check_catalog(language: str, *, require_finished: bool) -> list[str]:
         errors.append(f"{path.relative_to(REPO_ROOT)} has {unfinished_count} unfinished translation(s)")
     if require_finished and empty_finished_count:
         errors.append(f"{path.relative_to(REPO_ROOT)} has {empty_finished_count} empty finished translation(s)")
+    if language in SHIPPED_LANGUAGES:
+        for label in SHIPPED_LANGUAGE_LABELS:
+            if label not in source_texts:
+                errors.append(
+                    f"{path.relative_to(REPO_ROOT)} is missing shipped language label {label!r}"
+                )
 
     return errors
 
@@ -113,10 +122,32 @@ def check_cmake_lists() -> list[str]:
         needle = f"translations/therion_studio_{language}.ts"
         if needle not in cmake:
             errors.append(f"CMakeLists.txt does not list shipped catalog {needle}")
+        manual = f"docs/USER_MANUAL.{language}.md"
+        if manual not in cmake:
+            errors.append(f"CMakeLists.txt does not install shipped manual {manual}")
     for language in STAGED_LANGUAGES:
         needle = f"translations/therion_studio_{language}.ts"
         if needle not in cmake:
             errors.append(f"CMakeLists.txt does not list staged catalog {needle}")
+    return errors
+
+
+def check_shipped_runtime_wiring() -> list[str]:
+    errors: list[str] = []
+    settings_dialog = read_text(REPO_ROOT / "src/app/MainWindowSettingsDialog.cpp")
+    help_dialog = read_text(REPO_ROOT / "src/app/MainWindowHelpDialog.cpp")
+    startup = read_text(REPO_ROOT / "src/platform/ApplicationStartupBootstrap.cpp")
+    plist = read_text(REPO_ROOT / "cmake/macos/Info.plist.in")
+    for language in SHIPPED_LANGUAGES:
+        literal = f'QStringLiteral("{language}")'
+        if literal not in settings_dialog:
+            errors.append(f"shipped language {language} is not user-selectable in MainWindowSettingsDialog.cpp")
+        if literal not in help_dialog:
+            errors.append(f"shipped language {language} is not selected explicitly in MainWindowHelpDialog.cpp")
+        if literal not in startup:
+            errors.append(f"shipped language {language} is not enabled in ApplicationStartupBootstrap.cpp")
+        if f"<string>{language}</string>" not in plist:
+            errors.append(f"shipped language {language} is not advertised in Info.plist.in")
     return errors
 
 
@@ -152,6 +183,7 @@ def main() -> int:
         errors.extend(check_catalog(language, require_finished=args.strict_staged))
     errors.extend(check_manuals(require_staged_manuals=args.strict_staged))
     errors.extend(check_cmake_lists())
+    errors.extend(check_shipped_runtime_wiring())
     if not args.strict_staged:
         errors.extend(check_staged_not_user_selectable())
 
