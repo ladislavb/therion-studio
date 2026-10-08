@@ -3671,122 +3671,127 @@ Line-point options: %1</translation>
     </message>
     <message>
         <location filename="../src/app/MainWindowSettingsDialog.cpp" line="44"/>
+        <source>French</source>
+        <translation>Francúzština</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="45"/>
         <source>Slovak</source>
         <translation>Slovenčina</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="46"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="47"/>
         <source>Language</source>
         <translation>Jazyk</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="49"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="50"/>
         <source>Language changes take effect after restarting Therion Studio.</source>
         <translation>Zmena jazyka sa prejaví po reštarte Therion Studia.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="58"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="59"/>
         <source>Browse...</source>
         <translation>Prehliadať...</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="64"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="65"/>
         <source>Auto-detect</source>
         <translation>Automaticky zistiť</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="77"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="78"/>
         <source>Therion executable</source>
         <translation>Spustiteľný súbor Therion</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="80"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="81"/>
         <source>Raw</source>
         <translation>Zdroj</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="81"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="82"/>
         <source>Blocks</source>
         <translation>Bloky</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="85"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="86"/>
         <source>Default .th / config editor</source>
         <translation>Predvolený editor pre .th / konfiguráciu</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="88"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="89"/>
         <source>Run full project validation automatically</source>
         <translation>Automaticky spúšťať úplnú validáciu projektu</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="91"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="92"/>
         <source>When enabled, the Validation panel refreshes the whole project after project, document, and file changes.</source>
         <translation>Keď je zapnuté, panel Validácia obnoví celý projekt po zmenách projektu, dokumentov a súborov.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="95"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="96"/>
         <source>Enable troubleshooting logs for 24 hours</source>
         <translation>Zapnúť diagnostické logy na 24 hodín</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="98"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="99"/>
         <source>Diagnostic logging writes timing and input diagnostics to the application log folder and takes effect after restarting Therion Studio.</source>
         <translation>Diagnostické logovanie zapisuje časovanie a diagnostiku vstupu do priečinka logov aplikácie a prejaví sa po reštarte Therion Studia.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="102"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="103"/>
         <source>Troubleshooting logs are rotated automatically and the preference expires after 24 hours.</source>
         <translation>Diagnostické logy sa automaticky rotujú a nastavenie vyprší po 24 hodinách.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="111"/>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="202"/>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="210"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="112"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="203"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="211"/>
         <source>Open Log Folder</source>
         <translation>Otvoriť priečinok logov</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="116"/>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="220"/>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="226"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="117"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="221"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="227"/>
         <source>Clear Logs</source>
         <translation>Vymazať logy</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="203"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="204"/>
         <source>The diagnostic log folder is not available on this system.</source>
         <translation>Priečinok diagnostických logov nie je na tomto systéme dostupný.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="211"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="212"/>
         <source>Could not open the diagnostic log folder.</source>
         <translation>Priečinok diagnostických logov sa nepodarilo otvoriť.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="221"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="222"/>
         <source>Could not clear diagnostic logs.</source>
         <translation>Diagnostické logy sa nepodarilo vymazať.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="227"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="228"/>
         <source>Diagnostic logs were cleared.</source>
         <translation>Diagnostické logy boli vymazané.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="159"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="160"/>
         <source>Auto-detect Therion Executable</source>
         <translation>Automaticky zistiť spustiteľný súbor Therion</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="160"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="161"/>
         <source>Therion executable could not be found automatically.
 Please use Browse to locate it manually.</source>
         <translation>Spustiteľný súbor Therion sa nepodarilo nájsť automaticky.
 Použite Prehliadať a vyberte ho ručne.</translation>
     </message>
     <message>
-        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="176"/>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="177"/>
         <source>Select Therion Executable</source>
         <translation>Vyberte spustiteľný súbor Therion</translation>
     </message>

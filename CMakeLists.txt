@@ -1034,6 +1034,7 @@ install(TARGETS TherionStudio
 install(FILES
         docs/USER_MANUAL.md
         docs/USER_MANUAL.cs.md
+        docs/USER_MANUAL.fr.md
         docs/USER_MANUAL.sk.md
     DESTINATION "${CMAKE_INSTALL_DATADIR}/doc/therion-studio")
 

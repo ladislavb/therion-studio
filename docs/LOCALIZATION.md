@@ -39,7 +39,7 @@ Staged application translations are present for translation work but are not use
 - Spanish: `translations/therion_studio_es.ts`
 - Portuguese: `translations/therion_studio_pt.ts`
 
-The initial language set is advertised in:
+The shipped language set is advertised in:
 
 - `CMakeLists.txt`, through `THERION_STUDIO_TRANSLATION_FILES`
 - `src/platform/ApplicationStartupBootstrap.cpp`, through startup locale selection and translator loading
