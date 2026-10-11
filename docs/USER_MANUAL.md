@@ -247,6 +247,12 @@ These map controls are enabled when the embedded `.th2` workspace is in `Visual`
 
 The map canvas uses a stable light paper-style surface in both light and dark application modes. Toolbars, tabs, and inspectors follow the system appearance, but raster backgrounds, `.xvi` references, and map symbols are not inverted or tinted for dark mode.
 
+Line decorations stay small on screen when zooming in or out: overhang teeth, pit/pitch and step ticks, wall-material and handrail symbols, flowstone/moonmilk waves, and ladder rails/rungs use the map style catalog's nominal screen-pixel sizes and spacing. Custom style overrides follow the same rule; spacing is adjusted to fit the projected line where the style requests it.
+
+The yellow direction tick shown for a selected line stays 18 screen pixels long. It remains attached to the first vertex, follows the first curve handle or segment, and changes side when the line is reversed, including during dragging.
+
+This editor preview does not change TH2 coordinates, source options, undo history, or Therion's exported geometry and symbol sizes. An explicitly entered slope `l-size` still represents a real geometric length and therefore grows when you zoom in; a slope with no explicit `l-size` uses a small screen-sized fallback tick. Point symbols, path-following text, and area patterns retain their separate display policies.
+
 ### 6.4 Insert Objects
 
 - `Point`: click once in the map.

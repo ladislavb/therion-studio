@@ -34,7 +34,12 @@ public:
                                 QGraphicsItem *parent = nullptr);
 
     void setDecorationPath(const QPainterPath &path);
+    void setDecorationPath(const QPainterPath &path,
+                           const QVector<MapEditorLineDecorationVertex> &lineVertices);
+    bool usesLineVertexMetrics() const;
+    void updateViewTransform(const QTransform &viewTransform);
     QRectF boundingRect() const override;
+    QRectF sourceGeometryBounds() const;
     qreal hitDistancePixels(const QPointF &scenePosition, const QTransform &viewTransform) const;
 
 protected:
@@ -43,25 +48,11 @@ protected:
                QWidget *widget = nullptr) override;
 
 private:
-    enum class DrawMode
-    {
-        Ticks,
-        Rungs,
-        Teeth,
-        Symbols,
-        Waves
-    };
-
     void updatePaintBounds();
     void drawDecorations(QPainter *painter, qreal zoomOutScale);
-    void drawOffsetStroke(QPainter *painter,
-                          const MapEditorLineDecorationStyle &decoration,
-                          qreal offset,
-                          qreal zoomOutScale);
-    void drawRepeated(QPainter *painter,
-                      const MapEditorLineDecorationStyle &decoration,
-                      qreal zoomOutScale,
-                      DrawMode mode);
+    void drawScreenDecoration(QPainter *painter,
+                         const MapEditorLineDecorationStyle &decoration,
+                         qreal zoomOutScale);
     void drawTick(QPainter *painter,
                   const MapEditorLineDecorationStyle &decoration,
                   const QPointF &point,
@@ -71,11 +62,6 @@ private:
                   const MapEditorLineDecorationStyle &decoration,
                   const QPointF &point,
                   const QPointF &normal);
-    void drawTooth(QPainter *painter,
-                   const MapEditorLineDecorationStyle &decoration,
-                   qreal centerDistance,
-                   qreal markerStep,
-                   int markerIndex);
     void drawSymbol(QPainter *painter,
                     const MapEditorLineDecorationStyle &decoration,
                     const QPointF &point,
@@ -89,9 +75,6 @@ private:
                   const QPointF &tangent,
                   const QPointF &normal,
                   int markerIndex);
-    void drawSlopeTicks(QPainter *painter,
-                        const MapEditorLineDecorationStyle &decoration,
-                        qreal zoomOutScale);
 
     QVector<MapEditorLineDecorationStyle> decorations_;
     QVector<MapEditorLineDecorationVertex> lineVertices_;
@@ -101,5 +84,8 @@ private:
     qreal linePointLengthScale_ = 1.0;
     QRectF paintBounds_;
     std::optional<QColor> interactionColorOverride_;
+    qreal screenPaddingScale_ = 2.0;
 };
+
+void updateMapEditorScreenSpaceMetrics(QGraphicsScene *scene, const QTransform &viewTransform);
 }

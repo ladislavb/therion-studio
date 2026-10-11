@@ -6,7 +6,8 @@ This document describes the current build and packaging workflow.
 
 - CMake 3.21 or newer
 - C++20 compiler
-- Qt 6.4 or newer with `Widgets`, `Svg`, and `Concurrent`
+- Qt 6.4 or newer with `Widgets`, `Svg`, `Concurrent`, `Test`, `Quick`,
+  `QuickWidgets`, `Qml`, and `QuickControls2`
 
 The bundled command catalog, syntax palette, and UI icons are compiled into Qt resources.
 Localization maintenance is documented in `docs/LOCALIZATION.md`.
@@ -192,6 +193,20 @@ CI build workflows also run staged install-layout smoke checks via
 - Windows: verify `bin/TherionStudio.exe` plus deployed Qt runtime layout, accepting release and Debug Qt runtime names
 
 ## Linux
+
+On Ubuntu/Linux Mint, the 3D viewer also needs `qt6-declarative-dev` at build
+time; Qt base development packages alone do not provide `Qt6QuickConfig.cmake`.
+Install the Qt Quick QML runtime modules listed in
+`scripts/linux-packages/build_deb_package_docker.sh` when testing the 3D viewer.
+
+For a project-local Release installation (not a packaged AppImage):
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --target TherionStudio -j2
+cmake --install build --prefix "$PWD/install"
+./install/bin/TherionStudio
+```
 
 Linux packaging currently targets two distributable artifact families:
 

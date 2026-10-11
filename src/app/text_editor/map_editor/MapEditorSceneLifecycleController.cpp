@@ -1,6 +1,8 @@
 #include "MapEditorSceneLifecycleController.h"
 
 #include "MapEditorSceneSupport.h"
+#include "MapEditorLineDecorationItem.h"
+#include "MapEditorDirectionAidItem.h"
 
 #include <QGraphicsItem>
 #include <QGraphicsPixmapItem>
@@ -71,10 +73,10 @@ void MapEditorSceneLifecycleController::clearMapScene()
             preservedDrafts.append(draftItem);
             continue;
         }
-
-        mapScene->removeItem(item);
-        delete item;
     }
+
+    // Let Qt reset its scene index before deleting the remaining items.
+    mapScene->clear();
 
     *context_.draftGeometryItems = preservedDrafts;
     *context_.backgroundImageItems = preservedBackgrounds;
@@ -122,7 +124,7 @@ void MapEditorSceneLifecycleController::restoreDraftGeometryItems()
     }
 
     for (QGraphicsRectItem *item : std::as_const(*context_.draftGeometryItems)) {
-        if (item == nullptr || mapScene->items().contains(item)) {
+        if (item == nullptr || item->scene() == mapScene) {
             continue;
         }
 
@@ -139,7 +141,7 @@ void MapEditorSceneLifecycleController::restoreBackgroundImageItems()
     }
 
     for (QGraphicsPixmapItem *item : std::as_const(*context_.backgroundImageItems)) {
-        if (item == nullptr || mapScene->items().contains(item)) {
+        if (item == nullptr || item->scene() == mapScene) {
             continue;
         }
 
@@ -199,6 +201,7 @@ void MapEditorSceneLifecycleController::syncZoomFactorFromView()
     }
 
     const QTransform viewTransform = context_.view->transform();
+    updateMapEditorScreenSpaceMetrics(scene(), context_.view->viewportTransform());
     const qreal scaleX = std::hypot(viewTransform.m11(), viewTransform.m21());
     *context_.zoomFactor = scaleX > 0.0 ? scaleX : 1.0;
     context_.emitZoomStatusChanged(context_.zoomPercent());
@@ -247,7 +250,12 @@ QRectF MapEditorSceneLifecycleController::mapGeometryFitBounds() const
             continue;
         }
 
-        const QRectF itemBounds = item->sceneBoundingRect();
+        if (dynamic_cast<MapEditorDirectionAidItem *>(item)) {
+            continue;
+        }
+        const auto *decoration = dynamic_cast<MapEditorLineDecorationItem *>(item);
+        const QRectF itemBounds = decoration
+            ? decoration->mapRectToScene(decoration->sourceGeometryBounds()) : item->sceneBoundingRect();
         if (!itemBounds.isValid()) {
             continue;
         }

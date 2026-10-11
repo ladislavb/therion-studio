@@ -2,6 +2,7 @@
 #include "MapEditorSceneInternals.h"
 #include "MapEditorSceneThemePolicy.h"
 #include "MapEditorLineDecorationItem.h"
+#include "MapEditorDirectionAidItem.h"
 #include "MapEditorObjectStyleCatalog.h"
 #include "MapEditorPointSymbolGeometry.h"
 #include "MapEditorReferencedAreaResolver.h"
@@ -13,6 +14,7 @@
 #include <QGraphicsPathItem>
 #include <QGraphicsItem>
 #include <QGraphicsScene>
+#include <QGraphicsView>
 #include <QPainter>
 #include <QPainterPath>
 #include <QRegularExpression>
@@ -989,6 +991,8 @@ struct StyledLinePath
 {
     QString subtype;
     QPainterPath path;
+    QVector<MapEditorLineDecorationVertex> decorationVertices;
+    qreal metricLength = 0.0;
 };
 
 int lineSegmentStartVertexIndex(const MapGeometryFeature &feature, int segmentIndex)
@@ -1074,6 +1078,25 @@ QVector<StyledLinePath> styledLinePathsForFeature(const MapGeometryFeature &feat
                                  startVertexIndex,
                                  toPreview)) {
             continue;
+        }
+        const auto &startVertex = feature.lineVertices.at(startVertexIndex);
+        const auto &endVertex = feature.lineVertices.at(segment.endVertexIndex);
+        if (startVertex.leftSize || startVertex.orientationDegrees
+            || endVertex.leftSize || endVertex.orientationDegrees
+            || !currentPath.decorationVertices.isEmpty()) {
+            if (currentPath.decorationVertices.isEmpty()) {
+                currentPath.metricLength = currentPath.path.length();
+                QPainterPath piece;
+                appendSegmentToPath(&piece, feature, segment, startVertexIndex, toPreview);
+                currentPath.metricLength -= piece.length();
+                currentPath.decorationVertices.append({toPreview(startVertex.anchor),
+                    currentPath.metricLength, startVertex.orientationDegrees, startVertex.leftSize});
+            }
+            QPainterPath piece;
+            appendSegmentToPath(&piece, feature, segment, startVertexIndex, toPreview);
+            currentPath.metricLength += piece.length();
+            currentPath.decorationVertices.append({toPreview(endVertex.anchor),
+                currentPath.metricLength, endVertex.orientationDegrees, endVertex.leftSize});
         }
     }
 
@@ -2315,9 +2338,12 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                                                                               segmentGeometryStroke,
                                                                               feature.reversed,
                                                                               feature.lineNumber,
-                                                                              {},
+                                                                              styledPath.decorationVertices,
                                                                               mapScale);
                 scene->addItem(segmentDecorationItem);
+                if (!scene->views().isEmpty()) {
+                    segmentDecorationItem->updateViewTransform(scene->views().first()->viewportTransform());
+                }
                 segmentDecorationItem->setZValue(2.55);
                 markGeometryItem(segmentDecorationItem);
                 segmentDecorationItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
@@ -2348,6 +2374,9 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                                                                                                   previewBounds),
                                                                  mapScale);
             scene->addItem(lineDecorationItem);
+            if (!scene->views().isEmpty()) {
+                lineDecorationItem->updateViewTransform(scene->views().first()->viewportTransform());
+            }
             lineDecorationItem->setZValue(2.55);
             markGeometryItem(lineDecorationItem);
             lineDecorationItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
@@ -2357,8 +2386,8 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
         if (renderLineGuideSpine) {
             lineGuideSpineItem = addGuideSpineItem(path, thickLineWidth);
         }
-        const qreal lineDirectionTickLength = qBound(12.0, 18.0 * mapScale, 24.0);
-        auto *directionTickItem = new QGraphicsLineItem;
+        constexpr qreal lineDirectionTickLength = 18.0;
+        auto *directionTickItem = new MapEditorDirectionAidItem;
         directionTickItem->setPen(cosmeticPen(mapEditorDirectionTickColor(),
                                               3.4,
                                               Qt::SolidLine,
@@ -2375,9 +2404,16 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                                                                                    sourceBounds,
                                                                                    previewBounds,
                                                                                    lineDirectionTickLength)) {
-            directionTickItem->setLine(tickLine.value());
+            directionTickItem->setSceneLine(tickLine.value());
+        } else {
+            const QPointF anchor = mapGeometryPointToPreview(feature.lineVertices.first().anchor,
+                                                            sourceBounds, previewBounds);
+            directionTickItem->setSceneLine(QLineF(anchor, anchor));
         }
         scene->addItem(directionTickItem);
+        if (!scene->views().isEmpty()) {
+            directionTickItem->updateViewTransform(scene->views().first()->viewportTransform());
+        }
         if (mapItemsByLine != nullptr && feature.lineNumber > 0) {
             mapItemsByLine->insert(feature.lineNumber, lineItem);
         }
@@ -2754,7 +2790,12 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
             const QPainterPath interactivePath = linePathForFeature(interactiveFeature, sourceBounds, previewBounds);
             lineItem->setPath(interactivePath);
             if (lineDecorationItem != nullptr) {
-                lineDecorationItem->setDecorationPath(interactivePath);
+                if (lineDecorationItem->usesLineVertexMetrics()) {
+                    lineDecorationItem->setDecorationPath(interactivePath,
+                        lineDecorationVerticesForFeature(interactiveFeature, sourceBounds, previewBounds));
+                } else {
+                    lineDecorationItem->setDecorationPath(interactivePath);
+                }
             }
             if (lineGuideSpineItem != nullptr) {
                 lineGuideSpineItem->setPath(interactivePath);
@@ -2781,7 +2822,12 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                         || binding.styledPathIndex >= interactiveStyledPaths.size()) {
                         continue;
                     }
-                    binding.decorationItem->setDecorationPath(interactiveStyledPaths.at(binding.styledPathIndex).path);
+                    const auto &styledPath = interactiveStyledPaths.at(binding.styledPathIndex);
+                    if (binding.decorationItem->usesLineVertexMetrics()) {
+                        binding.decorationItem->setDecorationPath(styledPath.path, styledPath.decorationVertices);
+                    } else {
+                        binding.decorationItem->setDecorationPath(styledPath.path);
+                    }
                 }
             }
             if (styledGuideItems != nullptr) {
@@ -2809,9 +2855,9 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                                                                                 anchorPreviewAt(1),
                                                                                 feature.reversed,
                                                                                 lineDirectionTickLength)) {
-                    directionTickItem->setLine(tickLine.value());
+                    directionTickItem->setSceneLine(tickLine.value());
                 } else {
-                    directionTickItem->setLine(QLineF(anchorPreviewAt(0), anchorPreviewAt(0)));
+                    directionTickItem->setSceneLine(QLineF(anchorPreviewAt(0), anchorPreviewAt(0)));
                 }
             }
 
@@ -2846,7 +2892,12 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
                 updateInteractiveLinePreview();
                 return;
             }
-            if (*couplingGuard || !dragActive) {
+            // Secondary setPos callbacks run synchronously; the outer move
+            // updates the preview once all coupled controls are in place.
+            if (*couplingGuard) {
+                return;
+            }
+            if (!dragActive) {
                 updateInteractiveLinePreview();
                 return;
             }

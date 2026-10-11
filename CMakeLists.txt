@@ -251,7 +251,9 @@ set(THERION_MAP_EDITOR_QTEST_SUITES
     MapEditorUndoArbitrationServiceTest)
 
 set(THERION_MAP_EDITOR_BACKGROUND_UI_QTEST_SUITES
-    MapEditorBackgroundRoundTripTest)
+    MapEditorBackgroundRoundTripTest
+    MapEditorSceneLifecycleTest
+    MapEditorLinePreviewTest)
 
 set(THERION_TEXT_EDITOR_DOCUMENT_QTEST_SUITES
     TextEditorDocumentIoServiceTest
@@ -737,6 +739,7 @@ set(THERION_MAP_EDITOR_SOURCES
     src/app/text_editor/map_editor/MapEditorRecentSymbolsLayout.h
     src/app/text_editor/map_editor/MapEditorLineDecorationItem.cpp
     src/app/text_editor/map_editor/MapEditorLineDecorationItem.h
+    src/app/text_editor/map_editor/MapEditorDirectionAidItem.h
     src/app/text_editor/map_editor/MapEditorPointSymbolGeometry.h
     src/app/text_editor/map_editor/MapEditorStylePreviewWidget.cpp
     src/app/text_editor/map_editor/MapEditorStylePreviewWidget.h
@@ -1249,6 +1252,7 @@ qt_add_executable(MapGeometryFeatureParsingTest
     src/app/text_editor/map_editor/MapEditorObjectStyleCatalog.h
     src/app/text_editor/map_editor/MapEditorLineDecorationItem.cpp
     src/app/text_editor/map_editor/MapEditorLineDecorationItem.h
+    src/app/text_editor/map_editor/MapEditorDirectionAidItem.h
     src/app/text_editor/map_editor/MapEditorObjectDetailsLogic.cpp
     src/app/text_editor/map_editor/MapEditorObjectDetailsLogic.h
     src/app/text_editor/map_editor/MapEditorPointSymbolGeometry.h
@@ -1276,6 +1280,7 @@ qt_add_executable(MapEditorSourceReferenceResolverTest
     src/app/text_editor/map_editor/MapEditorObjectStyleCatalog.h
     src/app/text_editor/map_editor/MapEditorLineDecorationItem.cpp
     src/app/text_editor/map_editor/MapEditorLineDecorationItem.h
+    src/app/text_editor/map_editor/MapEditorDirectionAidItem.h
     src/app/text_editor/map_editor/MapEditorObjectDetailsLogic.cpp
     src/app/text_editor/map_editor/MapEditorObjectDetailsLogic.h
     src/app/text_editor/map_editor/MapEditorPointSymbolGeometry.h
@@ -1747,7 +1752,9 @@ therion_add_map_editor_ui_test(MapEditorSelectionPanelTypeOptionsTest
 
 qt_add_executable(MapEditorBackgroundUiQTests
     tests/MapEditorBackgroundUiQTestMain.cpp
-    tests/MapEditorBackgroundRoundTripTest.cpp)
+    tests/MapEditorBackgroundRoundTripTest.cpp
+    tests/MapEditorSceneLifecycleTest.cpp
+    tests/MapEditorLinePreviewTest.cpp)
 
 target_link_libraries(MapEditorBackgroundUiQTests PRIVATE
     therion_map_editor_ui_test_support
