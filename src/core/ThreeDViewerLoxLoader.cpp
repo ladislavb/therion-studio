@@ -180,7 +180,52 @@ ThreeDViewerLoxLoader::Result ThreeDViewerLoxLoader::loadFile(const QString &pat
         result.error = QStringLiteral("Unable to open .lox file: %1").arg(file.errorString());
         return result;
     }
+
     return loadBytes(file.readAll());
+}
+
+ThreeDViewerLoxLoader::Result ThreeDViewerLoxLoader::loadStationMetadataFile(const QString &path) const
+{
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return {{}, QStringLiteral("Unable to open LOX station metadata.")};
+    }
+    QByteArray metadata;
+    constexpr qint64 maximumMetadataBytes = 32 * 1024 * 1024;
+    int chunks = 0;
+    while (!file.atEnd()) {
+        if (++chunks > 10000) {
+            return {{}, QStringLiteral("LOX metadata chunk limit exceeded.")};
+        }
+        const QByteArray headerBytes = file.read(headerSize);
+        if (headerBytes.size() != headerSize) {
+            return {{}, QStringLiteral("LOX metadata header is truncated.")};
+        }
+        BinaryReader reader(headerBytes, 0, headerSize);
+        ChunkHeader header;
+        reader.readUInt32(&header.type);
+        reader.readUInt32(&header.recordBytes);
+        reader.readUInt32(&header.recordCount);
+        reader.readUInt32(&header.dataBytes);
+        const qint64 payloadSize = qint64(header.recordBytes) + qint64(header.dataBytes);
+        if (payloadSize > file.size() - file.pos()) {
+            return {{}, QStringLiteral("LOX metadata payload is truncated.")};
+        }
+        if (header.type == chunkSurvey || header.type == chunkStation) {
+            if (metadata.size() + headerSize + payloadSize > maximumMetadataBytes) {
+                return {{}, QStringLiteral("LOX station metadata limit exceeded.")};
+            }
+            metadata.append(headerBytes);
+            const QByteArray payload = file.read(payloadSize);
+            if (payload.size() != payloadSize) {
+                return {{}, QStringLiteral("LOX metadata read failed.")};
+            }
+            metadata.append(payload);
+        } else if (!file.seek(file.pos() + payloadSize)) {
+            return {{}, QStringLiteral("LOX metadata seek failed.")};
+        }
+    }
+    return loadBytes(metadata);
 }
 
 ThreeDViewerLoxLoader::Result ThreeDViewerLoxLoader::loadBytes(const QByteArray &bytes) const

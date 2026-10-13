@@ -82,15 +82,7 @@ std::optional<MapGeometryFeature> geometryFeatureForLineNumber(const QVector<The
         return std::nullopt;
     }
 
-    const QVector<TherionParsedLine> parsedLines = parsedLinesForLogicalCommands(commands);
-    const QVector<MapGeometryFeature> features = collectGeometryFeatures(parsedLines);
-    for (const MapGeometryFeature &feature : features) {
-        if (feature.kind == expectedKind && feature.lineNumber == lineNumber) {
-            return feature;
-        }
-    }
-
-    return std::nullopt;
+    return geometryFeatureForLogicalCommandsLine(commands, lineNumber, expectedKind);
 }
 
 QString formatSourceCoordinate(qreal value)

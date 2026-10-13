@@ -16,8 +16,11 @@
 #include <optional>
 
 class QGraphicsScene;
+class QGraphicsView;
+class QPoint;
 class QGraphicsSceneMouseEvent;
 class QPainter;
+class QPainterPath;
 class QStyleOptionGraphicsItem;
 class QUndoCommand;
 class QWidget;
@@ -42,6 +45,31 @@ constexpr int kMapSceneFocusedVertexRole = Qt::UserRole + 128;
 // visible background. Background loading follows the initial scene render, so
 // the items must be toggleable without rebuilding the scene.
 constexpr int kMapSceneEmptyDocumentGuideRole = Qt::UserRole + 129;
+constexpr int kMapSceneLineTypeRole = Qt::UserRole + 130;
+// Station point items carry their owning scrap's source line (0 = outside any
+// scrap). When a station is selected, the other stations of the same scrap get
+// the sibling role so they render with a distinct secondary highlight.
+constexpr int kMapSceneStationScrapRole = Qt::UserRole + 131;
+constexpr int kMapSceneScrapSiblingStationRole = Qt::UserRole + 132;
+
+inline bool isMapSceneWallItem(const QGraphicsItem *item)
+{
+    return item != nullptr
+        && item->data(kMapSceneLineTypeRole).toString() == QStringLiteral("wall");
+}
+
+std::optional<QPointF> nearestWallGeometrySnapPoint(const QGraphicsScene *scene,
+                                                   const QPointF &candidate,
+                                                   qreal radius,
+                                                   int excludedLineNumber = 0);
+
+// Nearest vertex-like editing item (vertices, controls, handles) whose centre
+// is within the direct-hit radius of a viewport position.
+QGraphicsItem *nearestDirectVertexLikeMapItem(const QGraphicsScene *scene,
+                                              const QGraphicsView *view,
+                                              const QPoint &viewportPosition,
+                                              bool requireSelected,
+                                              bool requireVisible);
 
 constexpr qreal kMapEditorCanvasFrameInset = 24.0;
 constexpr qreal kMapEditorCanvasPreviewInset = 20.0;
@@ -87,6 +115,18 @@ enum MapSceneSelectionSubtype
     kMapSceneSelectionSubtypePointOrientationHandle = 6,
     kMapSceneSelectionSubtypeAreaFill = 7
 };
+
+inline bool isMapSceneAreaFillItem(const QGraphicsItem *item)
+{
+    return item != nullptr
+        && item->data(kMapSceneSelectionSubtypeRole).toInt() == kMapSceneSelectionSubtypeAreaFill;
+}
+
+inline bool mapSceneItemParticipatesInPointerSelection(const QGraphicsItem *item)
+{
+    return item != nullptr
+        && (item->acceptedMouseButtons() != Qt::NoButton || isMapSceneAreaFillItem(item));
+}
 
 struct TherionParsedLine;
 
@@ -292,8 +332,16 @@ CoordinateTransform coordinateTransformFromScrapScale(const QStringList &tokens)
 QPointF mapGeometryPointToPreview(const QPointF &point, const QRectF &sourceBounds, const QRectF &targetBounds);
 QPointF mapGeometryPreviewToSource(const QPointF &point, const QRectF &sourceBounds, const QRectF &targetBounds);
 QVector<MapGeometryFeature> collectGeometryFeatures(const QVector<TherionParsedLine> &parsedLines);
+QHash<int, QPainterPath> scrapClipPathsForFeatures(
+    const QVector<MapGeometryFeature> &features, const QRectF &sourceBounds, const QRectF &previewBounds,
+    bool requireConnectedWalls = false, bool approximateMissingContours = false);
 QVector<MapGeometryFeature> collectGeometryFeatures(const Th2GeometryProjection &projection,
                                                     const QVector<TherionSourceLogicalCommand> &commands);
+// Memoized whole-document geometry for one logical-command snapshot. Keyed by the
+// shared command buffer identity (each source revision snapshot owns a distinct
+// buffer), so text edits and undo invalidate it without explicit hooks.
+std::optional<MapGeometryFeature> geometryFeatureForLogicalCommandsLine(
+    const QVector<TherionSourceLogicalCommand> &commands, int lineNumber, MapGeometryFeature::Kind kind);
 bool insertLineVertexByDeCasteljau(QVector<MapGeometryFeature::TH2LineVertex> *lineVertices,
                                    int segmentStartIndex,
                                    qreal t,

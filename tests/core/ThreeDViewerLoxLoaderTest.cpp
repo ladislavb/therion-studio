@@ -91,6 +91,24 @@ class ThreeDViewerLoxLoaderTest : public QObject
     Q_OBJECT
 
 private slots:
+    void metadataMatchesRealLoxWithoutLoadingMeshes()
+    {
+        const ThreeDViewerLoxLoader loader;
+        const auto full = loader.loadFile(committedLoxPath());
+        const auto metadata = loader.loadStationMetadataFile(committedLoxPath());
+        QVERIFY2(metadata.ok(), qPrintable(metadata.error));
+        QCOMPARE(metadata.scene.stations.size(), full.scene.stations.size());
+        QCOMPARE(metadata.scene.surveys.size(), full.scene.surveys.size());
+        QVERIFY(metadata.scene.meshGroups.isEmpty());
+        QVERIFY(metadata.scene.shots.isEmpty());
+        QVERIFY(metadata.scene.surfaces.isEmpty());
+        for (int i = 0; i < full.scene.stations.size(); ++i) {
+            QCOMPARE(metadata.scene.stationQualifiedName(metadata.scene.stations[i]),
+                     full.scene.stationQualifiedName(full.scene.stations[i]));
+            QCOMPARE(metadata.scene.stations[i].position.z, full.scene.stations[i].position.z);
+            QCOMPARE(metadata.scene.stations[i].entrance, full.scene.stations[i].entrance);
+        }
+    }
     void loadsCommittedLoxScene();
     void loadsTerrainSurfaceChunks();
     void rejectsEmptyInput();

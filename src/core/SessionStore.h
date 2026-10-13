@@ -82,6 +82,12 @@ public:
     bool therionMapMagnifierEnabled() const override;
     void setTherionMapMagnifierEnabled(bool enabled) override;
 
+    bool therionMapAltitudeUnderlayEnabled() const override;
+    void setTherionMapAltitudeUnderlayEnabled(bool enabled) override;
+
+    MapAppearanceSettings therionMapAppearance() const override;
+    void setTherionMapAppearance(const MapAppearanceSettings &appearance) override;
+
     bool therionMapObjectsAutoCollapseExpandScrapsEnabled() const override;
     void setTherionMapObjectsAutoCollapseExpandScrapsEnabled(bool enabled) override;
 
@@ -155,6 +161,12 @@ public:
     bool therionMapMagnifierEnabled() const override;
     void setTherionMapMagnifierEnabled(bool enabled) override;
 
+    bool therionMapAltitudeUnderlayEnabled() const override;
+    void setTherionMapAltitudeUnderlayEnabled(bool enabled) override;
+
+    MapAppearanceSettings therionMapAppearance() const override;
+    void setTherionMapAppearance(const MapAppearanceSettings &appearance) override;
+
     bool therionMapObjectsAutoCollapseExpandScrapsEnabled() const override;
     void setTherionMapObjectsAutoCollapseExpandScrapsEnabled(bool enabled) override;
 
@@ -184,6 +196,8 @@ private:
     QString therionTargetConfigPath_;
     bool therionMapTouchFriendlyControlsEnabled_ = false;
     bool therionMapMagnifierEnabled_ = true;
+    bool therionMapAltitudeUnderlayEnabled_ = false;
+    MapAppearanceSettings therionMapAppearance_;
     bool therionMapObjectsAutoCollapseExpandScrapsEnabled_ = false;
     QString therionMapRecentInsertTypeSubtypeHistory_;
     QString therionMapBackgroundLayers_;

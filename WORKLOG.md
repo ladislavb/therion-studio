@@ -15,6 +15,25 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Active Work
 
+- Viewport scrap optimization is measurement-blocked: the production synthetic
+  baseline already submits only visible geometry to paint, explicit hiding
+  retains all full-scene input/selection/zoom scans, and additional normal-view
+  benefit is inconsistent. See `BUGS.md` / `PR-NOTES.md`; obtain a focused
+  interaction trace before implementing ownership-indexed bounded updates or
+  changing scrap visibility. Preserve selection/drag pinning and multiple views.
+- Manually confirm endpoint drag/snap → another wall's Delete Point retains
+  connectivity with the separately staged correctness build after normal GUI
+  closure. Synthetic source/render/undo/save-reload regression is covered; do
+  not replace the currently running executable or mix in viewport culling here.
+- Verify opt-in Map pastel altitude underlay on representative projects after
+  local automated tests: mean mapped LOX station heights relative to flagged
+  entrance, explicitly categorical fallback, no source/export changes.
+- Manually review Settings strength (19% default), XVI centerline `One color` /
+  `By altitude` selection, numeric relative-height sidebar legend, fallback color,
+  and thickness in embedded and detached maps; verify other visible layers stay unchanged.
+- Manually review approximate passage outlines in representative projects;
+  bounded fallback is intentionally incomplete and reports unfilled scraps.
+
 ### 2026.7.2 Planning
 
 - Keep the `2026.7.2` scope open for the focused performance sequence: Map runtime ownership R4-R5 and map refresh

@@ -4,6 +4,9 @@
 
 #include "MapEditorInputPolicy.h"
 #include "MapEditorLineDecorationItem.h"
+#include "MapEditorPerformanceCounters.h"
+#include "MapEditorSceneGeneration.h"
+#include "MapEditorSceneInteractionIndex.h"
 #include "MapEditorSceneInternals.h"
 #include "MapEditorSceneSupport.h"
 #include "../../../platform/DiagnosticLogging.h"
@@ -501,7 +504,7 @@ bool isInteractiveMapSelectionItem(const QGraphicsItem *item)
     if (!(item->flags() & QGraphicsItem::ItemIsSelectable)) {
         return false;
     }
-    if (item->acceptedMouseButtons() == Qt::NoButton) {
+    if (!mapSceneItemParticipatesInPointerSelection(item)) {
         return false;
     }
     return true;
@@ -537,6 +540,7 @@ void clearPendingPrimarySelectionItem(MapEditorViewportInputContext &context)
         return;
     }
 
+    ++mapEditorPerformanceCounters().fullSceneItemScans;
     for (QGraphicsItem *item : context.scene->items()) {
         if (item != nullptr && item->data(kMapScenePendingPrimarySelectionRole).toBool()) {
             item->setData(kMapScenePendingPrimarySelectionRole, false);
@@ -617,63 +621,16 @@ void selectSingleMapHitItem(MapEditorViewportInputContext &context, QGraphicsIte
     }
 }
 
+QRectF sceneProbeRectForViewportRadius(const QGraphicsView *view,
+                                       const QPoint &viewportPosition,
+                                       qreal radiusPixels);
+
 QGraphicsItem *nearestDirectVertexLikeItemForViewportPosition(MapEditorViewportInputContext &context,
                                                               const QPoint &viewportPosition,
                                                               bool requireSelected,
                                                               bool requireVisible)
 {
-    if (context.scene == nullptr || context.view == nullptr) {
-        return nullptr;
-    }
-
-    QGraphicsItem *nearestDirectVertexItem = nullptr;
-    qreal nearestDistance = std::numeric_limits<qreal>::max();
-    const QList<QGraphicsItem *> allItems = context.scene->items();
-    for (QGraphicsItem *candidate : allItems) {
-        if (candidate == nullptr) {
-            continue;
-        }
-
-        const int subtype = candidate->data(kMapSceneSelectionSubtypeRole).toInt();
-        const bool lineControlConnectorHandle = subtype == kMapSceneSelectionSubtypeLineControlConnector
-            && dynamic_cast<QGraphicsLineItem *>(candidate) == nullptr
-            && dynamic_cast<QGraphicsPathItem *>(candidate) == nullptr;
-        const bool vertexLikeItem = dynamic_cast<MapEditableGeometryVertexItem *>(candidate) != nullptr
-            || subtype == kMapSceneSelectionSubtypeLineAnchor
-            || subtype == kMapSceneSelectionSubtypeLineControl
-            || lineControlConnectorHandle
-            || subtype == kMapSceneSelectionSubtypeAreaVertex
-            || subtype == kMapSceneSelectionSubtypePointOrientationHandle;
-        if (!vertexLikeItem) {
-            continue;
-        }
-        if (!isInteractiveMapSelectionItem(candidate)) {
-            continue;
-        }
-        if (requireVisible && !candidate->isVisible()) {
-            continue;
-        }
-        if (requireSelected && !candidate->isSelected()) {
-            continue;
-        }
-        if (candidate->data(kMapSceneLineNumberRole).toInt() <= 0) {
-            continue;
-        }
-
-        const QPoint candidateCenter = context.view->mapFromScene(viewportHitCenterScenePoint(candidate));
-        const QPoint delta = viewportPosition - candidateCenter;
-        const qreal distance = std::hypot(delta.x(), delta.y());
-        if (distance > kDirectVertexAffordanceHitDistancePixels) {
-            continue;
-        }
-
-        if (distance < nearestDistance) {
-            nearestDistance = distance;
-            nearestDirectVertexItem = candidate;
-        }
-    }
-
-    return nearestDirectVertexItem;
+    return nearestDirectVertexLikeMapItem(context.scene, context.view, viewportPosition, requireSelected, requireVisible);
 }
 
 QRectF sceneProbeRectForViewportRadius(const QGraphicsView *view,
@@ -870,7 +827,46 @@ void setMapInteractionHoverItem(MapEditorViewportInputContext &context, QGraphic
     if (context.scene == nullptr) {
         return;
     }
+    if (context.sceneInteractionIndex != nullptr && context.lastInteractionHoverLineNumber != nullptr
+        && context.lastInteractionHoverGeneration != nullptr
+        && (context.sceneGeneration == nullptr || context.sceneGeneration->isSettled())) {
+        const quint64 generation = context.sceneGeneration != nullptr ? context.sceneGeneration->current() : 0;
+        const int hoveredLineNumber = hoverItem != nullptr
+            ? hoverItem->data(kMapSceneLineNumberRole).toInt() : 0;
+        if (*context.lastInteractionHoverLineNumber == hoveredLineNumber
+            && *context.lastInteractionHoverGeneration == generation) {
+            return;
+        }
 
+        const auto &itemsByLine = context.sceneInteractionIndex->itemsByLine(context.scene, generation);
+        const auto updateLine = [&itemsByLine](int lineNumber, bool hovered) {
+            if (lineNumber <= 0) {
+                return;
+            }
+            const auto itemIt = itemsByLine.constFind(lineNumber);
+            if (itemIt == itemsByLine.constEnd()) {
+                return;
+            }
+            for (QGraphicsItem *item : itemIt.value()) {
+                if (item == nullptr) {
+                    continue;
+                }
+                const bool shouldHover = hovered && isInteractiveMapSelectionItem(item);
+                if (item->data(kMapSceneInteractionHoverRole).toBool() == shouldHover) {
+                    continue;
+                }
+                item->setData(kMapSceneInteractionHoverRole, shouldHover);
+                item->update();
+            }
+        };
+        updateLine(*context.lastInteractionHoverLineNumber, false);
+        updateLine(hoveredLineNumber, true);
+        *context.lastInteractionHoverLineNumber = hoveredLineNumber;
+        *context.lastInteractionHoverGeneration = generation;
+        return;
+    }
+
+    ++mapEditorPerformanceCounters().fullSceneItemScans;
     for (QGraphicsItem *item : context.scene->items()) {
         if (item == nullptr) {
             continue;
@@ -881,6 +877,12 @@ void setMapInteractionHoverItem(MapEditorViewportInputContext &context, QGraphic
         }
         item->setData(kMapSceneInteractionHoverRole, shouldHover);
         item->update();
+    }
+    if (context.lastInteractionHoverLineNumber != nullptr && context.lastInteractionHoverGeneration != nullptr) {
+        *context.lastInteractionHoverLineNumber = hoverItem != nullptr
+            ? hoverItem->data(kMapSceneLineNumberRole).toInt() : 0;
+        *context.lastInteractionHoverGeneration = context.sceneGeneration != nullptr
+            ? context.sceneGeneration->current() : 0;
     }
 }
 
@@ -1287,6 +1289,12 @@ std::optional<QPointF> nearestGeometryAnchorSnapPoint(const QGraphicsScene *scen
     return bestPoint;
 }
 
+bool isDrawingWall(const MapEditorViewportInputContext &context)
+{
+    return context.drawMode && context.drawMode() == MapEditorInteractiveDrawMode::Line
+        && context.drawLineType && context.drawLineType() == QStringLiteral("wall");
+}
+
 QPointF snapInteractiveDrawAnchorIfAvailable(const MapEditorViewportInputContext &context,
                                              const QPoint &viewportPoint,
                                              const QPointF &scenePoint)
@@ -1305,6 +1313,12 @@ QPointF snapInteractiveDrawAnchorIfAvailable(const MapEditorViewportInputContext
         return scenePoint;
     }
 
+    if (isDrawingWall(context)) {
+        const auto wallPoint = nearestWallGeometrySnapPoint(context.scene, scenePoint, snapRadius);
+        if (wallPoint) {
+            return *wallPoint;
+        }
+    }
     const std::optional<QPointF> snappedPoint = nearestGeometryAnchorSnapPoint(context.scene, scenePoint, snapRadius);
     return snappedPoint.value_or(scenePoint);
 }
@@ -1332,6 +1346,7 @@ SnapGuideLineCandidate nearestNeighborGeometryLineForSnapGuides(const MapEditorV
 
     qreal bestDistanceSquared = std::numeric_limits<qreal>::max();
     SnapGuideLineCandidate bestCandidate;
+    bool bestIsWall = false;
     const QList<QGraphicsItem *> items = context.scene->items(sceneSearchRectAround(scenePoint, guideRadius),
                                                               Qt::IntersectsItemShape,
                                                               Qt::DescendingOrder);
@@ -1347,8 +1362,7 @@ SnapGuideLineCandidate nearestNeighborGeometryLineForSnapGuides(const MapEditorV
 
         const int subtype = item->data(kMapSceneSelectionSubtypeRole).toInt();
         if (subtype != kMapSceneSelectionSubtypeGeneric
-            && subtype != kMapSceneSelectionSubtypeLineDetail
-            && subtype != kMapSceneSelectionSubtypeAreaFill) {
+            && subtype != kMapSceneSelectionSubtypeLineDetail) {
             continue;
         }
 
@@ -1357,7 +1371,7 @@ SnapGuideLineCandidate nearestNeighborGeometryLineForSnapGuides(const MapEditorV
         stroker.setWidth(guideRadius * 2.0);
         stroker.setCapStyle(Qt::RoundCap);
         stroker.setJoinStyle(Qt::RoundJoin);
-        const QPainterPath guideHitPath = stroker.createStroke(pathItem->path()).united(pathItem->path());
+        const QPainterPath guideHitPath = stroker.createStroke(pathItem->path());
         if (!guideHitPath.contains(localCandidate)) {
             continue;
         }
@@ -1366,10 +1380,13 @@ SnapGuideLineCandidate nearestNeighborGeometryLineForSnapGuides(const MapEditorV
         const qreal deltaX = center.x() - scenePoint.x();
         const qreal deltaY = center.y() - scenePoint.y();
         const qreal distanceSquared = (deltaX * deltaX) + (deltaY * deltaY);
-        if (distanceSquared >= bestDistanceSquared) {
+        const bool preferredWall = isDrawingWall(context) && isMapSceneWallItem(item);
+        if ((bestIsWall && !preferredWall)
+            || (bestIsWall == preferredWall && distanceSquared >= bestDistanceSquared)) {
             continue;
         }
 
+        bestIsWall = preferredWall;
         bestDistanceSquared = distanceSquared;
         bestCandidate.lineNumber = candidateLineNumber;
         bestCandidate.sceneBounds = pathItem->sceneBoundingRect();
@@ -1392,9 +1409,12 @@ QVector<QPointF> snapGuidePointsForNearbyGeometry(const MapEditorViewportInputCo
         return guidePoints;
     }
 
-    const QList<QGraphicsItem *> items = context.scene->items(guideLine.sceneBounds.adjusted(-1.0, -1.0, 1.0, 1.0),
-                                                              Qt::IntersectsItemBoundingRect,
-                                                              Qt::DescendingOrder);
+    // Wall-first snapping includes hidden anchors, so its guides must include them too.
+    const QList<QGraphicsItem *> items = isDrawingWall(context)
+        ? MapEditorSceneHandleIndex::itemsForLine(context.scene, guideLine.lineNumber)
+        : context.scene->items(guideLine.sceneBounds.adjusted(-1.0, -1.0, 1.0, 1.0),
+                               Qt::IntersectsItemBoundingRect,
+                               Qt::DescendingOrder);
     for (QGraphicsItem *item : items) {
         if (item == nullptr) {
             continue;
@@ -1439,8 +1459,10 @@ QGraphicsItem *preferredMapHitItem(const QList<QGraphicsItem *> &hitItems,
                                    const QTransform &viewTransform = QTransform())
 {
     QGraphicsItem *bestItem = nullptr;
+    QGraphicsItem *bestAreaFillItem = nullptr;
     int bestPriority = std::numeric_limits<int>::max();
     qreal bestDistancePixels = std::numeric_limits<qreal>::max();
+    qreal bestAreaFillDistancePixels = std::numeric_limits<qreal>::max();
     bool bestUsesDistanceRanking = false;
     for (QGraphicsItem *item : hitItems) {
         if (!isInteractiveMapSelectionItem(item)) {
@@ -1475,6 +1497,14 @@ QGraphicsItem *preferredMapHitItem(const QList<QGraphicsItem *> &hitItems,
             }
         }
 
+        if (isMapSceneAreaFillItem(item)) {
+            if (distancePixels < bestAreaFillDistancePixels) {
+                bestAreaFillDistancePixels = distancePixels;
+                bestAreaFillItem = item;
+            }
+            continue;
+        }
+
         const int priority = mapSelectionHitPriority(item);
         const bool betterDistanceRankedPath = usesDistanceRanking
             && ((bestUsesDistanceRanking
@@ -1495,7 +1525,7 @@ QGraphicsItem *preferredMapHitItem(const QList<QGraphicsItem *> &hitItems,
             }
         }
     }
-    return bestItem;
+    return bestItem != nullptr ? bestItem : bestAreaFillItem;
 }
 
 }
@@ -1521,6 +1551,35 @@ void MapEditorViewportInputController::showContextMenuAtViewportPosition(const Q
     showSelectionContextMenuAtViewportPosition(context_, viewportPosition, globalPosition);
 }
 
+void MapEditorViewportInputController::refreshHoverAtViewportPosition(const QPoint &viewportPosition)
+{
+    if (context_.view == nullptr || context_.scene == nullptr || context_.view->viewport() == nullptr) {
+        return;
+    }
+    const MapEditorInteractiveDrawMode mode = drawMode();
+    if (mode == MapEditorInteractiveDrawMode::Point
+        || mode == MapEditorInteractiveDrawMode::Line
+        || mode == MapEditorInteractiveDrawMode::Area
+        || (mode == MapEditorInteractiveDrawMode::Freehand && (*context_.interactiveDrawStrokeActive))
+        || (*context_.mapPanActive)) {
+        return;
+    }
+    QWidget *viewport = context_.view->viewport();
+    if (!viewport->rect().contains(viewportPosition)) {
+        setMapInteractionHoverItem(context_, nullptr);
+        return;
+    }
+
+    mapEditorPerformanceCounters().hoverHitTests.fetch_add(1, std::memory_order_relaxed);
+    QGraphicsItem *hoverItem = preferredMapHitItemForViewportPosition(context_, viewportPosition, false, false);
+    setMapInteractionHoverItem(context_, hoverItem);
+    if (slopeOrientationHandleAtViewportPosition(context_, viewportPosition) != nullptr) {
+        viewport->setCursor(Qt::OpenHandCursor);
+    } else {
+        applyDefaultMapViewportCursor(context_, viewport);
+    }
+}
+
 std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watched, QEvent *event)
 {
     if (context_.view == nullptr) {
@@ -1529,6 +1588,44 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
 
     QWidget *viewport = context_.view->viewport();
     const bool mapViewportEvent = watched == viewport || watched == context_.view;
+    if (watched == viewport && !forwardingTabletEventAsMouse_) {
+        switch (event->type()) {
+        case QEvent::MouseMove:
+        case QEvent::MouseButtonPress:
+        case QEvent::MouseButtonRelease:
+        case QEvent::MouseButtonDblClick:
+        case QEvent::TabletMove:
+        case QEvent::TabletPress:
+        case QEvent::TabletRelease:
+            mapEditorPerformanceCounters().viewportPointerDispatches.fetch_add(1, std::memory_order_relaxed);
+            break;
+        default:
+            break;
+        }
+    }
+    if (watched == viewport) {
+        switch (event->type()) {
+        case QEvent::MouseButtonPress:
+        case QEvent::MouseButtonDblClick:
+        case QEvent::TabletPress:
+            if (context_.flushPendingHoverUpdate) {
+                context_.flushPendingHoverUpdate();
+            }
+            break;
+        case QEvent::Leave:
+            if (context_.cancelPendingHoverUpdate) {
+                context_.cancelPendingHoverUpdate();
+            }
+            break;
+        case QEvent::MouseButtonRelease:
+            if (static_cast<QMouseEvent *>(event)->buttons() == Qt::NoButton && context_.scheduleHoverUpdate) {
+                context_.scheduleHoverUpdate(static_cast<QMouseEvent *>(event)->pos());
+            }
+            break;
+        default:
+            break;
+        }
+    }
     MapInputEventTrace inputTrace(context_, event, mapViewportEvent, forwardingTabletEventAsMouse_);
     const auto traceAction = [&inputTrace](const char *action) {
         inputTrace.setAction(action);
@@ -1941,16 +2038,16 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
 
             if (!(*context_.mapPanActive)) {
                 auto *mouseEvent = static_cast<QMouseEvent *>(event);
-                traceAction("select-hover-hit-test");
-                QGraphicsItem *hoverItem = preferredMapHitItemForViewportPosition(context_,
-                                                                                  mouseEvent->pos(),
-                                                                                  false,
-                                                                                  false);
-                setMapInteractionHoverItem(context_, hoverItem);
-                if (slopeOrientationHandleAtViewportPosition(context_, mouseEvent->pos()) != nullptr) {
-                    viewport->setCursor(Qt::OpenHandCursor);
+                if (mouseEvent->buttons() != Qt::NoButton) {
+                    // Vertex/object drags and rubber bands own the pointer; hover
+                    // is re-evaluated once the buttons are released.
+                    traceAction("select-hover-skipped-drag");
+                } else if (context_.scheduleHoverUpdate) {
+                    traceAction("select-hover-scheduled");
+                    context_.scheduleHoverUpdate(mouseEvent->pos());
                 } else {
-                    applyDefaultMapViewportCursor(context_, viewport);
+                    traceAction("select-hover-hit-test");
+                    refreshHoverAtViewportPosition(mouseEvent->pos());
                 }
             }
 
@@ -2621,5 +2718,86 @@ std::optional<bool> MapEditorViewportInputController::handleEvent(QObject *watch
     }
 
     return std::nullopt;
+}
+
+QGraphicsItem *nearestDirectVertexLikeMapItem(const QGraphicsScene *scene,
+                                              const QGraphicsView *view,
+                                              const QPoint &viewportPosition,
+                                              bool requireSelected,
+                                              bool requireVisible)
+{
+    if (scene == nullptr || view == nullptr) {
+        return nullptr;
+    }
+
+    QGraphicsItem *nearestDirectVertexItem = nullptr;
+    qreal nearestDistance = std::numeric_limits<qreal>::max();
+    // Candidates come from the scene-coordinate handle index (which, unlike
+    // the BSP, holds hidden selection-gated anchors): the pixel hit square is
+    // mapped through the inverse viewport transform to a scene AABB, with a
+    // margin for the integer viewport rounding below.
+    QList<QGraphicsItem *> candidateItems;
+    if (view->viewportTransform().isInvertible()) {
+        const QRectF probe =
+            sceneProbeRectForViewportRadius(view, viewportPosition, kDirectVertexAffordanceHitDistancePixels + 2.0);
+        candidateItems = MapEditorSceneHandleIndex::itemsInRect(scene, probe);
+        // Visible vertex-like items of classes the index does not track are
+        // still found through the scene BSP.
+        const QSet<QGraphicsItem *> indexed(candidateItems.cbegin(), candidateItems.cend());
+        for (QGraphicsItem *item :
+             scene->items(probe, Qt::IntersectsItemBoundingRect, Qt::DescendingOrder, view->viewportTransform())) {
+            if (!indexed.contains(item)) {
+                candidateItems.append(item);
+            }
+        }
+    } else {
+        ++mapEditorPerformanceCounters().fullSceneItemScans;
+        candidateItems = scene->items();
+    }
+    for (QGraphicsItem *candidate : candidateItems) {
+        if (candidate == nullptr) {
+            continue;
+        }
+
+        const int subtype = candidate->data(kMapSceneSelectionSubtypeRole).toInt();
+        const bool lineControlConnectorHandle = subtype == kMapSceneSelectionSubtypeLineControlConnector
+            && dynamic_cast<QGraphicsLineItem *>(candidate) == nullptr
+            && dynamic_cast<QGraphicsPathItem *>(candidate) == nullptr;
+        const bool vertexLikeItem = dynamic_cast<MapEditableGeometryVertexItem *>(candidate) != nullptr
+            || subtype == kMapSceneSelectionSubtypeLineAnchor
+            || subtype == kMapSceneSelectionSubtypeLineControl
+            || lineControlConnectorHandle
+            || subtype == kMapSceneSelectionSubtypeAreaVertex
+            || subtype == kMapSceneSelectionSubtypePointOrientationHandle;
+        if (!vertexLikeItem) {
+            continue;
+        }
+        if (!isInteractiveMapSelectionItem(candidate)) {
+            continue;
+        }
+        if (requireVisible && !candidate->isVisible()) {
+            continue;
+        }
+        if (requireSelected && !candidate->isSelected()) {
+            continue;
+        }
+        if (candidate->data(kMapSceneLineNumberRole).toInt() <= 0) {
+            continue;
+        }
+
+        const QPoint candidateCenter = view->mapFromScene(viewportHitCenterScenePoint(candidate));
+        const QPoint delta = viewportPosition - candidateCenter;
+        const qreal distance = std::hypot(delta.x(), delta.y());
+        if (distance > kDirectVertexAffordanceHitDistancePixels) {
+            continue;
+        }
+
+        if (distance < nearestDistance) {
+            nearestDistance = distance;
+            nearestDirectVertexItem = candidate;
+        }
+    }
+
+    return nearestDirectVertexItem;
 }
 }

@@ -1,12 +1,16 @@
 #pragma once
 
 #include <QDialog>
+#include <QColor>
 #include <QString>
+#include "../core/MapAppearanceSettings.h"
 
 class QComboBox;
 class QCheckBox;
 class QLineEdit;
 class QPushButton;
+class QSpinBox;
+class QDoubleSpinBox;
 
 namespace TherionStudio
 {
@@ -21,6 +25,8 @@ public:
         QString therionExecutablePath;
         QString defaultTextEditorMode = QStringLiteral("raw");
         bool automaticProjectValidationEnabled = false;
+        bool mapAltitudeUnderlayEnabled = false;
+        MapAppearanceSettings mapAppearance;
         bool troubleshootingLogsEnabled = false;
     };
 
@@ -40,7 +46,13 @@ private:
     QPushButton *therionExecutableBrowseButton_ = nullptr;
     QPushButton *therionExecutableAutoDetectButton_ = nullptr;
     QComboBox *defaultTextEditorModeCombo_ = nullptr;
+    QComboBox *xviCenterlineColorModeCombo_ = nullptr;
     QCheckBox *automaticProjectValidationCheckBox_ = nullptr;
+    QCheckBox *mapAltitudeUnderlayCheckBox_ = nullptr;
+    QSpinBox *mapAltitudeUnderlayStrengthSpin_ = nullptr;
+    QPushButton *xviCenterlineColorButton_ = nullptr;
+    QDoubleSpinBox *xviCenterlineWidthSpin_ = nullptr;
+    QColor xviCenterlineColor_;
     QCheckBox *troubleshootingLogsCheckBox_ = nullptr;
     QPushButton *openLogFolderButton_ = nullptr;
     QPushButton *clearLogsButton_ = nullptr;

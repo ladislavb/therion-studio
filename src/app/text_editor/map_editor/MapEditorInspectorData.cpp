@@ -1,5 +1,6 @@
 #include "MapEditorInspectorData.h"
 
+#include "MapEditorPerformanceCounters.h"
 #include "MapEditorSceneSupport.h"
 #include "../../../core/ProjectStructureIndex.h"
 #include "../../../core/TherionCommandLineModel.h"
@@ -38,6 +39,7 @@ QVector<TherionParsedLine> parsedLinesForLogicalCommands(const QVector<TherionSo
 
 QPixmap renderInspectorLucidePixmap(const QString &iconName, const QColor &color, int extent)
 {
+    mapEditorPerformanceCounters().inspectorIconRenders.fetch_add(1, std::memory_order_relaxed);
     QFile file(QStringLiteral(":/resources/icons/lucide/%1.svg").arg(iconName));
     if (!file.open(QIODevice::ReadOnly)) {
         return QPixmap();
@@ -285,10 +287,29 @@ QString inspectorMapObjectItemText(const ProjectStructureEntry &entry, const The
 
 QIcon inspectorActionIcon(const QString &iconName)
 {
+    // GUI-thread only. Keyed by everything the rendered pixmaps depend on, so a
+    // theme (palette) or DPR change naturally misses and renders fresh icons.
+    static QHash<QString, QIcon> cache;
     const QPalette palette = QApplication::palette();
+    const QColor normalColor = palette.color(QPalette::Text);
+    const QColor disabledColor = palette.color(QPalette::Disabled, QPalette::Text);
+    const qreal devicePixelRatio = qApp != nullptr ? qApp->devicePixelRatio() : 1.0;
+    const QString key = QStringLiteral("%1|%2|%3|%4")
+                            .arg(iconName)
+                            .arg(normalColor.rgba())
+                            .arg(disabledColor.rgba())
+                            .arg(devicePixelRatio);
+    const auto cached = cache.constFind(key);
+    if (cached != cache.constEnd()) {
+        return cached.value();
+    }
+    if (cache.size() >= 256) {
+        cache.clear();
+    }
     QIcon icon;
-    icon.addPixmap(renderInspectorLucidePixmap(iconName, palette.color(QPalette::Text), 16), QIcon::Normal);
-    icon.addPixmap(renderInspectorLucidePixmap(iconName, palette.color(QPalette::Disabled, QPalette::Text), 16), QIcon::Disabled);
+    icon.addPixmap(renderInspectorLucidePixmap(iconName, normalColor, 16), QIcon::Normal);
+    icon.addPixmap(renderInspectorLucidePixmap(iconName, disabledColor, 16), QIcon::Disabled);
+    cache.insert(key, icon);
     return icon;
 }
 

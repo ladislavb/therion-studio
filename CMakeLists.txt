@@ -96,6 +96,7 @@ set(THERION_CORE_SOURCES
     src/core/DocumentFile.h
     src/core/IFileSystem.h
     src/core/ISessionStore.h
+    src/core/MapAppearanceSettings.h
     src/core/QtFileSystem.cpp
     src/core/QtFileSystem.h
     src/core/MapBackgroundPlacement.cpp
@@ -145,7 +146,9 @@ set(THERION_CORE_SOURCES
     src/core/SessionStore.h)
 
 add_library(therion_core STATIC
-    ${THERION_CORE_SOURCES})
+    ${THERION_CORE_SOURCES}
+    src/core/ScrapAltitudeModel.cpp
+    src/core/ScrapAltitudeModel.h)
 
 target_link_libraries(therion_core
     PUBLIC
@@ -174,6 +177,7 @@ function(therion_add_qtest_suite_cases target_name)
 endfunction()
 
 set(THERION_CORE_QTEST_SUITES
+    ScrapAltitudeModelTest
     CommandCatalogStoreTest
     CommandOptionParserTest
     MapBackgroundPlacementTest
@@ -251,7 +255,18 @@ set(THERION_MAP_EDITOR_QTEST_SUITES
     MapEditorUndoArbitrationServiceTest)
 
 set(THERION_MAP_EDITOR_BACKGROUND_UI_QTEST_SUITES
-    MapEditorBackgroundRoundTripTest)
+    MapEditorAppearanceTest
+    MapEditorViewportCullingTest
+    MapEditorEndpointSnapTransactionTest
+    MapEditorPlainClickSelectionTest
+    MapEditorScrapStationHighlightTest
+    MapEditorInteractionPerformanceTest
+    MapEditorSpatialIndexRepaintTest
+    MapEditorBulkVisibilityTest
+    MapEditorAltitudeUnderlayTest
+    MapEditorBackgroundRoundTripTest
+    MapEditorSceneLifecycleTest
+    MapEditorLinePreviewTest)
 
 set(THERION_TEXT_EDITOR_DOCUMENT_QTEST_SUITES
     TextEditorDocumentIoServiceTest
@@ -394,6 +409,10 @@ set(THERION_APP_SOURCES
     src/app/ProjectFileWatchDelta.h
     src/app/ProjectOutputsScanner.cpp
     src/app/ProjectOutputsScanner.h
+    src/app/ProjectAltitudeService.cpp
+    src/app/ProjectAltitudeService.h
+    src/app/MainWindowAltitudeUnderlay.cpp
+    src/app/MainWindowSettings.cpp
     src/app/ProjectSearchScanner.cpp
     src/app/ProjectSearchScanner.h
     src/app/ProjectValidationController.cpp
@@ -676,10 +695,17 @@ set(THERION_TEXT_EDITOR_SHARED_SOURCES
 )
 
 set(THERION_MAP_EDITOR_SOURCES
+    src/app/text_editor/map_editor/MapEditorAltitudeUnderlay.cpp
+    src/app/text_editor/map_editor/MapEditorAltitudeUnderlay.h
+    src/app/text_editor/map_editor/MapEditorTabAltitudeUnderlay.cpp
     src/app/text_editor/map_editor/MapEditorBackgroundAssetCache.cpp
     src/app/text_editor/map_editor/MapEditorBackgroundAssetCache.h
     src/app/text_editor/map_editor/MapEditorSceneGeneration.cpp
     src/app/text_editor/map_editor/MapEditorSceneGeneration.h
+    src/app/text_editor/map_editor/MapEditorSceneHandleIndex.cpp
+    src/app/text_editor/map_editor/MapEditorSceneHandleIndex.h
+    src/app/text_editor/map_editor/MapEditorSceneInteractionIndex.cpp
+    src/app/text_editor/map_editor/MapEditorSceneInteractionIndex.h
     src/app/text_editor/map_editor/MapEditorBackgroundAssetLoader.cpp
     src/app/text_editor/map_editor/MapEditorBackgroundAssetLoader.h
     src/app/text_editor/map_editor/MapEditorSourceProjectionCache.cpp
@@ -737,6 +763,7 @@ set(THERION_MAP_EDITOR_SOURCES
     src/app/text_editor/map_editor/MapEditorRecentSymbolsLayout.h
     src/app/text_editor/map_editor/MapEditorLineDecorationItem.cpp
     src/app/text_editor/map_editor/MapEditorLineDecorationItem.h
+    src/app/text_editor/map_editor/MapEditorDirectionAidItem.h
     src/app/text_editor/map_editor/MapEditorPointSymbolGeometry.h
     src/app/text_editor/map_editor/MapEditorStylePreviewWidget.cpp
     src/app/text_editor/map_editor/MapEditorStylePreviewWidget.h
@@ -753,6 +780,7 @@ set(THERION_MAP_EDITOR_SOURCES
     src/app/text_editor/map_editor/MapEditorInputPolicy.h
     src/app/text_editor/map_editor/MapEditorMagnifierOverlay.cpp
     src/app/text_editor/map_editor/MapEditorMagnifierOverlay.h
+    src/app/text_editor/map_editor/MapEditorPerformanceCounters.h
     src/app/text_editor/map_editor/MapEditorViewportInputContext.h
     src/app/text_editor/map_editor/MapEditorViewportInputController.cpp
     src/app/text_editor/map_editor/MapEditorViewportInputController.h
@@ -970,6 +998,8 @@ qt_add_executable(MapObjectStyleGallery
     src/app/text_editor/map_editor/MapEditorObjectStyleCatalog.cpp
     src/app/text_editor/map_editor/MapEditorObjectStyleCatalog.h
     src/app/text_editor/map_editor/MapEditorPointSymbolGeometry.h
+    src/app/text_editor/map_editor/MapEditorSceneHandleIndex.cpp
+    src/app/text_editor/map_editor/MapEditorSceneHandleIndex.h
     src/app/text_editor/map_editor/MapEditorSceneItems.cpp
     src/app/text_editor/map_editor/MapEditorSceneInternals.h
     src/app/text_editor/map_editor/MapEditorSceneSupport.h
@@ -1195,6 +1225,7 @@ therion_add_core_unit_test(TherionSourceValidatorTest
     tests/TherionSourceValidatorTest.cpp)
 
 therion_add_core_qtest_runner(TherionCoreQTests
+    tests/core/ScrapAltitudeModelTest.cpp
     tests/core/CoreQTestMain.cpp
     tests/CommandCatalogStoreTest.cpp
     tests/core/CommandOptionParserTest.cpp
@@ -1249,9 +1280,12 @@ qt_add_executable(MapGeometryFeatureParsingTest
     src/app/text_editor/map_editor/MapEditorObjectStyleCatalog.h
     src/app/text_editor/map_editor/MapEditorLineDecorationItem.cpp
     src/app/text_editor/map_editor/MapEditorLineDecorationItem.h
+    src/app/text_editor/map_editor/MapEditorDirectionAidItem.h
     src/app/text_editor/map_editor/MapEditorObjectDetailsLogic.cpp
     src/app/text_editor/map_editor/MapEditorObjectDetailsLogic.h
     src/app/text_editor/map_editor/MapEditorPointSymbolGeometry.h
+    src/app/text_editor/map_editor/MapEditorSceneHandleIndex.cpp
+    src/app/text_editor/map_editor/MapEditorSceneHandleIndex.h
     src/app/text_editor/map_editor/MapEditorSceneItems.cpp
     src/app/text_editor/map_editor/MapEditorSceneInternals.h
     src/app/text_editor/map_editor/MapEditorReferencedAreaResolver.cpp
@@ -1276,9 +1310,12 @@ qt_add_executable(MapEditorSourceReferenceResolverTest
     src/app/text_editor/map_editor/MapEditorObjectStyleCatalog.h
     src/app/text_editor/map_editor/MapEditorLineDecorationItem.cpp
     src/app/text_editor/map_editor/MapEditorLineDecorationItem.h
+    src/app/text_editor/map_editor/MapEditorDirectionAidItem.h
     src/app/text_editor/map_editor/MapEditorObjectDetailsLogic.cpp
     src/app/text_editor/map_editor/MapEditorObjectDetailsLogic.h
     src/app/text_editor/map_editor/MapEditorPointSymbolGeometry.h
+    src/app/text_editor/map_editor/MapEditorSceneHandleIndex.cpp
+    src/app/text_editor/map_editor/MapEditorSceneHandleIndex.h
     src/app/text_editor/map_editor/MapEditorSceneItems.cpp
     src/app/text_editor/map_editor/MapEditorSceneInternals.h
     src/app/text_editor/map_editor/MapEditorReferencedAreaResolver.cpp
@@ -1393,6 +1430,8 @@ qt_add_executable(MapEditorInspectorDataTest
     tests/MapEditorInspectorDataTest.cpp
     src/app/text_editor/map_editor/MapEditorInspectorData.cpp
     src/app/text_editor/map_editor/MapEditorInspectorData.h
+    src/app/text_editor/map_editor/MapEditorSceneHandleIndex.cpp
+    src/app/text_editor/map_editor/MapEditorSceneHandleIndex.h
     src/app/text_editor/map_editor/MapEditorSceneItems.cpp
     src/app/text_editor/map_editor/MapEditorSceneSupport.h)
 
@@ -1746,14 +1785,31 @@ therion_add_map_editor_ui_test(MapEditorSelectionPanelTypeOptionsTest
     "MapEditorSelectionPanelTypeOptionsResources")
 
 qt_add_executable(MapEditorBackgroundUiQTests
+    tests/MapEditorAppearanceTest.cpp
+    src/app/MainWindowSettingsDialog.cpp
+    src/app/MainWindowSettingsDialog.h
+    src/app/TherionExecutableDetector.cpp
+    src/app/TherionExecutableSelectionController.cpp
+    tests/MapEditorViewportCullingTest.cpp
+    tests/MapEditorEndpointSnapTransactionTest.cpp
+    tests/MapEditorPlainClickSelectionTest.cpp
+    tests/MapEditorScrapStationHighlightTest.cpp
+    tests/MapEditorInteractionPerformanceTest.cpp
+    tests/MapEditorSpatialIndexRepaintTest.cpp
+    tests/MapEditorBulkVisibilityTest.cpp
+    tests/MapEditorAltitudeUnderlayTest.cpp
     tests/MapEditorBackgroundUiQTestMain.cpp
-    tests/MapEditorBackgroundRoundTripTest.cpp)
+    tests/MapEditorBackgroundRoundTripTest.cpp
+    tests/MapEditorSceneLifecycleTest.cpp
+    tests/MapEditorLinePreviewTest.cpp)
 
 target_link_libraries(MapEditorBackgroundUiQTests PRIVATE
     therion_map_editor_ui_test_support
     Qt6::Test)
 
 target_compile_definitions(MapEditorBackgroundUiQTests PRIVATE
+    THERION_STUDIO_TEST_SOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}"
+    THERION_STUDIO_TEST_WORKSPACE="${CMAKE_CURRENT_SOURCE_DIR}/.verification"
     THERION_STUDIO_TESTING)
 
 qt_add_resources(MapEditorBackgroundUiQTests MapEditorBackgroundUiQTestsResources

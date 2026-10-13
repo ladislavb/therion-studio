@@ -247,6 +247,14 @@ These map controls are enabled when the embedded `.th2` workspace is in `Visual`
 
 The map canvas uses a stable light paper-style surface in both light and dark application modes. Toolbars, tabs, and inspectors follow the system appearance, but raster backgrounds, `.xvi` references, and map symbols are not inverted or tinted for dark mode.
 
+Line decorations stay small on screen when zooming in or out: overhang teeth, pit/pitch and step ticks, wall-material and handrail symbols, flowstone/moonmilk waves, and ladder rails/rungs use the map style catalog's nominal screen-pixel sizes and spacing. Custom style overrides follow the same rule; spacing is adjusted to fit the projected line where the style requests it.
+
+The yellow direction tick shown for a selected line stays 18 screen pixels long. It remains attached to the first vertex, follows the first curve handle or segment, and changes side when the line is reversed, including during dragging.
+
+When a filled area overlaps another selectable object, hit testing prefers the point, line, or other object within the normal pick radius. The area remains selectable from its empty interior, and its fill does not block pointer delivery to geometry beneath it. An area's actual boundary line remains independently selectable and snappable.
+
+This editor preview does not change TH2 coordinates, source options, undo history, or Therion's exported geometry and symbol sizes. An explicitly entered slope `l-size` still represents a real geometric length and therefore grows when you zoom in; a slope with no explicit `l-size` uses a small screen-sized fallback tick. Point symbols, path-following text, and area patterns retain their separate display policies.
+
 ### 6.4 Insert Objects
 
 - `Point`: click once in the map.
@@ -303,7 +311,7 @@ While drafting a line or area:
 
 Select a map object or one of its vertices/control handles in the canvas. The `Selection` inspector then shows the relevant controls, including the source line and enclosing scrap ID.
 
-Map objects keep their normal rendered colors while editing. In select mode, the map canvas uses a crosshair cursor; the object under the cursor hotspot is highlighted in cyan before selection, and the selected object is highlighted in red.
+Map objects keep their normal rendered colors while editing. In select mode, the map canvas uses a crosshair cursor; the object under the cursor hotspot is highlighted in cyan before selection, and the selected object is highlighted in red. When the selected object is a station point inside a scrap, the other station points of that same scrap get a violet ring and show their names, so you can check which stations the scrap already contains; stations of other scraps keep their normal look. Selecting anything else clears the violet rings.
 
 Selection is shared between the map canvas, the `Objects` pane, and the `Selection` inspector. Selecting an area also highlights its referenced border lines. Selecting a line vertex or Bezier handle switches the inspector to the corresponding line-point controls.
 
@@ -414,6 +422,67 @@ Closing a project clears `Target Config` and `Working Directory Override` becaus
 The status bar shows compile state with the compact `C:` prefix: `C: Idle`, `C: Running`, `C: OK`, or `C: Failed`. `C: OK` is used only when the Therion process exits successfully and Studio does not detect known output-write errors in stderr, such as `warning -- error writing`.
 
 ## 8. Settings
+
+**Pastel scrap altitude underlay** is an optional, editor-only aid (off by default).
+Enable it in Settings to tint the passage inside closed wall outlines, preserving
+holes and keeping lines, labels, and selection handles above the tint.
+**Scrap underlay strength** sets opacity from **0–100%**, initially **19%**.
+Zero makes the tint invisible without changing its colors; 100% is opaque.
+The setting applies equally to precise and approximate passage previews and
+categorical fallback colors. Turning the underlay off retains the chosen strength.
+
+**XVI centerline color** opens a color picker with an alpha/transparency control.
+**XVI centerline color mode** selects **One color** or **By altitude** (the default).
+Altitude mode blends the endpoint station colors along each traverse leg using the
+same project-wide LOX palette as scraps. Both endpoint identities and heights must
+resolve uniquely; missing or ambiguous data, or a missing flagged entrance datum,
+falls back to the configured single XVI color for that leg.
+
+When altitude mode has a usable LOX height range, the Map Objects sidebar shows a
+thin numeric legend. Heights are relative to the selected flagged entrance, not an
+absolute elevation or sea-level datum. The categorical scrap fallback is identified
+separately and does not represent height.
+
+The legend reports how many XVI legs are altitude-colored and how many use the
+configured fallback. It explains missing station heights, missing entrance data,
+unreadable LOX metadata, or multiple LOX outputs. Multiple outputs are not selected
+arbitrarily: the project must provide a unique LOX output. TH2 `line survey`
+geometry is not an XVI background and is not recolored by this setting.
+
+Map zoom reaches **20,000%** (a view scale of 200), with the existing **10%**
+manual-zoom minimum. Wheel, pinch and zoom actions share these limits in embedded
+and detached maps; cursor-anchored zoom and constant-screen-size decorations remain.
+
+**XVI centerline thickness** accepts **0.1–12 px**, initially **1.8 px**.
+The initial color is the existing translucent navy, RGBA **18, 44, 88, 130**.
+Only station-to-station centerline legs in XVI backgrounds change; LRUD passage
+outlines and fills, splays, grid, sketches, station markers, and all other map
+layers keep their appearance. Thickness is a cosmetic pixel width, not a map
+distance, and retains the existing thinning when zoomed out.
+
+Click **OK** in **Settings** to save and immediately apply these preferences to
+all open maps, including detached windows. No document edits or undo steps are
+created. **Cancel** discards changes.
+
+With one compiled LOX output in the current project, colors represent the mean
+height of the scrap's distinct mapped survey stations. Heights are shown relative
+to a station explicitly flagged as an entrance, never as an assumed absolute/GPS
+datum. If several entrances exist, the first fully qualified name in alphabetical
+order is the reference; changing that reference does not change the colors.
+All station mappings must resolve uniquely. The palette uses the current LOX
+station-height range, so similar heights receive similar colors across scraps.
+
+If the LOX is missing, ambiguous, invalid, lacks a flagged entrance, or a scrap
+has incomplete station mappings, that scrap receives a stable categorical pastel
+instead. These colors distinguish scraps, **not heights**. The status hint identifies
+this fallback; scrap underlay tooltips explain the height/reference or fallback.
+Connected open wall segments can form closed passage outlines; closed interior
+rock outlines remain holes rather than becoming colored scraps. The status hint
+reports precise, approximate and unfilled scrap counts. Where no precise outline
+exists, nearby endpoints may be joined for an **approximate preview**; the tooltip
+marks that inferred boundary. Larger gaps and ambiguous branching remain unfilled.
+Known inner rock outlines remain holes. This preference
+does not change source, undo history, or Therion exports.
 
 Open settings from `File -> Settings...` or `Preferences...` on macOS.
 

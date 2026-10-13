@@ -1966,6 +1966,121 @@ int runInteractiveDrawControlHitRadiusScalesWithZoomTest()
     return 0;
 }
 
+int runAreaFillInteriorDoesNotCreateSnapGuideTest()
+{
+    QGraphicsScene scene;
+    QGraphicsView view(&scene);
+    view.setSceneRect(QRectF(0.0, 0.0, 100.0, 100.0));
+    view.resize(320, 260);
+    view.show();
+
+    QPainterPath areaPath;
+    areaPath.addRect(QRectF(20.0, 20.0, 60.0, 60.0));
+    auto *areaFill = scene.addPath(areaPath, QPen(Qt::NoPen), QBrush(Qt::lightGray));
+    areaFill->setData(kMapSceneLineNumberRole, 10);
+    areaFill->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeAreaFill);
+
+    auto *boundary = scene.addPath(QPainterPath());
+    QPainterPath boundaryPath;
+    boundaryPath.moveTo(20.0, 20.0);
+    boundaryPath.lineTo(80.0, 20.0);
+    boundary->setPath(boundaryPath);
+    boundary->setData(kMapSceneLineNumberRole, 13);
+    boundary->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeGeneric);
+
+    auto addVertex = [&scene](int lineNumber, const QPointF &point, int vertexIndex) {
+        auto *vertex = new MapEditableGeometryVertexItem(lineNumber,
+                                                         QStringLiteral("line"),
+                                                         vertexIndex,
+                                                         QPointF(point.x(), 100.0 - point.y()),
+                                                         QRectF(0.0, 0.0, 100.0, 100.0),
+                                                         QRectF(0.0, 0.0, 100.0, 100.0));
+        vertex->setData(kMapSceneLineNumberRole, lineNumber);
+        vertex->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineAnchor);
+        scene.addItem(vertex);
+    };
+    addVertex(10, QPointF(20.0, 20.0), 0);
+    addVertex(10, QPointF(80.0, 20.0), 1);
+    addVertex(13, QPointF(20.0, 20.0), 0);
+    addVertex(13, QPointF(80.0, 20.0), 1);
+
+    QString toolbarStatus;
+    bool primaryInteractionActive = false;
+    QVector<QPointF> sourceVertices;
+    QVector<QPointF> sceneVertices;
+    QVector<MapEditorInteractiveLineDraftVertex> lineVertices;
+    bool strokeActive = false;
+    bool anchorPressActive = false;
+    QPointF anchorPressScenePoint;
+    bool anchorDragActive = false;
+    QPointF anchorDragScenePoint;
+    bool controlDragActive = false;
+    MapEditorInteractiveLineControlHandleRef controlDragHandle;
+    bool hoverActive = false;
+    QPointF hoverScenePoint;
+    bool hoverSnapActive = false;
+    QPointF hoverSnapScenePoint;
+    QVector<QPointF> hoverSnapGuideScenePoints;
+
+    MapEditorViewportInputContext context;
+    context.scene = &scene;
+    context.view = &view;
+    context.toolbarStatusNote = &toolbarStatus;
+    context.primaryPointerInteractionActive = &primaryInteractionActive;
+    context.interactiveDrawSourceVertices = &sourceVertices;
+    context.interactiveDrawSceneVertices = &sceneVertices;
+    context.interactiveDrawLineVertices = &lineVertices;
+    context.interactiveDrawStrokeActive = &strokeActive;
+    context.interactiveDrawAnchorPressActive = &anchorPressActive;
+    context.interactiveDrawAnchorPressScenePoint = &anchorPressScenePoint;
+    context.interactiveDrawAnchorDragActive = &anchorDragActive;
+    context.interactiveDrawAnchorDragScenePoint = &anchorDragScenePoint;
+    context.interactiveDrawControlDragActive = &controlDragActive;
+    context.interactiveDrawControlDragHandle = &controlDragHandle;
+    context.interactiveDrawHoverActive = &hoverActive;
+    context.interactiveDrawHoverScenePoint = &hoverScenePoint;
+    context.interactiveDrawHoverSnapActive = &hoverSnapActive;
+    context.interactiveDrawHoverSnapScenePoint = &hoverSnapScenePoint;
+    context.interactiveDrawHoverSnapGuideScenePoints = &hoverSnapGuideScenePoints;
+    context.drawMode = []() { return MapEditorInteractiveDrawMode::Area; };
+    context.interactiveLineControlAt = [](const QPointF &, qreal) {
+        return std::optional<MapEditorInteractiveLineControlHandleRef>();
+    };
+    context.updateInteractiveDrawPreview = []() {};
+    context.refreshToolbarSummary = []() {};
+    context.updateCommandSurfaceState = []() {};
+
+    MapEditorViewportInputController controller(context);
+    auto hoverAt = [&controller, &view](const QPointF &scenePoint) {
+        const QPoint position = view.mapFromScene(scenePoint);
+        QMouseEvent move(QEvent::MouseMove,
+                         QPointF(position),
+                         QPointF(view.viewport()->mapToGlobal(position)),
+                         Qt::NoButton,
+                         Qt::NoButton,
+                         Qt::NoModifier);
+        return controller.handleEvent(view.viewport(), &move).value_or(false);
+    };
+
+    if (!expect(hoverAt(QPointF(50.0, 50.0)), "Area drawing hover inside the fill should be handled.")) {
+        return 1;
+    }
+    if (!expect(hoverSnapGuideScenePoints.isEmpty(),
+                "The filled area interior must not produce snap-guide geometry.")) {
+        return 1;
+    }
+
+    if (!expect(hoverAt(QPointF(50.0, 20.0)), "Area drawing hover on a boundary line should be handled.")) {
+        return 1;
+    }
+    if (!expect(hoverSnapGuideScenePoints.size() == 2,
+                "A real boundary line should continue to provide its endpoint snap guides.")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 int runInteractiveDrawCloseHitRadiusScalesWithZoomTest()
 {
     QGraphicsScene scene;
@@ -2113,6 +2228,9 @@ int main(int argc, char **argv)
         return rc;
     }
     if (const int rc = runInteractiveDrawControlHitRadiusScalesWithZoomTest(); rc != 0) {
+        return rc;
+    }
+    if (const int rc = runAreaFillInteriorDoesNotCreateSnapGuideTest(); rc != 0) {
         return rc;
     }
     if (const int rc = runInteractiveDrawCloseHitRadiusScalesWithZoomTest(); rc != 0) {

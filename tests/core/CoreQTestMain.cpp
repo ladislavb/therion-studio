@@ -2,6 +2,8 @@
 
 #include <QtTest/QtTest>
 
+int runScrapAltitudeModelTest(int argc, char **argv);
+
 int runCommandCatalogStoreTest(int argc, char **argv);
 int runCommandOptionParserTest(int argc, char **argv);
 int runMapBackgroundPlacementTest(int argc, char **argv);
@@ -32,6 +34,7 @@ int runTherionXviAreaAdjustTest(int argc, char **argv);
 int main(int argc, char **argv)
 {
     return runSelectedQTestSuites(argc, argv, {
+        {"ScrapAltitudeModelTest", runScrapAltitudeModelTest},
         {"CommandCatalogStoreTest", runCommandCatalogStoreTest},
         {"CommandOptionParserTest", runCommandOptionParserTest},
         {"MapBackgroundPlacementTest", runMapBackgroundPlacementTest},

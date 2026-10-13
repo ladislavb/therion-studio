@@ -236,6 +236,8 @@ Ak `.th2` nemá XTherion metadata `xth_me_area_adjust`, prvé potvrdené vložen
 
 Existujúce Therion bloky `area ... endarea`, ktoré odkazujú na hranice `line -id ...`, sa vykresľujú z čiar v tom istom scrape. Hraničné čiary môžu byť otvorené; ak ich priesečníky tvoria uzavretú plochu, Therion Studio ju vyplní bez zmeny zdrojového textu referencovaných čiar.
 
+Ak vyplnená plocha prekrýva iný vyberateľný objekt, výber uprednostní bod, čiaru alebo iný objekt v bežnom dosahu výberu. Plochu možno stále vybrať kliknutím do jej voľného vnútra; výplň neblokuje udalosti ukazovateľa pre geometriu pod ňou. Skutočná hraničná čiara plochy zostáva samostatne vyberateľná a použiteľná na prichytávanie.
+
 `Smart Area` vytvára práve túto referenčnú formu plochy namiesto kreslenia novej hraničnej geometrie. Pri potvrdení môže doplniť chýbajúce ID referencovaným hraničným čiaram, aby na ne nový blok `area ... endarea` mohol odkazovať, ale nemení ich geometriu. Po potvrdení sa mapa vráti do režimu výberu. `Esc` náhľad zruší.
 
 Počas vkladania bodov alebo kreslenia čiar a plôch sa vertexy blízkeho objektu zvýraznia ako kandidáti snapu. Aktívny snap cieľ sa zvýrazní výraznejšie; Bezier kontrolné body zostávajú bez snapu.
@@ -365,6 +367,29 @@ Zatvorenie projektu vyčistí `Cieľovú konfiguráciu` a `Náhradný pracovný 
 Stavový riadok ukazuje stav kompilácie s kompaktným prefixom `C:`: `C: Nečinný`, `C: Beží...`, `C: OK` alebo `C: Zlyhal`.
 
 ## 8. Nastavenia
+
+**Pastelové výškové podfarbenie scrapov** je voliteľné a predvolene vypnuté.
+**Intenzita podfarbenia scrapov** nastavuje nepriehľadnosť **0–100 %**, predvolená
+je **19 %**; nula znamená neviditeľné podfarbenie. Platí pre presné aj približné
+obrysy a pre výškové aj kategorické farby. Vypnutie podfarbenia hodnotu zachová.
+
+**Farba polygónu XVI** otvorí výber farby vrátane priehľadnosti.
+Režim **Podľa výšky** používa jednoznačne priradené výšky koncových staníc LOX,
+relatívne k označenému vchodu, nie absolútne nadmorské výšky. Legenda uvádza
+počty výškovo zafarbených úsekov a úsekov v náhradnej farbe aj dôvod chýbajúcich dát.
+Viac výstupov LOX sa nevyberá náhodne; je potrebný jednoznačný výstup.
+Meračské čiary TH2 nie sú podklady XVI a toto nastavenie ich nefarbí.
+Priblíženie mapy kolieskom, gestom či akciami dosahuje **20 000 %**; minimum ručného
+zoomu zostáva **10 %**, vrátane oddeleného okna a zachovania kotvy pod kurzorom.
+**Hrúbka polygónu XVI** umožňuje **0,1–12 px**, predvolená je **1,8 px** a
+farba RGBA **18, 44, 88, 130**. Menia sa iba spojnice staníc polygónu XVI,
+nie obrysy/výplne chodieb LRUD, priečne zámery, mriežka, skice, značky staníc
+ani iné vrstvy. Šírka je v pixeloch, nie v mapových jednotkách; pri oddialení
+sa zachováva doterajšie stenčenie.
+
+Potvrdenie **OK** uloží tieto hodnoty a ihneď ich použije vo všetkých otvorených
+mapách vrátane oddelených okien, bez zmeny dokumentu či histórie späť.
+**Zrušiť** zmeny zahodí.
 
 Nastavenia otvoríte cez `Súbor -> Nastavenia...` alebo `Nastavenia...` v natívnom macOS menu.
 

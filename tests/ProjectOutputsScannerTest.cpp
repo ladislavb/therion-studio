@@ -1,4 +1,5 @@
 #include "../src/app/ProjectOutputsScanner.h"
+#include "../src/app/ProjectAltitudeService.h"
 
 #include <QDir>
 #include <QEventLoop>
@@ -35,11 +36,47 @@ class ProjectOutputsScannerTest final : public QObject
     Q_OBJECT
 
 private slots:
+    void altitudeMetadataReportsAmbiguityAndLoadFailure();
     void keepsDuplicateNamesDistinctAndClassifiesArtifacts();
     void emptyProjectRootReportsOpenProjectState();
     void publishesOnlyLatestPendingRequest();
     void teardownDoesNotPublishCompletedWorker();
 };
+
+void ProjectOutputsScannerTest::altitudeMetadataReportsAmbiguityAndLoadFailure()
+{
+    using TherionStudio::ProjectAltitudeService;
+    using State = TherionStudio::ScrapAltitudeStations::SourceState;
+    ProjectAltitudeService service;
+    service.setEnabled(true);
+    ProjectOutputsScanner::Result outputs;
+    const QDir testsRoot(QFileInfo(QString::fromUtf8(__FILE__)).absolutePath());
+    outputs.projectRootPath = testsRoot.filePath(QStringLiteral("../.verification"));
+    outputs.artifacts = {{QStringLiteral("one.lox")}, {QStringLiteral("two.lox")}};
+    service.acceptOutputs(outputs);
+    QCOMPARE(service.stations().sourceState, State::AmbiguousOutputs);
+    QCOMPARE(service.stations().outputCount, 2);
+    QVERIFY(service.stations().heights.isEmpty());
+    outputs.artifacts.append({QStringLiteral("three.lox")});
+    service.acceptOutputs(outputs);
+    QCOMPARE(service.stations().outputCount, 3);
+    service.setEnabled(false);
+    service.setEnabled(true);
+    QCOMPARE(service.stations().sourceState, State::AmbiguousOutputs);
+    outputs.artifacts = {{testsRoot.filePath(QStringLiteral("fixtures/three_d_viewer/1302.lox"))}};
+    service.acceptOutputs(outputs);
+    QTRY_VERIFY_WITH_TIMEOUT(!service.stations().heights.isEmpty(), 2000);
+    QCOMPARE(service.stations().sourceState, State::Loaded);
+    QCOMPARE(service.stations().outputCount, 1);
+    outputs.artifacts = {{QDir(outputs.projectRootPath).filePath(QStringLiteral("missing-altitude.lox"))}};
+    service.acceptOutputs(outputs);
+    QTRY_COMPARE_WITH_TIMEOUT(service.stations().sourceState, State::LoadFailed, 2000);
+    QVERIFY(service.stations().heights.isEmpty());
+    outputs.artifacts.clear();
+    service.acceptOutputs(outputs);
+    QCOMPARE(service.stations().sourceState, State::Unavailable);
+    QCOMPARE(service.stations().outputCount, 0);
+}
 
 void ProjectOutputsScannerTest::keepsDuplicateNamesDistinctAndClassifiesArtifacts()
 {

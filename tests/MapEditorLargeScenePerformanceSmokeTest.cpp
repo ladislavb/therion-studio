@@ -1,4 +1,9 @@
 #include "../src/app/text_editor/map_editor/MapEditorSceneInternals.h"
+#include "../src/app/text_editor/map_editor/MapEditorInspectorObjectController.h"
+#include "../src/app/text_editor/map_editor/MapEditorInspectorObjectContext.h"
+#include "../src/app/text_editor/map_editor/MapEditorSceneGeneration.h"
+#include "../src/app/text_editor/map_editor/MapEditorSceneInteractionIndex.h"
+#include "../src/app/text_editor/map_editor/MapEditorSelectionController.h"
 #include "../src/app/text_editor/map_editor/MapEditorSceneRefreshController.h"
 #include "../src/app/text_editor/map_editor/MapEditorSceneSupport.h"
 #include "../src/app/text_editor/map_editor/MapEditorObjectStyleCatalog.h"
@@ -13,7 +18,10 @@
 #include <QGraphicsView>
 #include <QHash>
 #include <QScrollBar>
+#include <QStandardItem>
+#include <QStandardItemModel>
 #include <QString>
+#include <QSet>
 #include <QUndoStack>
 #include <QVector>
 
@@ -73,6 +81,117 @@ MapEditableGeometryVertexItem *selectedLineControl(QGraphicsScene *scene)
         }
     }
     return nullptr;
+}
+
+int runInspectorLineLookupBenchmark()
+{
+    constexpr int kEntryCount = 2643;
+    constexpr int kQueryCount = 300;
+    constexpr int kSourceLineRole = Qt::UserRole + 700;
+    QStandardItemModel model;
+    for (int index = 0; index < kEntryCount / 3; ++index) {
+        auto *scrap = new QStandardItem(QStringLiteral("scrap"));
+        const int scrapLine = index * 10 + 1;
+        scrap->setData(scrapLine, kSourceLineRole);
+        for (int child = 1; child <= 2; ++child) {
+            auto *object = new QStandardItem(QStringLiteral("object"));
+            object->setData(scrapLine + child * 2, kSourceLineRole);
+            scrap->appendRow(object);
+        }
+        model.appendRow(scrap);
+    }
+    MapEditorInspectorObjectContext context;
+    context.objectsModel = &model;
+    const MapEditorInspectorObjectController controller(context);
+
+    QElapsedTimer timer;
+    timer.start();
+    for (int query = 0; query < kQueryCount; ++query) {
+        const int group = (query * 137) % (kEntryCount / 3);
+        const int expectedLine = group * 10 + 3;
+        const QModelIndex result = controller.findInspectorObjectIndexForLine(expectedLine + 1);
+        if (!expect(result.isValid() && result.data(kSourceLineRole).toInt() == expectedLine,
+                    "Inspector line lookup should return the nearest preceding object.")) {
+            return 1;
+        }
+    }
+    std::cout << "inspector-line-lookup entries=" << model.rowCount() * 3
+              << " queries=" << kQueryCount
+              << " elapsed_ms=" << timer.elapsed() << '\n';
+    return 0;
+}
+
+int runSelectionPresentationBenchmark(QGraphicsScene *scene,
+                                      MapEditorSceneGeneration *sceneGeneration,
+                                      const QHash<int, QGraphicsItem *> &itemsByLine)
+{
+    if (!expect(scene != nullptr && sceneGeneration != nullptr && itemsByLine.size() >= 2,
+                "Selection benchmark requires a generated large scene.")) {
+        return 1;
+    }
+    QList<int> lines = itemsByLine.keys();
+    std::sort(lines.begin(), lines.end());
+    const int firstLine = lines.first();
+    const int secondLine = lines.at(1);
+    QSet<int> hiddenLines;
+    bool updatingSelection = false;
+    int selectedLine = 0;
+    int selectedVertex = -1;
+    int segmentStart = -1;
+    int segmentEnd = -1;
+    QString selectedKind = QStringLiteral("point");
+    MapEditorSceneInteractionIndex interactionIndex;
+
+    const auto selectionContext = [&](bool indexed) {
+        MapEditorSelectionContext context;
+        context.scene = scene;
+        context.sceneGeneration = sceneGeneration;
+        context.sceneInteractionIndex = indexed ? &interactionIndex : nullptr;
+        context.hiddenObjectLines = &hiddenLines;
+        context.updatingSelection = &updatingSelection;
+        context.selectedObjectLineNumber = &selectedLine;
+        context.selectedObjectVertexIndex = &selectedVertex;
+        context.selectedLineSegmentStartVertexIndex = &segmentStart;
+        context.selectedLineSegmentEndVertexIndex = &segmentEnd;
+        context.selectedObjectKind = &selectedKind;
+        return context;
+    };
+    // Production constructs a fresh controller per call (MapEditorTab::selectionContext()),
+    // so any delta state must live in the tab-owned interaction index.
+    const auto measure = [&](bool indexed) {
+        QElapsedTimer timer;
+        timer.start();
+        for (int sample = 0; sample < 80; ++sample) {
+            scene->clearSelection();
+            const int line = sample % 2 == 0 ? firstLine : secondLine;
+            if (QGraphicsItem *item = itemsByLine.value(line, nullptr)) {
+                item->setSelected(true);
+            }
+            MapEditorSelectionController(selectionContext(indexed)).updateGeometrySelectionPresentation();
+        }
+        return timer.elapsed();
+    };
+
+    const qint64 baselineMs = measure(false);
+    const qint64 indexedMs = measure(true);
+    const QGraphicsItem *lastItem = itemsByLine.value(secondLine, nullptr);
+    if (!expect(lastItem != nullptr && lastItem->data(kMapSceneInteractionSelectionRole).toBool(),
+                "Indexed selection presentation should retain the active line highlight.")) {
+        return 1;
+    }
+    const QGraphicsItem *previousItem = itemsByLine.value(firstLine, nullptr);
+    if (!expect(previousItem != nullptr && !previousItem->data(kMapSceneInteractionSelectionRole).toBool(),
+                "Indexed selection presentation must clear the previously selected line highlight.")) {
+        return 1;
+    }
+    if (!expect(sceneGeneration->isSettled() && interactionIndex.hasSelectionPresentation(scene, sceneGeneration->current()),
+                "Indexed selection benchmark should exercise the settled delta path.")) {
+        return 1;
+    }
+    std::cout << "selection-presentation items=" << scene->items().size()
+              << " updates=80 baseline_ms=" << baselineMs
+              << " indexed_ms=" << indexedMs << '\n';
+    return 0;
 }
 
 int runLargeSceneRefreshSmoke()
@@ -212,8 +331,9 @@ int runLargeSceneRefreshSmoke()
         .refreshStatus = []() {},
         .refreshObjectDetailsPanel = []() {},
         .updateHelpPanel = []() {},
-        .recordSceneProjectionRefreshCompleted = [&completedSceneGeneration](quint64 generation) {
+        .recordSceneProjectionRefreshCompleted = [&completedSceneGeneration, &sceneGeneration](quint64 generation) {
             completedSceneGeneration = generation;
+            sceneGeneration.markCompleted(generation);
         },
         .recordSceneRefreshMetrics = [&refreshMetrics](const MapEditorSceneRefreshMetrics &metrics) {
             refreshMetrics = metrics;
@@ -276,6 +396,10 @@ int runLargeSceneRefreshSmoke()
                 "Large map refresh should publish its current scene generation after selection restoration.")) {
         return 1;
     }
+    if (runSelectionPresentationBenchmark(scene, &sceneGeneration, itemsByLine) != 0) {
+        return 1;
+    }
+    scene->clearSelection();
 
     const QList<QGraphicsItem *> sceneItemsBeforePartialRefresh = scene->items();
     const int targetItemsBefore = std::count_if(sceneItemsBeforePartialRefresh.cbegin(),
@@ -339,5 +463,8 @@ int runLargeSceneRefreshSmoke()
 int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
+    if (runInspectorLineLookupBenchmark() != 0) {
+        return 1;
+    }
     return runLargeSceneRefreshSmoke();
 }

@@ -170,6 +170,72 @@ Structured block-canvas requirements:
 
 ### 3.3 TH2 Map Editor
 
+- The application shall offer an editor-only pastel scrap altitude underlay in
+  application Settings, persist the preference, and default it to disabled.
+- Settings shall provide persistent `Scrap underlay strength` from 0 to 100 percent,
+  defaulting to 19 percent opacity. Zero shall make the tint invisible. The same
+  strength shall apply to precise/approximate outlines and altitude/categorical
+  colors without changing mean-height hue or station colors.
+- Settings shall provide persistent `XVI centerline color` (including alpha) and
+  `XVI centerline thickness` from 0.1 to 12 px, defaulting to RGBA(18,44,88,130)
+  and 1.8 px. These settings shall affect only XVI station-to-station traverse
+  legs, retaining cosmetic pixel width and existing zoom-out thinning; LRUD
+  outlines/fills, splays, grid, sketches, station markers, TH2 geometry and every
+  other background source shall retain their existing appearance.
+- Settings shall offer `One color` and `By altitude` XVI centerline coloring,
+  defaulting to `By altitude`; the configured centerline color shall remain the
+  fallback for legs whose two endpoint stations cannot each be uniquely resolved
+  to LOX height metadata.
+- Altitude-colored legs shall use only explicit XVI station-table identities at
+  traverse endpoints, resolved through the active project's station index to a
+  unique LOX station. The renderer shall not infer elevation from XVI drawing
+  coordinates, guessed station names, or segment averages. Both endpoint heights
+  and a flagged LOX entrance are required; valid legs shall interpolate the same
+  normalized pastel palette as scrap altitude underlays between their endpoint
+  station colors.
+- The Map Objects sidebar shall show a compact numeric XVI height legend when
+  `By altitude` is selected. Its range shall be relative to the chosen flagged
+  entrance, labeled as LOX-derived and not an absolute datum; segments lacking
+  uniquely resolved endpoint heights shall be identified as using the configured
+  XVI color. When scrap underlays are also enabled, their categorical fallback
+  shall be distinguished from altitude colors.
+- LOX station lookup keys shall use the same normalization as the project station
+  index. Collisions after normalization shall remain ambiguous, not silently pick
+  a height. The XVI legend shall report colored/fallback leg counts and distinguish
+  missing metadata, unreadable LOX, multiple outputs, missing entrance datum, and
+  absence of an XVI background. Multiple outputs shall not be chosen arbitrarily.
+- Manual map zoom shall support 10% through 20,000% (view scales 0.1 through 200).
+  Wheel, pinch and actions shall share one viewport zoom path in embedded and
+  detached maps, retaining cursor anchoring and screen-space geometry affordances.
+- Accepting Settings shall repaint all open maps, including detached maps,
+  without rebuilding the scene or XVI geometry/style-independent caches for
+  appearance-only changes, mutating source, dirty state, or undo history.
+  Cancel shall leave appearance unchanged. Invalid persisted values shall be
+  diagnosed and replaced individually by documented defaults; invalid writes
+  shall be diagnosed and rejected.
+- Enabled underlays shall use the arithmetic mean of distinct, uniquely resolved
+  station heights from a single current-project LOX output. Every mapped station
+  in the scrap shall be resolved; incomplete mapping shall not imply a valid mean.
+- Heights shall be relative to an explicitly flagged LOX entrance, selected by
+  lexicographically first fully qualified station name when multiple entrances
+  exist. LOX coordinates alone shall not be presented as an absolute/GPS datum.
+- Colors shall normalize mean heights against the complete LOX station-height
+  range. Equal heights shall receive equal colors independent of scrap identity.
+- Missing or ambiguous LOX data, missing entrance references, and incomplete
+  station mappings shall use stable identity-derived categorical pastel colors,
+  explicitly described as non-altitude fallback in the UI.
+- Fill shall follow safely closed wall geometry with preserved holes, use the
+  chosen opacity below editable geometry and labels, and not participate in selection.
+- Connected open outline segments shall form independent closed passage contours;
+  explicit inner outlines shall remove fill rather than replace the outer passage.
+  Scraps without a precise contour may use bounded local endpoint-gap closure
+  for an approximate editor-only preview. The UI shall distinguish precise,
+  approximate and unfilled scraps; approximate tooltips shall identify inferred
+  boundaries. Unbounded gaps and ambiguous branching shall remain unfilled.
+- The feature shall not mutate source, exports, or undo history, perform LOX IO
+  when disabled, or recompute data on zoom. Metadata loads shall be asynchronous
+  and bounded; source changes shall update the underlay from cached projections.
+
 The application shall provide a graphical editor for TH2 map documents.
 
 Required capabilities:
@@ -184,12 +250,17 @@ Required capabilities:
   - points
   - areas
 - support object selection, hover feedback, and visibility toggles; selected map objects shall use a red interaction overlay, hover-before-selection feedback shall use an azure/cyan interaction overlay without changing the normal object style color, and the map canvas shall use a crosshair cursor in select mode so the visible cursor hotspot matches hit testing
+- hit testing shall prefer an overlapping point, line, or other selectable object over a filled-area interior within the existing pick radius; a filled area shall remain selectable at interior points only when no other selectable object is within that radius, and its fill shall not intercept pointer delivery to the underlying object; an area boundary line shall remain independently selectable and snappable
 - support dragging and reordering objects where the document model allows it
 - support direct editing of map geometry
 - support undo and redo for all map mutations
 - keep the graphical selection synchronized with the text source where possible
 - keep the text editor selection synchronized with the graphical selection where possible
 - support zooming, panning, and viewport restoration
+- In the graphical editor, nominal line-decoration symbol metrics shall use logical screen pixels across zoom levels: tooth depth, tick length, rung/rail offsets, repeated-symbol size, wave amplitude/length, spacing, and positional/size jitter. This shall include bundled pit/pitch/step, wall-material, handrail, flowstone/moonmilk, and ladder families, as well as catalog overrides, without a line-type-specific sizing exception. Existing spacing adjustment for the available projected line length shall remain effective.
+- Explicit source-derived slope `l-size` lengths shall remain real geometric lengths, including interpolation and orientation; only the nominal slope fallback length and repetition spacing shall use screen pixels. Standalone point geometries, path-following text layout, and area-pattern level-of-detail policies shall not be flattened by this line-decoration policy.
+- The yellow line-direction selection aid shall be anchored to the actual first vertex, retain an 18-logical-pixel length independent of map scale and zoom, follow the first segment's tangent/control handle and reverse state, and update during dragging and viewport rotation.
+- These presentation policies shall not rewrite TH2 coordinates, line-point options, source text, undo transactions, or Therion compiler/export geometry and symbol units. Zoom shall update paint bounds/direction orientation without rebuilding the map scene; fit-to-geometry shall use source geometry bounds rather than zoom-dependent glyph margins. Visible glyphs shall remain drawable even when their underlying line is outside the viewport, and repeated decorations on long lines shall be sampled from visible path intervals without an offscreen marker-count truncation.
 - support an XTherion-style map canvas context menu on right-click or platform secondary-click gestures such as macOS two-finger trackpad click for the current map selection; repeated secondary-clicks while the context menu is open shall retarget the menu to the newly hit object or vertex and show it at the latest click position
 - support fitting the viewport to geometry only or to geometry plus background layers
 - support background imagery and sketch references used by TH2 documents, including multiple layers and `.xvi` vector references
@@ -213,6 +284,7 @@ Map editor editing workflows should include, at minimum:
 - selection of individual vertices or control points when editing geometry
 - point, line, and area insertion shall offer viewport-scale snapping to nearby vertices or point anchors from other map objects, shall highlight candidate vertices on the nearby object for orientation, and shall highlight the active snap target while snapping is offered; Bezier control handles remain free-form
 - dragging an existing line or area vertex shall offer viewport-scale snapping to nearby vertices or point anchors from other map objects, shall highlight candidate vertices on the nearby object for orientation, and shall highlight the active snap target while snapping is offered; Bezier control handles remain free-form
+- when dragging a wall anchor or inserting a wall, wall anchors within the existing snap radius shall take priority over closer non-wall geometry; if no wall anchor is in range, a wall segment within that radius shall take priority; guides and committed coordinates shall follow this policy across scraps, while other line types retain their existing snapping behavior
 - context-menu access to common selected-object and selected-line actions, mirroring the available `Selection` inspector groups for type/subtype edits, editable object fields, `Geometry`, the complete available `Line Point` panel, `Line Point Actions`, and `Object Actions`; unavailable groups and actions shall be omitted from the menu rather than shown disabled, and free text or numeric editors shall be opened/focused in the inspector rather than embedded in the native menu
 
 ### 3.4 Object Settings / Inspector Panels

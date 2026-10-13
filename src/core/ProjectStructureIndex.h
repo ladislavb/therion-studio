@@ -53,6 +53,7 @@ struct ProjectStationReferenceResolution
 {
     ProjectStationReferenceResolutionState state = ProjectStationReferenceResolutionState::Missing;
     int candidateCount = 0;
+    QString qualifiedReference;
 };
 
 struct ProjectStructureEntry

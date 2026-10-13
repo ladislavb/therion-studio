@@ -994,21 +994,31 @@ bool buildXviLayerGeometry(const XviDocument &xvi,
         return QStringLiteral("%1:%2").arg(ix).arg(iy);
     };
     QSet<QString> stationPointKeys;
+    QHash<QString, QSet<QString>> stationNamesByPoint;
     stationPointKeys.reserve(!xvi.stationEntries.isEmpty() ? xvi.stationEntries.size() : xvi.stations.size());
     if (!xvi.stationEntries.isEmpty()) {
         for (const TherionXviStation &station : xvi.stationEntries) {
-            stationPointKeys.insert(stationKey(station.position));
+            const QString key = stationKey(station.position);
+            stationPointKeys.insert(key);
+            stationNamesByPoint[key].insert(station.name);
         }
     } else {
         for (auto it = xvi.stations.constBegin(); it != xvi.stations.constEnd(); ++it) {
-            stationPointKeys.insert(stationKey(it.value()));
+            const QString key = stationKey(it.value());
+            stationPointKeys.insert(key);
+            stationNamesByPoint[key].insert(it.key());
         }
     }
     auto matchesStation = [&](const QPointF &point) {
         return stationPointKeys.contains(stationKey(point));
     };
+    auto stationNameAt = [&](const QPointF &point) {
+        const QSet<QString> names = stationNamesByPoint.value(stationKey(point));
+        return names.size() == 1 ? *names.cbegin() : QString();
+    };
 
     QVector<QLineF> traverseShotLines;
+    QVector<MapEditorXviTraverseStations> traverseShotStations;
     QVector<QLineF> splayShotLines;
     QVector<MapEditorXviStationData> stations;
     stations.reserve(xvi.stationEntries.size());
@@ -1034,6 +1044,9 @@ bool buildXviLayerGeometry(const XviDocument &xvi,
         includePoint(projectedEnd);
         QVector<QLineF> &targetLines = isSplay ? splayShotLines : traverseShotLines;
         targetLines.append(QLineF(projectedStart, projectedEnd));
+        if (!isSplay) {
+            traverseShotStations.append({stationNameAt(rawStart), stationNameAt(rawEnd)});
+        }
 
         if (shot.passageOutline.size() == 4) {
             MapEditorXviPassagePolygonData passage;
@@ -1159,6 +1172,7 @@ bool buildXviLayerGeometry(const XviDocument &xvi,
     MapEditorXviLayerGeometryData result;
     result.gridLines = normalizedGridLines;
     result.traverseShotLines = normalizedTraverseShots;
+    result.traverseShotStations = traverseShotStations;
     result.splayShotLines = normalizedSplayShots;
     result.passagePolygons = normalizedPassagePolygons;
     result.sketchPaths = normalizedSketchPaths;
@@ -1258,6 +1272,7 @@ bool updateXviBackgroundItemGeometry(MapEditorXviBackgroundItem *item,
 
 bool createAndAppendXviBackgroundItem(QGraphicsScene *scene,
                                       QVector<QGraphicsPixmapItem *> *layers,
+                                      const MapAppearanceSettings &appearance,
                                       const QString &absolutePath,
                                       const XviDocument &xvi,
                                       const QPointF &anchoredBasePosition,
@@ -1279,6 +1294,7 @@ bool createAndAppendXviBackgroundItem(QGraphicsScene *scene,
         return false;
     }
 
+    backgroundItem->setCenterlineAppearance(QColor(appearance.xviCenterlineColor), appearance.xviCenterlineWidth);
     scene->addItem(backgroundItem);
     layers->append(backgroundItem);
     return true;
@@ -1763,6 +1779,7 @@ void MapEditorTab::browseAndAddBackgroundImages()
                     : XviBackgroundInsertionPlacement{QPointF(0.0, 0.0), QString()};
             if (!createAndAppendXviBackgroundItem(mapScene_,
                                                   &backgroundImageItems_,
+                                                  mapAppearance_,
                                                   absoluteXviPath,
                                                   xviDocument,
                                                   insertionPlacement.basePosition,
@@ -2868,6 +2885,7 @@ void MapEditorTab::loadBackgroundLayersFromSession()
                     backgroundAssetCache_, QFileInfo(layerPath).absoluteFilePath(), &xviDocument)
                 || !createAndAppendXviBackgroundItem(mapScene_,
                                                      &backgroundImageItems_,
+                                                     mapAppearance_,
                                                      QFileInfo(layerPath).absoluteFilePath(),
                                                      xviDocument,
                                                      basePosition,
@@ -3118,6 +3136,7 @@ void MapEditorTab::syncAutoBackgroundLayersFromCurrentDocument()
                 : sourceBounds;
             if (!createAndAppendXviBackgroundItem(mapScene_,
                                                   &backgroundImageItems_,
+                                                  mapAppearance_,
                                                   referencePath,
                                                   xviDocument,
                                                   anchoredBase,

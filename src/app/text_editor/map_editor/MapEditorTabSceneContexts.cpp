@@ -221,7 +221,11 @@ MapEditorSceneRefreshContext MapEditorTab::sceneRefreshContext()
         },
         .recordSceneProjectionRefreshCompleted = [self](quint64 generation) {
             if (self != nullptr && generation > 0 && self->sceneGeneration_.isCurrent(generation)) {
+                self->sceneGeneration_.markCompleted(generation);
                 self->lastCompletedSceneProjectionGeneration_ = generation;
+                if (self->altitudeUnderlayEnabled_) {
+                    self->refreshAltitudeUnderlay();
+                }
             }
         },
     };

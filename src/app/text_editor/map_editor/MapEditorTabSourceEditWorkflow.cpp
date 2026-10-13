@@ -1,6 +1,7 @@
 #include "MapEditorTab.h"
 
 #include "MapEditorObjectDetailsLogic.h"
+#include "MapEditorPerformanceCounters.h"
 #include "MapEditorCanvasEditController.h"
 #include "MapEditorSceneSupport.h"
 #include "../TextEditorSourceTransactionController.h"
@@ -15,6 +16,7 @@
 #include <QDebug>
 #include <QElapsedTimer>
 #include <QGraphicsPathItem>
+#include <QGraphicsPixmapItem>
 #include <QGraphicsScene>
 #include <QPainterPath>
 #include <QPointer>
@@ -161,11 +163,28 @@ std::optional<QRectF> MapEditorTab::initialAreaAdjustRectForDraftInsertion() con
 
 QRectF MapEditorTab::sourceBoundsForInteractiveDraft() const
 {
-    if (const std::optional<QRectF> initialAreaAdjust = initialAreaAdjustRectForDraftInsertion();
-        initialAreaAdjust.has_value()) {
-        return *initialAreaAdjust;
+    // Called per pointer move (magnifier coordinates, drawing); deriving it
+    // re-parses the whole text, so memoize on everything it depends on.
+    const int revision = textEditor_ != nullptr ? textEditor_->documentRevision() : -1;
+    const QRectF previewBounds = mapPreviewBounds();
+    size_t backgroundKey = qHash(backgroundImageItems_.size());
+    for (const QGraphicsPixmapItem *item : backgroundImageItems_) {
+        backgroundKey = item != nullptr
+            ? qHashMulti(backgroundKey, quintptr(item), item->pos().x(), item->pos().y(), item->data(0).toString())
+            : qHashMulti(backgroundKey, 0);
     }
-    return mapSourceBoundsForCurrentDocument();
+    if (textEditor_ != nullptr && revision == draftSourceBoundsRevision_
+        && previewBounds == draftSourceBoundsPreview_ && backgroundKey == draftSourceBoundsBackgroundKey_) {
+        return draftSourceBounds_;
+    }
+
+    mapEditorPerformanceCounters().draftSourceBoundsComputations.fetch_add(1, std::memory_order_relaxed);
+    const std::optional<QRectF> initialAreaAdjust = initialAreaAdjustRectForDraftInsertion();
+    draftSourceBounds_ = initialAreaAdjust.has_value() ? *initialAreaAdjust : mapSourceBoundsForCurrentDocument();
+    draftSourceBoundsRevision_ = revision;
+    draftSourceBoundsPreview_ = previewBounds;
+    draftSourceBoundsBackgroundKey_ = backgroundKey;
+    return draftSourceBounds_;
 }
 
 QPointF MapEditorTab::sourcePointFromScenePosition(const QPointF &scenePosition) const

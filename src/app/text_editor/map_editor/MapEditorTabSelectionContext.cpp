@@ -11,6 +11,8 @@ MapEditorSelectionContext MapEditorTab::selectionContext()
         .textEditor = textEditor_,
         .scene = mapScene_,
         .view = mapView_,
+        .sceneGeneration = &sceneGeneration_,
+        .sceneInteractionIndex = &sceneInteractionIndex_,
         .itemsByLine = &mapItemsByLine_,
         .hiddenObjectLines = &hiddenInspectorObjectLines_,
         .suppressedAutoReselectLineNumbers = &suppressedInspectorAutoReselectLineNumbers_,

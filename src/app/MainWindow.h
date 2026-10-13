@@ -13,6 +13,7 @@
 
 #include "MainWindowTherionConsoleController.h"
 #include "ProjectOutputsScanner.h"
+#include "ProjectAltitudeService.h"
 #include "ProjectFileWatchInventoryService.h"
 #include "ProjectSearchScanner.h"
 #include "ProjectValidationController.h"
@@ -566,6 +567,12 @@ private:
     std::shared_ptr<TherionStudio::ProjectScanCacheService> projectScanCacheService_;
     TherionStudio::ProjectSearchScanner *projectSearchScanner_ = nullptr;
     TherionStudio::ProjectOutputsScanner *projectOutputsScanner_ = nullptr;
+    TherionStudio::ProjectAltitudeService *projectAltitudeService_ = nullptr;
+    TherionStudio::ProjectIndexSnapshot altitudeProjectIndex_;
+    void updateMapAltitudeUnderlays();
+    void updateMapAppearance();
+    void initializeAltitudeUnderlay();
+    void configureMapAltitudeUnderlay(TherionStudio::MapEditorTab *tab);
     TherionStudio::ProjectValidationController *projectValidationController_ = nullptr;
     TherionStudio::ProjectStructureScanner *structureSidebarScanner_ = nullptr;
 };

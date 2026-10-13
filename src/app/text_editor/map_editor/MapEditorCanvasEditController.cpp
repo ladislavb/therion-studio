@@ -391,6 +391,7 @@ bool mapGeometryItemGroupReadyForPartialRefresh(QGraphicsScene *scene,
 
     bool primaryItemInScene = false;
     bool geometryItemInScene = false;
+    ++mapEditorPerformanceCounters().fullSceneItemScans;
     const QList<QGraphicsItem *> sceneItems = scene->items();
     for (QGraphicsItem *item : sceneItems) {
         if (item == primaryIt.value()) {
@@ -540,6 +541,7 @@ MapEditableGeometryVertexItem *findGeometryVertexItem(QGraphicsScene *scene,
         return nullptr;
     }
 
+    ++mapEditorPerformanceCounters().fullSceneItemScans;
     const auto items = scene->items();
     for (QGraphicsItem *item : items) {
         auto *vertexItem = dynamic_cast<MapEditableGeometryVertexItem *>(item);

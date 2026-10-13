@@ -18,6 +18,8 @@ class QGraphicsView;
 
 namespace TherionStudio
 {
+class MapEditorSceneGeneration;
+class MapEditorSceneInteractionIndex;
 class TextEditorTab;
 struct TherionParsedLine;
 
@@ -26,6 +28,8 @@ struct MapEditorSelectionContext
     TextEditorTab *textEditor = nullptr;
     QGraphicsScene *scene = nullptr;
     QGraphicsView *view = nullptr;
+    MapEditorSceneGeneration *sceneGeneration = nullptr;
+    MapEditorSceneInteractionIndex *sceneInteractionIndex = nullptr;
     QHash<int, QGraphicsItem *> *itemsByLine = nullptr;
     QSet<int> *hiddenObjectLines = nullptr;
     QSet<int> *suppressedAutoReselectLineNumbers = nullptr;
