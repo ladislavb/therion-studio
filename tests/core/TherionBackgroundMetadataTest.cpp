@@ -1,3 +1,4 @@
+#include "../../src/core/MapBackgroundPlacement.h"
 #include "../../src/core/TherionBackgroundMetadata.h"
 
 #include <QDir>
@@ -34,6 +35,7 @@ private slots:
     void parsesBracedRasterPath();
     void parsesUnbracedRasterYCoordinate();
     void parsesXviInsert();
+    void keepsXviRootStationNamedZero();
     void parsesMapiahRasterInsert();
     void parsesMapiahXviInsert();
     void parsesMapiahSvgInsert();
@@ -132,6 +134,37 @@ void TherionBackgroundMetadataTest::parsesXviInsert()
     QVERIFY(reference.hasBasePosition);
     QVERIFY(nearlyEqual(reference.basePosition.x(), 456.253));
     QVERIFY(nearlyEqual(reference.basePosition.y(), 60.18));
+}
+
+void TherionBackgroundMetadataTest::keepsXviRootStationNamedZero()
+{
+    const QString documentPath = documentPathForTest(QStringLiteral("plan.th2"));
+    // XTherion saves the first XVI station as the root; here that station is named "0".
+    const QVector<TherionBackgroundReference> zeroRoot = parseTherionBackgroundReferences(
+        QStringLiteral("##XTHERION## xth_me_image_insert {0.00 1 1.0} {0.00 0} {Notes/plan.xvi} 0 {}\n"),
+        documentPath);
+    QCOMPARE(zeroRoot.size(), 1);
+    QCOMPARE(zeroRoot.first().rootStationName, QStringLiteral("0"));
+
+    const QVector<TherionBackgroundReference> noRoot = parseTherionBackgroundReferences(
+        QStringLiteral("##XTHERION## xth_me_image_insert {0.00 1 1.0} {0.00 {}} {Notes/plan.xvi} 0 {}\n"),
+        documentPath);
+    QCOMPARE(noRoot.size(), 1);
+    QVERIFY(noRoot.first().rootStationName.isEmpty());
+
+    // The XVI is then placed on station 0, not on its grid origin.
+    XviPlacementMetadata placement;
+    placement.basePosition = zeroRoot.first().basePosition;
+    placement.hasBasePosition = zeroRoot.first().hasBasePosition;
+    placement.rootStationName = zeroRoot.first().rootStationName;
+    const XviPlacementResult result = resolveXviModelOffset(
+        QPointF(-629.92126, -1338.5826),
+        QVector<XviStationPlacementEntry>{{QStringLiteral("0"), QPointF(0.0, 0.0)},
+                                          {QStringLiteral("11"), QPointF(-466.27, -803.16)}},
+        placement);
+    QVERIFY(result.rootResolved);
+    QVERIFY(nearlyEqual(result.modelOffset.x(), 0.0));
+    QVERIFY(nearlyEqual(result.modelOffset.y(), 0.0));
 }
 
 void TherionBackgroundMetadataTest::parsesMapiahRasterInsert()

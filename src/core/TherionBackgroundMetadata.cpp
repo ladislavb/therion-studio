@@ -489,8 +489,10 @@ QVector<TherionBackgroundReference> parseTherionBackgroundReferences(const QStri
             }
 
             if (secondParts.size() >= 2) {
+                // XTherion treats any non-empty root as a station name ("0" included) and saves the first
+                // XVI station as the root; `{}` means no root.
                 const QString candidateRoot = normalizeStationToken(secondParts.at(1));
-                if (!candidateRoot.isEmpty() && candidateRoot != QStringLiteral("0")) {
+                if (!candidateRoot.isEmpty()) {
                     reference.rootStationName = candidateRoot;
                 }
             }
