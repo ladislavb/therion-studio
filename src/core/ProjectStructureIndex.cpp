@@ -333,9 +333,39 @@ struct JoinReferenceParts
     bool requiresLinePointMark = false;
 };
 
+// The enclosing survey names, innermost first, including surveys declared with `-namespace off`.
+QString fullSurveyPathForEntry(const ProjectStructureEntry &entry,
+                               const QHash<QString, ProjectStructureEntry> &entriesByObjectId)
+{
+    QStringList surveyNames;
+    for (QString parentId = entry.parentObjectId; !parentId.isEmpty();) {
+        const auto parentIt = entriesByObjectId.constFind(parentId);
+        if (parentIt == entriesByObjectId.constEnd()) {
+            break;
+        }
+        if (parentIt->kind == ProjectStructureEntryKind::Survey) {
+            surveyNames.append(parentIt->name);
+        }
+        parentId = parentIt->parentObjectId;
+    }
+    return joinedNamespacePath(surveyNames);
+}
+
 ReferenceKeyIndex entryKeysByReferenceName(const QVector<ProjectStructureEntry> &entries,
                                            ProjectStructureEntryKind kind)
 {
+    // A `-namespace off` survey shares its parent's namespace, but Therion still names its objects through the
+    // survey (`EntranceSP2@Entrance.cave`), so such objects also resolve through their full survey path.
+    QHash<QString, ProjectStructureEntry> entriesByObjectId;
+    for (const ProjectStructureEntry &entry : entries) {
+        if (entry.kind == ProjectStructureEntryKind::Survey && !entry.createsNamespace) {
+            for (const ProjectStructureEntry &anyEntry : entries) {
+                entriesByObjectId.insert(anyEntry.objectId, anyEntry);
+            }
+            break;
+        }
+    }
+
     ReferenceKeyIndex entryKeys;
     for (const ProjectStructureEntry &entry : entries) {
         if (entry.kind != kind || entry.name.trimmed().isEmpty()) {
@@ -344,6 +374,13 @@ ReferenceKeyIndex entryKeysByReferenceName(const QVector<ProjectStructureEntry> 
 
         const QString nodeKey = ProjectStructureIndex::structureEntryNodeKey(entry);
         entryKeys.keysByNameAndNamespace[namespacedReferenceLookupKey(entry.name, entry.namespacePath)].append(nodeKey);
+        if (!entriesByObjectId.isEmpty()) {
+            const QString fullSurveyPath = fullSurveyPathForEntry(entry, entriesByObjectId);
+            if (!namespaceComponentsEqual(fullSurveyPath, entry.namespacePath)) {
+                entryKeys.keysByNameAndNamespace[namespacedReferenceLookupKey(entry.name, fullSurveyPath)].append(
+                    nodeKey);
+            }
+        }
     }
 
     return entryKeys;

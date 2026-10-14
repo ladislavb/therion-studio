@@ -25,6 +25,7 @@ Therion Studio is an editor and early-feedback tool. The Therion compiler remain
 
 - `survey` is the main hierarchical data structure. Surveys may be nested.
 - Each survey creates a namespace from its `<id>` unless Therion options explicitly disable namespace creation, for example `-namespace off`.
+- A `-namespace off` survey shares its parent's namespace for name lookup, but it still exists in the survey hierarchy and Therion still names its objects through it (`EntranceSP3@Entrance.cave`). Scrap, map, line, and point references to its objects therefore resolve both unqualified from the parent namespace (`EntranceSP3`) and through the survey name (`EntranceSP3@Entrance`). Station references through a `-namespace off` survey name are not yet treated this way until Therion's behaviour for them is confirmed.
 - Therion qualified references are written from innermost referenced survey outward. For example, object `27` in survey `hp` nested in survey `stara_vetrna` is referenced as `27@hp.stara_vetrna` from outside that branch.
 - From inside the owning namespace, shorter relative references are valid. For example, within the relevant parent context, `27@hp` may refer to the same station as `27@hp.stara_vetrna`.
 - Object identifiers only need to be unique in their owning namespace. Identical station or object names in different surveys are valid and common.
