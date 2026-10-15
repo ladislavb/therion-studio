@@ -157,6 +157,8 @@ public:
     void triggerConvertToUtf8();
     TherionSourceValidationResult validateDocument() const;
     void setProjectValidationDiagnostics(const QVector<TherionSourceDiagnostic> &diagnostics);
+    // Defers validation highlighting while the raw text is hidden by a host workspace; see TherionSyntaxHighlighter.
+    void setSyntaxValidationDeferred(bool deferred);
     bool applyValidationFixes(const QVector<TherionSourceDiagnosticFix> &fixes);
     bool canUndo() const;
     bool canRedo() const;

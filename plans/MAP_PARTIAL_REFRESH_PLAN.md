@@ -174,6 +174,21 @@ same local release macOS arm64 run it measured one millisecond total (below one 
 direct replacement). The smoke test asserts equivalent item and vertex-index counts before and after replacement; it
 does not use timing as a pass/fail threshold.
 
+### Release Cost Measurement (2026-10-15)
+
+Releasing a dragged point or wall vertex was timed on three local real cave drawings (about 1,650-2,050 scene items,
+21-27k characters; RelWithDebInfo, Linux, offscreen) with diagnostic logging. The whole release took 44-60 ms. The
+one-feature partial refresh already handled these moves (`map-point-partial-refresh` 10-14 ms, no full rebuild); the
+source transaction itself took 36-54 ms (`apply_snapshot_ms`). Stack sampling showed that cost inside
+`QTextDocument::contentsChange`: the hidden raw editor's syntax highlighter revalidated the whole document
+(`TherionSourceValidator::validate`) to colour the one changed line. The highlighter now defers validator and external
+diagnostic formats while the map tab's Visual workspace hides the raw text and applies them in one rehighlight when Raw
+is shown (`TherionSyntaxHighlighter::setValidationFormatsDeferred`, set by `MapEditorTab`). Result: source transaction
+15-18 ms, point release median about 22 ms. Partial refresh widening is therefore not the next release bottleneck on
+these drawings. Follow-up, only with a specification decision: validating Raw-mode typing asynchronously on a short
+debounce would remove the same synchronous validation from visible Raw editing; it changes when underlines appear and
+the highlighting tests that expect them immediately.
+
 ## Phase 1 - Item Group Ownership
 
 Goal: make "all scene items for source line N" explicit enough to remove and replace a single rendered geometry group.

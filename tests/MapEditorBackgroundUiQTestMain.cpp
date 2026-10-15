@@ -4,6 +4,7 @@
 #include <QtTest/QtTest>
 
 int runMapEditorBackgroundRoundTripTest(int argc, char **argv);
+int runMapEditorRawValidationDeferralTest(int argc, char **argv);
 
 int main(int argc, char **argv)
 {
@@ -11,5 +12,6 @@ int main(int argc, char **argv)
     // QApplication rather than the QCoreApplication the QTest macros create.
     QApplication app(argc, argv);
     return runSelectedQTestSuites(argc, argv, {
-        {"MapEditorBackgroundRoundTripTest", runMapEditorBackgroundRoundTripTest}});
+        {"MapEditorBackgroundRoundTripTest", runMapEditorBackgroundRoundTripTest},
+        {"MapEditorRawValidationDeferralTest", runMapEditorRawValidationDeferralTest}});
 }

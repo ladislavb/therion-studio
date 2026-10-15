@@ -195,6 +195,7 @@ void MapEditorTab::setWorkspaceMode(WorkspaceMode mode)
         textEditor_->setProjectValidationDiagnostics(workspaceMode_ == WorkspaceMode::Raw
                                                          ? projectValidationDiagnostics_
                                                          : QVector<TherionSourceDiagnostic>{});
+        textEditor_->setSyntaxValidationDeferred(workspaceMode_ != WorkspaceMode::Raw);
     }
     emit workspaceModeChanged(workspaceMode_);
 }

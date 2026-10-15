@@ -24,6 +24,9 @@ public:
     void reloadPaletteForApplicationAppearance();
     void setSourceDocumentType(TherionSourceDocumentType sourceType);
     void setExternalDiagnostics(const QVector<TherionSourceDiagnostic> &diagnostics);
+    // While the text is not shown (for example a map drawn in the Visual workspace), skip validator and external
+    // diagnostic formats, which revalidate the whole document on each edit; they are applied once when undeferred.
+    void setValidationFormatsDeferred(bool deferred);
 
 protected:
     void highlightBlock(const QString &text) override;
@@ -58,6 +61,8 @@ private:
     TherionSourceValidationResult cachedValidationResult_;
     QVector<TherionSourceDiagnostic> externalDiagnostics_;
     int cachedValidationRevision_ = -1;
+    bool validationFormatsDeferred_ = false;
+    bool validationFormatsPending_ = false;
     TherionSourceDocumentType sourceDocumentType_ = TherionSourceDocumentType::Unknown;
     CommandCatalogStore catalogStore_;
 };

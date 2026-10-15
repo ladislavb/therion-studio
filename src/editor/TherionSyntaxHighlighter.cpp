@@ -594,6 +594,10 @@ void TherionSyntaxHighlighter::applyValidatorInvalidTokenFormats(const QString &
     if (text.trimmed().isEmpty()) {
         return;
     }
+    if (validationFormatsDeferred_) {
+        validationFormatsPending_ = true;
+        return;
+    }
 
     const QTextBlock block = currentBlock();
     if (!block.isValid()) {
@@ -652,7 +656,23 @@ void TherionSyntaxHighlighter::applyValidatorInvalidTokenFormats(const QString &
 void TherionSyntaxHighlighter::setExternalDiagnostics(const QVector<TherionSourceDiagnostic> &diagnostics)
 {
     externalDiagnostics_ = diagnostics;
+    if (validationFormatsDeferred_) {
+        validationFormatsPending_ = true;
+        return;
+    }
     rehighlight();
+}
+
+void TherionSyntaxHighlighter::setValidationFormatsDeferred(bool deferred)
+{
+    if (validationFormatsDeferred_ == deferred) {
+        return;
+    }
+    validationFormatsDeferred_ = deferred;
+    if (!deferred && validationFormatsPending_) {
+        validationFormatsPending_ = false;
+        rehighlight();
+    }
 }
 
 const QTextCharFormat &TherionSyntaxHighlighter::validationFormatForSeverity(

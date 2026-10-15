@@ -188,6 +188,8 @@ void MapEditorTab::buildUi()
     textEditor_ = new TextEditorTab(*fileSystem_, catalogStore_, splitter_);
     textEditor_->setInlineStatusVisible(false);
     textEditor_->setModeSelectorVisible(false);
+    // The raw text is hidden in the Visual workspace, so its validation highlighting waits for Raw.
+    textEditor_->setSyntaxValidationDeferred(workspaceMode_ != WorkspaceMode::Raw);
     sourceDrivenMapRefreshTimer_ = new QTimer(this);
     sourceDrivenMapRefreshTimer_->setSingleShot(true);
     sourceDrivenMapRefreshTimer_->setInterval(75);

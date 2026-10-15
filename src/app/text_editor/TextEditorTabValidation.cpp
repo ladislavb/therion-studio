@@ -61,6 +61,13 @@ void TextEditorTab::setProjectValidationDiagnostics(const QVector<TherionSourceD
     }
 }
 
+void TextEditorTab::setSyntaxValidationDeferred(bool deferred)
+{
+    if (highlighter_ != nullptr) {
+        highlighter_->setValidationFormatsDeferred(deferred);
+    }
+}
+
 bool TextEditorTab::applyValidationFixes(const QVector<TherionSourceDiagnosticFix> &fixes)
 {
     if (editor_ == nullptr || sourceRewriteController_ == nullptr || fixes.isEmpty()) {
