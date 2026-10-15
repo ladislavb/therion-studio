@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ProjectSourceProjectionCache.h"
+
 #include <QObject>
 #include <QHash>
 #include <QString>
@@ -33,6 +35,8 @@ public:
         QVector<ProjectStructureEntry> entries;
         bool projectSourceSnapshotCacheHit = false;
         bool projectIndexSnapshotCacheHit = false;
+        // Parses done and reused by the scanner's retained document cache for this scan.
+        ProjectSourceProjectionCacheStats projectionCacheStats;
     };
 
     using ScanFunction = std::function<Result(const QString &projectRootPath,

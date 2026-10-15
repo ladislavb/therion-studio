@@ -137,4 +137,34 @@ QString ProjectSourceProjectionCache::catalogLogicalKeyForDocument(const Project
         + catalogKeyPart(catalogKey)
         + QStringLiteral("\nlogical=catalog-v1");
 }
+
+ProjectStructureIndexSourceSet projectStructureIndexSourceSetWithLogicalDocuments(
+    const ProjectSourceSnapshot &snapshot,
+    ProjectSourceProjectionCache &projectionCache,
+    ProjectSourceParsing parsing)
+{
+    ProjectStructureIndexSourceSet sourceSet = projectStructureIndexSourceSet(snapshot);
+    if (parsing == ProjectSourceParsing::AllDocuments) {
+        // projectStructureIndexSourceSet() keeps one source per snapshot document, in order.
+        for (qsizetype index = 0; index < sourceSet.sources.size() && index < snapshot.documents.size(); ++index) {
+            ProjectStructureIndexSource &source = sourceSet.sources[index];
+            if (source.textLoaded) {
+                source.logicalDocument = projectionCache.logicalDocumentHandle(snapshot.documents.at(index));
+            }
+        }
+        return sourceSet;
+    }
+    QHash<QString, ProjectSourceDocument> documentByPath;
+    for (const ProjectSourceDocument &document : snapshot.documents) {
+        if (document.textLoaded) {
+            documentByPath.insert(document.normalizedPath, document);
+        }
+    }
+    sourceSet.logicalDocumentForSource = [documentByPath, &projectionCache](
+                                             const QString &sourcePath) -> std::shared_ptr<const TherionSourceLogicalDocument> {
+        const auto it = documentByPath.constFind(sourcePath);
+        return it == documentByPath.cend() ? nullptr : projectionCache.logicalDocumentHandle(it.value());
+    };
+    return sourceSet;
+}
 }

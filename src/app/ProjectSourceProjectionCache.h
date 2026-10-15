@@ -53,4 +53,21 @@ private:
     std::shared_ptr<TherionSourceLogicalDocument> transientCatalogLogicalDocument_;
     ProjectSourceProjectionCacheStats stats_;
 };
+
+enum class ProjectSourceParsing
+{
+    // Parse every loaded document now; for callers that read every document anyway (Validation).
+    AllDocuments,
+    // Parse a document only when the index first reads it; a project folder may hold many sources the target config
+    // never reads (Structure).
+    OnDemand,
+};
+
+// The snapshot's index source set with each loaded document's plain logical projection taken from `projectionCache`,
+// so a cache kept between scans spares the index from re-parsing unchanged files. With OnDemand the set refers to
+// `projectionCache`, which must outlive the scan.
+[[nodiscard]] ProjectStructureIndexSourceSet projectStructureIndexSourceSetWithLogicalDocuments(
+    const ProjectSourceSnapshot &snapshot,
+    ProjectSourceProjectionCache &projectionCache,
+    ProjectSourceParsing parsing);
 }

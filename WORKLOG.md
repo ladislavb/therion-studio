@@ -130,6 +130,11 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 - Treat full-project validation as an explicit/manual workflow by default; use the Settings toggle only when projects are
   small enough or the user wants live full-project diagnostics.
+- Project index scans now log per-phase timings (`project-structure-scan`, and `project_index_phase_ms` on
+  `project-validation-scan`). Building the token whitespace pattern once and memoizing file path keys per scan removed
+  most non-parsing scan time with unchanged index output (plan Slice 4D). Structure scans now also keep parsed
+  documents between scans, so a rescan after a save parses only changed files (Slice 4E); bounding or sharing the two
+  scanners' parsed-document caches remains a measurement-led follow-up.
 - Use `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md` only for future validation/cache follow-ups; Structure and
   Validation already share snapshot-compatible collection/index input paths and explicit cache ownership.
 - Project station-reference validation now applies a scrap's `-station-names <prefix> <suffix>` transform before

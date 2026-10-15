@@ -87,6 +87,13 @@ struct ProjectStructureIndexScanStats
     int logicalDocumentBuilds = 0;
     int logicalDocumentHits = 0;
     int prebuiltLogicalDocumentHits = 0;
+    // Wall-clock milliseconds per scan phase, for diagnostics only.
+    qint64 structureMs = 0;
+    qint64 mapReferencesMs = 0;
+    qint64 joinReferencesMs = 0;
+    qint64 stationIndexMs = 0;
+    qint64 stationReferencesMs = 0;
+    qint64 duplicateIdsMs = 0;
 };
 
 struct ProjectIndexSnapshot
@@ -118,6 +125,9 @@ struct ProjectStructureIndexSourceSet
     QString preferredConfigPath;
     QVector<ProjectStructureIndexSource> sources;
     std::function<bool()> shouldCancel;
+    // Optional: the parsed projection of a source (by its `normalizedPath`) when the scan first reaches it, so a
+    // caller's retained cache is consulted only for files the index actually reads. Null means parse it here.
+    std::function<std::shared_ptr<const TherionSourceLogicalDocument>(const QString &sourcePath)> logicalDocumentForSource;
 };
 
 class ProjectStructureIndex final
