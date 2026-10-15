@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QElapsedTimer>
 #include <QHash>
 #include <QByteArray>
 #include <QList>
@@ -538,6 +539,13 @@ private:
     QString projectStructureSummary_;
     QString lastAppliedStructureSidebarSignature_;
     TherionStudio::ProjectIndexSnapshot lastStructureSidebarProjectIndex_;
+    // Start-up diagnostics: time from window construction until the first project index reaches the sidebar.
+    QElapsedTimer windowConstructedTimer_ = [] {
+        QElapsedTimer timer;
+        timer.start();
+        return timer;
+    }();
+    bool firstProjectIndexLogged_ = false;
     QString structureExpansionProjectRootPath_;
     QHash<int, QSet<QString>> structureExpandedNodeKeysByMode_;
     QHash<QString, QString> structureNameOverrides_;

@@ -2,6 +2,7 @@
 
 #include "MainWindowDocumentHelpers.h"
 #include "MainWindowStructureRoles.h"
+#include "../platform/DiagnosticLogging.h"
 #include "three_d_viewer/ThreeDViewerTab.h"
 #include "../core/TherionFileTypes.h"
 
@@ -707,6 +708,15 @@ void MainWindow::storeCurrentStructureExpansionState()
 void MainWindow::applyStructureSidebarIndex(const TherionStudio::ProjectIndexSnapshot &projectIndex)
 {
     lastStructureSidebarProjectIndex_ = projectIndex;
+    if (!firstProjectIndexLogged_ && !projectIndex.projectRootPath.isEmpty()) {
+        firstProjectIndexLogged_ = true;
+        if (TherionStudio::diagnosticLoggingEnabled()) {
+            qInfo("startup-timing phase=first-project-index elapsed_since_window_ms=%lld entries=%lld root=\"%s\"",
+                  static_cast<long long>(windowConstructedTimer_.elapsed()),
+                  static_cast<long long>(projectIndex.entries.size()),
+                  qPrintable(projectIndex.projectRootPath));
+        }
+    }
 
     const QString currentExpansionProjectRootPath = normalizedStructurePathKey(projectRootPath_);
     if (structureExpansionProjectRootPath_ != currentExpansionProjectRootPath) {

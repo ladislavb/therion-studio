@@ -69,6 +69,10 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Tester feedback says application launch is slow while TH2 rendering and compilation feel fast; startup timing checkpoints
   are now emitted into troubleshooting logs so the next report can identify whether startup, bootstrap, session restore,
   document restore, project open, or first event-loop readiness is the bottleneck.
+  A `startup-timing phase=first-project-index` checkpoint now also records when the first project index reaches the
+  sidebar (time since window construction and entry count): on a local Linux run the window was ready in about 140 ms
+  and responsive while the project tree followed about 1.3 s later, so a slow-launch report should compare
+  `event-loop-ready` with `first-project-index` before looking at bootstrap.
 - Every in-project source-text mutation, including undo back to the saved text, requests a `DocumentChanged` project
   validation so stale diagnostics cannot remain after the document becomes clean; the controller still honors the
   automatic-validation setting.
