@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QPointF>
 #include <QTransform>
 
 QT_BEGIN_NAMESPACE
@@ -15,7 +16,8 @@ namespace TherionStudio
  * `layerScale` and the rotation pivot come straight from the `##MAPIAH##`
  * `image_insert_v1` record. `viewScale` maps the item's local coordinates to
  * preview units. `anchorLocal` and `pivotLocal` are expressed in the unscaled
- * item-local coordinate system.
+ * item-local coordinate system, whose y axis points down. `rotationDeg` keeps
+ * Mapiah's convention: counterclockwise in Therion's y-up model space.
  */
 struct MapiahBackgroundTransformInput
 {
@@ -42,5 +44,13 @@ struct MapiahBackgroundTransformInput
  * a background lined up with the survey it was traced from.
  */
 QTransform mapiahBackgroundLayerTransform(const MapiahBackgroundTransformInput &input);
+
+/**
+ * Conversion between a raster layer's recorded `rotationCenterDx`/`Dy` and its
+ * item-local pivot. Mapiah records the offset from the `xx`/`yy` anchor with y
+ * pointing up, in image pixels; the pixmap's local y axis points down.
+ */
+QPointF mapiahRasterPivotToLocal(qreal rotationCenterDx, qreal rotationCenterDy);
+QPointF mapiahRasterPivotFromLocal(const QPointF &pivotLocal);
 
 }

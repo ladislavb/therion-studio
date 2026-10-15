@@ -173,8 +173,11 @@ void applyMapEditorRasterLayerTransform(QGraphicsPixmapItem *item)
         : 1.0;
     input.rotationDeg = item->data(kMapEditorBackgroundRotationDegRole).toDouble();
     input.pivotSet = item->data(kMapEditorBackgroundPivotSetRole).toBool();
-    input.pivotLocalX = item->data(kMapEditorBackgroundRotationCenterDxRole).toDouble();
-    input.pivotLocalY = item->data(kMapEditorBackgroundRotationCenterDyRole).toDouble();
+    const QPointF pivotLocal =
+        mapiahRasterPivotToLocal(item->data(kMapEditorBackgroundRotationCenterDxRole).toDouble(),
+                                 item->data(kMapEditorBackgroundRotationCenterDyRole).toDouble());
+    input.pivotLocalX = pivotLocal.x();
+    input.pivotLocalY = pivotLocal.y();
     input.intrinsicWidth = pixmapSize.width();
     input.intrinsicHeight = pixmapSize.height();
 

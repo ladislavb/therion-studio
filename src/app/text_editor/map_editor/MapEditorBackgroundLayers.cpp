@@ -2413,8 +2413,8 @@ QPointF MapEditorTab::backgroundLayerPivotScenePosition(QGraphicsPixmapItem *ite
         const QSize pixmapSize = item->pixmap().size();
         if (!pixmapSize.isEmpty()) {
             const QPointF pivotLocal = pivotSet
-                ? QPointF(item->data(kMapEditorBackgroundRotationCenterDxRole).toDouble(),
-                          item->data(kMapEditorBackgroundRotationCenterDyRole).toDouble())
+                ? mapiahRasterPivotToLocal(item->data(kMapEditorBackgroundRotationCenterDxRole).toDouble(),
+                                           item->data(kMapEditorBackgroundRotationCenterDyRole).toDouble())
                 : QPointF(static_cast<qreal>(pixmapSize.width()) / 2.0,
                           static_cast<qreal>(pixmapSize.height()) / 2.0);
             return item->sceneTransform().map(pivotLocal);
@@ -2591,8 +2591,9 @@ void MapEditorTab::setSelectedBackgroundLayerPivotAtScenePosition(const QPointF 
             * backgroundLayerYScaleValue(item);
         const QPointF pivotLocal((scenePosition.x() - item->pos().x()) / scaleX,
                                  (scenePosition.y() - item->pos().y()) / scaleY);
-        item->setData(kMapEditorBackgroundRotationCenterDxRole, pivotLocal.x());
-        item->setData(kMapEditorBackgroundRotationCenterDyRole, pivotLocal.y());
+        const QPointF recordedPivot = mapiahRasterPivotFromLocal(pivotLocal);
+        item->setData(kMapEditorBackgroundRotationCenterDxRole, recordedPivot.x());
+        item->setData(kMapEditorBackgroundRotationCenterDyRole, recordedPivot.y());
     }
     item->setData(kMapEditorBackgroundPivotSetRole, true);
     item->setData(kMapEditorBackgroundMetadataFormatRole,

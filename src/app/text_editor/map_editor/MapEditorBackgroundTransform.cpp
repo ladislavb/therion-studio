@@ -35,11 +35,24 @@ QTransform mapiahBackgroundLayerTransform(const MapiahBackgroundTransformInput &
     // anchor fixed when there is no rotation.
     transform.translate(anchorPreviewX + (pivotOffsetX * input.layerScaleX),
                         anchorPreviewY + (pivotOffsetY * input.layerScaleY));
-    transform.rotate(input.rotationDeg);
+    // Mapiah turns counterclockwise in Therion's y-up model space. The preview
+    // flips the y axis, where a positive Qt angle turns clockwise, so the
+    // angle changes sign here.
+    transform.rotate(-input.rotationDeg);
     transform.scale(input.layerScaleX, input.layerScaleY);
     transform.translate(-pivotPreviewX, -pivotPreviewY);
     transform.scale(input.viewScaleX, input.viewScaleY);
     return transform;
+}
+
+QPointF mapiahRasterPivotToLocal(qreal rotationCenterDx, qreal rotationCenterDy)
+{
+    return QPointF(rotationCenterDx, -rotationCenterDy);
+}
+
+QPointF mapiahRasterPivotFromLocal(const QPointF &pivotLocal)
+{
+    return QPointF(pivotLocal.x(), -pivotLocal.y());
 }
 
 }

@@ -66,6 +66,7 @@ private slots:
     void scaledLayerSurvivesReload_data();
     void scaledLayerSurvivesReload();
     void xviScalingMatchesMapiahComposition();
+    void rasterPivotOffsetPointsUpLikeMapiah();
 
 private:
     bool writeFixture(const QDir &directory, bool pivotSet, qreal rotationDeg, QString *filePath);
@@ -236,6 +237,66 @@ void MapEditorBackgroundRoundTripTest::scaledLayerSurvivesReload()
     QVERIFY(mapTab->save(&errorMessage));
     pumpEvents();
     QCOMPARE(mapiahMetadataLine(mapTab->text()), savedMetadata);
+}
+
+// Mapiah records `rotationCenterDy` with y pointing up: the fixture's -4 puts
+// the pivot below the anchor, inside the image. Picking a pivot inside the
+// image must record a negative offset in turn.
+void MapEditorBackgroundRoundTripTest::rasterPivotOffsetPointsUpLikeMapiah()
+{
+    QTemporaryDir temporaryDirectory;
+    QVERIFY(temporaryDirectory.isValid());
+    const QDir directory(temporaryDirectory.path());
+
+    QString filePath;
+    QVERIFY(writeFixture(directory, true, 0.0, &filePath));
+
+    QtFileSystem fileSystem;
+    FakeSessionStore sessionStore;
+    QMainWindow hostWindow;
+    hostWindow.resize(800, 600);
+    auto *central = new QWidget(&hostWindow);
+    auto *layout = new QVBoxLayout(central);
+    layout->setContentsMargins(0, 0, 0, 0);
+    auto *mapTab = new MapEditorTab(fileSystem, sessionStore, CommandCatalogStore(), central);
+    layout->addWidget(mapTab);
+    hostWindow.setCentralWidget(central);
+    hostWindow.show();
+    pumpEvents();
+
+    QString errorMessage;
+    QVERIFY2(mapTab->loadFile(filePath, &errorMessage), qPrintable(errorMessage));
+    for (int attempt = 0; attempt < 200
+             && mapTab->backgroundLayerSourcePixelSize(0) != QSize(kRasterWidth, kRasterHeight);
+         ++attempt) {
+        pumpEvents();
+    }
+    QCOMPARE(mapTab->backgroundLayerSourcePixelSize(0), QSize(kRasterWidth, kRasterHeight));
+    mapTab->setSelectedBackgroundLayerIndex(0);
+    pumpEvents();
+
+    // Without rotation the bounding rectangle's top-left corner is the anchor.
+    const QRectF bounds = mapTab->backgroundLayerSceneBoundingRectForTest(0);
+    const QPointF pivot = mapTab->backgroundLayerPivotScenePositionForTest(0);
+    QVERIFY2(pivot.y() > bounds.top() && pivot.y() < bounds.bottom(),
+             qPrintable(QStringLiteral("pivot y %1 outside the image span %2..%3")
+                            .arg(pivot.y())
+                            .arg(bounds.top())
+                            .arg(bounds.bottom())));
+    QVERIFY(pivot.x() > bounds.left());
+
+    const QPointF pickedPivot = bounds.topLeft() + QPointF(bounds.width() / 4.0, bounds.height() / 2.0);
+    mapTab->setSelectedBackgroundLayerPivotAtScenePositionForTest(pickedPivot);
+    pumpEvents();
+
+    const QVector<TherionBackgroundReference> references =
+        parseTherionBackgroundReferences(mapTab->text(), filePath);
+    QCOMPARE(references.size(), 1);
+    QVERIFY(references.first().pivotSet);
+    QVERIFY2(references.first().rotationCenterDx > 0.0 && references.first().rotationCenterDy < 0.0,
+             qPrintable(QStringLiteral("picked pivot recorded as (%1, %2)")
+                            .arg(references.first().rotationCenterDx)
+                            .arg(references.first().rotationCenterDy)));
 }
 
 void MapEditorBackgroundRoundTripTest::xviScalingMatchesMapiahComposition()

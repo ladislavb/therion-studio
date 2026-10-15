@@ -296,9 +296,15 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - `MapEditorBackgroundRoundTripTest` covers scale, pivot restoration, `xx`/`yy` mutation, serialization and reload,
   including a second save that must not drift the metadata. It runs in the new `MapEditorBackgroundUiQTests` runner,
   the first QTest aggregate for map editor UI suites, which is included in the aggregate UI build target used by CI.
-- Open: confirmation against a real survey document is still needed, since the current coverage rests on synthetic
-  fixtures and the reported figures. Focused UI coverage pins XVI to the same non-uniform anchor scaling, explicit-pivot
-  placement, metadata rewrite, and reload behavior as raster/SVG layers.
+- Scaling and translation now match Mapiah 1.0.1 on real files (confirmed in `#30`). Rotation did not: Mapiah turns
+  counterclockwise in Therion's y-up model space and records a raster pivot's `rotationCenterDy` with y pointing up,
+  while Studio applied both in the y-down preview. The angle and the raster pivot offset now change sign at that
+  boundary (`mapiahRasterPivotToLocal`/`FromLocal`). The transform test computes its expected points in the y-up
+  frame, and a new case pins placements measured in Mapiah 1.0.1.
+- Open: TH2 files whose background was rotated in earlier Studio builds will now display that rotation mirrored, as
+  Mapiah already does; their metadata cannot tell which application wrote the angle. Whether to warn about it is a
+  maintainer decision.
+- Open: two `##MAPIAH##` records naming the same image file display only one layer.
 
 ### 3D Viewer
 

@@ -9,6 +9,11 @@
 // so with no rotation the anchor is a fixed point. Raster/SVG items use local
 // origin as the anchor, while XVI can have a non-zero item-local anchor.
 //
+// Mapiah evaluates R in Therion's model space, whose y axis points up, so a
+// positive angle turns counterclockwise. Item-local and preview coordinates
+// point y down: the expected points are computed after flipping y, then
+// flipped back.
+//
 // These cases pin the mapping of the four corners rather than the bounding
 // rectangle: with a uniform scale, or with only the bounding box compared, a
 // wrong order between rotation and scaling stays invisible.
@@ -78,8 +83,9 @@ QPointF mapiahExpectedPoint(const QPointF &local,
     const qreal radians = qDegreesToRadians(rotationDeg);
     const qreal cosine = std::cos(radians);
     const qreal sine = std::sin(radians);
-    const QPointF rotated((scaledOffset.x() * cosine) - (scaledOffset.y() * sine),
-                          (scaledOffset.x() * sine) + (scaledOffset.y() * cosine));
+    // R applies in the y-up model space: flip y around it.
+    const QPointF rotated((scaledOffset.x() * cosine) + (scaledOffset.y() * sine),
+                          -((scaledOffset.x() * sine) - (scaledOffset.y() * cosine)));
 
     return anchor + scaledPivotOffset + rotated;
 }
@@ -100,6 +106,9 @@ private slots:
     void rotatedCornersMatchMapiahComposition();
     void explicitPivotCornersMatchMapiahComposition();
     void nonZeroAnchorMatchesMapiahComposition();
+    void rasterPivotMatchesMeasuredMapiahPlacement_data();
+    void rasterPivotMatchesMeasuredMapiahPlacement();
+    void rasterPivotConversionRoundTrips();
 
 private:
     void compareCorner(const QTransform &transform,
@@ -184,6 +193,58 @@ void MapEditorBackgroundTransformTest::nonZeroAnchorMatchesMapiahComposition()
                   anchor,
                   pivot,
                   kRotationDeg);
+}
+
+// Placements measured in Mapiah 1.0.1 on a 400 x 200 raster rotated by 90
+// degrees around an explicit pivot. Mapiah reports model coordinates (y up);
+// the expected values here are the same offsets from the anchor in item-local
+// coordinates (y down). A positive `rotationCenterDy` puts the pivot above the
+// anchor, and the image turns counterclockwise.
+void MapEditorBackgroundTransformTest::rasterPivotMatchesMeasuredMapiahPlacement_data()
+{
+    QTest::addColumn<qreal>("rotationCenterDy");
+    QTest::addColumn<QPointF>("expectedTopLeft");
+    QTest::addColumn<QPointF>("expectedTopRight");
+
+    // xx=0 yy=800: the top-left corner stays at (0, 800), the top-right one
+    // goes to (0, 1200).
+    QTest::newRow("pivot on anchor") << 0.0 << QPointF(0.0, 0.0) << QPointF(0.0, -400.0);
+    // xx=600 yy=800: the top-left corner goes to (700, 900).
+    QTest::newRow("pivot above anchor") << 100.0 << QPointF(100.0, -100.0) << QPointF(100.0, -500.0);
+    // xx=600 yy=200: the top-left corner goes to (500, 100).
+    QTest::newRow("pivot below anchor") << -100.0 << QPointF(-100.0, 100.0) << QPointF(-100.0, -300.0);
+}
+
+void MapEditorBackgroundTransformTest::rasterPivotMatchesMeasuredMapiahPlacement()
+{
+    QFETCH(qreal, rotationCenterDy);
+    QFETCH(QPointF, expectedTopLeft);
+    QFETCH(QPointF, expectedTopRight);
+
+    const QPointF pivotLocal = mapiahRasterPivotToLocal(0.0, rotationCenterDy);
+    MapiahBackgroundTransformInput input;
+    input.rotationDeg = 90.0;
+    input.pivotSet = true;
+    input.pivotLocalX = pivotLocal.x();
+    input.pivotLocalY = pivotLocal.y();
+    input.intrinsicWidth = 400.0;
+    input.intrinsicHeight = 200.0;
+    const QTransform transform = mapiahBackgroundLayerTransform(input);
+
+    const QPointF topLeft = transform.map(QPointF(0.0, 0.0));
+    QVERIFY(std::abs(topLeft.x() - expectedTopLeft.x()) < kEpsilon);
+    QVERIFY(std::abs(topLeft.y() - expectedTopLeft.y()) < kEpsilon);
+    const QPointF topRight = transform.map(QPointF(400.0, 0.0));
+    QVERIFY(std::abs(topRight.x() - expectedTopRight.x()) < kEpsilon);
+    QVERIFY(std::abs(topRight.y() - expectedTopRight.y()) < kEpsilon);
+}
+
+void MapEditorBackgroundTransformTest::rasterPivotConversionRoundTrips()
+{
+    const QPointF recorded(25.0, -15.0);
+    const QPointF local = mapiahRasterPivotToLocal(recorded.x(), recorded.y());
+    QCOMPARE(local, QPointF(25.0, 15.0));
+    QCOMPARE(mapiahRasterPivotFromLocal(local), recorded);
 }
 
 int runMapEditorBackgroundTransformTest(int argc, char **argv)
