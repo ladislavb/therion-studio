@@ -321,6 +321,8 @@ Pour les lignes et les bordures d’aires :
 - utilisez `<<` et `>>` pour activer ou supprimer les poignées de Bézier entrante et sortante ;
 - faites glisser les poignées de Bézier directement sur le canevas pour remodeler la courbe.
 
+Lorsqu’un seul point de ligne est sélectionné, les poignées des points voisins tournées vers lui s’affichent aussi, dans une couleur plus claire. Faire glisser l’une d’elles change seulement sa longueur, pas sa direction, comme dans xTherion. Sélectionnez le point voisin lui-même pour modifier librement ses poignées.
+
 Lorsqu’un déplacement fait passer un point, un sommet ou une poignée de Bézier de coordonnées entières à une position fractionnaire, Therion Studio écrit les nouvelles coordonnées avec une précision décimale supplémentaire, afin que les modifications répétées et les tangentes de Bézier lissées ne se dégradent pas visiblement.
 
 Lorsqu’une ligne sert de bordure à une aire, certaines actions destructrices sur cette ligne sont bloquées ; sélectionnez ou modifiez plutôt l’aire propriétaire. La suppression d’une aire retire uniquement le bloc `area ... endarea` et conserve dans la source les lignes de bordure référencées.

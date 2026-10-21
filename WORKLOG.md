@@ -198,6 +198,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
 ### Map Input And Partial Refresh
 
 - Map scene scrolling now expands around visible background layer bounds while keeping the base map/source projection fixed, so a moved, scaled, or rotated raster/SVG/XVI layer can be panned to every edge instead of being cut off at the original canvas rectangle; asynchronously loaded backgrounds also suppress stale empty-map guides once they become visible.
+- In review: when one line point is selected, the neighbouring handles facing it are shown lighter and change length
+  only, as in xTherion (`plans/LINE_POINT_NEIGHBOUR_HANDLES_PLAN.md`, branch `feature/line-point-neighbour-handles`).
+  Tried in the running app.
 - Map `Fit` now falls back to the fixed canvas when a document has no geometry; backgrounds are included only by the explicit `Fit With Background` action, avoiding a scrollbar-resize loop in empty maps with asynchronously loaded backgrounds.
 - Map primary clicks now keep highlighted-path pending metadata for overlapping line hits while treating an actual area-fill hit as authoritative near shared borders, preserving both Bezier handle activation and high-zoom area selection.
 - Map file loading now cancels the debounced source-edit refresh before performing its explicit scene refresh, preventing a delayed duplicate rebuild from invalidating freshly exposed scene items during early interaction; cross-platform smoke fixtures reacquire scene items after event-loop boundaries and use native temporary project roots.

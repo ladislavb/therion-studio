@@ -30,6 +30,7 @@
 #include <limits>
 #include <optional>
 
+#include "MapEditorLineControlDirection.h"
 #include "MapEditorSceneSupport.h"
 #include "MapEditorPointSymbolGeometry.h"
 #include "MapEditorObjectDetailsLogic.h"
@@ -123,6 +124,20 @@ inline QColor mapEditorLineControlOutlineColor()
 {
     return QColor(QStringLiteral("#0000ff"));
 }
+
+// Lighter colours show that a neighbour handle changes length only.
+inline QColor mapEditorLineNeighbourControlFillColor()
+{
+    return QColor(QStringLiteral("#9999ff"));
+}
+
+inline QColor mapEditorLineNeighbourControlConnectorColor()
+{
+    return QColor(140, 170, 240, 235);
+}
+
+// Marks a line control or its connector as shown for the neighbouring selected point.
+void setLineControlNeighbourPresentation(QGraphicsItem *item, bool neighbour);
 
 QRectF sceneCoordsPreviewBounds(const QRectF &sourceBounds, const QRectF &targetBounds);
 QPointF sceneCoordsSourceToPreview(const QPointF &source, const QRectF &sourceBounds, const QRectF &previewBounds);
@@ -572,6 +587,11 @@ public:
         movePreviewCallback_ = std::move(callback);
     }
 
+    void setLineControlAnchorSourcePoint(const QPointF &anchor)
+    {
+        lineControlAnchorSourcePoint_ = anchor;
+    }
+
     void setStandaloneOptionRows(const QStringList &rows)
     {
         standaloneOptionRows_ = rows;
@@ -613,7 +633,8 @@ protected:
         if (lineAnchor) {
             fill = mapEditorLineVertexFillColor();
         } else if (lineControl) {
-            fill = mapEditorLineControlFillColor();
+            fill = data(kMapSceneNeighbourControlRole).toBool() ? mapEditorLineNeighbourControlFillColor()
+                                                                : mapEditorLineControlFillColor();
         }
         fill.setAlpha(lineControl ? 255 : (emphasize ? 240 : 175));
         QColor outline = selected ? mapEditorInteractionSelectionColor() : (hovered ? mapEditorInteractionHoverColor() : pen().color());
@@ -690,6 +711,7 @@ protected:
         lastPreviewSourcePoint_ = pressSourcePoint_;
         dragActive_ = true;
         dragMoved_ = false;
+        lengthOnlyDrag_ = lineControlAnchorSourcePoint_.has_value() && data(kMapSceneNeighbourControlRole).toBool();
         setCursor(Qt::ClosedHandCursor);
         QGraphicsEllipseItem::mousePressEvent(event);
     }
@@ -743,6 +765,14 @@ protected:
             QPointF candidate = value.toPointF();
             candidate.setX(qBound(fittedBounds_.left(), candidate.x(), fittedBounds_.right()));
             candidate.setY(qBound(fittedBounds_.top(), candidate.y(), fittedBounds_.bottom()));
+            if (dragActive_ && lengthOnlyDrag_) {
+                constexpr qreal kMinimumSourceLength = 0.5;
+                const QPointF sourcePoint = lengthOnlyLineControlPoint(lineControlAnchorSourcePoint_.value(),
+                                                                       pressSourcePoint_,
+                                                                       previewToSource(candidate),
+                                                                       kMinimumSourceLength);
+                return sceneCoordsSourceToPreview(sourcePoint, sourceBounds_, previewBounds_);
+            }
             if (dragActive_) {
                 const SnapTargetResult snapTarget = snapDragCandidateToNeighborGeometry(candidate);
                 const QPointF finalCandidate = snapTarget.snapped ? snapTarget.point : candidate;
@@ -1107,9 +1137,11 @@ private:
     QRectF fittedBounds_;
     QPointF pressSourcePoint_;
     QPointF lastPreviewSourcePoint_;
+    std::optional<QPointF> lineControlAnchorSourcePoint_;
     bool hoverActive_ = false;
     bool dragActive_ = false;
     bool dragMoved_ = false;
+    bool lengthOnlyDrag_ = false;
     bool hasStandaloneOptionRows_ = false;
     bool highlightLinePointMetadata_ = false;
     QStringList standaloneOptionRows_;

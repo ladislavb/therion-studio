@@ -1,6 +1,8 @@
 #include "MapEditorSceneSupport.h"
 #include "MapEditorSceneInternals.h"
+#include "MapEditorSceneThemePolicy.h"
 
+#include <QGraphicsLineItem>
 #include <QGraphicsRectItem>
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
@@ -929,6 +931,21 @@ QRectF geometryBoundsForFeatures(const QVector<MapGeometryFeature> &features)
     return bounds;
 }
 
+void setLineControlNeighbourPresentation(QGraphicsItem *item, bool neighbour)
+{
+    if (item == nullptr || item->data(kMapSceneNeighbourControlRole).toBool() == neighbour) {
+        return;
+    }
+
+    item->setData(kMapSceneNeighbourControlRole, neighbour);
+    if (auto *connector = dynamic_cast<QGraphicsLineItem *>(item)) {
+        QPen pen = connector->pen();
+        pen.setColor(neighbour ? mapEditorLineNeighbourControlConnectorColor() : mapEditorSceneThemeColors().controlConnector);
+        connector->setPen(pen);
+    }
+    item->update();
+}
+
 QPointF mapGeometryPointToPreview(const QPointF &point, const QRectF &sourceBounds, const QRectF &targetBounds)
 {
     return sceneCoordsSourceToPreview(point, sourceBounds, targetBounds);
@@ -1008,6 +1025,10 @@ QVector<MapLineSecondaryMove> collectLineSecondaryMovesForVertexDrag(const MapGe
         }
 
         const QPointF anchor = vertex.anchor;
+        // A length-only drag keeps the direction, so the opposite handle stays as it is.
+        if (lineControlDirectionUnchanged(anchor, oldPoint, newPoint)) {
+            return moves;
+        }
         if (role == LineVertexRole::IncomingControl) {
             if (vertex.outgoingSourceVertexIndex < 0) {
                 return moves;

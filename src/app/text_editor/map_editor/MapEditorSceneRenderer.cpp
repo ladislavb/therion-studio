@@ -2498,189 +2498,72 @@ void renderMapWorkspaceScene(QGraphicsScene *scene,
 
         const qreal controlRadius = 2.8;
         const qreal controlConnectorWidth = qBound<qreal>(1.4, 1.8 * mapScale, 2.4);
+        const auto anchorSourceVertexIndexForOrder = [&feature](int vertexOrder) {
+            const int anchorSourceVertexIndex = feature.lineVertices.at(vertexOrder).anchorSourceVertexIndex;
+            return anchorSourceVertexIndex >= 0 ? anchorSourceVertexIndex : vertexOrder;
+        };
+        // Adds one Bezier handle and its connector; neighbourOrder is the point at the other end of its segment.
+        const auto addLineControlHandle = [&](int ownerOrder, bool outgoing, int neighbourOrder) {
+            const MapGeometryFeature::TH2LineVertex &ownerVertex = feature.lineVertices.at(ownerOrder);
+            const std::optional<QPointF> &control = outgoing ? ownerVertex.outgoingControl : ownerVertex.incomingControl;
+            const int controlSourceVertexIndex = outgoing ? ownerVertex.outgoingSourceVertexIndex
+                                                          : ownerVertex.incomingSourceVertexIndex;
+            if (!control.has_value() || controlSourceVertexIndex < 0) {
+                return;
+            }
+
+            const QPointF anchorPreview = mapGeometryPointToPreview(ownerVertex.anchor, sourceBounds, previewBounds);
+            const QPointF controlPreview = mapGeometryPointToPreview(control.value(), sourceBounds, previewBounds);
+            auto *connector = scene->addLine(QLineF(anchorPreview, controlPreview),
+                                             cosmeticPen(canvasTheme.controlConnector, controlConnectorWidth, Qt::DashLine, Qt::RoundCap));
+            connector->setZValue(3.2);
+            markGeometryItem(connector);
+            makeMouseTransparent(connector);
+            const int ownerAnchorVertexIndex = anchorSourceVertexIndexForOrder(ownerOrder);
+            const int neighbourAnchorVertexIndex = anchorSourceVertexIndexForOrder(neighbourOrder);
+            connector->setData(kMapSceneLineNumberRole, feature.lineNumber);
+            connector->setData(kMapSceneSelectionGatedRole, true);
+            connector->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControlConnector);
+            connector->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
+            connector->setData(kMapSceneSegmentNeighbourVertexRole, neighbourAnchorVertexIndex);
+            connector->setVisible(false);
+            LineControlConnectorBinding binding;
+            binding.anchorVertexOrder = ownerOrder;
+            binding.controlSourceVertexIndex = controlSourceVertexIndex;
+            binding.lineItem = connector;
+            controlConnectors->append(binding);
+
+            auto *controlItem = new MapEditableGeometryVertexItem(feature.lineNumber,
+                                                                  QStringLiteral("line control"),
+                                                                  controlSourceVertexIndex,
+                                                                  control.value(),
+                                                                  sourceBounds,
+                                                                  previewBounds);
+            controlItem->setRect(QRectF(-controlRadius, -controlRadius, controlRadius * 2.0, controlRadius * 2.0));
+            controlItem->setPen(cosmeticPen(canvasTheme.controlHandleStroke, 1.0));
+            controlItem->setBrush(QBrush(canvasTheme.controlHandleFill));
+            controlItem->setLineControlAnchorSourcePoint(ownerVertex.anchor);
+            controlItem->setMoveCommittedCallback(recordLineAreaVertexMove);
+            scene->addItem(controlItem);
+            controlItem->setZValue(4.2);
+            markGeometryItem(controlItem);
+            controlItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
+            controlItem->setData(kMapSceneSelectionGatedRole, true);
+            controlItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControl);
+            controlItem->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
+            controlItem->setData(kMapSceneSegmentNeighbourVertexRole, neighbourAnchorVertexIndex);
+            controlItem->setVisible(false);
+            registerVertexItem(controlItem);
+            controlItemsBySourceVertex->insert(controlSourceVertexIndex, controlItem);
+        };
         for (int segmentIndex = 1; segmentIndex < feature.lineVertices.size(); ++segmentIndex) {
-            const MapGeometryFeature::TH2LineVertex &previousVertex = feature.lineVertices.at(segmentIndex - 1);
-            const MapGeometryFeature::TH2LineVertex &currentVertex = feature.lineVertices.at(segmentIndex);
-
-            if (previousVertex.outgoingControl.has_value() && previousVertex.outgoingSourceVertexIndex >= 0) {
-                const QPointF anchorPreview = mapGeometryPointToPreview(previousVertex.anchor, sourceBounds, previewBounds);
-                const QPointF controlPreview = mapGeometryPointToPreview(previousVertex.outgoingControl.value(), sourceBounds, previewBounds);
-                auto *connector = scene->addLine(QLineF(anchorPreview, controlPreview),
-                                                 cosmeticPen(canvasTheme.controlConnector, controlConnectorWidth, Qt::DashLine, Qt::RoundCap));
-                connector->setZValue(3.2);
-                markGeometryItem(connector);
-                makeMouseTransparent(connector);
-                const int ownerAnchorVertexIndex = previousVertex.anchorSourceVertexIndex >= 0
-                    ? previousVertex.anchorSourceVertexIndex
-                    : (segmentIndex - 1);
-                connector->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                connector->setData(kMapSceneSelectionGatedRole, true);
-                connector->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControlConnector);
-                connector->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
-                connector->setVisible(false);
-                LineControlConnectorBinding binding;
-                binding.anchorVertexOrder = segmentIndex - 1;
-                binding.controlSourceVertexIndex = previousVertex.outgoingSourceVertexIndex;
-                binding.lineItem = connector;
-                controlConnectors->append(binding);
-
-                auto *controlItem = new MapEditableGeometryVertexItem(feature.lineNumber,
-                                                                      QStringLiteral("line control"),
-                                                                      previousVertex.outgoingSourceVertexIndex,
-                                                                      previousVertex.outgoingControl.value(),
-                                                                      sourceBounds,
-                                                                      previewBounds);
-                controlItem->setRect(QRectF(-controlRadius, -controlRadius, controlRadius * 2.0, controlRadius * 2.0));
-                controlItem->setPen(cosmeticPen(canvasTheme.controlHandleStroke, 1.0));
-                controlItem->setBrush(QBrush(canvasTheme.controlHandleFill));
-                controlItem->setMoveCommittedCallback(recordLineAreaVertexMove);
-                scene->addItem(controlItem);
-                controlItem->setZValue(4.2);
-                markGeometryItem(controlItem);
-                controlItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                controlItem->setData(kMapSceneSelectionGatedRole, true);
-                controlItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControl);
-                controlItem->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
-                controlItem->setVisible(false);
-                registerVertexItem(controlItem);
-                controlItemsBySourceVertex->insert(previousVertex.outgoingSourceVertexIndex, controlItem);
-            }
-
-            if (currentVertex.incomingControl.has_value() && currentVertex.incomingSourceVertexIndex >= 0) {
-                const QPointF anchorPreview = mapGeometryPointToPreview(currentVertex.anchor, sourceBounds, previewBounds);
-                const QPointF controlPreview = mapGeometryPointToPreview(currentVertex.incomingControl.value(), sourceBounds, previewBounds);
-                auto *connector = scene->addLine(QLineF(anchorPreview, controlPreview),
-                                                 cosmeticPen(canvasTheme.controlConnector, controlConnectorWidth, Qt::DashLine, Qt::RoundCap));
-                connector->setZValue(3.2);
-                markGeometryItem(connector);
-                makeMouseTransparent(connector);
-                const int ownerAnchorVertexIndex = currentVertex.anchorSourceVertexIndex >= 0
-                    ? currentVertex.anchorSourceVertexIndex
-                    : segmentIndex;
-                connector->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                connector->setData(kMapSceneSelectionGatedRole, true);
-                connector->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControlConnector);
-                connector->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
-                connector->setVisible(false);
-                LineControlConnectorBinding binding;
-                binding.anchorVertexOrder = segmentIndex;
-                binding.controlSourceVertexIndex = currentVertex.incomingSourceVertexIndex;
-                binding.lineItem = connector;
-                controlConnectors->append(binding);
-
-                auto *controlItem = new MapEditableGeometryVertexItem(feature.lineNumber,
-                                                                      QStringLiteral("line control"),
-                                                                      currentVertex.incomingSourceVertexIndex,
-                                                                      currentVertex.incomingControl.value(),
-                                                                      sourceBounds,
-                                                                      previewBounds);
-                controlItem->setRect(QRectF(-controlRadius, -controlRadius, controlRadius * 2.0, controlRadius * 2.0));
-                controlItem->setPen(cosmeticPen(canvasTheme.controlHandleStroke, 1.0));
-                controlItem->setBrush(QBrush(canvasTheme.controlHandleFill));
-                controlItem->setMoveCommittedCallback(recordLineAreaVertexMove);
-                scene->addItem(controlItem);
-                controlItem->setZValue(4.2);
-                markGeometryItem(controlItem);
-                controlItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                controlItem->setData(kMapSceneSelectionGatedRole, true);
-                controlItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControl);
-                controlItem->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
-                controlItem->setVisible(false);
-                registerVertexItem(controlItem);
-                controlItemsBySourceVertex->insert(currentVertex.incomingSourceVertexIndex, controlItem);
-            }
+            addLineControlHandle(segmentIndex - 1, true, segmentIndex);
+            addLineControlHandle(segmentIndex, false, segmentIndex - 1);
         }
         if (feature.closed && feature.lineVertices.size() >= 2) {
-            const MapGeometryFeature::TH2LineVertex &lastVertex = feature.lineVertices.last();
-            const MapGeometryFeature::TH2LineVertex &firstVertex = feature.lineVertices.first();
-
-            if (lastVertex.outgoingControl.has_value() && lastVertex.outgoingSourceVertexIndex >= 0) {
-                const QPointF anchorPreview = mapGeometryPointToPreview(lastVertex.anchor, sourceBounds, previewBounds);
-                const QPointF controlPreview = mapGeometryPointToPreview(lastVertex.outgoingControl.value(), sourceBounds, previewBounds);
-                auto *connector = scene->addLine(QLineF(anchorPreview, controlPreview),
-                                                 cosmeticPen(canvasTheme.controlConnector, controlConnectorWidth, Qt::DashLine, Qt::RoundCap));
-                connector->setZValue(3.2);
-                markGeometryItem(connector);
-                makeMouseTransparent(connector);
-                const int ownerAnchorVertexIndex = lastVertex.anchorSourceVertexIndex >= 0
-                    ? lastVertex.anchorSourceVertexIndex
-                    : (feature.lineVertices.size() - 1);
-                connector->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                connector->setData(kMapSceneSelectionGatedRole, true);
-                connector->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControlConnector);
-                connector->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
-                connector->setVisible(false);
-                LineControlConnectorBinding binding;
-                binding.anchorVertexOrder = feature.lineVertices.size() - 1;
-                binding.controlSourceVertexIndex = lastVertex.outgoingSourceVertexIndex;
-                binding.lineItem = connector;
-                controlConnectors->append(binding);
-
-                auto *controlItem = new MapEditableGeometryVertexItem(feature.lineNumber,
-                                                                      QStringLiteral("line control"),
-                                                                      lastVertex.outgoingSourceVertexIndex,
-                                                                      lastVertex.outgoingControl.value(),
-                                                                      sourceBounds,
-                                                                      previewBounds);
-                controlItem->setRect(QRectF(-controlRadius, -controlRadius, controlRadius * 2.0, controlRadius * 2.0));
-                controlItem->setPen(cosmeticPen(canvasTheme.controlHandleStroke, 1.0));
-                controlItem->setBrush(QBrush(canvasTheme.controlHandleFill));
-                controlItem->setMoveCommittedCallback(recordLineAreaVertexMove);
-                scene->addItem(controlItem);
-                controlItem->setZValue(4.2);
-                markGeometryItem(controlItem);
-                controlItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                controlItem->setData(kMapSceneSelectionGatedRole, true);
-                controlItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControl);
-                controlItem->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
-                controlItem->setVisible(false);
-                registerVertexItem(controlItem);
-                controlItemsBySourceVertex->insert(lastVertex.outgoingSourceVertexIndex, controlItem);
-            }
-
-            if (firstVertex.incomingControl.has_value() && firstVertex.incomingSourceVertexIndex >= 0) {
-                const QPointF anchorPreview = mapGeometryPointToPreview(firstVertex.anchor, sourceBounds, previewBounds);
-                const QPointF controlPreview = mapGeometryPointToPreview(firstVertex.incomingControl.value(), sourceBounds, previewBounds);
-                auto *connector = scene->addLine(QLineF(anchorPreview, controlPreview),
-                                                 cosmeticPen(canvasTheme.controlConnector, controlConnectorWidth, Qt::DashLine, Qt::RoundCap));
-                connector->setZValue(3.2);
-                markGeometryItem(connector);
-                makeMouseTransparent(connector);
-                const int ownerAnchorVertexIndex = firstVertex.anchorSourceVertexIndex >= 0
-                    ? firstVertex.anchorSourceVertexIndex
-                    : 0;
-                connector->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                connector->setData(kMapSceneSelectionGatedRole, true);
-                connector->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControlConnector);
-                connector->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
-                connector->setVisible(false);
-                LineControlConnectorBinding binding;
-                binding.anchorVertexOrder = 0;
-                binding.controlSourceVertexIndex = firstVertex.incomingSourceVertexIndex;
-                binding.lineItem = connector;
-                controlConnectors->append(binding);
-
-                auto *controlItem = new MapEditableGeometryVertexItem(feature.lineNumber,
-                                                                      QStringLiteral("line control"),
-                                                                      firstVertex.incomingSourceVertexIndex,
-                                                                      firstVertex.incomingControl.value(),
-                                                                      sourceBounds,
-                                                                      previewBounds);
-                controlItem->setRect(QRectF(-controlRadius, -controlRadius, controlRadius * 2.0, controlRadius * 2.0));
-                controlItem->setPen(cosmeticPen(canvasTheme.controlHandleStroke, 1.0));
-                controlItem->setBrush(QBrush(canvasTheme.controlHandleFill));
-                controlItem->setMoveCommittedCallback(recordLineAreaVertexMove);
-                scene->addItem(controlItem);
-                controlItem->setZValue(4.2);
-                markGeometryItem(controlItem);
-                controlItem->setData(kMapSceneLineNumberRole, feature.lineNumber);
-                controlItem->setData(kMapSceneSelectionGatedRole, true);
-                controlItem->setData(kMapSceneSelectionSubtypeRole, kMapSceneSelectionSubtypeLineControl);
-                controlItem->setData(kMapSceneOwnerVertexRole, ownerAnchorVertexIndex);
-                controlItem->setVisible(false);
-                registerVertexItem(controlItem);
-                controlItemsBySourceVertex->insert(firstVertex.incomingSourceVertexIndex, controlItem);
-            }
+            const int lastOrder = feature.lineVertices.size() - 1;
+            addLineControlHandle(lastOrder, true, 0);
+            addLineControlHandle(0, false, lastOrder);
         }
 
         const auto previewToSource = [sourceBounds, previewBounds](const QPointF &previewPoint) {

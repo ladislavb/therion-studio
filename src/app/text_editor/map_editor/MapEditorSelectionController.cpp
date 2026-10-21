@@ -815,7 +815,7 @@ void MapEditorSelectionController::handleMapSceneSelectionChanged()
             if ((subtype == kMapSceneSelectionSubtypeLineControl
                  || subtype == kMapSceneSelectionSubtypeLineControlConnector)
                 && vertexItem->lineNumber() > 0) {
-                const int ownerVertexIndex = primarySelectedItem->data(kMapSceneOwnerVertexRole).toInt();
+                const int ownerVertexIndex = mapSceneSelectionOwnerVertex(primarySelectedItem);
                 if (ownerVertexIndex >= 0) {
                     selectedSourceVertexIndex = ownerVertexIndex;
                     selectedGeometryKind = QStringLiteral("line");
@@ -1162,7 +1162,7 @@ void MapEditorSelectionController::updateGeometrySelectionPresentation()
         if (subtype == kMapSceneSelectionSubtypeLineAnchor
             || subtype == kMapSceneSelectionSubtypeLineControl
             || subtype == kMapSceneSelectionSubtypeLineControlConnector) {
-            const int ownerVertexIndex = item->data(kMapSceneOwnerVertexRole).toInt();
+            const int ownerVertexIndex = mapSceneSelectionOwnerVertex(item);
             if (lineNumber > 0 && ownerVertexIndex >= 0) {
                 selectedLineControlOwnersByLine[lineNumber].insert(ownerVertexIndex);
             }
@@ -1230,15 +1230,21 @@ void MapEditorSelectionController::updateGeometrySelectionPresentation()
         bool visible = lineNumber > 0
             && !(*context_.hiddenObjectLines).contains(lineNumber)
             && selectedLines.contains(lineNumber);
-        if (visible) {
-            const bool lineControlSelectionSubtype = subtype == kMapSceneSelectionSubtypeLineControl
-                || subtype == kMapSceneSelectionSubtypeLineControlConnector;
-            if (lineControlSelectionSubtype) {
-                const QSet<int> selectedOwnerVertices = selectedLineControlOwnersByLine.value(lineNumber);
-                visible = ownerVertexIndex >= 0
-                    && !selectedOwnerVertices.isEmpty()
-                    && selectedOwnerVertices.contains(ownerVertexIndex);
-            }
+        const bool lineControlSelectionSubtype = subtype == kMapSceneSelectionSubtypeLineControl
+            || subtype == kMapSceneSelectionSubtypeLineControlConnector;
+        bool neighbourControl = false;
+        if (visible && lineControlSelectionSubtype) {
+            const QSet<int> selectedOwnerVertices = selectedLineControlOwnersByLine.value(lineNumber);
+            const bool ownControl = ownerVertexIndex >= 0 && selectedOwnerVertices.contains(ownerVertexIndex);
+            // With one point selected, the facing handles of the points either side are shown too.
+            neighbourControl = !ownControl
+                && selectedOwnerVertices.size() == 1
+                && mapSceneSegmentNeighbourVertex(item) >= 0
+                && selectedOwnerVertices.contains(mapSceneSegmentNeighbourVertex(item));
+            visible = ownControl || neighbourControl;
+        }
+        if (lineControlSelectionSubtype) {
+            setLineControlNeighbourPresentation(item, neighbourControl);
         }
 
         item->setVisible(visible);

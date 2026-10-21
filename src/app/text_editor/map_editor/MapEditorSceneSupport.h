@@ -42,6 +42,24 @@ constexpr int kMapSceneFocusedVertexRole = Qt::UserRole + 128;
 // visible background. Background loading follows the initial scene render, so
 // the items must be toggleable without rebuilding the scene.
 constexpr int kMapSceneEmptyDocumentGuideRole = Qt::UserRole + 129;
+// Anchor at the other end of a line control's segment.
+constexpr int kMapSceneSegmentNeighbourVertexRole = Qt::UserRole + 130;
+// Set while a line control is shown for that neighbour anchor, which allows length changes only.
+constexpr int kMapSceneNeighbourControlRole = Qt::UserRole + 131;
+
+inline int mapSceneSegmentNeighbourVertex(const QGraphicsItem *item)
+{
+    const QVariant value = item->data(kMapSceneSegmentNeighbourVertexRole);
+    return value.isValid() ? value.toInt() : -1;
+}
+
+// A neighbour control picked for the selected line point keeps that point selected.
+inline int mapSceneSelectionOwnerVertex(const QGraphicsItem *item)
+{
+    return item->data(kMapSceneNeighbourControlRole).toBool()
+        ? mapSceneSegmentNeighbourVertex(item)
+        : item->data(kMapSceneOwnerVertexRole).toInt();
+}
 
 constexpr qreal kMapEditorCanvasFrameInset = 24.0;
 constexpr qreal kMapEditorCanvasPreviewInset = 20.0;

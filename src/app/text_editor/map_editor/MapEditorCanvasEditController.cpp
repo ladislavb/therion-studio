@@ -1135,7 +1135,7 @@ MapEditableGeometryVertexItem *resolveSelectedLineVertexItemForContext(const Map
             if (vertexItem == nullptr || !vertexItem->geometryKind().startsWith(QStringLiteral("line"))) {
                 continue;
             }
-            const int ownerVertexIndex = selectedItem->data(kMapSceneOwnerVertexRole).toInt();
+            const int ownerVertexIndex = mapSceneSelectionOwnerVertex(selectedItem);
             const int candidateOwnerVertexIndex = ownerVertexIndex >= 0 ? ownerVertexIndex : vertexItem->vertexIndex();
             if (resolvedLineNumber == 0) {
                 resolvedLineNumber = vertexItem->lineNumber();

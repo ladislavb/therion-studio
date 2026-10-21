@@ -288,6 +288,8 @@ Pro čáry a hranice ploch:
 - `<<` a `>>` zapínají nebo odstraňují příchozí/odchozí Bezier kontrolní bod,
 - Bezier kontrolní bod lze přímo táhnout na mapovém plátně.
 
+Když je vybrán jeden bod čáry, zobrazí se světlejší barvou také kontrolní body sousedních bodů, které k němu směřují. Jejich tažením se mění jen délka, ne směr, stejně jako v xTherionu. Pro volnou úpravu jejich kontrolních bodů vyberte přímo daný sousední bod.
+
 Pokud čára slouží jako hranice plochy, některé destruktivní akce jsou zablokované; vyberte nebo upravte vlastní plochu. Smazání plochy odstraní pouze blok `area ... endarea` a ponechá referencované hraniční čáry ve zdroji.
 
 ### 6.8 Editace vlastností objektů
