@@ -10,6 +10,8 @@
 
 using namespace TherionStudio;
 
+int runMapEditorLinePointSmoothTest();
+
 namespace
 {
 bool expect(bool condition, const char *message)
@@ -330,5 +332,5 @@ int main()
     if (const int rc = runScrapObjectLinesLookupUsesLogicalCommandsTest(); rc != 0) {
         return rc;
     }
-    return 0;
+    return runMapEditorLinePointSmoothTest();
 }

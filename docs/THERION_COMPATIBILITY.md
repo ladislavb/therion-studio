@@ -10,6 +10,7 @@ Therion Studio is an editor and early-feedback tool. The Therion compiler remain
 - Preserve source text losslessly unless the user performs an explicit edit. Comments, blank lines, unknown but valid directives, ordering, continuation lines, indentation where practical, source encoding, and newline style are part of document integrity.
 - Prefer conservative diagnostics over speculative errors. If Therion accepts a construct or the rule is not fully modeled, avoid blocking or alarming the user.
 - Prefer source-range-aware core parsing over UI heuristics. Completion, highlighting, context help, validation, Structure, and map-editor projections should consume shared logical command/source metadata.
+- A line point's smoothness follows Therion's `thline.cxx`: `smooth on`/`off`/`auto`, with no row meaning auto, and auto smooth unless both handles exist and point more than 5 degrees apart. At the join of a closed line Therion's flag is always smooth under auto, because its first point has no incoming handle in the data; Studio applies the 5-degree rule there too, so the tick matches the drawn corner.
 - Quoted option values remain values even when their text begins with `-`; projections shall preserve token quoting information rather than reclassifying a quoted value as an option from its text alone.
 - Use real Therion examples or reduced fixtures from real patterns when adding or changing parser, namespace, reference, or validation behavior.
 

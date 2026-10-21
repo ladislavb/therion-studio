@@ -5,6 +5,7 @@
 #include <QRegularExpression>
 #include <QUrl>
 
+#include <cmath>
 #include <utility>
 
 namespace TherionStudio
@@ -238,9 +239,7 @@ QVector<Th2LinePointRow> lineRowsForBlock(const TherionSourceDocument &sourceDoc
         row.text = sourceLine->sourceLine.text;
         row.sourceRange = sourceRangeForLine(*sourceLine);
         row.coordinatePoints = coordinatePointsFromLine(parsed);
-        row.smoothOff = parsed.directive.compare(QStringLiteral("smooth"), Qt::CaseInsensitive) == 0
-            && parsed.tokens.size() >= 2
-            && parsed.tokens.at(1).compare(QStringLiteral("off"), Qt::CaseInsensitive) == 0;
+        row.smoothOff = th2LinePointSmoothRow(parsed) == Th2LinePointSmooth::Off;
         if (parsed.directive.compare(QStringLiteral("subtype"), Qt::CaseInsensitive) == 0
             && parsed.tokens.size() >= 2) {
             row.subtype = parsed.tokens.at(1).trimmed().toLower();
@@ -378,6 +377,67 @@ bool toggleOptionValue(const QHash<QString, QStringList> &values, const QString 
     }
     return fallback;
 }
+}
+
+std::optional<Th2LinePointSmooth> th2LinePointSmoothRow(const TherionParsedLine &parsedLine)
+{
+    if (parsedLine.directive.compare(QStringLiteral("smooth"), Qt::CaseInsensitive) != 0
+        || parsedLine.tokens.size() < 2) {
+        return std::nullopt;
+    }
+    const QString value = parsedLine.tokens.at(1).trimmed().toLower();
+    if (value == QStringLiteral("on")) {
+        return Th2LinePointSmooth::On;
+    }
+    if (value == QStringLiteral("off")) {
+        return Th2LinePointSmooth::Off;
+    }
+    if (value == QStringLiteral("auto")) {
+        return Th2LinePointSmooth::Auto;
+    }
+    return std::nullopt;
+}
+
+QString th2LinePointSmoothRowText(Th2LinePointSmooth smooth)
+{
+    switch (smooth) {
+    case Th2LinePointSmooth::On:
+        return QStringLiteral("smooth on");
+    case Th2LinePointSmooth::Off:
+        return QStringLiteral("smooth off");
+    case Th2LinePointSmooth::Auto:
+        break;
+    }
+    return QStringLiteral("smooth auto");
+}
+
+bool th2LinePointIsSmooth(Th2LinePointSmooth smooth,
+                          const QPointF &anchor,
+                          const std::optional<QPointF> &incomingControl,
+                          const std::optional<QPointF> &outgoingControl)
+{
+    if (smooth != Th2LinePointSmooth::Auto) {
+        return smooth == Th2LinePointSmooth::On;
+    }
+    if (!incomingControl.has_value() || !outgoingControl.has_value()) {
+        return true;
+    }
+    const QPointF towardsIncoming = incomingControl.value() - anchor;
+    const QPointF fromOutgoing = anchor - outgoingControl.value();
+    if (std::hypot(towardsIncoming.x(), towardsIncoming.y()) <= 0.0
+        || std::hypot(fromOutgoing.x(), fromOutgoing.y()) <= 0.0) {
+        return true;
+    }
+    // Same comparison as Therion: both directions in degrees, the difference wrapped to [-180, 180].
+    const qreal incomingAngle = std::atan2(towardsIncoming.y(), towardsIncoming.x()) * 180.0 / M_PI;
+    qreal outgoingAngle = std::atan2(fromOutgoing.y(), fromOutgoing.x()) * 180.0 / M_PI;
+    if (outgoingAngle - incomingAngle > 180.0) {
+        outgoingAngle -= 360.0;
+    }
+    if (outgoingAngle - incomingAngle < -180.0) {
+        outgoingAngle += 360.0;
+    }
+    return std::abs(outgoingAngle - incomingAngle) <= 5.0;
 }
 
 bool Th2SourceRange::isValid() const

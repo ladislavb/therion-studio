@@ -346,7 +346,7 @@ int runBezierSegmentParsingTest()
                 "Expected second cubic segment indices to map to second control/control/end triplet.")) {
         return 1;
     }
-    if (!expect(line->lineVertices.at(1).isSmooth == false,
+    if (!expect(line->lineVertices.at(1).smoothRow == Th2LinePointSmooth::Off,
                 "Expected smooth off to mark the current/last parsed line vertex as non-smooth.")) {
         return 1;
     }
@@ -1044,8 +1044,9 @@ int runLineStandaloneRowsCoverageTest()
         return 1;
     }
     const QStringList firstVertexRows = line->lineVertices.at(0).standaloneOptionRows;
-    if (!expect(firstVertexRows.contains(QStringLiteral("smooth auto")),
-                "Expected first line vertex to preserve 'smooth auto' standalone row.")) {
+    // smooth rows are kept as the vertex's smooth setting and written back from it (GitHub #36).
+    if (!expect(line->lineVertices.at(0).smoothRow == Th2LinePointSmooth::Auto,
+                "Expected first line vertex to keep its 'smooth auto' row as its smooth setting.")) {
         return 1;
     }
     if (!expect(firstVertexRows.contains(QStringLiteral("adjust horizontal")),
@@ -1633,7 +1634,7 @@ int runLineControlSecondaryMoveSmoothTest()
     vertex.incomingSourceVertexIndex = 11;
     vertex.outgoingControl = QPointF(110.0, 200.0);
     vertex.outgoingSourceVertexIndex = 12;
-    vertex.isSmooth = true;
+    vertex.smoothRow.reset(); // auto: handles in line
     lineFeature.lineVertices.append(vertex);
 
     const QPointF oldIncoming = vertex.incomingControl.value();
@@ -1682,7 +1683,7 @@ int runLineControlSecondaryMoveCornerTest()
     vertex.incomingSourceVertexIndex = 11;
     vertex.outgoingControl = QPointF(110.0, 200.0);
     vertex.outgoingSourceVertexIndex = 12;
-    vertex.isSmooth = false;
+    vertex.smoothRow = Th2LinePointSmooth::Off;
     lineFeature.lineVertices.append(vertex);
 
     const QVector<MapLineSecondaryMove> secondaryMoves = collectLineSecondaryMovesForVertexDrag(lineFeature,
@@ -1710,7 +1711,7 @@ int runLinePreviewSecondaryMoveSelfFilterTest()
     // Malformed but possible in partially rewritten sources: opposite maps to same source index.
     vertex.outgoingControl = QPointF(110.0, 200.0);
     vertex.outgoingSourceVertexIndex = 11;
-    vertex.isSmooth = true;
+    vertex.smoothRow.reset(); // auto: handles in line
     lineFeature.lineVertices.append(vertex);
 
     const QVector<MapLineSecondaryMove> commandMoves = collectLineSecondaryMovesForVertexDrag(lineFeature,
@@ -1799,7 +1800,7 @@ int runLinePreviewCommitParityTest()
     smoothVertex.incomingSourceVertexIndex = 11;
     smoothVertex.outgoingControl = QPointF(110.0, 210.0);
     smoothVertex.outgoingSourceVertexIndex = 12;
-    smoothVertex.isSmooth = true;
+    smoothVertex.smoothRow.reset(); // auto: handles in line
     lineFeature.lineVertices.append(smoothVertex);
 
     MapGeometryFeature::TH2LineVertex cornerVertex;
@@ -1809,7 +1810,7 @@ int runLinePreviewCommitParityTest()
     cornerVertex.incomingSourceVertexIndex = 21;
     cornerVertex.outgoingControl = QPointF(310.0, 410.0);
     cornerVertex.outgoingSourceVertexIndex = 22;
-    cornerVertex.isSmooth = false;
+    cornerVertex.smoothRow = Th2LinePointSmooth::Off;
     lineFeature.lineVertices.append(cornerVertex);
 
     QHash<int, QPointF> currentControls;
@@ -1892,7 +1893,7 @@ int runSmoothControlCommitKeepsTangentContinuityTest()
     const MapGeometryFeature::TH2LineVertex &middleVertex = beforeLine->lineVertices.at(1);
     if (!expect(middleVertex.incomingControl.has_value()
                     && middleVertex.outgoingControl.has_value()
-                    && middleVertex.isSmooth,
+                    && lineVertexIsSmooth(middleVertex),
                 "Expected middle vertex to start as a smooth Bezier vertex with both controls.")) {
         return 1;
     }

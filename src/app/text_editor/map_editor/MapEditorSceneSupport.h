@@ -12,6 +12,8 @@
 #include <QVariant>
 #include <QVector>
 
+#include "../../../core/Th2GeometryProjection.h"
+
 #include <functional>
 #include <optional>
 
@@ -25,7 +27,6 @@ class QWidget;
 namespace TherionStudio
 {
 struct MapEditorObjectStyleCatalog;
-class Th2GeometryProjection;
 struct TherionSourceLogicalCommand;
 
 constexpr int kMapItemRole = Qt::UserRole + 120;
@@ -141,7 +142,8 @@ struct MapGeometryFeature
         std::optional<QPointF> outgoingControl;
         std::optional<qreal> orientationDegrees;
         std::optional<qreal> leftSize;
-        bool isSmooth = true;
+        // The point's smooth row as written in the source, if any; lineVertexIsSmooth says how Therion reads it.
+        std::optional<Th2LinePointSmooth> smoothRow;
         QStringList standaloneOptionRows;
         int anchorSourceVertexIndex = -1;
         int incomingSourceVertexIndex = -1;
@@ -176,6 +178,16 @@ struct MapGeometryFeature
     QVector<LineSegment> lineSegments;
     QVector<TH2LineVertex> lineVertices;
 };
+
+// Whether Therion treats the line point as smooth, from its smooth row and current handles. At a closed line's join
+// both handles are known, so the 5-degree rule applies there too and the tick matches the drawn corner.
+inline bool lineVertexIsSmooth(const MapGeometryFeature::TH2LineVertex &vertex)
+{
+    return th2LinePointIsSmooth(vertex.smoothRow.value_or(Th2LinePointSmooth::Auto),
+                                vertex.anchor,
+                                vertex.incomingControl,
+                                vertex.outgoingControl);
+}
 
 struct MapLineSecondaryMove
 {

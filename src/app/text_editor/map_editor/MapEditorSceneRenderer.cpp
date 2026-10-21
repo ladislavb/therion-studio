@@ -3390,11 +3390,9 @@ QVector<MapGeometryFeature> collectGeometryFeatures(const QVector<TherionParsedL
         }
 
         if (inLineBlock) {
-            if (directive == QStringLiteral("smooth")
-                && parsedLine.tokens.size() >= 2
-                && parsedLine.tokens.at(1).compare(QStringLiteral("off"), Qt::CaseInsensitive) == 0) {
+            if (const std::optional<Th2LinePointSmooth> smoothRow = th2LinePointSmoothRow(parsedLine)) {
                 if (!currentFeature.lineVertices.isEmpty()) {
-                    currentFeature.lineVertices.last().isSmooth = false;
+                    currentFeature.lineVertices.last().smoothRow = smoothRow;
                 }
                 continue;
             }

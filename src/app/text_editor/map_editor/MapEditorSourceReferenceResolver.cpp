@@ -116,8 +116,8 @@ void appendLinePointOptionRows(QStringList *rows, const MapGeometryFeature::TH2L
     if (vertex.orientationDegrees.has_value()) {
         rows->append(QStringLiteral("orientation %1").arg(formatLinePointOrientation(vertex.orientationDegrees.value())));
     }
-    if (!vertex.isSmooth) {
-        rows->append(QStringLiteral("smooth off"));
+    if (vertex.smoothRow.has_value()) {
+        rows->append(th2LinePointSmoothRowText(vertex.smoothRow.value()));
     }
     if (vertex.leftSize.has_value()) {
         rows->append(QStringLiteral("l-size %1").arg(formatSourceCoordinate(vertex.leftSize.value())));

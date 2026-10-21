@@ -319,6 +319,7 @@ For lines and area borders:
 - use `Delete` / `Backspace` to remove the selected line vertex; if no line vertex is selected, `Delete` / `Backspace` deletes the selected object
 - when deleting a line vertex that has additional line-point options (for example `altitude .` or `subtype ...`), Therion Studio asks for confirmation before deletion
 - use `<<` and `>>` to enable or remove incoming/outgoing Bezier handles
+- `Smooth (-smooth)` is ticked when Therion treats the point as smooth: a point without a `smooth` row is smooth when its two handles are in line (within 5 degrees), as in Therion. Therion Studio keeps the `smooth` rows a file has and adds none of its own. Unticking it keeps both handles where they are and writes `smooth off`, so each handle can then be moved on its own; ticking it again lines them up, keeping their lengths
 - drag Bezier handles directly on the canvas to reshape the curve
 
 When a map drag moves a point, vertex, or Bezier handle from integer coordinates to a fractional position, Therion Studio writes the new fractional coordinates with additional decimal precision so repeated edits and smooth Bezier tangents do not visibly degrade.

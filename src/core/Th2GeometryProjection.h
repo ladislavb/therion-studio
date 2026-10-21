@@ -8,8 +8,29 @@
 #include <QStringList>
 #include <QVector>
 
+#include <optional>
+
 namespace TherionStudio
 {
+// A line point's smooth setting (Therion's thtt_onoffauto); a point without a smooth row is auto.
+enum class Th2LinePointSmooth
+{
+    Auto,
+    On,
+    Off,
+};
+
+// The setting of a "smooth on/off/auto" line point row, or nothing when the row is not one.
+[[nodiscard]] std::optional<Th2LinePointSmooth> th2LinePointSmoothRow(const TherionParsedLine &parsedLine);
+// The "smooth ..." row that writes the setting.
+[[nodiscard]] QString th2LinePointSmoothRowText(Th2LinePointSmooth smooth);
+// Whether Therion treats the point as smooth (thline.cxx): auto is smooth unless both handles exist and their
+// directions differ by more than 5 degrees.
+[[nodiscard]] bool th2LinePointIsSmooth(Th2LinePointSmooth smooth,
+                                        const QPointF &anchor,
+                                        const std::optional<QPointF> &incomingControl,
+                                        const std::optional<QPointF> &outgoingControl);
+
 enum class Th2GeometryObjectKind
 {
     Point,

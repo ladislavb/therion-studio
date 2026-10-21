@@ -286,6 +286,7 @@ Pro čáry a hranice ploch:
 - `Prodloužit před` / `Prodloužit za` na koncích čáry pokračuje v existující čáře,
 - `Delete` / `Backspace` odstraní vybraný středový vrchol,
 - `<<` a `>>` zapínají nebo odstraňují příchozí/odchozí Bezier kontrolní bod,
+- `Smooth (-smooth)` je zaškrtnuté, když Therion považuje bod za hladký: bod bez řádku `smooth` je hladký, pokud jeho dva kontrolní body leží v přímce (do 5 stupňů), stejně jako v Therionu. Therion Studio ponechává řádky `smooth` ze souboru a žádné vlastní nepřidává. Zrušení zaškrtnutí ponechá oba kontrolní body na místě a zapíše `smooth off`, takže každý lze pak posunout samostatně; opětovné zaškrtnutí je srovná do přímky a zachová jejich délky,
 - Bezier kontrolní bod lze přímo táhnout na mapovém plátně.
 
 Pokud čára slouží jako hranice plochy, některé destruktivní akce jsou zablokované; vyberte nebo upravte vlastní plochu. Smazání plochy odstraní pouze blok `area ... endarea` a ponechá referencované hraniční čáry ve zdroji.

@@ -197,6 +197,8 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ### Map Input And Partial Refresh
 
+- Line point smoothness (GitHub #36, #48; branch `fix/line-point-smooth`): smoothness follows Therion's auto rule and
+  `smooth` rows are kept as written; unticking `Smooth (-smooth)` keeps the handles and writes `smooth off` (#48).
 - Map scene scrolling now expands around visible background layer bounds while keeping the base map/source projection fixed, so a moved, scaled, or rotated raster/SVG/XVI layer can be panned to every edge instead of being cut off at the original canvas rectangle; asynchronously loaded backgrounds also suppress stale empty-map guides once they become visible.
 - Map `Fit` now falls back to the fixed canvas when a document has no geometry; backgrounds are included only by the explicit `Fit With Background` action, avoiding a scrollbar-resize loop in empty maps with asynchronously loaded backgrounds.
 - Map primary clicks now keep highlighted-path pending metadata for overlapping line hits while treating an actual area-fill hit as authoritative near shared borders, preserving both Bezier handle activation and high-zoom area selection.

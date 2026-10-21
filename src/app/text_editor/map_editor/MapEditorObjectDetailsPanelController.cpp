@@ -1129,7 +1129,7 @@ void MapEditorObjectDetailsPanelController::refreshObjectDetailsPanel()
                     const MapGeometryFeature::TH2LineVertex &lineVertex = lineFeature->lineVertices.at(lineVertexIndex);
                     linePointPreviousControl = lineVertex.incomingControl.has_value();
                     linePointNextControl = lineVertex.outgoingControl.has_value();
-                    linePointSmooth = lineVertex.isSmooth && linePointPreviousControl && linePointNextControl;
+                    linePointSmooth = lineVertexIsSmooth(lineVertex) && linePointPreviousControl && linePointNextControl;
                     const std::optional<TherionSourceLogicalCommand> command =
                         logicalCommandForLine(logicalCommands, *context_.selectedObjectLineNumber);
                     if (!command.has_value()) {

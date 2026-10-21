@@ -319,6 +319,7 @@ Pour les lignes et les bordures d’aires :
 - utilisez `Delete` / `Backspace` pour retirer le sommet de ligne sélectionné ; si aucun sommet de ligne ne l’est, `Delete` / `Backspace` supprime l’objet sélectionné ;
 - lors de la suppression d’un sommet qui comporte des options supplémentaires de point de ligne, par exemple `altitude .` ou `subtype ...`, Therion Studio demande une confirmation ;
 - utilisez `<<` et `>>` pour activer ou supprimer les poignées de Bézier entrante et sortante ;
+- `Smooth (-smooth)` est coché lorsque Therion considère le point comme lisse : un point sans ligne `smooth` est lisse si ses deux poignées sont alignées (à 5 degrés près), comme dans Therion. Therion Studio conserve les lignes `smooth` du fichier et n’en ajoute aucune. Le décocher conserve les deux poignées à leur place et écrit `smooth off`, chaque poignée pouvant ensuite être déplacée seule ; le recocher les aligne en gardant leurs longueurs ;
 - faites glisser les poignées de Bézier directement sur le canevas pour remodeler la courbe.
 
 Lorsqu’un déplacement fait passer un point, un sommet ou une poignée de Bézier de coordonnées entières à une position fractionnaire, Therion Studio écrit les nouvelles coordonnées avec une précision décimale supplémentaire, afin que les modifications répétées et les tangentes de Bézier lissées ne se dégradent pas visiblement.
