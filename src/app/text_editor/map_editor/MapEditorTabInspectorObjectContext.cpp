@@ -13,6 +13,7 @@ MapEditorInspectorObjectContext MapEditorTab::inspectorObjectContext()
         .objectsModel = mapObjectsModel_,
         .scene = mapScene_,
         .hiddenObjectLines = &hiddenInspectorObjectLines_,
+        .fadedObjectLines = &fadedInspectorObjectLines_,
         .pressedNameIndex = &inspectorObjectPressedNameIndex_,
         .pressedWasSelected = &inspectorObjectPressedWasSelected_,
         .updatingSelection = &updatingMapInspectorObjectSelection_,

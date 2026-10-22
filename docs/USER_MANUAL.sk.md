@@ -275,7 +275,7 @@ Vyberte mapový objekt alebo jeho vrchol/kontrolný bod na mapovom plátne. Inš
 
 Výber je zdieľaný medzi mapovým plátnom, panelom `Objekty` a inšpektorom `Výber`. Objekt pod kurzorom sa zvýrazní azúrovo a vybraný objekt červeno. Výber plochy zároveň zvýrazní referencované hraničné línie. Výber vrcholu alebo Bezier kontrolného bodu línie prepne inšpektor na zodpovedajúce ovládanie line pointu.
 
-Pravým kliknutím bez ťahania na mapový objekt alebo vrchol čiary otvoríte kontextové menu s bežnými akciami v štýle XTherionu. Pravý klik do prázdneho plátna toto menu neotvorí. Menu zrkadlí dostupné skupiny inšpektora `Výber`, napríklad voľby typu/podtypu, editovateľné polia objektu, `Geometry`, celý dostupný panel `Line Point`, `Line Point Actions` a `Object Actions`; voľné textové alebo číselné editory sa otvoria a fokusujú v inšpektore. Na macOS otvorí rovnaké menu aj sekundárny klik na trackpade, napríklad kliknutie dvoma prstami. Ak je menu už otvorené, ďalší sekundárny klik na iný objekt alebo vrchol precieli menu na nový výber a presunie ho na poslednú pozíciu kliknutia.
+Pravým kliknutím bez ťahania na mapový objekt alebo vrchol čiary otvoríte kontextové menu s bežnými akciami v štýle XTherionu. Pravý klik do prázdneho plátna toto menu neotvorí. Ak je niektorý objekt stlmený alebo skrytý, otvorí namiesto neho malé menu s položkou `Zobraziť všetky scrapy`. Menu zrkadlí dostupné skupiny inšpektora `Výber`, napríklad voľby typu/podtypu, editovateľné polia objektu, `Geometry`, celý dostupný panel `Line Point`, `Line Point Actions` a `Object Actions`; voľné textové alebo číselné editory sa otvoria a fokusujú v inšpektore. Na macOS otvorí rovnaké menu aj sekundárny klik na trackpade, napríklad kliknutie dvoma prstami. Ak je menu už otvorené, ďalší sekundárny klik na iný objekt alebo vrchol precieli menu na nový výber a presunie ho na poslednú pozíciu kliknutia.
 
 Pre čiary a hranice plôch:
 
@@ -309,7 +309,18 @@ Riadok `Preview` ukazuje vzhľad vybraného alebo pripravovaného objektu. Náh�
 
 ### 6.9 Objekty a Pozadia
 
-V `Inšpektor -> Objekty` možno vyberať objekty, meniť ich poradie pretiahnutím, prepínať viditeľnosť v aktuálnom pohľade a mazať objekty s potvrdením.
+V `Inšpektor -> Objekty` možno vyberať objekty, meniť ich poradie pretiahnutím, meniť ich viditeľnosť v aktuálnom pohľade a mazať objekty s potvrdením.
+
+Každý objekt je zobrazený, stlmený alebo skrytý. Kliknutím na ikonu oka v riadku medzi týmito stavmi prepínate. Oko znamená zobrazený, stlmené oko stlmený a prečiarknuté oko skrytý. V riadku scrapu sa zmení celý scrap. Stlmené objekty sa kreslia slabo a na mape ich nemožno vybrať ani na ne nabehnúť, takže kliknutie v mieste, kde sa scrapy prekrývajú, zasiahne scrap, s ktorým pracujete. Skryté objekty sa nekreslia. Ide len o stav zobrazenia. Nemení súbor `.th2` a po zatvorení súboru sa neuchováva.
+
+Celé scrapy zmeníte naraz pravým kliknutím na riadok objektu v `Objekty` alebo na objekt v mape.
+
+- `Tento scrap` -> `Zobraziť`, `Stlmiť` alebo `Skryť` zmení scrap, v ktorom objekt leží.
+- `Ostatné scrapy` -> `Zobraziť`, `Stlmiť` alebo `Skryť` zmení všetky ostatné scrapy výkresu.
+
+Aktuálna voľba je zaškrtnutá. Všetko znova zobrazíte pravým kliknutím do prázdneho plátna a voľbou `Zobraziť všetky scrapy`.
+
+Bod, čiaru alebo plochu presuniete do iného scrapu pravým kliknutím na objekt v mape alebo v `Objekty`, voľbou `Presunúť do scrapu` a výberom scrapu. Objekt sa presunie na koniec daného scrapu, zachová si súradnice, zostane vybraný a `Späť` presun vráti. Plocha sa presunie spolu so svojimi hraničnými čiarami a čiara, ktorá je jedinou hranicou plochy, sa presunie spolu s touto plochou. Scrap je v zozname sivý a dôvod ukáže tooltip, ak by presun porušil hranicu plochy (čiara, ktorá je jednou z viacerých hraníc plochy, alebo hraničná čiara, ktorú používa aj iná plocha).
 
 V `Inšpektor -> Pozadia` možno:
 

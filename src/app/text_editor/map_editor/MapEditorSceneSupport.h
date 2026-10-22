@@ -42,6 +42,8 @@ constexpr int kMapSceneFocusedVertexRole = Qt::UserRole + 128;
 // visible background. Background loading follows the initial scene render, so
 // the items must be toggleable without rebuilding the scene.
 constexpr int kMapSceneEmptyDocumentGuideRole = Qt::UserRole + 129;
+// Accepted mouse buttons of a faded item, kept while picking is turned off.
+constexpr int kMapSceneFadedAcceptedButtonsRole = Qt::UserRole + 132;
 
 constexpr qreal kMapEditorCanvasFrameInset = 24.0;
 constexpr qreal kMapEditorCanvasPreviewInset = 20.0;

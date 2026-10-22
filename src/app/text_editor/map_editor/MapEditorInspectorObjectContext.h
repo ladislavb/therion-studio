@@ -29,6 +29,7 @@ struct MapEditorInspectorObjectContext
     QStandardItemModel *objectsModel = nullptr;
     QGraphicsScene *scene = nullptr;
     QSet<int> *hiddenObjectLines = nullptr;
+    QSet<int> *fadedObjectLines = nullptr;
     QPersistentModelIndex *pressedNameIndex = nullptr;
     bool *pressedWasSelected = nullptr;
     bool *updatingSelection = nullptr;

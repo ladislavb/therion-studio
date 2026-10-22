@@ -191,6 +191,8 @@ Required capabilities:
 - keep the text editor selection synchronized with the graphical selection where possible
 - support zooming, panning, and viewport restoration
 - support an XTherion-style map canvas context menu on right-click or platform secondary-click gestures such as macOS two-finger trackpad click for the current map selection; repeated secondary-clicks while the context menu is open shall retarget the menu to the newly hit object or vertex and show it at the latest click position
+- for a selected object in a scrap, the map canvas context menu shall include the same `This Scrap` and `Other Scraps` show/fade/hide submenus as the Objects list
+- a right-click on empty map canvas shall open no menu, except that while any object is faded or hidden it shall open a menu with `Show All Scraps`, which shows every object again
 - support fitting the viewport to geometry only or to geometry plus background layers
 - support background imagery and sketch references used by TH2 documents, including multiple layers and `.xvi` vector references
 - `.xvi` vector background references loaded from `##XTHERION## xth_me_image_insert` metadata shall follow XTherion placement semantics: when a referenced root station resolves in the `.xvi` station table, the station shall be aligned to the metadata base position; otherwise the metadata base position shall anchor the `.xvi` grid origin.
@@ -443,7 +445,9 @@ The rules below define the expected day-to-day interaction model. If a later req
 - Clicking a map object row shall select that object, update the map selection, and reveal the corresponding source location in the text editor when the source line is known.
 - Selecting an `area` object shall also visually select/highlight its referenced border `line` object(s) so the area boundary ownership is visible in the canvas.
 - Clicking an already selected map object row again shall clear the current map/object selection.
-- Clicking the visibility icon on a map object row shall toggle that object's visibility without changing the current selection.
+- Clicking the visibility icon on a map object row shall cycle that object between shown, faded, and hidden without changing the current selection; on a scrap row the change shall apply to the scrap and every object in it. The icon shall distinguish the three states (eye, dimmed eye, crossed-out eye).
+- Faded objects shall be drawn at reduced opacity and shall not be picked or hovered on the map canvas; hidden objects shall not be drawn. Shown, faded, and hidden are view state only: they shall not modify the `.th2` source and are not stored between sessions.
+- Right-clicking a map object row that belongs to a scrap shall offer a `This Scrap` submenu and, when the drawing has other scraps, an `Other Scraps` submenu, each with `Show`, `Fade`, and `Hide`. A choice shall be shown as checked when every object of the affected scraps already has that state.
 - Each source-linked map object row shall expose compact visibility and delete icon actions.
 - Delete actions from the object tree shall ask for confirmation, shall remove the corresponding source command span through the same safe source-edit path used by structured block deletion, and shall participate in document undo/redo.
 - A `line` block referenced by an `area` block shall not be deletable as a standalone map object because that would leave the area with a dangling border reference.
@@ -452,6 +456,7 @@ The rules below define the expected day-to-day interaction model. If a later req
 - Dragging the handle on a map object row shall start a move or reorder operation.
 - Dropping onto another object shall insert the dragged object before or after the target depending on the drop placement.
 - Dropping onto a scrap target shall move the object into that scrap when the object type supports it.
+- The Objects list and map canvas context menus for a point, line, or area inside a scrap shall offer a `Move to Scrap` submenu listing the other scraps of the drawing by ID. Choosing one shall move the object to the end of that scrap as one undoable source transaction and keep it selected. An `area` shall move together with its border `line` objects from the same scrap, and a `line` that is the only border of an area shall move together with that area. A target shall be disabled, with the reason as its tooltip, when the move would leave an area border reference split across scraps (a line that is one of several borders of an area, or a border line also used by another area). Object coordinates shall not change, and the submenu shall not be offered on scrap rows.
 - The list shall show a visual drop indicator for the current drag target.
 - All map mutations shall support undo and redo.
 - The map command surface shall expose zoom in, zoom out, fit geometry, fit background plus geometry, undo, redo, selection mode, draft completion, scrap insertion, point insertion, line insertion, freehand line drawing, and area insertion.
@@ -1170,8 +1175,10 @@ The criteria below are intended for implementation verification and QA.
 - Clicking a map object row reveals the corresponding source line when it exists.
 - Clicking an already selected object row again clears the current object selection.
 - Visibility toggles affect only the selected object visibility state and do not change selection.
+- The visibility icon cycles shown, faded, hidden; faded objects are drawn faint and cannot be picked on the canvas; `This Scrap`, `Other Scraps`, and `Show All Scraps` in the Objects list and canvas context menus change whole scraps.
 - Object-tree delete icon actions remove the corresponding source-backed object span after confirmation and can be reverted through undo/redo.
 - Dragging and dropping map objects reorders or moves them according to the drop target.
+- `Move to Scrap` moves a point, line, or area (with its border lines, or a sole border line with its area) to the end of another scrap in one undo step, and is disabled with a reason when it would split an area border reference.
 - Undo and redo work for map mutations.
 - The map command surface exposes drawing, fitting, zoom, undo/redo, and draft-completion actions in the top toolbar (main and detached map windows).
 - Freehand line drawing serializes simplified bezier line geometry.

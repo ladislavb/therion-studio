@@ -5,6 +5,7 @@
 #include "../TextEditorTab.h"
 
 #include <QColor>
+#include <QContextMenuEvent>
 #include <QEvent>
 #include <QItemSelectionModel>
 #include <QMouseEvent>
@@ -168,6 +169,12 @@ std::optional<bool> MapEditorTab::handleInspectorObjectViewportEvent(QEvent *eve
 {
     if (event == nullptr || mapObjectsTree_ == nullptr) {
         return std::nullopt;
+    }
+
+    if (event->type() == QEvent::ContextMenu) {
+        showInspectorObjectContextMenu(static_cast<QContextMenuEvent *>(event)->pos());
+        event->accept();
+        return true;
     }
 
     if (event->type() == QEvent::MouseMove && inspectorObjectPressedNameIndex_.isValid()) {

@@ -88,6 +88,7 @@ struct MapEditorViewportInputContext
     std::function<void(bool)> fitMapToViewAfterViewportResize;
     std::function<void(int, int, const QString &, const QPointF &)> prepareSelectionContextMenuState;
     std::function<void(const QPoint &)> showSelectionContextMenu;
+    std::function<void(const QPoint &)> showEmptyCanvasContextMenu;
     std::function<bool()> insertLineVertexFromSelection;
     std::function<bool()> removeLineVertexFromSelection;
     std::function<bool()> deleteSelectedObjectFromSelection;

@@ -292,6 +292,16 @@ QIcon inspectorActionIcon(const QString &iconName)
     return icon;
 }
 
+QIcon inspectorDimmedActionIcon(const QString &iconName)
+{
+    const QPixmap dimmed =
+        renderInspectorLucidePixmap(iconName, QApplication::palette().color(QPalette::Disabled, QPalette::Text), 16);
+    QIcon icon;
+    icon.addPixmap(dimmed, QIcon::Normal);
+    icon.addPixmap(dimmed, QIcon::Disabled);
+    return icon;
+}
+
 qreal mapSourceUnitsPerMeterFromParsedLines(const QVector<TherionParsedLine> &parsedLines)
 {
     QVector<qreal> candidates;

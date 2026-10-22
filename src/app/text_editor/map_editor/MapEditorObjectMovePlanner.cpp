@@ -217,6 +217,105 @@ MapEditorObjectMovePlan MapEditorObjectMovePlanner::planMove(const QString &text
     return plan;
 }
 
+MapEditorObjectMovePlan MapEditorObjectMovePlanner::planMoveIntoScrap(const QString &text,
+                                                                      const QVector<int> &objectLineNumbers,
+                                                                      int focusLineNumber,
+                                                                      int targetScrapLineNumber)
+{
+    MapEditorObjectMovePlan plan;
+    const QVector<SourceLine> sourceLines = splitSourceLines(text);
+    const QVector<TherionParsedLine> parsedLines = TherionSourceDocument::fromText(text).tokenLines();
+    const TherionParsedLine *targetStart = parsedLineAt(parsedLines, targetScrapLineNumber);
+    if (targetStart == nullptr || targetStart->directive != QStringLiteral("scrap")) {
+        plan.errorMessage = QCoreApplication::translate("TherionStudio::MapEditorObjectMovePlanner",
+                                                        "The target line is not a scrap object.");
+        return plan;
+    }
+    const int targetEndLine = objectEndLine(parsedLines, *targetStart);
+    if (!lineRangeIsValid(targetStart->lineNumber, targetEndLine, sourceLines.size())) {
+        plan.errorMessage = QCoreApplication::translate("TherionStudio::MapEditorObjectMovePlanner",
+                                                        "The target object block is incomplete or malformed.");
+        return plan;
+    }
+
+    struct Block
+    {
+        int startLine = 0;
+        int endLine = 0;
+    };
+    QVector<Block> blocks;
+    for (const int lineNumber : objectLineNumbers) {
+        const TherionParsedLine *start = parsedLineAt(parsedLines, lineNumber);
+        if (start == nullptr || !isMovableMapObjectDirective(start->directive)) {
+            plan.errorMessage = QCoreApplication::translate(
+                "TherionStudio::MapEditorObjectMovePlanner",
+                "The source line is not a movable point, line, or area object.");
+            return plan;
+        }
+        const int endLine = objectEndLine(parsedLines, *start);
+        if (!lineRangeIsValid(start->lineNumber, endLine, sourceLines.size())) {
+            plan.errorMessage = QCoreApplication::translate("TherionStudio::MapEditorObjectMovePlanner",
+                                                            "The source object block is incomplete or malformed.");
+            return plan;
+        }
+        if (start->lineNumber <= targetEndLine && endLine >= targetStart->lineNumber) {
+            plan.errorMessage = QCoreApplication::translate("TherionStudio::MapEditorObjectMovePlanner",
+                                                            "The object is already in the target scrap.");
+            return plan;
+        }
+        blocks.append(Block{start->lineNumber, endLine});
+    }
+    if (blocks.isEmpty()) {
+        plan.errorMessage = QCoreApplication::translate("TherionStudio::MapEditorObjectMovePlanner",
+                                                        "The source line is not a movable point, line, or area object.");
+        return plan;
+    }
+    std::sort(blocks.begin(), blocks.end(), [](const Block &left, const Block &right) {
+        return left.startLine < right.startLine;
+    });
+
+    QVector<SourceLine> movedLines;
+    int focusOffset = 0;
+    int removedAboveTarget = 0;
+    for (const Block &block : blocks) {
+        if (block.startLine == focusLineNumber) {
+            focusOffset = movedLines.size();
+        }
+        movedLines += sourceLines.mid(block.startLine - 1, block.endLine - block.startLine + 1);
+        if (block.endLine < targetStart->lineNumber) {
+            removedAboveTarget += block.endLine - block.startLine + 1;
+        }
+    }
+
+    QVector<SourceLine> rewrittenLines;
+    for (int index = 0; index < sourceLines.size(); ++index) {
+        const int lineNumber = index + 1;
+        const bool moved = std::any_of(blocks.cbegin(), blocks.cend(), [lineNumber](const Block &block) {
+            return lineNumber >= block.startLine && lineNumber <= block.endLine;
+        });
+        if (!moved) {
+            rewrittenLines.append(sourceLines.at(index));
+        }
+    }
+
+    // Insert before the target's endscrap, which moved up by the blocks removed above it.
+    const int insertBeforeLine = targetEndLine - removedAboveTarget;
+    qsizetype insertIndex = std::clamp<qsizetype>(insertBeforeLine - 1, 0, rewrittenLines.size());
+    for (const SourceLine &line : std::as_const(movedLines)) {
+        rewrittenLines.insert(insertIndex, line);
+        ++insertIndex;
+    }
+
+    plan.resolved = true;
+    plan.sourceStartLine = blocks.constFirst().startLine;
+    plan.sourceEndLine = blocks.constLast().endLine;
+    plan.insertBeforeLineOriginal = targetEndLine;
+    plan.insertBeforeLineAfterRemoval = insertBeforeLine + focusOffset;
+    plan.movedText = joinSourceLines(rewrittenLines);
+    plan.changed = plan.movedText != text;
+    return plan;
+}
+
 bool MapEditorObjectMovePlanner::applyMove(QString *text,
                                            int sourceLineNumber,
                                            int targetLineNumber,

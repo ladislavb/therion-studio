@@ -307,7 +307,7 @@ Les objets conservent leurs couleurs de rendu normales pendant la modification. 
 
 La sélection est partagée entre le canevas, le panneau `Objets` et l’inspecteur `Sélection`. La sélection d’une aire met également en évidence les lignes de bordure qu’elle référence. La sélection du sommet ou d’une poignée de Bézier d’une ligne affiche dans l’inspecteur les commandes du point de ligne correspondant.
 
-Cliquez avec le bouton droit sur un objet ou un sommet de ligne, sans le faire glisser, pour ouvrir un menu contextuel proposant les actions courantes de type XTherion. Un clic droit dans une zone vide du canevas n’ouvre pas ce menu. Celui-ci reprend les groupes disponibles dans l’inspecteur `Sélection`, tels que les choix du type et du sous-type, les champs modifiables de l’objet, `Options`, le panneau `Point de ligne` complet, `Actions du point de ligne` et `Actions de l'objet` ; les éditeurs de texte libre ou de valeur numérique s’ouvrent dans l’inspecteur et reçoivent le focus. Sous macOS, le clic secondaire du pavé tactile, par exemple avec deux doigts, ouvre le même menu. Si le menu est déjà ouvert, un autre clic secondaire sur un objet ou un sommet différent le réaffecte à cette nouvelle sélection et le déplace à la position du dernier clic.
+Cliquez avec le bouton droit sur un objet ou un sommet de ligne, sans le faire glisser, pour ouvrir un menu contextuel proposant les actions courantes de type XTherion. Un clic droit dans une zone vide du canevas n’ouvre pas ce menu. Si un objet est estompé ou masqué, il ouvre à la place un petit menu proposant `Afficher tous les scraps`. Celui-ci reprend les groupes disponibles dans l’inspecteur `Sélection`, tels que les choix du type et du sous-type, les champs modifiables de l’objet, `Options`, le panneau `Point de ligne` complet, `Actions du point de ligne` et `Actions de l'objet` ; les éditeurs de texte libre ou de valeur numérique s’ouvrent dans l’inspecteur et reçoivent le focus. Sous macOS, le clic secondaire du pavé tactile, par exemple avec deux doigts, ouvre le même menu. Si le menu est déjà ouvert, un autre clic secondaire sur un objet ou un sommet différent le réaffecte à cette nouvelle sélection et le déplace à la position du dernier clic.
 
 Pour les lignes et les bordures d’aires :
 
@@ -348,6 +348,17 @@ La ligne `Aperçu` montre l’apparence de l’objet sélectionné ou en attente
 ### 6.9 Objets et arrière-plans
 
 Dans `Inspector -> Objets`, vous pouvez sélectionner des objets, les réordonner par glisser-déposer, modifier leur visibilité dans la vue actuelle et les supprimer après confirmation. Par défaut, les scraps réduits manuellement le restent lors de l’actualisation de l’arborescence des objets et de la navigation avec le curseur de texte. La sélection d’un objet appartenant à un scrap réduit développe ce dernier afin de rendre l’objet visible. Activez `Réduire/développer automatiquement les scraps` dans cet onglet si vous souhaitez que l’inspecteur ne laisse développé que le scrap de l’objet sélectionné et réduise automatiquement les autres.
+
+Chaque objet est affiché, estompé ou masqué. Cliquez sur l’icône en forme d’œil d’une ligne pour passer d’un état à l’autre. L’œil signifie affiché, l’œil atténué estompé et l’œil barré masqué. Sur la ligne d’un scrap, le changement s’applique à tout le scrap. Les objets estompés sont dessinés en transparence et ne peuvent être ni sélectionnés ni survolés sur la carte, si bien qu’un clic à l’endroit où des scraps se superposent atteint le scrap sur lequel vous travaillez. Les objets masqués ne sont pas dessinés. Il s’agit uniquement d’un état d’affichage. Il ne modifie pas le fichier `.th2` et n’est pas conservé à la fermeture du fichier.
+
+Pour modifier des scraps entiers en une fois, cliquez avec le bouton droit sur la ligne d’un objet dans `Objets` ou sur un objet de la carte.
+
+- `Ce scrap` -> `Afficher`, `Estomper` ou `Masquer` modifie le scrap qui contient l’objet.
+- `Autres scraps` -> `Afficher`, `Estomper` ou `Masquer` modifie tous les autres scraps du dessin.
+
+Le choix actuel est coché. Pour tout réafficher, cliquez avec le bouton droit dans une zone vide du canevas et choisissez `Afficher tous les scraps`.
+
+Pour déplacer un point, une ligne ou une aire dans un autre scrap, cliquez dessus avec le bouton droit sur la carte ou dans `Objets`, choisissez `Déplacer vers le scrap`, puis le scrap. L’objet est placé à la fin de ce scrap, conserve ses coordonnées et reste sélectionné, et `Annuler` inverse le déplacement. Une aire est déplacée avec ses lignes de bordure, et une ligne qui constitue la seule bordure d’une aire entraîne cette aire avec elle. Un scrap apparaît grisé dans la liste, avec la raison en info-bulle, lorsque le déplacement casserait la bordure d’une aire (une ligne qui n’est que l’une des bordures d’une aire, ou une ligne de bordure utilisée aussi par une autre aire).
 
 Dans `Inspector -> Arrière-plans`, vous pouvez :
 

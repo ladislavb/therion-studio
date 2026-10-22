@@ -307,7 +307,7 @@ Map objects keep their normal rendered colors while editing. In select mode, the
 
 Selection is shared between the map canvas, the `Objects` pane, and the `Selection` inspector. Selecting an area also highlights its referenced border lines. Selecting a line vertex or Bezier handle switches the inspector to the corresponding line-point controls.
 
-Right-click a map object or line vertex without dragging to open a context menu with common XTherion-style actions. Empty canvas right-clicks do not open this menu. The menu mirrors the available `Selection` inspector groups, such as type/subtype choices, editable object fields, `Options`, the complete available `Line Point` panel, `Line Point Actions`, and `Object Actions`; free text or numeric editors are opened and focused in the inspector. On macOS, the trackpad secondary click, such as a two-finger click, opens the same menu. If the menu is already open, another secondary click on a different object or vertex retargets the menu to that new selection and moves it to the latest click position.
+Right-click a map object or line vertex without dragging to open a context menu with common XTherion-style actions. Empty canvas right-clicks do not open this menu. While any object is faded or hidden they open a small menu with `Show All Scraps` instead. The menu mirrors the available `Selection` inspector groups, such as type/subtype choices, editable object fields, `Options`, the complete available `Line Point` panel, `Line Point Actions`, and `Object Actions`; free text or numeric editors are opened and focused in the inspector. On macOS, the trackpad secondary click, such as a two-finger click, opens the same menu. If the menu is already open, another secondary click on a different object or vertex retargets the menu to that new selection and moves it to the latest click position.
 
 For lines and area borders:
 
@@ -347,7 +347,18 @@ The `Preview` row shows how the selected or pending object will look. The previe
 
 ### 6.9 Objects and Backgrounds
 
-In `Inspector -> Objects`, you can select objects, reorder objects by drag/drop, toggle visibility in the current view, and delete objects with confirmation. By default, manually collapsed scraps stay collapsed across object-tree refreshes and text-cursor navigation. Selecting a map object in a collapsed scrap expands that scrap so the selected object is visible. Turn on `Auto-collapse/expand Scraps` in this tab when you want the inspector to keep only the selected object's scrap expanded and collapse the other scraps automatically.
+In `Inspector -> Objects`, you can select objects, reorder objects by drag/drop, change their visibility in the current view, and delete objects with confirmation. By default, manually collapsed scraps stay collapsed across object-tree refreshes and text-cursor navigation. Selecting a map object in a collapsed scrap expands that scrap so the selected object is visible. Turn on `Auto-collapse/expand Scraps` in this tab when you want the inspector to keep only the selected object's scrap expanded and collapse the other scraps automatically.
+
+Each object is shown, faded or hidden. Click the eye icon on a row to cycle through these. The eye means shown, a dimmed eye faded and a crossed-out eye hidden. On a scrap row this changes the whole scrap. Faded objects are drawn faint and cannot be clicked or hovered on the map, so clicks where scraps overlap reach the scrap you are working on. Hidden objects are not drawn. This is view state only. It does not change the `.th2` file and is not kept when the file is closed.
+
+To change whole scraps at once, right-click an object row in `Objects`, or an object on the map.
+
+- `This Scrap` -> `Show`, `Fade` or `Hide` changes the scrap that holds the object.
+- `Other Scraps` -> `Show`, `Fade` or `Hide` changes every other scrap in the drawing.
+
+The current choice is ticked. To bring everything back, right-click empty map canvas and choose `Show All Scraps`.
+
+To move a point, line or area into another scrap, right-click it on the map or in `Objects` and choose `Move to Scrap`, then the scrap. The object goes to the end of that scrap, keeps its coordinates and stays selected, and `Undo` reverses the move. An area takes its border lines with it, and a line that is the only border of an area takes that area with it. A scrap is greyed out in the list, with the reason as a tooltip, when the move would break an area border (a line that is one of several borders of an area, or a border line that another area also uses).
 
 In `Inspector -> Backgrounds`, you can:
 

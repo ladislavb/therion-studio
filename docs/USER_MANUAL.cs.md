@@ -275,7 +275,7 @@ Vyberte mapový objekt nebo jeho vrchol/kontrolní bod na mapovém plátně. Ins
 
 Výběr je sdílený mezi mapovým plátnem, panelem `Objekty` a inspektorem `Výběr`. Objekt pod kurzorem se zvýrazní azurově a vybraný objekt červeně. Výběr plochy zároveň zvýrazní referencované hraniční linie. Výběr vrcholu nebo Bezier kontrolního bodu linie přepne inspektor na odpovídající ovládání line pointu.
 
-Pravým kliknutím bez tažení na mapový objekt nebo vrchol čáry otevřete kontextové menu s běžnými akcemi ve stylu XTherionu. Pravý klik do prázdného plátna toto menu neotevře. Menu zrcadlí dostupné skupiny inspektoru `Výběr`, například volby typu/podtypu, editovatelná pole objektu, `Geometry`, celý dostupný panel `Line Point`, `Line Point Actions` a `Object Actions`; volné textové nebo číselné editory se otevřou a fokusují v inspektoru. Na macOS otevře stejné menu i sekundární klik na trackpadu, například kliknutí dvěma prsty. Pokud je menu už otevřené, další sekundární klik na jiný objekt nebo vrchol přecílí menu na nový výběr a přesune ho na poslední pozici kliknutí.
+Pravým kliknutím bez tažení na mapový objekt nebo vrchol čáry otevřete kontextové menu s běžnými akcemi ve stylu XTherionu. Pravý klik do prázdného plátna toto menu neotevře. Pokud je některý objekt ztlumený nebo skrytý, otevře místo něj malé menu s položkou `Zobrazit všechny scrapy`. Menu zrcadlí dostupné skupiny inspektoru `Výběr`, například volby typu/podtypu, editovatelná pole objektu, `Geometry`, celý dostupný panel `Line Point`, `Line Point Actions` a `Object Actions`; volné textové nebo číselné editory se otevřou a fokusují v inspektoru. Na macOS otevře stejné menu i sekundární klik na trackpadu, například kliknutí dvěma prsty. Pokud je menu už otevřené, další sekundární klik na jiný objekt nebo vrchol přecílí menu na nový výběr a přesune ho na poslední pozici kliknutí.
 
 Pro čáry a hranice ploch:
 
@@ -309,7 +309,18 @@ V `Inspektor -> Výběr` lze upravovat vlastnosti vybraných objektů `Scrap`, `
 
 ### 6.9 Objekty a Pozadí
 
-V `Inspektor -> Objekty` lze vybírat objekty, měnit jejich pořadí přetažením, přepínat viditelnost v aktuálním pohledu a mazat objekty s potvrzením.
+V `Inspektor -> Objekty` lze vybírat objekty, měnit jejich pořadí přetažením, měnit jejich viditelnost v aktuálním pohledu a mazat objekty s potvrzením.
+
+Každý objekt je zobrazený, ztlumený nebo skrytý. Kliknutím na ikonu oka v řádku mezi těmito stavy přepínáte. Oko znamená zobrazený, tlumené oko ztlumený a přeškrtnuté oko skrytý. V řádku scrapu se změní celý scrap. Ztlumené objekty se kreslí slabě a na mapě je nelze vybrat ani na ně najet, takže kliknutí v místě, kde se scrapy překrývají, zasáhne scrap, se kterým pracujete. Skryté objekty se nekreslí. Jde jen o stav zobrazení. Nemění soubor `.th2` a po zavření souboru se neuchovává.
+
+Celé scrapy změníte najednou pravým kliknutím na řádek objektu v `Objekty` nebo na objekt v mapě.
+
+- `Tento scrap` -> `Zobrazit`, `Ztlumit` nebo `Skrýt` změní scrap, ve kterém objekt leží.
+- `Ostatní scrapy` -> `Zobrazit`, `Ztlumit` nebo `Skrýt` změní všechny ostatní scrapy výkresu.
+
+Aktuální volba je zaškrtnutá. Vše znovu zobrazíte pravým kliknutím do prázdného plátna a volbou `Zobrazit všechny scrapy`.
+
+Bod, čáru nebo plochu přesunete do jiného scrapu pravým kliknutím na objekt v mapě nebo v `Objekty`, volbou `Přesunout do scrapu` a výběrem scrapu. Objekt se přesune na konec daného scrapu, zachová si souřadnice, zůstane vybraný a `Zpět` přesun vrátí. Plocha se přesune spolu se svými hraničními čarami a čára, která je jedinou hranicí plochy, se přesune spolu s touto plochou. Scrap je v seznamu zašedlý a důvod ukáže tooltip, pokud by přesun porušil hranici plochy (čára, která je jednou z několika hranic plochy, nebo hraniční čára, kterou používá i jiná plocha).
 
 V `Inspektor -> Pozadí` lze:
 

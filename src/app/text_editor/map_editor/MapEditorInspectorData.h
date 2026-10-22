@@ -77,6 +77,8 @@ QVector<InspectorScrapContext> inspectorScrapContexts(const QVector<TherionSourc
 QString inspectorMapObjectIconName(const ProjectStructureEntry &entry);
 QString inspectorMapObjectItemText(const ProjectStructureEntry &entry, const TherionParsedLine *parsedLine);
 QIcon inspectorActionIcon(const QString &iconName);
+// Drawn in the disabled text colour while the item stays enabled.
+QIcon inspectorDimmedActionIcon(const QString &iconName);
 InspectorSymbolCatalog inspectorSymbolCatalogFromCommandCatalog(const QJsonObject &catalogObject);
 QStringList inspectorTypeValuesForCommand(const InspectorSymbolCatalog &catalog, const QString &commandKind);
 QStringList inspectorSubtypeValuesForCommandType(const InspectorSymbolCatalog &catalog,

@@ -7,6 +7,7 @@
 #include "MapEditorObjectDeletePlanner.h"
 #include "MapEditorObjectDetailsLogic.h"
 #include "MapEditorSceneSupport.h"
+#include "MapEditorScrapVisibility.h"
 #include "MapEditorSourceReferenceResolver.h"
 #include "../../../core/TherionDocumentEditor.h"
 #include "../../../core/TherionSourceLogicalDocument.h"
@@ -1012,8 +1013,11 @@ void MapEditorObjectDetailsEditController::deleteSelectedObjectFromSelection()
                                            deletePlan.updatedText,
                                            deletePlan.focusLineAfterDelete,
                                            [context, deletePlan]() {
+                                               MapEditorObjectVisibilityLines visibilityLines(
+                                                   context.hiddenInspectorObjectLines,
+                                                   context.fadedInspectorObjectLines);
                                                for (int removedLineNumber : deletePlan.removedLineNumbers) {
-                                                   context.hiddenInspectorObjectLines->remove(removedLineNumber);
+                                                   visibilityLines.remove(removedLineNumber);
                                                }
                                                *context.lastInspectorClickedObjectLineNumber = 0;
                                                context.clearInspectorObjectSelection();

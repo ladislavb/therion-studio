@@ -656,6 +656,7 @@ MapEditorObjectDetailsContext MapEditorTab::objectDetailsContext()
         .selectedObjectKind = &objectSelectionState_.selectedObjectKind_,
         .objectQuickCommandKind = &objectDetailsUiState_.objectQuickCommandKind_,
         .hiddenInspectorObjectLines = &hiddenInspectorObjectLines_,
+        .fadedInspectorObjectLines = &fadedInspectorObjectLines_,
         .lastInspectorClickedObjectLineNumber = &lastInspectorClickedObjectLineNumber_,
         .toolbarStatusNote = &toolbarStatusNote_,
         .selectionLabel = objectDetailsUiState_.objectDetailsSelectionLabel_,

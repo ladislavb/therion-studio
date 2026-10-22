@@ -176,6 +176,9 @@ MapEditorViewportInputContext MapEditorTab::viewportInputContext()
         .showSelectionContextMenu = [this](const QPoint &globalPosition) {
             showMapSelectionContextMenu(globalPosition);
         },
+        .showEmptyCanvasContextMenu = [this](const QPoint &globalPosition) {
+            showEmptyMapCanvasContextMenu(globalPosition);
+        },
         .insertLineVertexFromSelection = [this]() {
             return insertLineVertexFromSelection(false);
         },

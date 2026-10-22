@@ -41,6 +41,7 @@ struct MapEditorObjectDetailsContext
     QString *selectedObjectKind = nullptr;
     QString *objectQuickCommandKind = nullptr;
     QSet<int> *hiddenInspectorObjectLines = nullptr;
+    QSet<int> *fadedInspectorObjectLines = nullptr;
     int *lastInspectorClickedObjectLineNumber = nullptr;
     QString *toolbarStatusNote = nullptr;
 

@@ -4311,6 +4311,11 @@ Napriek tomu bod zmazať?</translation>
         <translation>Potiahnutím objekt presuniete</translation>
     </message>
     <message>
+        <location filename="../src/app/text_editor/map_editor/MapEditorInspectorObjectController.cpp" line="250"/>
+        <source>Fade object</source>
+        <translation>Stlmiť objekt</translation>
+    </message>
+    <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorInspectorObjectController.cpp" line="233"/>
         <source>Hide object</source>
         <translation>Skryť objekt</translation>
@@ -4355,6 +4360,11 @@ Napriek tomu bod zmazať?</translation>
         <location filename="../src/app/text_editor/map_editor/MapEditorInspectorObjectController.cpp" line="567"/>
         <source>Deleted selected object from source.</source>
         <translation>Vybraný objekt bol odstránený zo zdroja.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/text_editor/map_editor/MapEditorInspectorObjectController.cpp" line="666"/>
+        <source>Move to Scrap</source>
+        <translation>Presunúť do scrapu</translation>
     </message>
     <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorInspectorObjectController.cpp" line="638"/>
@@ -4603,6 +4613,42 @@ Napriek tomu bod zmazať?</translation>
         <location filename="../src/app/text_editor/map_editor/MapEditorMagnifierOverlay.cpp" line="163"/>
         <source>Cursor</source>
         <translation>Kurzor</translation>
+    </message>
+</context>
+<context>
+    <name>TherionStudio::MapEditorMoveToScrapMenu</name>
+    <message>
+        <location filename="../src/app/text_editor/map_editor/MapEditorMoveToScrapMenu.cpp" line="18"/>
+        <source>Move to Scrap</source>
+        <translation>Presunúť do scrapu</translation>
+    </message>
+    <message>
+        <location filename="../src/app/text_editor/map_editor/MapEditorMoveToScrapMenu.cpp" line="22"/>
+        <source>Scrap at line %1</source>
+        <translation>Scrap na riadku %1</translation>
+    </message>
+</context>
+<context>
+    <name>TherionStudio::MapEditorMoveToScrapPlanner</name>
+    <message>
+        <location filename="../src/app/text_editor/map_editor/MapEditorMoveToScrapPlanner.cpp" line="45"/>
+        <source>Only points, lines and areas inside a scrap can be moved to another scrap.</source>
+        <translation>Do iného scrapu možno presunúť len body, línie a plochy vnútri scrapu.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/text_editor/map_editor/MapEditorMoveToScrapPlanner.cpp" line="51"/>
+        <source>Choose a different scrap in this drawing.</source>
+        <translation>Vyberte iný scrap v tomto výkrese.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/text_editor/map_editor/MapEditorMoveToScrapPlanner.cpp" line="62"/>
+        <source>This line is one of several borders of an area. Move the area instead.</source>
+        <translation>Táto línia je jednou z viacerých hraníc plochy. Namiesto nej presuňte plochu.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/text_editor/map_editor/MapEditorMoveToScrapPlanner.cpp" line="81"/>
+        <source>A border line of this area is also used by another area.</source>
+        <translation>Hraničnú líniu tejto plochy používa aj iná plocha.</translation>
     </message>
 </context>
 <context>
@@ -5209,9 +5255,47 @@ Napriek tomu bod zmazať?</translation>
         <translation>Cieľový blok objektu je neúplný alebo poškodený.</translation>
     </message>
     <message>
+        <location filename="../src/app/text_editor/map_editor/MapEditorObjectMovePlanner.cpp" line="262"/>
+        <source>The object is already in the target scrap.</source>
+        <translation>Objekt už je v cieľovom scrape.</translation>
+    </message>
+    <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorObjectMovePlanner.cpp" line="228"/>
         <source>Cannot move a map object without document text.</source>
         <translation>Mapový objekt nemožno presunúť bez textu dokumentu.</translation>
+    </message>
+</context>
+<context>
+    <name>TherionStudio::MapEditorScrapVisibilityMenu</name>
+    <message>
+        <location filename="../src/app/text_editor/map_editor/MapEditorScrapVisibilityMenu.cpp" line="26"/>
+        <source>Show</source>
+        <translation>Zobraziť</translation>
+    </message>
+    <message>
+        <location filename="../src/app/text_editor/map_editor/MapEditorScrapVisibilityMenu.cpp" line="28"/>
+        <source>Fade</source>
+        <translation>Stlmiť</translation>
+    </message>
+    <message>
+        <location filename="../src/app/text_editor/map_editor/MapEditorScrapVisibilityMenu.cpp" line="30"/>
+        <source>Hide</source>
+        <translation>Skryť</translation>
+    </message>
+    <message>
+        <location filename="../src/app/text_editor/map_editor/MapEditorScrapVisibilityMenu.cpp" line="54"/>
+        <source>This Scrap</source>
+        <translation>Tento scrap</translation>
+    </message>
+    <message>
+        <location filename="../src/app/text_editor/map_editor/MapEditorScrapVisibilityMenu.cpp" line="60"/>
+        <source>Other Scraps</source>
+        <translation>Ostatné scrapy</translation>
+    </message>
+    <message>
+        <location filename="../src/app/text_editor/map_editor/MapEditorScrapVisibilityMenu.cpp" line="74"/>
+        <source>Show All Scraps</source>
+        <translation>Zobraziť všetky scrapy</translation>
     </message>
 </context>
 <context>

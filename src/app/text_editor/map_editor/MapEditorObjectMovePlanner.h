@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QString>
+#include <QVector>
 
 namespace TherionStudio
 {
@@ -30,6 +31,13 @@ public:
                                                           int sourceLineNumber,
                                                           int targetLineNumber,
                                                           MapEditorObjectMovePosition position);
+
+    // Moves the point, line and area blocks starting at the given lines to the end of the target scrap, keeping their
+    // order. insertBeforeLineAfterRemoval is the new start line of the block that began at focusLineNumber.
+    [[nodiscard]] static MapEditorObjectMovePlan planMoveIntoScrap(const QString &text,
+                                                                   const QVector<int> &objectLineNumbers,
+                                                                   int focusLineNumber,
+                                                                   int targetScrapLineNumber);
 
     [[nodiscard]] static bool applyMove(QString *text,
                                         int sourceLineNumber,
