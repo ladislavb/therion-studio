@@ -34,7 +34,7 @@ Therion Studio is an editor and early-feedback tool. The Therion compiler remain
 ## Identifier Uniqueness
 
 - `survey`, `map`, and `scrap` names share the parent survey namespace for reference purposes. A duplicate among these names in the same parent namespace is a compatibility risk and should be diagnosed conservatively when source ranges are known.
-- Map drawing object IDs (`point -id`, `line -id`, `area -id`) share the containing scrap namespace. They are not unique only per object type.
+- Map drawing object IDs (`point -id`, `line -id`, `area -id`) are not scoped by scrap. They share the survey namespace with each other and with `survey`, `map` and `scrap` names, so an ID must be unique across every scrap and `.th2` file in that survey. Scraps are not namespaces.
 - Station names are scoped by survey/centerline namespace. Repeated station names in different surveys are valid.
 - Duplicate diagnostics should point at the later repeated identifier token, not the whole line, when the source range is available.
 - Cross-file duplicate checks must respect the effective Therion namespace, not only the physical file path.
@@ -42,7 +42,7 @@ Therion Studio is an editor and early-feedback tool. The Therion compiler remain
 ## Map And Scrap Concepts
 
 - `map ... endmap` contains references to child maps or scraps. These references are composition relationships, not ownership.
-- `scrap ... endscrap` is a drawing namespace for map objects. Area border references resolve to `line -id` values in the same scrap unless Therion semantics provide a more specific scope.
+- `scrap ... endscrap` groups map objects but is not a namespace. Area border references resolve to `line -id` values in the survey namespace, and Therion requires the line to be in the same scrap as the area.
 - `join` may reference line endpoints and marked line points. `:0` and `:end` identify the start and end of a resolved line; named suffixes such as `:k1` should resolve to a `mark k1` row inside that target line when the line reference itself is unambiguous.
 - `.th2` visual edits must serialize canonical Therion source. Map-editor conveniences must not invent alternate source syntax.
 - XTherion metadata comments such as `##XTHERION## ...` and Mapiah background metadata comments such as `##MAPIAH## image_insert_v1 ...` are source data and should be preserved unless a specific map operation intentionally updates them.

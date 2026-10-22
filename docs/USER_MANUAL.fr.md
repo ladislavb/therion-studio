@@ -519,7 +519,7 @@ Solution :
 Solution :
 
 - vérifiez que le bloc `area ... endarea` se trouve dans le même `scrap` que les bordures `line -id ...` référencées ;
-- vérifiez que chaque identifiant référencé existe et est unique dans ce scrap ;
+- vérifiez que chaque identifiant référencé existe dans ce scrap et est unique dans le `survey`, sur tous ses scraps et fichiers `.th2` ;
 - pour les lignes de bordure ouvertes, vérifiez que leurs intersections forment une face fermée ;
 - vérifiez la visibilité des calques et des objets dans `Objets`.
 

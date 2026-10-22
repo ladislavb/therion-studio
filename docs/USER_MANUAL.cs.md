@@ -458,7 +458,7 @@ Mapové kreslení a source-edit operace uchovávají posledních 200 kroků zpě
 Řešení:
 
 - ověřte, že blok `area ... endarea` je ve stejném `scrap` jako referencované hranice `line -id ...`,
-- zkontrolujte, že každé referencované ID existuje a je v daném scrapu jedinečné,
+- zkontrolujte, že každé referencované ID v daném scrapu existuje a je jedinečné v celém `survey`, ve všech jeho scrapech a souborech `.th2`,
 - u otevřených hraničních linií ověřte, že jejich průsečíky tvoří uzavřenou plochu,
 - zkontrolujte viditelnost vrstev a objektů v `Objekty`.
 

@@ -519,7 +519,7 @@ Fix:
 Fix:
 
 - verify the `area ... endarea` block is inside the same `scrap` as the referenced `line -id ...` borders
-- check that every referenced ID exists and is unique in that scrap
+- check that every referenced ID exists in that scrap and is unique in the survey, across all its scraps and `.th2` files
 - for open border lines, check that their intersections form a closed face
 - check layer/object visibility in `Objects`
 

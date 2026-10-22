@@ -458,7 +458,7 @@ Riešenie:
 Riešenie:
 
 - overte, že blok `area ... endarea` je v tom istom `scrap` ako referencované hranice `line -id ...`,
-- skontrolujte, že každé referencované ID existuje a je v danom scrape jedinečné,
+- skontrolujte, že každé referencované ID v danom scrape existuje a je jedinečné v celom `survey`, vo všetkých jeho scrapoch a súboroch `.th2`,
 - pri otvorených hraničných líniách overte, že ich priesečníky tvoria uzavretú plochu,
 - skontrolujte viditeľnosť vrstiev a objektov v `Objekty`.
 

@@ -128,6 +128,9 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ### Validation And Catalog Metadata
 
+- Duplicate `point`/`line`/`area` `-id` diagnostics are still keyed by scrap (`duplicateIdentityLookupKey` in
+  `src/core/ProjectStructureIndex.cpp`). Therion keys them by survey, so duplicates in different scraps of one survey
+  go unreported. `docs/THERION_COMPATIBILITY.md` now states the survey rule.
 - Treat full-project validation as an explicit/manual workflow by default; use the Settings toggle only when projects are
   small enough or the user wants live full-project diagnostics.
 - Use `plans/PROJECT_SCAN_VALIDATION_OPTIMIZATION_PLAN.md` only for future validation/cache follow-ups; Structure and
