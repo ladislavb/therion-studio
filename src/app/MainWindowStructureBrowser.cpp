@@ -222,14 +222,30 @@ bool isStructureRelationshipDiagnostic(const TherionStudio::ProjectIndexDiagnost
     case TherionStudio::ProjectIndexDiagnosticKind::AmbiguousMapScrapReference:
     case TherionStudio::ProjectIndexDiagnosticKind::UnknownMapReference:
     case TherionStudio::ProjectIndexDiagnosticKind::UnknownMapScrapReference:
+    case TherionStudio::ProjectIndexDiagnosticKind::UnknownMapItemReference:
+    case TherionStudio::ProjectIndexDiagnosticKind::InvalidMapObject:
     case TherionStudio::ProjectIndexDiagnosticKind::MixedMapAndScrapReferences:
         return true;
+    case TherionStudio::ProjectIndexDiagnosticKind::InvalidMapItem:
+    case TherionStudio::ProjectIndexDiagnosticKind::InvalidMapShift:
+    case TherionStudio::ProjectIndexDiagnosticKind::UnsupportedMapPreviewType:
+    case TherionStudio::ProjectIndexDiagnosticKind::EmptyMap:
+    case TherionStudio::ProjectIndexDiagnosticKind::MapWithOnlyPreviews:
+    case TherionStudio::ProjectIndexDiagnosticKind::InvalidMapSurveyReference:
+    case TherionStudio::ProjectIndexDiagnosticKind::RecursiveMapReference:
+    case TherionStudio::ProjectIndexDiagnosticKind::IncompatibleScrapProjection:
+    case TherionStudio::ProjectIndexDiagnosticKind::IncompatibleMapProjection:
+    case TherionStudio::ProjectIndexDiagnosticKind::ShiftedScrap:
+    case TherionStudio::ProjectIndexDiagnosticKind::NoProjectionForSurvey:
+    case TherionStudio::ProjectIndexDiagnosticKind::UnsupportedSurveyProjection:
+    case TherionStudio::ProjectIndexDiagnosticKind::PreviewNotMap:
     case TherionStudio::ProjectIndexDiagnosticKind::UnknownJoinReference:
     case TherionStudio::ProjectIndexDiagnosticKind::UnknownJoinLinePointMark:
     case TherionStudio::ProjectIndexDiagnosticKind::AmbiguousJoinReference:
     case TherionStudio::ProjectIndexDiagnosticKind::UnknownStationReference:
     case TherionStudio::ProjectIndexDiagnosticKind::AmbiguousStationReference:
     case TherionStudio::ProjectIndexDiagnosticKind::DuplicateObjectId:
+    case TherionStudio::ProjectIndexDiagnosticKind::ObjectIdMatchesStation:
         return false;
     }
     return false;
@@ -246,14 +262,32 @@ QString diagnosticStructureItemText(const TherionStudio::ProjectIndexDiagnostic 
         return QObject::tr("Unresolved map: %1").arg(diagnostic.referencedName);
     case TherionStudio::ProjectIndexDiagnosticKind::UnknownMapScrapReference:
         return QObject::tr("Unresolved scrap: %1").arg(diagnostic.referencedName);
+    case TherionStudio::ProjectIndexDiagnosticKind::UnknownMapItemReference:
+        return QObject::tr("Unresolved map item: %1").arg(diagnostic.referencedName);
+    case TherionStudio::ProjectIndexDiagnosticKind::InvalidMapObject:
+        return QObject::tr("Invalid map object: %1").arg(diagnostic.referencedName);
     case TherionStudio::ProjectIndexDiagnosticKind::MixedMapAndScrapReferences:
         return QObject::tr("Mixed map/scrap content near: %1").arg(diagnostic.referencedName);
+    case TherionStudio::ProjectIndexDiagnosticKind::InvalidMapItem:
+    case TherionStudio::ProjectIndexDiagnosticKind::InvalidMapShift:
+    case TherionStudio::ProjectIndexDiagnosticKind::UnsupportedMapPreviewType:
+    case TherionStudio::ProjectIndexDiagnosticKind::EmptyMap:
+    case TherionStudio::ProjectIndexDiagnosticKind::MapWithOnlyPreviews:
+    case TherionStudio::ProjectIndexDiagnosticKind::InvalidMapSurveyReference:
+    case TherionStudio::ProjectIndexDiagnosticKind::RecursiveMapReference:
+    case TherionStudio::ProjectIndexDiagnosticKind::IncompatibleScrapProjection:
+    case TherionStudio::ProjectIndexDiagnosticKind::IncompatibleMapProjection:
+    case TherionStudio::ProjectIndexDiagnosticKind::ShiftedScrap:
+    case TherionStudio::ProjectIndexDiagnosticKind::NoProjectionForSurvey:
+    case TherionStudio::ProjectIndexDiagnosticKind::UnsupportedSurveyProjection:
+    case TherionStudio::ProjectIndexDiagnosticKind::PreviewNotMap:
     case TherionStudio::ProjectIndexDiagnosticKind::UnknownJoinReference:
     case TherionStudio::ProjectIndexDiagnosticKind::UnknownJoinLinePointMark:
     case TherionStudio::ProjectIndexDiagnosticKind::AmbiguousJoinReference:
     case TherionStudio::ProjectIndexDiagnosticKind::UnknownStationReference:
     case TherionStudio::ProjectIndexDiagnosticKind::AmbiguousStationReference:
     case TherionStudio::ProjectIndexDiagnosticKind::DuplicateObjectId:
+    case TherionStudio::ProjectIndexDiagnosticKind::ObjectIdMatchesStation:
         break;
     }
 

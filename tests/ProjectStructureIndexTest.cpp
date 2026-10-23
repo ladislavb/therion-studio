@@ -7,6 +7,7 @@
 #include <QFileInfo>
 #include <QTemporaryDir>
 
+#include <algorithm>
 #include <iostream>
 
 using namespace TherionStudio;
@@ -646,8 +647,9 @@ int runProjectIndexAmbiguousMapReferenceDiagnosticsTest()
     if (!expect(errorMessage.isEmpty(), errorMessage.toUtf8().constData())) {
         return 1;
     }
-    if (!expect(snapshot.diagnostics.size() == 5,
-                "The project index should report ambiguous map/scrap references, duplicate names, and mixed content.")) {
+    // The two branch-map.m maps are empty, which Therion rejects with "empty map not allowed".
+    if (!expect(snapshot.diagnostics.size() == 7,
+                "The project index should report ambiguous map/scrap references, duplicate names, mixed content, and empty maps.")) {
         return 1;
     }
 
@@ -656,7 +658,12 @@ int runProjectIndexAmbiguousMapReferenceDiagnosticsTest()
     bool foundMixedContent = false;
     bool foundDuplicateMapName = false;
     bool foundDuplicateScrapName = false;
+    QList<int> emptyMapLines;
     for (const ProjectIndexDiagnostic &diagnostic : snapshot.diagnostics) {
+        if (diagnostic.kind == ProjectIndexDiagnosticKind::EmptyMap
+            && diagnostic.referencedName == QStringLiteral("branch-map.m")) {
+            emptyMapLines.append(diagnostic.lineNumber);
+        }
         if (diagnostic.kind == ProjectIndexDiagnosticKind::AmbiguousMapScrapReference
             && diagnostic.referencedName == QStringLiteral("target.s")
             && diagnostic.candidateCount == 2
@@ -704,6 +711,11 @@ int runProjectIndexAmbiguousMapReferenceDiagnosticsTest()
     }
     if (!expect(foundDuplicateScrapName,
                 "The project index did not report the duplicate scrap name diagnostic.")) {
+        return 1;
+    }
+    std::sort(emptyMapLines.begin(), emptyMapLines.end());
+    if (!expect(emptyMapLines == QList<int>({4, 6}),
+                "The project index did not report both empty branch maps.")) {
         return 1;
     }
 
@@ -1100,6 +1112,120 @@ int runProjectIndexDuplicateObjectIdDiagnosticsTest()
         return 1;
     }
 
+    return 0;
+}
+
+// "kind file:line name" for each duplicate-object-id finding, sorted, so tests compare one list.
+QStringList duplicateIdFindings(const ProjectIndexSnapshot &snapshot)
+{
+    QStringList findings;
+    for (const ProjectIndexDiagnostic &diagnostic : snapshot.diagnostics) {
+        if (diagnostic.kind != ProjectIndexDiagnosticKind::DuplicateObjectId
+            && diagnostic.kind != ProjectIndexDiagnosticKind::ObjectIdMatchesStation) {
+            continue;
+        }
+        findings.append(QStringLiteral("%1 %2:%3 %4")
+                            .arg(diagnostic.kind == ProjectIndexDiagnosticKind::DuplicateObjectId
+                                     ? QStringLiteral("duplicate")
+                                     : QStringLiteral("station"),
+                                 QFileInfo(diagnostic.sourceFile).fileName(),
+                                 QString::number(diagnostic.lineNumber),
+                                 diagnostic.referencedName));
+    }
+    findings.sort();
+    return findings;
+}
+
+int runProjectIndexObjectIdsShareSurveyNamespaceTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "The temporary survey-namespace project directory could not be created.")) {
+        return 1;
+    }
+    const QDir projectDir(tempDir.path());
+    const bool written =
+        writeTextFile(projectDir.filePath(QStringLiteral("thconfig")), QStringLiteral("source cave.th\n"))
+        && writeTextFile(projectDir.filePath(QStringLiteral("cave.th")),
+                         QStringLiteral("survey cave\n"
+                                        "  input a.th2\n"
+                                        "  input b.th2\n"
+                                        "  centreline\n"
+                                        "    data normal from to length compass clino\n"
+                                        "    1 2 5 0 0\n"
+                                        "  endcentreline\n"
+                                        "endsurvey\n"
+                                        "survey other\n"
+                                        "  input c.th2\n"
+                                        "endsurvey\n"))
+        && writeTextFile(projectDir.filePath(QStringLiteral("a.th2")),
+                         QStringLiteral("scrap sa\n"
+                                        "point 0 0 label -id p1\n"
+                                        "point 0 0 label -id 2\n"
+                                        "point 0 0 label -id P1\n"
+                                        "endscrap\n"))
+        && writeTextFile(projectDir.filePath(QStringLiteral("b.th2")),
+                         QStringLiteral("scrap sb\n"
+                                        "point 0 0 label -id p1\n"
+                                        "endscrap\n"))
+        && writeTextFile(projectDir.filePath(QStringLiteral("c.th2")),
+                         QStringLiteral("scrap sc\n"
+                                        "point 0 0 label -id p1\n"
+                                        "point 0 0 label -id 1\n"
+                                        "endscrap\n"));
+    if (!expect(written, "The survey-namespace project files could not be written.")) {
+        return 1;
+    }
+
+    QString errorMessage;
+    const ProjectIndexSnapshot snapshot = ProjectStructureIndex::scanProjectIndex(projectDir.path(), &errorMessage);
+    if (!expect(errorMessage.isEmpty(), errorMessage.toUtf8().constData())) {
+        return 1;
+    }
+    // p1 repeats across the two drawings of survey cave, and -id 2 is also a cave station. Survey other is a separate
+    // namespace, so its p1 and -id 1 are allowed, and P1 differs from p1 in case, which Therion treats as different.
+    const QStringList expected{QStringLiteral("duplicate b.th2:2 p1"), QStringLiteral("station a.th2:3 2")};
+    if (!expect(duplicateIdFindings(snapshot) == expected,
+                qPrintable(QStringLiteral("Drawing object IDs should be unique in the survey namespace, not the scrap: %1")
+                               .arg(duplicateIdFindings(snapshot).join(QStringLiteral(", ")))))) {
+        return 1;
+    }
+    return 0;
+}
+
+int runProjectIndexUnownedDrawingIdsTest()
+{
+    QTemporaryDir tempDir;
+    if (!expect(tempDir.isValid(), "The temporary unowned-drawing project directory could not be created.")) {
+        return 1;
+    }
+    const QDir projectDir(tempDir.path());
+    const QString drawing = QStringLiteral("scrap s\npoint 0 0 label -id p1\nendscrap\n");
+    if (!expect(writeTextFile(projectDir.filePath(QStringLiteral("u1.th2")), drawing)
+                    && writeTextFile(projectDir.filePath(QStringLiteral("u2.th2")), drawing),
+                "The unowned drawing files could not be written.")) {
+        return 1;
+    }
+
+    QString errorMessage;
+    ProjectIndexSnapshot snapshot = ProjectStructureIndex::scanProjectIndex(projectDir.path(), &errorMessage);
+    if (!expect(errorMessage.isEmpty() && duplicateIdFindings(snapshot).isEmpty(),
+                "Without a config, unrelated drawings outside any survey should not be reported against each other.")) {
+        return 1;
+    }
+
+    // A config that sources both at the top level puts them in one namespace, as Therion does.
+    if (!expect(writeTextFile(projectDir.filePath(QStringLiteral("thconfig")),
+                              QStringLiteral("source u1.th2\nsource u2.th2\n")),
+                "The unowned-drawing config could not be written.")) {
+        return 1;
+    }
+    snapshot = ProjectStructureIndex::scanProjectIndex(projectDir.path(), &errorMessage);
+    const QStringList expected{QStringLiteral("duplicate u2.th2:1 s"), QStringLiteral("duplicate u2.th2:2 p1")};
+    if (!expect(errorMessage.isEmpty() && duplicateIdFindings(snapshot) == expected,
+                qPrintable(QStringLiteral("Drawings sourced together share the top-level namespace: %1")
+                               .arg(duplicateIdFindings(snapshot).join(QStringLiteral(", ")))))) {
+        return 1;
+    }
     return 0;
 }
 
@@ -1606,6 +1732,12 @@ int main()
         return 1;
     }
     if (runProjectIndexDuplicateObjectIdDiagnosticsTest() != 0) {
+        return 1;
+    }
+    if (runProjectIndexObjectIdsShareSurveyNamespaceTest() != 0) {
+        return 1;
+    }
+    if (runProjectIndexUnownedDrawingIdsTest() != 0) {
         return 1;
     }
     if (runProjectIndexThconfigSourceGraphTest() != 0) {

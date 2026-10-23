@@ -31,6 +31,21 @@ enum class ProjectIndexDiagnosticKind
 {
     UnknownMapScrapReference,
     UnknownMapReference,
+    UnknownMapItemReference,
+    InvalidMapObject,
+    InvalidMapItem,
+    InvalidMapShift,
+    UnsupportedMapPreviewType,
+    EmptyMap,
+    MapWithOnlyPreviews,
+    InvalidMapSurveyReference,
+    RecursiveMapReference,
+    IncompatibleScrapProjection,
+    IncompatibleMapProjection,
+    ShiftedScrap,
+    NoProjectionForSurvey,
+    UnsupportedSurveyProjection,
+    PreviewNotMap,
     AmbiguousMapScrapReference,
     AmbiguousMapReference,
     MixedMapAndScrapReferences,
@@ -40,6 +55,7 @@ enum class ProjectIndexDiagnosticKind
     UnknownStationReference,
     AmbiguousStationReference,
     DuplicateObjectId,
+    ObjectIdMatchesStation,
 };
 
 enum class ProjectStationReferenceResolutionState

@@ -864,7 +864,340 @@ def parse_option_invalid_type_tokens_from_source(
     return invalid_types
 
 
+def therion_core_dir(source_root: Path) -> Path:
+    """Therion keeps its sources in src/therion-core since 6.4; older trees keep them at the top level."""
+    core_dir = source_root / "src" / "therion-core"
+    return core_dir if core_dir.is_dir() else source_root
+
+
+# Catalog command -> Therion class whose get_cmd_option_desc reads its command-line options.
+THERION_OPTION_CLASSES = {
+    "area": "tharea",
+    "centreline": "thdata",
+    "grade": "thgrade",
+    "import": "thimport",
+    "join": "thjoin",
+    "layout": "thlayout",
+    "line": "thline",
+    "lookup": "thlookup",
+    "map": "thmap",
+    "point": "thpoint",
+    "scan": "thscan",
+    "scrap": "thscrap",
+    "surface": "thsurface",
+    "survey": "thsurvey",
+}
+
+# Export options are read by thexport and the exporter for each export type (parse_options).
+THERION_EXPORT_CLASSES = ["thexport", "thexpmap", "thexpmodel", "thexptable", "thexpdb"]
+
+
+class TherionOptionSource:
+    """Reads command-line options and their value counts from Therion's sources (thstok tables and
+    get_cmd_option_desc), following each class's parent chain as Therion does."""
+
+    def __init__(self, core_dir: Path) -> None:
+        self.headers = {path.name: strip_cpp_line_comments(path.read_text(encoding="utf-8", errors="replace"))
+                        for path in sorted(core_dir.glob("*.h"))}
+        self.sources = {path.name: strip_cpp_line_comments(path.read_text(encoding="utf-8", errors="replace"))
+                        for path in sorted(core_dir.glob("*.cxx"))}
+
+    def table(self, array_name: str) -> dict[str, list[str]]:
+        for text in self.headers.values():
+            tokens = parse_thstok_tokens_by_enum(text, array_name)
+            if tokens:
+                return tokens
+        return {}
+
+    def parent_class(self, class_name: str) -> str:
+        for text in self.headers.values():
+            match = re.search(rf"\bclass\s+{class_name}\s*:\s*public\s+(\w+)", text)
+            if match:
+                return match.group(1)
+        return ""
+
+    def method_body(self, class_name: str, method: str) -> str:
+        for text in self.sources.values():
+            match = re.search(rf"\b{class_name}::{method}\s*\([^)]*\)\s*\{{(?P<body>.*?)\n\}}", text, re.DOTALL)
+            if match:
+                return match.group("body")
+        return ""
+
+    def option_table_and_counts(self, class_name: str) -> tuple[str, dict[str, int]]:
+        body = self.method_body(class_name, "get_cmd_option_desc")
+        table_match = re.search(r"thmatch_token\(\s*\w+\s*,\s*(thtt_\w+)\s*\)", body)
+        # thlayout returns its counts through get_default_cod.
+        if "get_default_cod" in body:
+            body += self.method_body(class_name, "get_default_cod")
+        counts: dict[str, int] = {}
+        for cases, count in re.findall(
+            r"((?:case\s+TT_\w+\s*:\s*)+)return\s+thcmd_option_desc\(\s*id\s*,\s*(\d+)\s*\)", body
+        ):
+            for enum_name in re.findall(r"TT_\w+", cases):
+                counts[enum_name] = int(count)
+        return (table_match.group(1) if table_match else ""), counts
+
+    def inline_only_options(self, class_name: str) -> set[str]:
+        """Options whose set() case rejects them on the command line ("not a command line option")."""
+        body = self.method_body(class_name, "set")
+        inline_only: set[str] = set()
+        pending: list[str] = []
+        cases = list(re.finditer(r"case\s+(TT_\w+)\s*:", body))
+        for index, match in enumerate(cases):
+            pending.append(match.group(1))
+            end = cases[index + 1].start() if index + 1 < len(cases) else len(body)
+            segment = body[match.end():end]
+            if not segment.strip():
+                continue
+            if "not a command line option" in segment:
+                inline_only.update(pending)
+            pending = []
+        return inline_only
+
+    def class_chain(self, class_name: str) -> list[str]:
+        chain: list[str] = []
+        while class_name:
+            chain.append(class_name)
+            class_name = self.parent_class(class_name)
+        return chain
+
+    def export_options(self) -> list[tuple[list[str], int, str]]:
+        """Export options from each exporter's parse_options: the value count is the number of argx++ steps in an
+        option's case less the step past the option itself."""
+        options: list[tuple[list[str], int, str]] = []
+        seen: set[str] = set()
+        for class_name in THERION_EXPORT_CLASSES:
+            body = self.method_body(class_name, "parse_options")
+            table_match = re.search(r"thmatch_token\(\s*args\[argx\]\s*,\s*(thtt_\w+)\s*\)", body)
+            if not table_match:
+                continue
+            table = self.table(table_match.group(1))
+            counts: dict[str, int] = {}
+            pending: list[str] = []
+            cases = list(re.finditer(r"case\s+(TT_\w+)\s*:", body))
+            for index, match in enumerate(cases):
+                pending.append(match.group(1))
+                end = cases[index + 1].start() if index + 1 < len(cases) else len(body)
+                segment = body[match.end():end]
+                if not segment.strip():
+                    continue
+                for enum_name in pending:
+                    if enum_name in table:
+                        counts[enum_name] = max(segment.count("argx++") - 1, 0)
+                pending = []
+            for enum_name, tokens in table.items():
+                if enum_name.endswith("_UNKNOWN") or enum_name not in counts:
+                    continue
+                new_tokens = [token.lstrip("-") for token in tokens if token.lstrip("-") not in seen]
+                if new_tokens:
+                    seen.update(new_tokens)
+                    options.append((new_tokens, counts[enum_name], class_name))
+        return options
+
+    def export_layout_option_family(self) -> bool:
+        """export map passes -layout-<option> to the layout (thexpmap parse_options)."""
+        return '"-layout-"' in self.method_body("thexpmap", "parse_options")
+
+    def command_line_options(self, class_name: str) -> list[tuple[list[str], int, str]]:
+        """Each option as (tokens, value count, defining class); the first class in the chain that knows a
+        token wins."""
+        options: list[tuple[list[str], int, str]] = []
+        seen: set[str] = set()
+        while class_name:
+            table_name, counts = self.option_table_and_counts(class_name)
+            inline_only = self.inline_only_options(class_name)
+            for enum_name, tokens in self.table(table_name).items():
+                if enum_name.endswith("_UNKNOWN") or enum_name in inline_only:
+                    continue
+                new_tokens = [token for token in tokens if token not in seen]
+                if new_tokens:
+                    seen.update(new_tokens)
+                    options.append((new_tokens, counts.get(enum_name, 1), class_name))
+            class_name = self.parent_class(class_name)
+        return options
+
+
+def expand_optional_letters(token: str) -> list[str]:
+    """colo[u]r -> colour, color."""
+    match = re.search(r"\[([^\]]*)\]", token)
+    if match is None:
+        return [token]
+    return [variant
+            for replacement in (match.group(1), "")
+            for variant in expand_optional_letters(token[:match.start()] + replacement + token[match.end():])]
+
+
+def option_entry_tokens(option: dict[str, Any]) -> list[str]:
+    """Option tokens without the dash, from option_key and the signature's alias list."""
+    tokens: list[str] = []
+    key = str(option.get("option_key", "")).strip().lstrip("-").lower()
+    if key:
+        tokens.append(key)
+    head = str(option.get("signature", "")).strip().split(" ", 1)[0]
+    for alias in head.split("/"):
+        for variant in expand_optional_letters(alias.strip().lstrip("-").lower()):
+            if re.fullmatch(r"[a-z][a-z0-9-]*", variant):
+                append_unique(tokens, variant)
+    return tokens
+
+
+def new_option_entry(tokens: list[str], value_count: int, help_option: dict[str, Any] | None) -> dict[str, Any]:
+    """An option Therion accepts that the book does not list for this command; help comes from another
+    command's book entry for the same option when there is one."""
+    if help_option is not None:
+        _, _, value_part = str(help_option.get("signature", "")).partition(" ")
+        if value_count == 0:
+            value_part = ""
+    else:
+        value_part = " ".join(["<value>"] * value_count)
+    entry = {
+        "name": tokens[0],
+        "signature": " ".join(part for part in ("/".join(tokens), value_part) if part),
+        "option_key": f"-{tokens[0]}",
+        "value_arity": arity_token(value_count),
+        "value_domain": "unknown" if value_count else "none",
+        "description": "",
+        "allowed_values": [],
+        "dependencies": [],
+    }
+    if help_option is None:
+        entry["described_in_book"] = False
+    else:
+        entry["description"] = help_option.get("description", "")
+        entry["raw"] = f"{entry['signature']} = {entry['description']}"
+        if value_count:
+            entry["value_domain"] = help_option.get("value_domain", "unknown")
+            entry["allowed_values"] = list(help_option.get("allowed_values", []))
+    return entry
+
+
+def arity_token(value_count: int) -> str:
+    if value_count <= 0:
+        return "0"
+    return "1" if value_count == 1 else "N"
+
+
+def apply_therion_option_tables(catalog: dict[str, Any], source_root: Path) -> list[str]:
+    """Make each command's options match what Therion accepts, keeping the book's help text.
+
+    Returns report lines about differences between the book and Therion's tables.
+    """
+    core_dir = therion_core_dir(source_root)
+    if not (core_dir / "thdataobject.h").exists():
+        return []
+    source = TherionOptionSource(core_dir)
+    report: list[str] = []
+    commands_by_name = {command.get("name"): command for command in catalog.get("commands", [])}
+
+    def book_help(token: str, defining_class: str) -> dict[str, Any] | None:
+        """Book help for an option defined by a shared Therion class (such as -author on every object),
+        from a command whose class shares it; centreline options come from the data command of that name."""
+        if defining_class == "thdata":
+            data_command = commands_by_name.get(token)
+            if data_command and data_command.get("summary"):
+                syntax = data_command.get("syntax") or [token]
+                return {"signature": str(syntax[0]), "description": data_command["summary"]}
+            return None
+        for other_name, other_class in sorted(THERION_OPTION_CLASSES.items()):
+            if defining_class not in source.class_chain(other_class) or other_name not in commands_by_name:
+                continue
+            for option in commands_by_name[other_name].get("options", []):
+                if option.get("description") and token in option_entry_tokens(option):
+                    return option
+        return None
+
+    def merge(command_name: str, therion_options: list[tuple[list[str], int, str]], keep_family: bool = False) -> None:
+        command = commands_by_name.get(command_name)
+        if command is None:
+            return
+        # Wildcard families such as -layout-xxx stand for many options and are not in any table.
+        family = [option for option in command.get("options", [])
+                  if keep_family and "xxx" in str(option.get("option_key", ""))]
+        book_options = [option for option in command.get("options", [])
+                        if option.get("option_key") and option not in family]
+        other_entries = [option for option in command.get("options", []) if not option.get("option_key")]
+        matched: list[dict[str, Any]] = []
+        added: list[dict[str, Any]] = []
+        for tokens, value_count, defining_class in therion_options:
+            # The book may give one option several headings (layout statistics); all of them are this option.
+            entries = [entry for entry in book_options
+                       if entry not in matched and set(option_entry_tokens(entry)) & set(tokens)]
+            arity = arity_token(value_count)
+            if not entries:
+                report.append(f"{command_name}: -{tokens[0]} is accepted by Therion but the book does not list it "
+                              "for this command")
+                option = new_option_entry(tokens, value_count, book_help(tokens[0], defining_class))
+                added.append(option)
+                matched.append(option)
+                continue
+            for option in entries:
+                known = option_entry_tokens(option)
+                missing_aliases = [token for token in tokens if token not in known]
+                if missing_aliases:
+                    report.append(f"{command_name}: the book does not list "
+                                  + ", ".join(f"-{token}" for token in missing_aliases)
+                                  + f" for -{known[0]}")
+                    head, _, rest = str(option["signature"]).partition(" ")
+                    option["signature"] = " ".join(part for part in ("/".join([head] + missing_aliases), rest) if part)
+                book_arity = str(option.get("value_arity", ""))
+                if book_arity != arity and not (book_arity == "N" and value_count > 1):
+                    report.append(f"{command_name}: -{known[0]} takes {value_count} value(s) in Therion; "
+                                  f"the book's heading gives {book_arity}")
+                    option["value_arity"] = arity
+                    if value_count == 0:
+                        option["value_domain"] = "none"
+                    elif option.get("value_domain") == "none":
+                        option["value_domain"] = "unknown"
+                        if " " not in str(option["signature"]).strip():
+                            option["signature"] = f"{option['signature']} <value>"
+                matched.append(option)
+        for option in book_options:
+            if option not in matched:
+                report.append(f"{command_name}: {option['option_key']} is not an option of this command in Therion; removed")
+        # Keep the book's order; options only Therion lists follow.
+        command["options"] = [option for option in book_options if option in matched] + added + family + other_entries
+
+    for command_name, class_name in sorted(THERION_OPTION_CLASSES.items()):
+        merge(command_name, source.command_line_options(class_name))
+    merge("export", source.export_options(), keep_family=source.export_layout_option_family())
+    apply_layout_block_counts(commands_by_name, source, report)
+    return list(dict.fromkeys(report))
+
+
+def apply_layout_block_counts(
+    commands_by_name: dict[str, dict[str, Any]],
+    source: TherionOptionSource,
+    report: list[str],
+) -> None:
+    """Inside a layout block Therion reads each line against the same option table, so a layout block command takes
+    as many values as its layout option. A command name shared with another block (units in a centreline) is only
+    relaxed, never tightened."""
+    for tokens, value_count, defining_class in source.command_line_options("thlayout"):
+        if defining_class != "thlayout":
+            continue
+        command = next((commands_by_name[token] for token in tokens
+                        if token in commands_by_name and "layout" in (commands_by_name[token].get("contexts") or [])),
+                       None)
+        if command is None:
+            continue
+        arguments = command.get("arguments", [])
+        required = [argument for argument in arguments if not str(argument.get("signature", "")).startswith("[")]
+        takes_list = any(str(argument.get("value_arity")) == "N" for argument in arguments)
+        if len(required) == value_count and (len(arguments) == value_count or takes_list):
+            continue
+        if command.get("contexts") == ["layout"]:
+            report.append(f"layout: {command['name']} takes {value_count} value(s) in Therion; "
+                          f"the book's heading gives {len(arguments)}")
+            command["arguments"] = build_argument_entries_from_signature(
+                " ".join([command["name"]] + ["<value>"] * value_count))
+        elif len(required) > value_count:
+            for argument in required[value_count:]:
+                argument["signature"] = f"[{argument['signature']}]"
+                argument["name"] = argument["signature"]
+
+
 def apply_source_derived_option_applicability(catalog: dict[str, Any], source_root: Path) -> None:
+    source_root = therion_core_dir(source_root)
     point_header = source_root / "thpoint.h"
     point_source = source_root / "thpoint.cxx"
     if not point_header.exists() or not point_source.exists():
@@ -1553,7 +1886,13 @@ def write_command_files(catalog: dict[str, Any], commands_dir: Path) -> None:
         (commands_dir / stale_file).unlink()
 
 
-def build_catalog(inputs: list[Path], source_repo: str, source_ref: str) -> dict[str, Any]:
+def build_catalog(
+    inputs: list[Path],
+    source_repo: str,
+    source_ref: str,
+    source_root: Path | None = None,
+    report: list[str] | None = None,
+) -> dict[str, Any]:
     commands = []
     source_texts: list[tuple[Path, str]] = []
     known_command_names: set[str] = set()
@@ -1598,8 +1937,26 @@ def build_catalog(inputs: list[Path], source_repo: str, source_ref: str) -> dict
     }
     apply_map_body_command_contexts(catalog)
     apply_command_context_overrides(catalog)
+    if source_root is not None:
+        table_report = apply_therion_option_tables(catalog, source_root)
+        if report is not None:
+            report.extend(table_report)
     apply_revise_command_option_union(catalog)
     return catalog
+
+
+def write_book_difference_report(path: Path, report: list[str], source_ref: str) -> None:
+    lines = [
+        "# Therion Book Differences",
+        "",
+        "Generated by `scripts/generate_therion_catalog.py` from Therion's option tables "
+        f"(`thstok` tables and `get_cmd_option_desc`) and the Therion book, reference `{source_ref}`.",
+        "Therion Studio follows the tables; each line is a candidate fix for the book.",
+        "",
+    ]
+    lines.extend(f"- {line}" for line in report)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def main() -> int:
@@ -1640,6 +1997,11 @@ def main() -> int:
         default="therion",
         help="Therion source root used for source-derived metadata.",
     )
+    parser.add_argument(
+        "--report",
+        default="",
+        help="Write differences between the Therion book and Therion's option tables to this Markdown file.",
+    )
     args = parser.parse_args()
 
     input_paths = [Path(p) for p in args.input] if args.input else [
@@ -1651,7 +2013,8 @@ def main() -> int:
         if not input_path.exists():
             raise FileNotFoundError(f"Missing input file: {input_path}")
 
-    catalog = build_catalog(input_paths, args.source_repo, args.source_ref)
+    report: list[str] = []
+    catalog = build_catalog(input_paths, args.source_repo, args.source_ref, Path(args.source_root), report)
     apply_source_derived_option_applicability(catalog, Path(args.source_root))
 
     overrides_dir = Path(args.overrides_dir)
@@ -1664,6 +2027,8 @@ def main() -> int:
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(catalog, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    if args.report:
+        write_book_difference_report(Path(args.report), report, args.source_ref)
     print(f"Generated {output_path} with {len(catalog['commands'])} commands.")
     return 0
 

@@ -20,19 +20,7 @@ QString rightTrimmed(QString line)
 
 bool endsWithContinuationMarker(const QString &line)
 {
-    const QString trimmed = rightTrimmed(line);
-    if (trimmed.isEmpty()) {
-        return false;
-    }
-
-    int trailingBackslashCount = 0;
-    int index = trimmed.size() - 1;
-    while (index >= 0 && trimmed.at(index) == QLatin1Char('\\')) {
-        ++trailingBackslashCount;
-        --index;
-    }
-
-    return trailingBackslashCount % 2 == 1;
+    return TherionDocumentParser::continuationMarkerIndex(line) >= 0;
 }
 
 int firstNonSpaceIndex(const QString &line)

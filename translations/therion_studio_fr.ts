@@ -1905,6 +1905,14 @@ Si le fichier est ouvert, il sera d&apos;abord fermé.</translation>
         <source>Showing the first %1 problem(s).</source>
         <translation>Affichage des %1 premiers problèmes.</translation>
     </message>
+    <message numerus="yes">
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1120"/>
+        <source>Showing the first %n findings.</source>
+        <translation>
+            <numerusform>Affichage du premier résultat (%n).</numerusform>
+            <numerusform>Affichage des %n premiers résultats.</numerusform>
+        </translation>
+    </message>
     <message>
         <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1175"/>
         <source>Line %1: %2</source>
@@ -2249,6 +2257,11 @@ Les fichiers attendus sont `docs/USER_MANUAL.&lt;language&gt;.md` ou `docs/USER_
         <translation>Scrap non résolu : %1</translation>
     </message>
     <message>
+        <location filename="../src/app/MainWindowStructureBrowser.cpp" line="252"/>
+        <source>Unresolved map item: %1</source>
+        <translation>Élément de map non résolu : %1</translation>
+    </message>
+    <message>
         <location filename="../src/app/MainWindowStructureBrowser.cpp" line="250"/>
         <source>Mixed map/scrap content near: %1</source>
         <translation>Contenu mixte map/scrap à proximité de : %1</translation>
@@ -2569,6 +2582,16 @@ Lignes de points : %1</translation>
         <translation>Référence de scrap de dessin inconnue</translation>
     </message>
     <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="185"/>
+        <source>Unknown map item</source>
+        <translation>Élément de map inconnu</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="186"/>
+        <source>Map item `%1` does not exist. No scrap, map, or survey of that name was found in the project index.</source>
+        <translation>L’élément de map `%1` n’existe pas. Aucun scrap, map ou topographie de ce nom n’a été trouvé dans l’index du projet.</translation>
+    </message>
+    <message>
         <location filename="../src/app/ProjectValidationScanner.cpp" line="174"/>
         <source>Map references scrap `%1`, but no matching scrap was found in the project index.</source>
         <translation>La map référence le scrap `%1`, mais aucun scrap correspondant n&apos;a été trouvé dans l&apos;index du projet.</translation>
@@ -2610,8 +2633,153 @@ Lignes de points : %1</translation>
     </message>
     <message>
         <location filename="../src/app/ProjectValidationScanner.cpp" line="201"/>
-        <source>Map composition mixes child map and scrap references; `%1` changes the content kind.</source>
-        <translation>La composition de la map mélange des références de map de niveau(x) inférieur(s) et de scrap ; `%1` change le type de contenu.</translation>
+        <source>Map mixes scraps with maps or surveys at `%1`. Therion needs every item of a map to be a scrap, or every item to be a map or survey.</source>
+        <translation>La map mélange des scraps avec des maps ou des topographies à `%1`. Therion exige que tous les éléments d’une map soient des scraps, ou tous des maps ou des topographies.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="191"/>
+        <source>Invalid map object</source>
+        <translation>Objet de map non valide</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="192"/>
+        <source>Map item `%1` is a point, line, or area. A map can only list scraps, maps, or surveys.</source>
+        <translation>L’élément de map `%1` est un point, une ligne ou une aire. Une map ne peut lister que des scraps, des maps ou des topographies.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="197"/>
+        <source>Invalid map item</source>
+        <translation>Élément de map non valide</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="198"/>
+        <source>A map item is a name, optionally followed by a shift in brackets and `above`, `below`, or `none`.</source>
+        <translation>Un élément de map est un nom, éventuellement suivi d’un décalage entre crochets et de `above`, `below` ou `none`.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="202"/>
+        <source>Invalid map shift</source>
+        <translation>Décalage de map non valide</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="203"/>
+        <source>The map item shift `%1` needs two numbers and optional units, for example `[10 20 m]`.</source>
+        <translation>Le décalage d’élément de map `%1` doit comporter deux nombres et éventuellement une unité, par exemple `[10 20 m]`.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="208"/>
+        <source>Unsupported preview type</source>
+        <translation>Type d’aperçu non pris en charge</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="209"/>
+        <source>`%1` is not a preview type Therion accepts here. Use `above` or `below`, or `none` after a map item shift.</source>
+        <translation>`%1` n’est pas un type d’aperçu accepté ici par Therion. Utilisez `above` ou `below`, ou `none` après un décalage d’élément de map.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="214"/>
+        <source>Empty map</source>
+        <translation>Map vide</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="215"/>
+        <source>Map `%1` lists no scraps, maps, or surveys, which Therion does not allow.</source>
+        <translation>La map `%1` ne liste aucun scrap, aucune map ni aucune topographie, ce que Therion n’autorise pas.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="220"/>
+        <source>Map with only previews</source>
+        <translation>Map ne contenant que des aperçus</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="221"/>
+        <source>Map `%1` lists only previews. Therion needs at least one scrap, map, or survey.</source>
+        <translation>La map `%1` ne liste que des aperçus. Therion a besoin d’au moins un scrap, une map ou une topographie.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="226"/>
+        <source>Invalid map survey</source>
+        <translation>Topographie de map non valide</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="232"/>
+        <source>Recursive map reference</source>
+        <translation>Référence de map récursive</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="233"/>
+        <source>Map `%1` contains, directly or through its own maps, the map that lists it.</source>
+        <translation>La map `%1` contient, directement ou par ses propres maps, la map qui la liste.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="238"/>
+        <source>Incompatible scrap projection</source>
+        <translation>Projection de scrap incompatible</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="239"/>
+        <source>Scrap `%1` has a different projection from the first item of this map, or from the map's `-projection`.</source>
+        <translation>Le scrap `%1` a une projection différente du premier élément de cette map, ou de l’option `-projection` de la map.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="244"/>
+        <source>Incompatible map projection</source>
+        <translation>Projection de map incompatible</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="245"/>
+        <source>Map `%1` has a different projection from the first item of this map, or from the map's `-projection`.</source>
+        <translation>La map `%1` a une projection différente du premier élément de cette map, ou de l’option `-projection` de la map.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="250"/>
+        <source>Shifted scrap</source>
+        <translation>Scrap décalé</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="251"/>
+        <source>Scrap `%1` is shifted, which Therion allows only for maps and for the first scrap of a map.</source>
+        <translation>Le scrap `%1` est décalé, ce que Therion n’autorise que pour les maps et pour le premier scrap d’une map.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="256"/>
+        <source>No projection for survey</source>
+        <translation>Aucune projection pour la topographie</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="257"/>
+        <source>Survey `%1` is the first item of a map without `-projection`. Give the map a projection to draw the survey's centreline in.</source>
+        <translation>La topographie `%1` est le premier élément d’une map sans `-projection`. Donnez à la map une projection dans laquelle dessiner la polygonale de la topographie.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="262"/>
+        <source>Unsupported projection for survey</source>
+        <translation>Projection non prise en charge pour la topographie</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="263"/>
+        <source>Survey `%1` cannot be drawn in this map's projection. A survey needs plan, extended, or elevation.</source>
+        <translation>La topographie `%1` ne peut pas être dessinée dans la projection de cette map. Une topographie demande plan, extended ou elevation.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="268"/>
+        <source>Preview is not a map</source>
+        <translation>L’aperçu n’est pas une map</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="269"/>
+        <source>Preview `%1` is not a map. A preview must name a map.</source>
+        <translation>L’aperçu `%1` n’est pas une map. Un aperçu doit désigner une map.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="227"/>
+        <source>`-survey %1` does not name a survey.</source>
+        <translation>`-survey %1` ne désigne pas une topographie.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureBrowser.cpp" line="261"/>
+        <source>Invalid map object: %1</source>
+        <translation>Objet de map non valide : %1</translation>
     </message>
     <message>
         <location filename="../src/app/ProjectValidationScanner.cpp" line="206"/>
@@ -2673,6 +2841,21 @@ Lignes de points : %1</translation>
         <location filename="../src/app/ProjectValidationScanner.cpp" line="239"/>
         <source>Object id `%1` is already used by another object in this namespace.</source>
         <translation>L&apos;identifiant d&apos;objet `%1` est déjà utilisé par un autre objet dans cet espace de noms.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="245"/>
+        <source>Object id `%1` is also the name of a station in this survey.</source>
+        <translation>L'identifiant d'objet `%1` est aussi le nom d'une station de ce survey.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="318"/>
+        <source>Drawing not read by the config</source>
+        <translation>Dessin non lu par la configuration</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="319"/>
+        <source>This drawing is not read through the project&apos;s Therion config, so Therion does not compile it and its station references are not checked.</source>
+        <translation>Ce dessin n’est pas lu par la configuration Therion du projet : Therion ne le compile pas et ses références aux stations ne sont pas vérifiées.</translation>
     </message>
     <message>
         <location filename="../src/app/ProjectValidationScanner.cpp" line="368"/>
@@ -3566,6 +3749,11 @@ Lignes de points : %1</translation>
         <location filename="../src/app/MainWindowValidationSidebar.cpp" line="238"/>
         <source>Warning</source>
         <translation>Avertissement</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="250"/>
+        <source>Information</source>
+        <translation>Information</translation>
     </message>
     <message>
         <location filename="../src/app/MainWindowValidationSidebar.cpp" line="249"/>
@@ -6287,6 +6475,11 @@ Supprimer le sommet malgré tout ?</translation>
         <translation>Erreur</translation>
     </message>
     <message>
+        <location filename="../src/app/text_editor/TextEditorContextHelpController.cpp" line="435"/>
+        <source>Information</source>
+        <translation>Information</translation>
+    </message>
+    <message>
         <location filename="../src/app/text_editor/TextEditorContextHelpController.cpp" line="433"/>
         <location filename="../src/app/text_editor/TextEditorContextHelpController.cpp" line="457"/>
         <source>Warning</source>
@@ -6571,6 +6764,11 @@ Supprimer le sommet malgré tout ?</translation>
         <location filename="../src/app/text_editor/TextEditorTabSourceRewriteDelegates.cpp" line="50"/>
         <source>Formatting skipped: document changed.</source>
         <translation>Mise en forme ignorée : le document a changé.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/text_editor/raw_editor/RawEditorCommandMetadataLoader.cpp" line="280"/>
+        <source>Not described in the Therion book.</source>
+        <translation>Non décrit dans le livre de Therion.</translation>
     </message>
 </context>
 <context>
@@ -7065,6 +7263,39 @@ Supprimer le sommet malgré tout ?</translation>
     </message>
 </context>
 <context>
+    <name>TherionStudio::TherionRepeatedStationPoints</name>
+    <message>
+        <location filename="../src/core/TherionRepeatedStationPoints.cpp" line="87"/>
+        <source>Remove repeated station point on line %1</source>
+        <translation>Supprimer le point de station répété à la ligne %1</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionRepeatedStationPoints.cpp" line="134"/>
+        <source>Station drawn twice in a scrap</source>
+        <translation>Station dessinée deux fois dans un scrap</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionRepeatedStationPoints.cpp" line="135"/>
+        <source>Station `%1` is already drawn at the same place in this scrap, on line %2.</source>
+        <translation>La station `%1` est déjà dessinée au même endroit dans ce scrap, à la ligne %2.</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionRepeatedStationPoints.cpp" line="136"/>
+        <source>Station `%1` is already drawn at a different place in this scrap, on line %2.</source>
+        <translation>La station `%1` est déjà dessinée à un autre endroit dans ce scrap, à la ligne %2.</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionRepeatedStationPoints.cpp" line="162"/>
+        <source>Station in several scraps</source>
+        <translation>Station dans plusieurs scraps</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionRepeatedStationPoints.cpp" line="163"/>
+        <source>Station `%1` is also drawn in scrap `%2` of the same projection, on line %3.</source>
+        <translation>La station `%1` est aussi dessinée dans le scrap `%2` de la même projection, à la ligne %3.</translation>
+    </message>
+</context>
+<context>
     <name>TherionStudio::TherionSourceValidator</name>
     <message>
         <location filename="../src/core/TherionSourceValidator.cpp" line="145"/>
@@ -7139,6 +7370,11 @@ Supprimer le sommet malgré tout ?</translation>
         <location filename="../src/core/TherionSourceValidator.cpp" line="921"/>
         <source>This command contains an option-like token or duplicate option/value pair that Therion may reject.</source>
         <translation>Cette commande contient un token ressemblant à une option ou une paire option/valeur en double que Therion risque de rejeter.</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="939"/>
+        <source>This command repeats an option with the same value; Therion accepts it, and the repeat can be removed.</source>
+        <translation>Cette commande répète une option avec la même valeur ; Therion l’accepte, et la répétition peut être supprimée.</translation>
     </message>
     <message>
         <location filename="../src/core/TherionSourceValidator.cpp" line="928"/>
@@ -7266,6 +7502,16 @@ Supprimer le sommet malgré tout ?</translation>
         <translation>Fermeture de bloc non appariée</translation>
     </message>
     <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1263"/>
+        <source>`endcode` has no open `code` block; Therion ignores it.</source>
+        <translation>`endcode` n’a pas de bloc `code` ouvert ; Therion l’ignore.</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1271"/>
+        <source>Remove line %1</source>
+        <translation>Supprimer la ligne %1</translation>
+    </message>
+    <message>
         <location filename="../src/core/TherionSourceValidator.cpp" line="1240"/>
         <source>Closing directive `%1` does not match the currently open block.</source>
         <translation>La directive de fermeture `%1` ne correspond pas au bloc actuellement ouvert.</translation>
@@ -7275,6 +7521,26 @@ Supprimer le sommet malgré tout ?</translation>
         <location filename="../src/core/TherionSourceValidator.cpp" line="1298"/>
         <source>Unclosed block</source>
         <translation>Bloc non fermé</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1351"/>
+        <source>Code line joins endcode</source>
+        <translation>La ligne de code absorbe endcode</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1352"/>
+        <source>This line ends in `\`, so Therion joins the `endcode` on line %1 to it and passes `endcode` to TeX or MetaPost as text.</source>
+        <translation>Cette ligne se termine par `\` : Therion y joint le `endcode` de la ligne %1 et transmet `endcode` à TeX ou MetaPost comme du texte.</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1332"/>
+        <source>Block `code` has no `endcode` before `%1` on line %2; Therion reads `%1` as a `%3` command.</source>
+        <translation>Le bloc `code` n’a pas de `endcode` avant `%1` à la ligne %2 ; Therion lit `%1` comme une commande de `%3`.</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1340"/>
+        <source>Block `%1` has no `%2`; Therion ends it at `%3` on line %4.</source>
+        <translation>Le bloc `%1` n’a pas de `%2` ; Therion le termine à `%3` à la ligne %4.</translation>
     </message>
     <message>
         <location filename="../src/core/TherionSourceValidator.cpp" line="1253"/>
@@ -7915,6 +8181,12 @@ Supprimer le sommet malgré tout ?</translation>
         <translation>Erreur</translation>
     </message>
     <message>
+        <location filename="../src/app/ValidationResultsMarkdownExporter.cpp" line="20"/>
+        <location filename="../src/app/ValidationResultsMarkdownExporter.cpp" line="171"/>
+        <source>Information</source>
+        <translation>Information</translation>
+    </message>
+    <message>
         <location filename="../src/app/ValidationResultsMarkdownExporter.cpp" line="26"/>
         <source>Untitled document</source>
         <translation>Document sans titre</translation>
@@ -7988,6 +8260,71 @@ Supprimer le sommet malgré tout ?</translation>
         <location filename="../src/app/ValidationResultsMarkdownExporter.cpp" line="202"/>
         <source>Automatic fix preview</source>
         <translation>Aperçu de la correction automatique</translation>
+    </message>
+</context>
+<context>
+    <name>TherionStudio::ValidationSummaryText</name>
+    <message>
+        <location filename="../src/app/ValidationSummaryText.cpp" line="36"/>
+        <source>No problems</source>
+        <translation>Aucun problème</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ValidationSummaryText.cpp" line="40"/>
+        <source>1 error</source>
+        <translation>1 erreur</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../src/app/ValidationSummaryText.cpp" line="40"/>
+        <source>%n errors</source>
+        <translation>
+            <numerusform>%n erreur</numerusform>
+            <numerusform>%n erreurs</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../src/app/ValidationSummaryText.cpp" line="44"/>
+        <source>1 warning</source>
+        <translation>1 avertissement</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../src/app/ValidationSummaryText.cpp" line="44"/>
+        <source>%n warnings</source>
+        <translation>
+            <numerusform>%n avertissement</numerusform>
+            <numerusform>%n avertissements</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../src/app/ValidationSummaryText.cpp" line="48"/>
+        <source>1 note</source>
+        <translation>1 note</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../src/app/ValidationSummaryText.cpp" line="48"/>
+        <source>%n notes</source>
+        <translation>
+            <numerusform>%n note</numerusform>
+            <numerusform>%n notes</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../src/app/ValidationSummaryText.cpp" line="57"/>
+        <source>1 file searched</source>
+        <translation>1 fichier parcouru</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../src/app/ValidationSummaryText.cpp" line="57"/>
+        <source>%n files searched</source>
+        <translation>
+            <numerusform>%n fichier parcouru</numerusform>
+            <numerusform>%n fichiers parcourus</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../src/app/ValidationSummaryText.cpp" line="62"/>
+        <source>in %1</source>
+        <translation>dans %1</translation>
     </message>
 </context>
 </TS>

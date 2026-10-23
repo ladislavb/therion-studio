@@ -4,6 +4,7 @@
 #include "MainWindowValidationFixApplyService.h"
 #include "ValidationResultsMarkdownExporter.h"
 #include "../editor/ValidationSeverityStyle.h"
+#include "ValidationSummaryText.h"
 #include "text_editor/TextEditorValidationCatalog.h"
 #include "text_editor/TextEditorTab.h"
 #include "text_editor/map_editor/MapEditorTab.h"
@@ -39,6 +40,8 @@
 #include <QTreeView>
 #include <QVBoxLayout>
 #include <QScrollBar>
+
+#include <algorithm>
 
 namespace
 {
@@ -99,6 +102,8 @@ int severityRank(TherionStudio::TherionSourceDiagnosticSeverity severity)
         return 2;
     case TherionStudio::TherionSourceDiagnosticSeverity::Warning:
         return 1;
+    case TherionStudio::TherionSourceDiagnosticSeverity::Information:
+        return 0;
     }
     return 1;
 }
@@ -188,6 +193,14 @@ QString projectValidationResultSignature(const QString &projectRootPath,
     return QString::fromLatin1(hash.result().toHex());
 }
 
+// Information findings are notes, not problems, so the rail indicator leaves them out.
+int validationProblemCount(const QVector<TherionStudio::TherionSourceDiagnostic> &diagnostics)
+{
+    return static_cast<int>(std::count_if(diagnostics.cbegin(), diagnostics.cend(), [](const auto &diagnostic) {
+        return diagnostic.severity != TherionStudio::TherionSourceDiagnosticSeverity::Information;
+    }));
+}
+
 TherionStudio::TherionSourceDiagnosticSeverity highestDiagnosticSeverity(
     const QVector<TherionStudio::TherionSourceDiagnostic> &diagnostics)
 {
@@ -234,6 +247,8 @@ QString severityLabel(TherionStudio::TherionSourceDiagnosticSeverity severity)
         return QCoreApplication::translate("TherionStudio::MainWindow", "Error");
     case TherionStudio::TherionSourceDiagnosticSeverity::Warning:
         return QCoreApplication::translate("TherionStudio::MainWindow", "Warning");
+    case TherionStudio::TherionSourceDiagnosticSeverity::Information:
+        return QCoreApplication::translate("TherionStudio::MainWindow", "Information");
     }
     return QCoreApplication::translate("TherionStudio::MainWindow", "Warning");
 }
@@ -401,6 +416,8 @@ void MainWindow::buildValidationSidebar()
 
     validationStatusLabel_ = new QLabel(validationPage);
     validationStatusLabel_->setWordWrap(true);
+    // Plain messages stay plain; the result summary is rich text (coloured counts).
+    validationStatusLabel_->setTextFormat(Qt::AutoText);
     validationLayout->addWidget(validationStatusLabel_);
     updateProjectValidationStatusMessage();
 
@@ -510,14 +527,14 @@ void MainWindow::triggerValidateDocumentForActiveDocument()
         clearValidationRailIndicator();
         pendingValidationFixNavigation_ = false;
         if (validationStatusLabel_ != nullptr) {
-            validationStatusLabel_->setText(tr("No validation problems found in %1.").arg(documentLabel));
+            validationStatusLabel_->setText(TherionStudio::ValidationSummaryText::html({}, TherionStudio::ValidationSummaryText::documentScope(documentLabel), qApp->palette()));
         }
         handleValidationSelectionChanged({}, {});
         showSidebarPane(SidebarPane::Validation);
         return;
     }
 
-    validationProblemCount_ = validation.diagnostics.size();
+    validationProblemCount_ = validationProblemCount(validation.diagnostics);
     validationHighestSeverity_ = highestDiagnosticSeverity(validation.diagnostics);
     updateValidationRailIndicator();
 
@@ -562,9 +579,10 @@ void MainWindow::triggerValidateDocumentForActiveDocument()
     validationResultsModel_->appendRow(fileItem);
 
     if (validationStatusLabel_ != nullptr) {
-        validationStatusLabel_->setText(tr("%1 validation problem(s) found in %2.")
-                                            .arg(validation.diagnostics.size())
-                                            .arg(documentLabel));
+        validationStatusLabel_->setText(
+            TherionStudio::ValidationSummaryText::html(validation.diagnostics,
+                                                       TherionStudio::ValidationSummaryText::documentScope(documentLabel),
+                                                       qApp->palette()));
     }
     if (validationResultsTree_ != nullptr) {
         validationResultsTree_->expandAll();
@@ -796,13 +814,16 @@ void MainWindow::updateOpenEditorProjectValidationDiagnostics()
         }
     }
 
-    auto applyToDocumentWidget = [&diagnosticsByPath](QWidget *widget) {
+    auto applyToDocumentWidget = [this, &diagnosticsByPath](QWidget *widget) {
         if (widget == nullptr) {
             return;
         }
 
         if (auto *textTab = qobject_cast<TherionStudio::TextEditorTab *>(widget)) {
-            textTab->setProjectValidationDiagnostics(diagnosticsByPath.value(normalizedValidationPath(textTab->filePath())));
+            const QString path = normalizedValidationPath(textTab->filePath());
+            textTab->setReadAsSourceType(
+                validationReadAsTypes_.value(path, TherionStudio::TherionSourceDocumentType::Unknown));
+            textTab->setProjectValidationDiagnostics(diagnosticsByPath.value(path));
             return;
         }
 
@@ -844,6 +865,10 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
     }
     if (validationResultsModel_ == nullptr) {
         return;
+    }
+    validationReadAsTypes_.clear();
+    for (auto it = result.readAsTypes.cbegin(); it != result.readAsTypes.cend(); ++it) {
+        validationReadAsTypes_.insert(normalizedValidationPath(it.key()), it.value());
     }
     auto logFinish = [&]() {
         if (!diagnosticProjectValidationLoggingEnabled()) {
@@ -967,19 +992,22 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
         updateOpenEditorProjectValidationDiagnostics();
         diagnosticsApplyMs = diagnosticsTimer.elapsed();
         if (validationStatusLabel_ != nullptr) {
-            validationStatusLabel_->setText(tr("No validation problems found in %1 searched file(s).")
-                                                .arg(result.searchedFileCount));
+            validationStatusLabel_->setText(
+                TherionStudio::ValidationSummaryText::html(
+                    {}, TherionStudio::ValidationSummaryText::projectScope(result.searchedFileCount), qApp->palette()));
         }
         handleValidationSelectionChanged({}, {});
         logFinish();
         return;
     }
 
-    validationProblemCount_ = result.findings.size();
-    validationHighestSeverity_ = TherionStudio::TherionSourceDiagnosticSeverity::Warning;
+    QVector<TherionStudio::TherionSourceDiagnostic> findingDiagnostics;
+    findingDiagnostics.reserve(result.findings.size());
     for (const TherionStudio::ProjectValidationScanner::Finding &finding : result.findings) {
-        validationHighestSeverity_ = higherSeverity(validationHighestSeverity_, finding.diagnostic.severity);
+        findingDiagnostics.append(finding.diagnostic);
     }
+    validationProblemCount_ = validationProblemCount(findingDiagnostics);
+    validationHighestSeverity_ = highestDiagnosticSeverity(findingDiagnostics);
     updateValidationRailIndicator();
 
     QHash<QString, QStandardItem *> fileItemsByPath;
@@ -1085,12 +1113,12 @@ void MainWindow::handleProjectValidationFinished(TherionStudio::ProjectValidatio
     diagnosticsApplyMs = diagnosticsTimer.elapsed();
 
     if (validationStatusLabel_ != nullptr) {
-        QString status = tr("%1 validation problem(s) found in %2 searched file(s).")
-                             .arg(result.findings.size())
-                             .arg(result.searchedFileCount);
+        QString status = TherionStudio::ValidationSummaryText::html(
+            findingDiagnostics, TherionStudio::ValidationSummaryText::projectScope(result.searchedFileCount), qApp->palette());
         if (result.limitReached) {
-            status += QLatin1Char(' ');
-            status += tr("Showing the first %1 problem(s).").arg(result.findings.size());
+            status += QStringLiteral("<span>. %1</span>")
+                          .arg(tr("Showing the first %n findings.", nullptr, static_cast<int>(result.findings.size()))
+                                   .toHtmlEscaped());
         }
         validationStatusLabel_->setText(status);
     }

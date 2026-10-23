@@ -51,6 +51,33 @@ QHash<int, TherionStationNameTransform> therionScrapStationNameTransformsByStart
     return transforms;
 }
 
+std::optional<TherionSourceLogicalArgumentRange> therionPointStationNameRange(
+    const TherionSourceLogicalCommand &command)
+{
+    if (command.metadata.commandName != QStringLiteral("point")
+        || command.positionalArgumentRanges.size() < 3) {
+        return std::nullopt;
+    }
+
+    const QString pointType = command.positionalArgumentRanges.at(2).text.trimmed().section(QLatin1Char(':'), 0, 0);
+    if (pointType.compare(QStringLiteral("station"), Qt::CaseInsensitive) != 0) {
+        return std::nullopt;
+    }
+
+    for (const TherionSourceLogicalOptionEntryRange &optionEntry : command.optionEntryRanges) {
+        if (normalizedCommandOptionName(optionEntry.key) != QStringLiteral("name")) {
+            continue;
+        }
+        for (const TherionSourceLogicalArgumentRange &valueRange : optionEntry.valueRanges) {
+            if (!valueRange.text.trimmed().isEmpty()) {
+                return valueRange;
+            }
+        }
+    }
+
+    return std::nullopt;
+}
+
 std::optional<TherionStationNameTransform> therionActiveScrapStationNameTransform(
     const TherionSourceLogicalCommand &command,
     const QHash<int, TherionStationNameTransform> &transformsByStartLine)

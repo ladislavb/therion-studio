@@ -4,6 +4,7 @@
 #include "TherionCommandSyntax.h"
 #include "TherionDocumentEditor.h"
 #include "TherionDocumentParser.h"
+#include "TherionRepeatedStationPoints.h"
 #include "TherionSourceDocument.h"
 #include "TherionSourceLogicalDocument.h"
 #include "TherionSourceReferenceResolver.h"
@@ -25,6 +26,9 @@ struct LineCleanupResult
 {
     QString text;
     bool changed = false;
+    // Therion rejects the original line (a malformed -subtype, or a quoted option-like token it reads as an unknown
+    // option); a plain repeated option is accepted.
+    bool therionRejects = false;
     int columnNumber = 1;
     int columnLength = 0;
 };
@@ -470,17 +474,18 @@ TherionParsedLine parseValidatorSyntheticLine(const QString &lineText)
     return TherionDocumentParser::parseLine(lineText);
 }
 
-QString objectIdScopeKey(const QVector<TherionSourceBlockFrame> &blockStack)
+// Therion keys named objects by survey namespace, so scraps and `-namespace off` surveys add nothing.
+QString surveyNamespaceScopeKey(const QVector<TherionSourceBlockFrame> &blockStack)
 {
     QStringList parts;
-    parts.reserve(blockStack.size());
     for (const TherionSourceBlockFrame &frame : blockStack) {
-        const TherionParsedLine parsedLine = parseValidatorSyntheticLine(frame.lineText);
-        QString id;
-        if (parsedLine.tokens.size() > 1) {
-            id = parsedLine.tokens.at(1).trimmed();
+        if (frame.directive != QStringLiteral("survey")) {
+            continue;
         }
-        parts.append(frame.directive + QLatin1Char(':') + id);
+        const TherionParsedLine parsedLine = parseValidatorSyntheticLine(frame.lineText);
+        if (surveyCommandCreatesNamespace(parsedLine)) {
+            parts.append(parsedLine.tokens.value(1).trimmed());
+        }
     }
     return parts.join(QLatin1Char('/'));
 }
@@ -502,25 +507,7 @@ QString scrapObjectScopeKey(const QVector<TherionSourceBlockFrame> &blockStack)
     return parts.join(QLatin1Char('/'));
 }
 
-QString duplicateObjectIdKey(const TherionSourceLogicalCommand &command,
-                             const QString &objectId)
-{
-    return QStringLiteral("object\n")
-        + objectIdScopeKey(command.blockStackBefore)
-        + QLatin1Char('\n')
-        + objectId.trimmed();
-}
-
-QString duplicateNamespaceNameKey(const TherionSourceLogicalCommand &command,
-                                  const QString &name)
-{
-    return QStringLiteral("namespace\n")
-        + objectIdScopeKey(command.blockStackBefore)
-        + QLatin1Char('\n')
-        + name.trimmed();
-}
-
-bool commandUsesScrapObjectIdNamespace(const QString &commandName)
+bool commandUsesObjectIdOption(const QString &commandName)
 {
     return commandName == QStringLiteral("line")
         || commandName == QStringLiteral("point")
@@ -633,7 +620,7 @@ std::optional<TherionSourceLogicalArgumentRange> commandObjectIdentityRange(
         return command.positionalArgumentRanges.constFirst();
     }
 
-    if (!commandUsesScrapObjectIdNamespace(commandName)) {
+    if (!commandUsesObjectIdOption(commandName)) {
         return std::nullopt;
     }
 
@@ -653,13 +640,11 @@ std::optional<QString> commandDuplicateIdentityKey(const TherionSourceLogicalCom
                                                    const QString &identity)
 {
     const QString commandName = commandNameForDuplicateValidation(command);
-    if (commandUsesScrapObjectIdNamespace(commandName)) {
-        return duplicateObjectIdKey(command, identity);
+    // Object IDs share the namespace with survey, map and scrap names.
+    if (!commandUsesObjectIdOption(commandName) && !commandUsesParentNamespaceName(commandName)) {
+        return std::nullopt;
     }
-    if (commandUsesParentNamespaceName(commandName)) {
-        return duplicateNamespaceNameKey(command, identity);
-    }
-    return std::nullopt;
+    return surveyNamespaceScopeKey(command.blockStackBefore) + QLatin1Char('\n') + identity.trimmed();
 }
 
 TherionSourceDiagnostic diagnosticForDuplicateObjectId(
@@ -827,11 +812,15 @@ QString cleanupInvalidSubtypeValues(const QString &lineText,
 
 QString cleanupDuplicateOptions(const QString &lineText,
                                 bool *changed,
+                                bool *removedQuotedToken,
                                 int *firstChangedColumnNumber,
                                 int *firstChangedColumnLength)
 {
     if (changed != nullptr) {
         *changed = false;
+    }
+    if (removedQuotedToken != nullptr) {
+        *removedQuotedToken = false;
     }
 
     QString updated = lineText;
@@ -873,6 +862,8 @@ QString cleanupDuplicateOptions(const QString &lineText,
                                    firstChangedColumnNumber,
                                    firstChangedColumnLength);
         }
+        const bool quotedToken = removeStartTokenIndex < parsedLine.tokenSpans.size()
+            && parsedLine.tokenSpans.at(removeStartTokenIndex).type == TherionTokenType::QuotedString;
         updated = lineWithRemovedTokenRange(updated,
                                             parsedLine,
                                             removeStartTokenIndex,
@@ -883,6 +874,9 @@ QString cleanupDuplicateOptions(const QString &lineText,
         }
         if (changed != nullptr) {
             *changed = true;
+        }
+        if (removedQuotedToken != nullptr && quotedToken) {
+            *removedQuotedToken = true;
         }
     }
 }
@@ -899,12 +893,15 @@ LineCleanupResult cleanupLine(const QString &lineText)
                                               &result.columnLength);
 
     bool duplicateChanged = false;
+    bool removedQuotedToken = false;
     result.text = cleanupDuplicateOptions(result.text,
                                           &duplicateChanged,
+                                          &removedQuotedToken,
                                           &result.columnNumber,
                                           &result.columnLength);
 
     result.changed = subtypeChanged || duplicateChanged;
+    result.therionRejects = subtypeChanged || removedQuotedToken;
     return result;
 }
 
@@ -913,12 +910,15 @@ TherionSourceDiagnostic diagnosticForLineCleanup(const TherionSourceLogicalComma
 {
     TherionSourceDiagnostic diagnostic;
     diagnostic.code = QStringLiteral("malformed-option-token");
-    diagnostic.severity = TherionSourceDiagnosticSeverity::Error;
+    diagnostic.severity = cleanup.therionRejects ? TherionSourceDiagnosticSeverity::Error
+                                                 : TherionSourceDiagnosticSeverity::Warning;
     diagnostic.lineNumber = command.startLineNumber;
     diagnostic.columnNumber = cleanup.columnNumber;
     diagnostic.columnLength = cleanup.columnLength;
     diagnostic.title = QCoreApplication::translate("TherionStudio::TherionSourceValidator", "Malformed or duplicate option token");
-    diagnostic.message = QCoreApplication::translate("TherionStudio::TherionSourceValidator", "This command contains an option-like token or duplicate option/value pair that Therion may reject.");
+    diagnostic.message = cleanup.therionRejects
+        ? QCoreApplication::translate("TherionStudio::TherionSourceValidator", "This command contains an option-like token or duplicate option/value pair that Therion may reject.")
+        : QCoreApplication::translate("TherionStudio::TherionSourceValidator", "This command repeats an option with the same value; Therion accepts it, and the repeat can be removed.");
     diagnostic.currentText = command.text;
     diagnostic.suggestedText = cleanup.text;
     diagnostic.hasFix = true;
@@ -1234,6 +1234,28 @@ void appendBlockDiagnostics(TherionSourceValidationResult *result,
         if (!line.hasUnmatchedClose()) {
             continue;
         }
+        // In a layout, endcode is a layout setting that ends code mode, so Therion ignores one with no code block
+        // open (checked with Therion 6.4.0); other stray closes make Therion fail.
+        if (line.normalizedDirective == QStringLiteral("endcode")
+            && line.currentBlockDirective == QStringLiteral("layout")) {
+            TherionSourceDiagnostic diagnostic = diagnosticForLine(
+                line.sourceLine,
+                QStringLiteral("unmatched-block-close"),
+                QCoreApplication::translate("TherionStudio::TherionSourceValidator", "Unmatched block close"),
+                QCoreApplication::translate("TherionStudio::TherionSourceValidator",
+                                            "`endcode` has no open `code` block; Therion ignores it."),
+                TherionSourceDiagnosticSeverity::Warning);
+            diagnostic.hasFix = true;
+            diagnostic.suggestedText = QString();
+            diagnostic.fix.startOffset = line.sourceLine.startOffset;
+            diagnostic.fix.length = line.sourceLine.textLength + line.sourceLine.lineEndingLength;
+            diagnostic.fix.replacementText = QString();
+            diagnostic.fix.description = QCoreApplication::translate("TherionStudio::TherionSourceValidator",
+                                                                     "Remove line %1")
+                                             .arg(line.sourceLine.lineNumber);
+            result->diagnostics.append(diagnostic);
+            continue;
+        }
         result->diagnostics.append(diagnosticForLine(line.sourceLine,
                                                      QStringLiteral("unmatched-block-close"),
                                                      QCoreApplication::translate("TherionStudio::TherionSourceValidator", "Unmatched block close"),
@@ -1284,35 +1306,6 @@ bool catalogCommandAllowedInContext(const TherionSourceValidationCatalog &catalo
         || contexts.contains(context, Qt::CaseInsensitive);
 }
 
-TherionSourceDiagnostic diagnosticForUnclosedCodeBeforeParentCommand(const TherionSourceDocument &sourceDocument,
-                                                                     const TherionSourceBlockFrame &codeBlock,
-                                                                     const QString &parentCommand,
-                                                                     const QString &parentContext)
-{
-    TherionSourceDiagnostic diagnostic;
-    diagnostic.code = QStringLiteral("unclosed-block");
-    diagnostic.severity = TherionSourceDiagnosticSeverity::Error;
-    diagnostic.lineNumber = codeBlock.lineNumber;
-    diagnostic.columnNumber = 1;
-    diagnostic.columnLength = codeBlock.directive.size();
-    diagnostic.title = QCoreApplication::translate("TherionStudio::TherionSourceValidator", "Unclosed block");
-    diagnostic.message = QCoreApplication::translate("TherionStudio::TherionSourceValidator", "Block `%1` should be closed with `%2` before command `%3` in `%4` context.")
-                             .arg(QStringLiteral("code"),
-                                  QStringLiteral("endcode"),
-                                  parentCommand,
-                                  parentContext);
-    diagnostic.currentText = codeBlock.lineText;
-
-    const TherionSourceDocumentLine *codeLine = sourceDocument.lineAtLineNumber(codeBlock.lineNumber);
-    if (codeLine != nullptr && !codeLine->sourceLine.parsed.tokenSpans.isEmpty()) {
-        const TherionParsedToken &token = codeLine->sourceLine.parsed.tokenSpans.constFirst();
-        diagnostic.columnNumber = token.start + 1;
-        diagnostic.columnLength = token.length;
-        diagnostic.currentText = codeLine->sourceLine.text;
-    }
-    return diagnostic;
-}
-
 void appendCodeBoundaryDiagnostics(TherionSourceValidationResult *result,
                                    const TherionSourceDocument &sourceDocument,
                                    const TherionSourceValidationCatalog &catalog)
@@ -1321,30 +1314,97 @@ void appendCodeBoundaryDiagnostics(TherionSourceValidationResult *result,
         return;
     }
 
-    QSet<int> reportedCodeOpenLines;
-    for (const TherionSourceDocumentLine &line : sourceDocument.lines()) {
-        if (line.blockStackBefore.size() < 2
-            || line.normalizedDirective.isEmpty()
-            || line.normalizedDirective == QStringLiteral("endcode")
-            || line.blockStackBefore.constLast().directive != QStringLiteral("code")) {
+    // One warning per code block that ends early. Therion accepts both cases (checked with 6.4.0): it reads a layout
+    // command inside a code block as a layout setting, and it ends the block at endlayout.
+    for (const TherionSourceBlockRange &range : sourceDocument.blockRanges()) {
+        if (range.directive != QStringLiteral("code") || range.parentStack.isEmpty()) {
             continue;
         }
 
-        const QString parentContext = line.blockStackBefore.at(line.blockStackBefore.size() - 2).directive;
-        if (!catalogCommandAllowedInContext(catalog, line.normalizedDirective, parentContext)) {
+        // Therion joins a line ending in a backslash (such as the TeX line break \\) with the next one, so the
+        // endcode after it reaches TeX or MetaPost as text and the code block does not end there.
+        if (range.isClosed() && !range.closedByEnclosingBlock && range.closeLineNumber > range.openLineNumber + 1) {
+            const TherionSourceDocumentLine *lastCodeLine = sourceDocument.lineAtLineNumber(range.closeLineNumber - 1);
+            if (lastCodeLine != nullptr
+                && TherionDocumentParser::continuationMarkerIndex(lastCodeLine->sourceLine.text) >= 0) {
+                result->diagnostics.append(diagnosticForLine(
+                    lastCodeLine->sourceLine,
+                    QStringLiteral("code-line-joins-endcode"),
+                    QCoreApplication::translate("TherionStudio::TherionSourceValidator", "Code line joins endcode"),
+                    QCoreApplication::translate("TherionStudio::TherionSourceValidator",
+                                                "This line ends in `\\`, so Therion joins the `endcode` on line %1 to it "
+                                                "and passes `endcode` to TeX or MetaPost as text.")
+                        .arg(range.closeLineNumber),
+                    TherionSourceDiagnosticSeverity::Warning));
+            }
+        }
+
+        const QString parentContext = range.parentStack.constLast().directive;
+        const int endLineNumber = range.isClosed() ? range.closeLineNumber : sourceDocument.lines().size() + 1;
+        const TherionSourceDocumentLine *firstParentCommand = nullptr;
+        bool onlyParentCommandsAfter = true;
+        for (int lineNumber = range.openLineNumber + 1; lineNumber < endLineNumber; ++lineNumber) {
+            const TherionSourceDocumentLine *line = sourceDocument.lineAtLineNumber(lineNumber);
+            if (line == nullptr || line->normalizedDirective.isEmpty()) {
+                continue;
+            }
+            const bool parentCommand = catalogCommandAllowedInContext(catalog, line->normalizedDirective, parentContext);
+            if (firstParentCommand == nullptr) {
+                firstParentCommand = parentCommand ? line : nullptr;
+            } else if (!parentCommand) {
+                onlyParentCommandsAfter = false;
+            }
+        }
+        if (firstParentCommand == nullptr && !range.closedByEnclosingBlock) {
             continue;
         }
 
-        const TherionSourceBlockFrame codeBlock = line.blockStackBefore.constLast();
-        if (reportedCodeOpenLines.contains(codeBlock.lineNumber)) {
-            continue;
+        TherionSourceDiagnostic diagnostic;
+        diagnostic.code = QStringLiteral("unclosed-block");
+        diagnostic.severity = TherionSourceDiagnosticSeverity::Warning;
+        diagnostic.lineNumber = range.openLineNumber;
+        diagnostic.columnNumber = leadingWhitespace(range.openLineText).size() + 1;
+        diagnostic.columnLength = range.directive.size();
+        diagnostic.title = QCoreApplication::translate("TherionStudio::TherionSourceValidator", "Unclosed block");
+        diagnostic.currentText = range.openLineText;
+        const TherionSourceDocumentLine *endLine = firstParentCommand;
+        if (firstParentCommand != nullptr) {
+            diagnostic.message = QCoreApplication::translate("TherionStudio::TherionSourceValidator",
+                                                             "Block `code` has no `endcode` before `%1` on line %2; "
+                                                             "Therion reads `%1` as a `%3` command.")
+                                     .arg(firstParentCommand->normalizedDirective)
+                                     .arg(firstParentCommand->sourceLine.lineNumber)
+                                     .arg(parentContext);
+        } else {
+            endLine = sourceDocument.lineAtLineNumber(range.closeLineNumber);
+            diagnostic.message = QCoreApplication::translate("TherionStudio::TherionSourceValidator",
+                                                             "Block `%1` has no `%2`; Therion ends it at `%3` on line %4.")
+                                     .arg(range.directive,
+                                          QStringLiteral("endcode"),
+                                          endLine != nullptr ? endLine->normalizedDirective : QString())
+                                     .arg(range.closeLineNumber);
         }
-        reportedCodeOpenLines.insert(codeBlock.lineNumber);
 
-        result->diagnostics.append(diagnosticForUnclosedCodeBeforeParentCommand(sourceDocument,
-                                                                                codeBlock,
-                                                                                line.normalizedDirective,
-                                                                                parentContext));
+        // Inserting endcode is only safe when the block has no endcode of its own and no code follows the point
+        // where it goes.
+        if (range.closedByEnclosingBlock && onlyParentCommandsAfter && endLine != nullptr) {
+            const int insertionLineNumber = endLine->sourceLine.lineNumber;
+            const QString insertedLine = leadingWhitespace(range.openLineText) + QStringLiteral("endcode");
+            diagnostic.suggestedText = QCoreApplication::translate("TherionStudio::TherionSourceValidator",
+                                                                   "Insert before line %1:\n%2")
+                                           .arg(insertionLineNumber)
+                                           .arg(insertedLine);
+            diagnostic.hasFix = true;
+            diagnostic.fix.startOffset = endLine->sourceLine.startOffset;
+            diagnostic.fix.length = 0;
+            diagnostic.fix.replacementText = insertedLine
+                + lineEndingForInsertion(sourceDocument, insertionLineNumber - 1, sourceDocument.toText());
+            diagnostic.fix.description = QCoreApplication::translate("TherionStudio::TherionSourceValidator",
+                                                                     "Insert %1 before line %2")
+                                             .arg(QStringLiteral("endcode"))
+                                             .arg(insertionLineNumber);
+        }
+        result->diagnostics.append(diagnostic);
     }
 }
 
@@ -1422,6 +1482,7 @@ TherionSourceValidationResult validateSourceDocuments(const TherionSourceDocumen
     TherionSourceValidationResult result;
     appendEmptyScrapObjectDiagnostics(&result, sourceDocument);
     appendDuplicateLinePointSmoothOffDiagnostics(&result, sourceDocument);
+    appendRepeatedStationPointDiagnostics(&result.diagnostics, sourceDocument, logicalDocument);
 
     QHash<QString, QSet<QString>> lineIdsByScrapScope;
     for (const TherionSourceLogicalCommand &command : logicalDocument.commands()) {

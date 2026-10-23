@@ -157,6 +157,9 @@ public:
     void triggerConvertToUtf8();
     TherionSourceValidationResult validateDocument() const;
     void setProjectValidationDiagnostics(const QVector<TherionSourceDiagnostic> &diagnostics);
+    // How Therion reads this file when that differs from its name (a .th file a config inputs); Unknown means by name.
+    void setReadAsSourceType(TherionSourceDocumentType sourceType);
+    [[nodiscard]] TherionSourceDocumentType sourceDocumentType() const;
     bool applyValidationFixes(const QVector<TherionSourceDiagnosticFix> &fixes);
     bool canUndo() const;
     bool canRedo() const;
@@ -419,6 +422,7 @@ private:
     TextEditorCommandMetadata commandMetadata_;
     mutable TherionSourceSnapshotCache validationSourceSnapshotCache_;
     QVector<TherionSourceDiagnostic> projectValidationDiagnostics_;
+    TherionSourceDocumentType readAsSourceType_ = TherionSourceDocumentType::Unknown;
     QCompleter *completionCompleter_ = nullptr;
     QStringListModel *completionModel_ = nullptr;
     QString lastValidationTooltipKey_;

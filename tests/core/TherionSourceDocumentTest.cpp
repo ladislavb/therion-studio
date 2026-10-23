@@ -1,5 +1,7 @@
 #include "../../src/core/TherionFileTypes.h"
 #include "../../src/core/TherionSourceDocument.h"
+#include "../../src/core/TherionSourceLogicalDocument.h"
+#include "../../src/core/TherionSourceValidator.h"
 
 #include <QString>
 #include <QtTest/QtTest>
@@ -14,6 +16,10 @@ class TherionSourceDocumentTest : public QObject
 
 private slots:
     void classifiesCommandAndBlockContentLines();
+    void treatsContinuedLinesAsPartOfTheirCommand();
+    void endsCodeBlockAtEndlayoutLikeTherion();
+    void warnsOnceForCodeBlockEndedEarly_data();
+    void warnsOnceForCodeBlockEndedEarly();
     void preservesCommentsBlankRowsAndMixedLineEndings();
     void exposesLosslessSourceTextSnapshot();
     void looksUpLinesByLineNumberAndOffset();
@@ -259,6 +265,123 @@ void TherionSourceDocumentTest::normalizesCentrelineAliases()
     QVERIFY(lineAt(document, 2)->role == TherionSourceLineRole::BlockContent);
     QVERIFY(!lineAt(document, 3)->hasUnmatchedClose());
 }
+}
+
+// A continued map-comment value whose next lines start with command words (plans/VALIDATION_ACCURACY_PLAN.md, V3).
+void TherionSourceDocumentTest::treatsContinuedLinesAsPartOfTheirCommand()
+{
+    const QString text = QStringLiteral(
+        "layout plan\n"
+        "  map-comment \"Line one<br>\\\n"
+        "Survey by A. Person,<br>\\\n"
+        "Map by B. Person\"\n"
+        "  map-header-bg on\n"
+        "  code tex-map\n"
+        "    \\def\\x{A}\n"
+        "  endcode\n"
+        "endlayout\n");
+    const TherionSourceDocument document = TherionSourceDocument::fromText(text);
+
+    QCOMPARE(document.sourceText().toText(), text);
+    QVERIFY(document.openBlocksAtEnd().isEmpty());
+    QCOMPARE(document.blockRanges().size(), 2);
+    QCOMPARE(document.blockRanges().at(0).directive, QStringLiteral("layout"));
+    QCOMPARE(document.blockRanges().at(0).closeLineNumber, 9);
+    QCOMPARE(document.blockRanges().at(1).directive, QStringLiteral("code"));
+    QCOMPARE(document.blockRanges().at(1).closeLineNumber, 8);
+
+    const TherionSourceDocumentLine *surveyWords = document.lineAtLineNumber(3);
+    QVERIFY(surveyWords != nullptr);
+    QVERIFY(surveyWords->continuesPreviousLine);
+    QVERIFY(!surveyWords->opensBlock);
+    QVERIFY(!document.lineAtLineNumber(2)->continuesPreviousLine);
+    QVERIFY(!document.lineAtLineNumber(5)->continuesPreviousLine);
+    QCOMPARE(document.lineAtLineNumber(5)->currentBlockDirective, QStringLiteral("layout"));
+
+    const TherionSourceLogicalDocument logical = TherionSourceLogicalDocument::fromSourceDocument(document);
+    const TherionSourceLogicalCommand &comment = logical.commands().at(1);
+    QCOMPARE(comment.normalizedDirective, QStringLiteral("map-comment"));
+    QCOMPARE(comment.physicalLineNumbers, QVector<int>({2, 3, 4}));
+    QCOMPARE(comment.parsed.tokens.size(), 2);
+}
+
+// Therion 6.4.0 ends a layout at endlayout even when its code block has no endcode, closing the code block too.
+void TherionSourceDocumentTest::endsCodeBlockAtEndlayoutLikeTherion()
+{
+    const QString text = QStringLiteral(
+        "layout plan\n"
+        "  code tex-map\n"
+        "    \\def\\x{A}\n"
+        "endlayout\n"
+        "layout local\n"
+        "  copy plan\n"
+        "  code tex-map\n"
+        "    \\def\\y{B}\n"
+        "  endcode\n"
+        "endlayout\n");
+    const TherionSourceDocument document = TherionSourceDocument::fromText(text);
+
+    QVERIFY(document.openBlocksAtEnd().isEmpty());
+    QCOMPARE(document.blockRanges().size(), 4);
+    const TherionSourceBlockRange &firstCode = document.blockRanges().at(1);
+    QCOMPARE(firstCode.directive, QStringLiteral("code"));
+    QCOMPARE(firstCode.closeLineNumber, 4);
+    QVERIFY(firstCode.closedByEnclosingBlock);
+    QCOMPARE(document.blockRanges().at(0).closeLineNumber, 4);
+    QVERIFY(!document.blockRanges().at(3).closedByEnclosingBlock);
+    QCOMPARE(document.lineAtLineNumber(6)->currentBlockDirective, QStringLiteral("layout"));
+}
+
+void TherionSourceDocumentTest::warnsOnceForCodeBlockEndedEarly_data()
+{
+    QTest::addColumn<QString>("block");
+    QTest::addColumn<QString>("expectedFixed");
+
+    // Therion 6.4.0 reads scale and legend inside an open code block as layout settings and ends it at endlayout.
+    QTest::newRow("only code before endlayout")
+        << QStringLiteral("  code tex-map\n    \\def\\x{A}\nendlayout\n")
+        << QStringLiteral("  code tex-map\n    \\def\\x{A}\n  endcode\nendlayout\n");
+    QTest::newRow("layout commands after code")
+        << QStringLiteral("  code tex-map\n    \\def\\x{A}\n  scale 1 200\n  legend on\nendlayout\n")
+        << QStringLiteral("  code tex-map\n    \\def\\x{A}\n  endcode\n  scale 1 200\n  legend on\nendlayout\n");
+    QTest::newRow("code after a layout command")
+        << QStringLiteral("  code tex-map\n    \\def\\x{A}\n  scale 1 200\n    \\def\\y{B}\nendlayout\n")
+        << QString();
+    QTest::newRow("layout command before endcode")
+        << QStringLiteral("  code tex-map\n    \\def\\x{A}\n  scale 1 200\n  endcode\nendlayout\n")
+        << QString();
+}
+
+void TherionSourceDocumentTest::warnsOnceForCodeBlockEndedEarly()
+{
+    QFETCH(QString, block);
+    QFETCH(QString, expectedFixed);
+
+    TherionSourceValidationCatalog catalog;
+    for (const QString &command : {QStringLiteral("layout"), QStringLiteral("endlayout"), QStringLiteral("code"),
+                                   QStringLiteral("endcode"), QStringLiteral("scale"), QStringLiteral("legend")}) {
+        catalog.commandNames.insert(command);
+        if (command != QStringLiteral("layout")) {
+            catalog.commandContexts.insert(command, {QStringLiteral("layout")});
+        }
+    }
+    const QString text = QStringLiteral("layout plan\n") + block;
+    const TherionSourceValidationResult result = TherionSourceValidator::validate(text, catalog);
+
+    QVector<TherionSourceDiagnostic> blockDiagnostics;
+    for (const TherionSourceDiagnostic &diagnostic : result.diagnostics) {
+        QVERIFY2(diagnostic.severity == TherionSourceDiagnosticSeverity::Warning, qPrintable(diagnostic.message));
+        if (diagnostic.code.contains(QStringLiteral("block"))) {
+            blockDiagnostics.append(diagnostic);
+        }
+    }
+    QCOMPARE(blockDiagnostics.size(), 1);
+    QCOMPARE(blockDiagnostics.first().lineNumber, 2);
+    QCOMPARE(blockDiagnostics.first().hasFix, !expectedFixed.isEmpty());
+    if (!expectedFixed.isEmpty()) {
+        QCOMPARE(TherionSourceValidator::applyFixes(text, {blockDiagnostics.first().fix}),
+                 QStringLiteral("layout plan\n") + expectedFixed);
+    }
 }
 
 int runTherionSourceDocumentTest(int argc, char **argv)

@@ -5,11 +5,18 @@ This repository keeps generated Therion command metadata in:
 - `resources/therion_command_catalog.json` (combined file)
 - `resources/therion_catalog/commands/*.json` (per-command files)
 
-The catalog is generated from a pinned snapshot of Therion `thbook` sources:
+The catalog is generated from a pinned snapshot of Therion (currently v6.4.0):
 
 - `therion/thbook/ch02.tex`
 - `therion/thbook/ch03.tex`
 - `therion/thbook/thbook.tex`
+- `therion/src/therion-core/*.h` and `*.cxx` (option tables and option parsing code)
+
+The book gives commands, syntax, contexts, and help text. For the object commands, option names, aliases, and
+value counts come from Therion's option tables instead (`thstok` tables read by each class's
+`get_cmd_option_desc`, and each exporter's `parse_options` for `export`), so the catalog accepts what Therion accepts. The generator writes the differences between the
+two to `docs/THERION_BOOK_DIFFERENCES.md`, the list of candidate fixes for the book. The snapshot directory
+`therion/` is not committed (it is ignored); recreate it with `scripts/update_thbook_snapshot.sh`.
 
 Source snapshot metadata is tracked in:
 
@@ -24,7 +31,7 @@ Source snapshot metadata is tracked in:
 ## Scripts
 
 - `scripts/update_thbook_snapshot.sh`
-  - Pulls `thbook` files from a specific upstream repo + ref (tag/commit).
+  - Pulls `thbook` files and `src/therion-core` from a specific upstream repo + ref (tag/commit).
   - Rewrites `docs/therion-source.lock` including SHA-256 hashes.
 
 - `scripts/generate_therion_catalog.py`
@@ -32,6 +39,7 @@ Source snapshot metadata is tracked in:
   - Produces `resources/therion_command_catalog.json`.
   - Produces per-command files in `resources/therion_catalog/commands/`.
   - Merges local per-command overrides from `resources/therion_catalog/overrides/`.
+  - Applies Therion's option tables and writes `docs/THERION_BOOK_DIFFERENCES.md` (`--report`).
 
 - `scripts/refresh_therion_catalog.sh`
   - End-to-end helper: optional snapshot update + catalog regeneration.
@@ -66,6 +74,7 @@ scripts/check_therion_catalog.sh
 - `therion/thbook/ch03.tex`
 - `therion/thbook/thbook.tex`
 - `docs/therion-source.lock`
+- `docs/THERION_BOOK_DIFFERENCES.md`
 - `resources/therion_command_catalog.json`
 - `resources/therion_catalog/commands/*.json`
 - `resources/therion_catalog/overrides/*.override.json` (if changed)

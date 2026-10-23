@@ -208,10 +208,7 @@ void TextEditorTab::refreshBlocksModeAvailability()
 void TextEditorTab::refreshHighlighterSourceDocumentType()
 {
     if (highlighter_ != nullptr) {
-        const TherionSourceDocumentType sourceType = filePath_.isEmpty()
-            ? therionSourceDocumentTypeForFileName(untitledDisplayName_)
-            : therionSourceDocumentTypeForFilePath(filePath_);
-        highlighter_->setSourceDocumentType(sourceType);
+        highlighter_->setSourceDocumentType(sourceDocumentType());
     }
 }
 

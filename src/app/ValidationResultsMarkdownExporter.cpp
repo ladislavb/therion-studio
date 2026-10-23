@@ -16,6 +16,8 @@ QString severityLabel(TherionStudio::TherionSourceDiagnosticSeverity severity)
         return TherionStudio::ValidationResultsMarkdownExporter::tr("Warning");
     case TherionStudio::TherionSourceDiagnosticSeverity::Error:
         return TherionStudio::ValidationResultsMarkdownExporter::tr("Error");
+    case TherionStudio::TherionSourceDiagnosticSeverity::Information:
+        return TherionStudio::ValidationResultsMarkdownExporter::tr("Information");
     }
     return TherionStudio::ValidationResultsMarkdownExporter::tr("Warning");
 }
@@ -125,6 +127,7 @@ QString ValidationResultsMarkdownExporter::exportFindings(const QVector<ProjectV
 
     int errorCount = 0;
     int warningCount = 0;
+    int informationCount = 0;
     for (const ProjectValidationScanner::Finding &finding : findings) {
         switch (finding.diagnostic.severity) {
         case TherionSourceDiagnosticSeverity::Error:
@@ -132,6 +135,9 @@ QString ValidationResultsMarkdownExporter::exportFindings(const QVector<ProjectV
             break;
         case TherionSourceDiagnosticSeverity::Warning:
             ++warningCount;
+            break;
+        case TherionSourceDiagnosticSeverity::Information:
+            ++informationCount;
             break;
         }
     }
@@ -160,6 +166,11 @@ QString ValidationResultsMarkdownExporter::exportFindings(const QVector<ProjectV
     markdown += QStringLiteral("- %1: %2\n").arg(ValidationResultsMarkdownExporter::tr("Findings")).arg(findings.size());
     markdown += QStringLiteral("- %1: %2\n").arg(ValidationResultsMarkdownExporter::tr("Errors")).arg(errorCount);
     markdown += QStringLiteral("- %1: %2\n").arg(ValidationResultsMarkdownExporter::tr("Warnings")).arg(warningCount);
+    if (informationCount > 0) {
+        markdown += QStringLiteral("- %1: %2\n")
+                        .arg(ValidationResultsMarkdownExporter::tr("Information"))
+                        .arg(informationCount);
+    }
     if (options.limitReached) {
         markdown += QStringLiteral("- %1\n")
                         .arg(ValidationResultsMarkdownExporter::tr(

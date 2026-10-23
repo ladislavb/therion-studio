@@ -35,6 +35,7 @@ private slots:
     void collectorUsesInMemoryOverrideText();
     void collectorIncludesInMemoryOnlySources();
     void collectorRetainsOversizedKnownFileWithoutText();
+    void collectorRecordsFilesConfigsReadAsConfig();
     void structureIndexSourceSetPreservesSnapshotInputs();
     void projectionCacheReusesUnchangedSourceDocuments();
     void projectionCacheInvalidatesWhenTextChanges();
@@ -280,6 +281,35 @@ void ProjectSourceSnapshotTest::collectorRetainsOversizedKnownFileWithoutText()
     QVERIFY(!snapshot.documents.constFirst().textLoaded);
     QVERIFY(snapshot.documents.constFirst().text.isEmpty());
     QVERIFY(snapshot.knownFilePaths().contains(normalizeProjectSourcePath(sourcePath)));
+}
+
+// Therion reads a file a config inputs as config text, whatever it is called (validation plan V4b).
+void ProjectSourceSnapshotTest::collectorRecordsFilesConfigsReadAsConfig()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    const QDir projectDir(tempDir.path());
+    QVERIFY(projectDir.mkpath(QStringLiteral("layouts")));
+    QVERIFY(writeTextFile(projectDir.filePath(QStringLiteral("thconfig")),
+                          QStringLiteral("source cave.th\ninput layouts/common.th\n")));
+    QVERIFY(writeTextFile(projectDir.filePath(QStringLiteral("layouts/common.th")),
+                          QStringLiteral("input colours.th\nlayout common\n  scale 1 500\nendlayout\n")));
+    QVERIFY(writeTextFile(projectDir.filePath(QStringLiteral("layouts/colours.th")),
+                          QStringLiteral("layout colours\nendlayout\n")));
+    QVERIFY(writeTextFile(projectDir.filePath(QStringLiteral("cave.th")),
+                          QStringLiteral("survey cave\n  input part.th\nendsurvey\n")));
+    QVERIFY(writeTextFile(projectDir.filePath(QStringLiteral("part.th")), QStringLiteral("survey part\nendsurvey\n")));
+
+    const ProjectSourceSnapshot snapshot = collectProjectSourceSnapshot(tempDir.path(), {}, {}, -1);
+    QHash<QString, TherionSourceDocumentType> types;
+    for (const ProjectSourceDocument &document : snapshot.documents) {
+        types.insert(QDir(tempDir.path()).relativeFilePath(document.normalizedPath), projectSourceDocumentType(document));
+    }
+    QCOMPARE(types.value(QStringLiteral("layouts/common.th")), TherionSourceDocumentType::TherionConfig);
+    QCOMPARE(types.value(QStringLiteral("layouts/colours.th")), TherionSourceDocumentType::TherionConfig);
+    QCOMPARE(types.value(QStringLiteral("cave.th")), TherionSourceDocumentType::TherionSource);
+    QCOMPARE(types.value(QStringLiteral("part.th")), TherionSourceDocumentType::TherionSource);
+    QCOMPARE(types.value(QStringLiteral("thconfig")), TherionSourceDocumentType::TherionConfig);
 }
 
 void ProjectSourceSnapshotTest::structureIndexSourceSetPreservesSnapshotInputs()

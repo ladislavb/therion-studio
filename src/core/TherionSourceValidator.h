@@ -16,6 +16,8 @@ enum class TherionSourceDiagnosticSeverity
 {
     Warning,
     Error,
+    // A note, not a problem: shown in validation but not counted as a problem.
+    Information,
 };
 
 struct TherionSourceDiagnosticFix

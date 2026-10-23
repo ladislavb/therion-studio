@@ -6,6 +6,21 @@
 
 namespace TherionStudio
 {
+namespace
+{
+// Counts option values, ignoring line-continuation markers.
+int valueCountWithoutContinuation(const QStringList &valueTokens)
+{
+    int count = 0;
+    for (const QString &token : valueTokens) {
+        if (token.trimmed() != QStringLiteral("\\")) {
+            ++count;
+        }
+    }
+    return count;
+}
+}
+
 bool commandTokenActsAsOptionBoundary(const TherionParsedLine &parsedLine, int tokenIndex)
 {
     if (tokenIndex < 0 || tokenIndex >= parsedLine.tokens.size()) {
@@ -22,21 +37,7 @@ bool commandTokenActsAsOptionBoundary(const TherionParsedLine &parsedLine, int t
 
 int nextCommandOptionIndex(const TherionParsedLine &parsedLine, int optionIndex)
 {
-    bool inBracketedValue = false;
     for (int scan = optionIndex + 1; scan < parsedLine.tokens.size(); ++scan) {
-        const QString token = parsedLine.tokens.at(scan).trimmed();
-        if (inBracketedValue) {
-            if (token.contains(QLatin1Char(']'))) {
-                inBracketedValue = false;
-            }
-            continue;
-        }
-
-        if (scan == optionIndex + 1 && token.contains(QLatin1Char('[')) && !token.contains(QLatin1Char(']'))) {
-            inBracketedValue = true;
-            continue;
-        }
-
         if (commandTokenActsAsOptionBoundary(parsedLine, scan)) {
             return scan;
         }
@@ -133,21 +134,7 @@ bool commandOptionNameMatches(const QString &token, const QString &optionName)
 
 int nextCommandOptionIndex(const QStringList &tokens, int optionIndex)
 {
-    bool inBracketedValue = false;
     for (int scan = optionIndex + 1; scan < tokens.size(); ++scan) {
-        const QString token = tokens.at(scan).trimmed();
-        if (inBracketedValue) {
-            if (token.contains(QLatin1Char(']'))) {
-                inBracketedValue = false;
-            }
-            continue;
-        }
-
-        if (scan == optionIndex + 1 && token.contains(QLatin1Char('[')) && !token.contains(QLatin1Char(']'))) {
-            inBracketedValue = true;
-            continue;
-        }
-
         if (commandTokenActsAsOptionBoundary(tokens, scan)) {
             return scan;
         }
@@ -176,45 +163,13 @@ QStringList commandLogicalOptionValueTokens(const QStringList &tokens, int optio
 int commandLogicalOptionValueCount(const QStringList &tokens, int optionIndex)
 {
     const QStringList valueTokens = commandLogicalOptionValueTokens(tokens, optionIndex);
-    int count = 0;
-    for (int index = 0; index < valueTokens.size(); ++index) {
-        const QString token = valueTokens.at(index).trimmed();
-        if (token == QStringLiteral("\\")) {
-            continue;
-        }
-        if (token.startsWith(QLatin1Char('['))) {
-            ++count;
-            while (index + 1 < valueTokens.size()
-                   && !valueTokens.at(index).contains(QLatin1Char(']'))) {
-                ++index;
-            }
-            continue;
-        }
-        ++count;
-    }
-    return count;
+    return valueCountWithoutContinuation(valueTokens);
 }
 
 int commandLogicalOptionValueCount(const TherionParsedLine &parsedLine, int optionIndex)
 {
     const QStringList valueTokens = commandLogicalOptionValueTokens(parsedLine, optionIndex);
-    int count = 0;
-    for (int index = 0; index < valueTokens.size(); ++index) {
-        const QString token = valueTokens.at(index).trimmed();
-        if (token == QStringLiteral("\\")) {
-            continue;
-        }
-        if (token.startsWith(QLatin1Char('['))) {
-            ++count;
-            while (index + 1 < valueTokens.size()
-                   && !valueTokens.at(index).contains(QLatin1Char(']'))) {
-                ++index;
-            }
-            continue;
-        }
-        ++count;
-    }
-    return count;
+    return valueCountWithoutContinuation(valueTokens);
 }
 
 QStringList commandOptionValueTokens(const QStringList &tokens, const QString &optionName)
@@ -241,6 +196,15 @@ QString commandOptionValue(const QStringList &tokens, const QString &optionName)
 {
     const QStringList values = commandOptionValueTokens(tokens, optionName);
     return values.isEmpty() ? QString() : values.constFirst().trimmed();
+}
+
+bool surveyCommandCreatesNamespace(const TherionParsedLine &parsedLine)
+{
+    QString namespaceValue = commandOptionValue(parsedLine.tokens, QStringLiteral("namespace"));
+    if (namespaceValue.isEmpty()) {
+        namespaceValue = commandOptionValue(parsedLine.tokens, QStringLiteral("-namespace"));
+    }
+    return namespaceValue.compare(QStringLiteral("off"), Qt::CaseInsensitive) != 0;
 }
 
 QHash<QString, QString> commandOptionValuesByName(const QStringList &tokens)

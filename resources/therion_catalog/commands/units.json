@@ -42,8 +42,8 @@
     },
     {
       "raw": "<units>",
-      "name": "<units>",
-      "signature": "<units>",
+      "name": "[<units>]",
+      "signature": "[<units>]",
       "option_key": "",
       "value_arity": "1",
       "value_domain": "keyword",

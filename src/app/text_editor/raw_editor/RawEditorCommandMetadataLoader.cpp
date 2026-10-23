@@ -2,6 +2,7 @@
 
 #include "../TextEditorCommandMetadata.h"
 
+#include <QCoreApplication>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QJsonValue>
@@ -273,7 +274,10 @@ void RawEditorCommandMetadataLoader::applyCommandOptionCatalogMetadata(const QSt
     for (const QJsonValue &value : optionsArray) {
         const QJsonObject optionObject = value.toObject();
         const QString signature = optionObject.value(QStringLiteral("signature")).toString().trimmed();
-        const QString description = optionObject.value(QStringLiteral("description")).toString().trimmed();
+        // Options Therion accepts that the book does not describe anywhere carry no help text of their own.
+        const QString description = optionObject.value(QStringLiteral("described_in_book")).toBool(true)
+            ? optionObject.value(QStringLiteral("description")).toString().trimmed()
+            : QCoreApplication::translate("TherionStudio::TextEditorTab", "Not described in the Therion book.");
         const QString optionKey = optionObject.value(QStringLiteral("option_key")).toString().trimmed();
         const QString valueArity = canonicalOptionArityToken(optionObject.value(QStringLiteral("value_arity")).toString());
         const QString optionLine = description.isEmpty() ? signature : QStringLiteral("%1 = %2").arg(signature, description);

@@ -108,7 +108,7 @@ void ProjectSourceProjectionCache::clear()
 TherionSourceDocumentMetadata ProjectSourceProjectionCache::metadataForDocument(const ProjectSourceDocument &document)
 {
     TherionSourceDocumentMetadata metadata;
-    metadata.sourceType = therionSourceDocumentTypeForFilePath(document.normalizedPath);
+    metadata.sourceType = projectSourceDocumentType(document);
     return metadata;
 }
 

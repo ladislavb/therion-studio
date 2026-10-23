@@ -287,6 +287,8 @@ QVector<MapSceneEntry> collectMapSceneEntries(const QVector<TherionParsedLine> &
 QVector<MapSceneEntry> collectMapSceneEntries(const QVector<TherionSourceLogicalCommand> &commands);
 
 QRectF geometryBoundsForFeatures(const QVector<MapGeometryFeature> &features);
+// Values of a scrap's -scale option, with a bracketed value split into its parts.
+QStringList scrapScaleValueTokens(const QStringList &tokens);
 std::optional<qreal> sourceUnitsPerMeterFromScrapScale(const QStringList &tokens);
 CoordinateTransform coordinateTransformFromScrapScale(const QStringList &tokens);
 QPointF mapGeometryPointToPreview(const QPointF &point, const QRectF &sourceBounds, const QRectF &targetBounds);

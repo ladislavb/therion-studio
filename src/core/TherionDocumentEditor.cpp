@@ -125,15 +125,7 @@ int nameTokenIndexForCategory(const QString &category, const TherionParsedLine &
     return -1;
 }
 
-QString quoteToken(const QString &token, QChar quoteCharacter)
-{
-    QString quotedToken = token;
-    quotedToken.replace(QLatin1Char('\\'), QStringLiteral("\\\\"));
-    quotedToken.replace(quoteCharacter, QStringLiteral("\\") + quoteCharacter);
-    return QString(quoteCharacter) + quotedToken + QString(quoteCharacter);
-}
-
-QString replacementTokenForLine(const QString &newName, const QString &lineText, const TherionParsedToken &tokenSpan)
+QString replacementTokenForLine(const QString &newName, const TherionParsedToken &tokenSpan)
 {
     const QString trimmedName = newName.trimmed();
     const bool requiresQuoting = trimmedName.isEmpty()
@@ -143,10 +135,7 @@ QString replacementTokenForLine(const QString &newName, const QString &lineText,
         return trimmedName;
     }
 
-    const QChar quoteCharacter = (tokenSpan.start < lineText.size() && lineText.at(tokenSpan.start) == QLatin1Char('\''))
-        ? QLatin1Char('\'')
-        : QLatin1Char('"');
-    return quoteToken(trimmedName, quoteCharacter);
+    return quoteTherionArgument(trimmedName);
 }
 
 bool insertPhysicalSourceLines(QString *contents,
@@ -256,7 +245,7 @@ QString serializedInlineToken(const QString &value)
         return trimmed;
     }
 
-    return quoteToken(trimmed, QLatin1Char('"'));
+    return quoteTherionArgument(trimmed);
 }
 
 QString sanitizeScrapName(const QString &preferredName)
@@ -1073,7 +1062,16 @@ bool upsertSingleValueOption(QString *lineText, const QString &optionName, const
         : QStringLiteral("-%1").arg(optionName.trimmed());
     TherionParsedLine parsedLine = parseMutableLineText(*lineText);
     const int existingOptionIndex = optionTokenIndex(parsedLine, normalizedOption);
-    const QString serializedValue = serializedInlineToken(value);
+    QString serializedValue = serializedInlineToken(value);
+    // Keep a bracketed value bracketed, as the user wrote it.
+    if (!serializedValue.isEmpty()
+        && existingOptionIndex >= 0
+        && parsedLine.tokens.value(existingOptionIndex + 1).startsWith(QLatin1Char('['))) {
+        const QString bracketed = bracketedTherionValue(value);
+        if (!bracketed.isEmpty()) {
+            serializedValue = bracketed;
+        }
+    }
     if (serializedValue.isEmpty()) {
         if (existingOptionIndex < 0) {
             return true;
@@ -1186,19 +1184,8 @@ QPair<int, int> optionRangeWithBracketedValue(const TherionParsedLine &parsedLin
     int valueEndTokenIndex = -1;
     if (optionIndex + 1 < parsedLine.tokens.size()) {
         valueEndTokenIndex = optionIndex + 1;
-        const QString firstValueToken = parsedLine.tokens.at(valueEndTokenIndex);
-        if (firstValueToken.contains(QLatin1Char('[')) && !firstValueToken.contains(QLatin1Char(']'))) {
-            for (int index = valueEndTokenIndex + 1; index < parsedLine.tokens.size(); ++index) {
-                const QString token = parsedLine.tokens.at(index);
-                if (TherionTokenRules::tokenStartsOption(token)) {
-                    break;
-                }
-                valueEndTokenIndex = index;
-                if (token.contains(QLatin1Char(']'))) {
-                    break;
-                }
-            }
-        } else if (!firstValueToken.contains(QLatin1Char('['))) {
+        // A bracketed value is one token; otherwise the value runs to the next option.
+        if (!parsedLine.tokens.at(valueEndTokenIndex).startsWith(QLatin1Char('['))) {
             for (int index = valueEndTokenIndex + 1; index < parsedLine.tokens.size(); ++index) {
                 const QString token = parsedLine.tokens.at(index);
                 if (TherionTokenRules::tokenStartsOption(token)) {
@@ -1622,7 +1609,7 @@ bool TherionDocumentEditor::structureEntryNameRewriteEdits(const QString &conten
         return false;
     }
 
-    const QString replacementToken = replacementTokenForLine(trimmedName, lineText, tokenSpan);
+    const QString replacementToken = replacementTokenForLine(trimmedName, tokenSpan);
     edits->append(TherionSourceTextEdit{
         sourceLine.absoluteTokenStart(tokenSpan),
         tokenSpan.length,
@@ -3075,7 +3062,7 @@ bool TherionDocumentEditor::mapObjectQuickFieldsRewriteEdits(const QString &cont
             }
             return false;
         }
-        const QString replacement = replacementTokenForLine(normalizedIdentifier, lineText, parsedLine.tokenSpans.at(1));
+        const QString replacement = replacementTokenForLine(normalizedIdentifier, parsedLine.tokenSpans.at(1));
         if (!replaceTokenText(&lineText, parsedLine, 1, replacement)) {
             if (errorMessage != nullptr) {
                 *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "The selected scrap ID could not be rewritten.");

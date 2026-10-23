@@ -107,31 +107,6 @@ std::optional<qreal> metersPerScaleUnit(const QString &unitToken)
     return std::nullopt;
 }
 
-QStringList scrapScaleValueTokens(const QStringList &tokens)
-{
-    const int scaleOptionIndex = tokens.indexOf(QStringLiteral("-scale"));
-    if (scaleOptionIndex < 0 || scaleOptionIndex + 1 >= tokens.size()) {
-        return {};
-    }
-
-    QStringList values;
-    const QString firstValue = tokens.at(scaleOptionIndex + 1);
-    const bool bracketed = firstValue.contains(QLatin1Char('['));
-    for (int index = scaleOptionIndex + 1; index < tokens.size(); ++index) {
-        const QString token = tokens.at(index);
-        if (!bracketed && token.startsWith(QLatin1Char('-'))) {
-            break;
-        }
-
-        values.append(token);
-        if (!bracketed || token.contains(QLatin1Char(']'))) {
-            break;
-        }
-    }
-
-    return values;
-}
-
 struct ScrapScaleDefinition
 {
     bool valid = false;
@@ -447,6 +422,20 @@ qreal sceneCoordsScaleFactor(const QRectF &sourceBounds, const QRectF &previewBo
     const qreal targetWidth = qMax(1.0, previewBounds.width());
     const qreal targetHeight = qMax(1.0, previewBounds.height());
     return qMin(targetWidth / sourceWidth, targetHeight / sourceHeight);
+}
+
+QStringList scrapScaleValueTokens(const QStringList &tokens)
+{
+    const int scaleOptionIndex = tokens.indexOf(QStringLiteral("-scale"));
+    if (scaleOptionIndex < 0 || scaleOptionIndex + 1 >= tokens.size()) {
+        return {};
+    }
+
+    const QString firstValue = tokens.at(scaleOptionIndex + 1);
+    if (firstValue.startsWith(QLatin1Char('-'))) {
+        return {};
+    }
+    return TherionDocumentParser::bracketedValueParts(firstValue);
 }
 
 std::optional<qreal> sourceUnitsPerMeterFromScrapScale(const QStringList &tokens)

@@ -107,6 +107,11 @@ bool lineInsideCodeBlockIsRawContent(const QString &currentBlockDirective,
         && normalizedDirective != QStringLiteral("endcode");
 }
 
+bool TherionSourceDocumentLine::isRawCodeContent() const
+{
+    return lineInsideCodeBlockIsRawContent(currentBlockDirective, normalizedDirective);
+}
+
 TherionSourceDocument TherionSourceDocument::fromText(
     const QString &contents,
     const TherionSourceDocumentMetadata &metadata)
@@ -121,17 +126,51 @@ TherionSourceDocument TherionSourceDocument::fromText(
     const QHash<QString, QString> closeToOpen = therionCloseToOpenDirectiveMap();
     QVector<TherionSourceBlockFrame> stack;
     QVector<ActiveBlockFrame> activeStack;
+    // Therion joins a line ending in a backslash with the next before reading commands (thinput.cxx). Inside a code
+    // block the physical endcode line still closes it.
+    bool previousLineContinues = false;
+    TherionSourceLineRole continuedRole = TherionSourceLineRole::Command;
 
     for (const TherionParsedSourceLine &sourceLine : document.parsedDocument_.lines) {
         TherionSourceDocumentLine semanticLine;
         semanticLine.sourceLine = sourceLine;
         semanticLine.blockStackBefore = stack;
         semanticLine.currentBlockDirective = stack.isEmpty() ? QString() : stack.constLast().directive;
+        bool insideCodeBlock = normalizedTherionDirectiveToken(semanticLine.currentBlockDirective)
+            == QStringLiteral("code");
+        // Therion ends a layout at endlayout even inside code ... endcode, which ends the code block with it.
+        if (insideCodeBlock && stack.size() >= 2 && !sourceLine.parsed.tokens.isEmpty()
+            && normalizedTherionDirectiveToken(sourceLine.parsed.directive)
+                == openToClose.value(stack.at(stack.size() - 2).directive)) {
+            if (!activeStack.isEmpty()) {
+                TherionSourceBlockRange &range = document.blockRanges_[activeStack.constLast().rangeIndex];
+                range.closeLineNumber = sourceLine.lineNumber;
+                range.endOffset = sourceLine.startOffset;
+                range.closeLineText = sourceLine.text;
+                range.closedByEnclosingBlock = true;
+                activeStack.removeLast();
+            }
+            stack.removeLast();
+            semanticLine.blockStackBefore = stack;
+            semanticLine.currentBlockDirective = stack.constLast().directive;
+            insideCodeBlock = false;
+        }
+        const bool continuesPrevious = previousLineContinues && !insideCodeBlock;
+        previousLineContinues = !insideCodeBlock
+            && !sourceLine.parsed.tokens.isEmpty()
+            && TherionDocumentParser::continuationMarkerIndex(sourceLine.text) >= 0;
 
         if (sourceLine.parsed.tokens.isEmpty()) {
             semanticLine.role = sourceLine.isCommentOnly()
                 ? TherionSourceLineRole::Comment
                 : TherionSourceLineRole::Empty;
+            document.lines_.append(semanticLine);
+            continue;
+        }
+
+        if (continuesPrevious) {
+            semanticLine.continuesPreviousLine = true;
+            semanticLine.role = continuedRole;
             document.lines_.append(semanticLine);
             continue;
         }
@@ -151,6 +190,7 @@ TherionSourceDocument TherionSourceDocument::fromText(
                 && !semanticLine.closesBlock
             ? TherionSourceLineRole::BlockContent
             : TherionSourceLineRole::Command;
+        continuedRole = semanticLine.role;
 
         if (semanticLine.opensBlock) {
             TherionSourceBlockRange range;

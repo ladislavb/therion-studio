@@ -444,5 +444,168 @@ class TherionCatalogGenerationTest(unittest.TestCase):
         self.assertIn("-stations", option_keys)
 
 
+THERION_SOURCE_ROOT = REPO_ROOT / "therion"
+
+
+class TherionOptionTableParsingTest(unittest.TestCase):
+    """Reading Therion's option tables from small source snippets."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.generator = load_generator_module()
+
+    def make_source(self, files: dict[str, str]):
+        import tempfile
+
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        for name, text in files.items():
+            (Path(directory.name) / name).write_text(text, encoding="utf-8")
+        return self.generator.TherionOptionSource(Path(directory.name))
+
+    def test_reads_tokens_counts_parents_and_inline_only_options(self) -> None:
+        source = self.make_source({
+            "thbase.h": (
+                "static const thstok thtt_base_opt[] = {\n"
+                '  {"author", TT_BASE_AUTHOR},\n'
+                '  {"id", TT_BASE_ID},\n'
+                "  {NULL, TT_BASE_UNKNOWN},\n"
+                "};\n"
+            ),
+            "thitem.h": (
+                "class thitem : public thbase {};\n"
+                "static const thstok thtt_item_opt[] = {\n"
+                '  {"orient", TT_ITEM_ORIENT},\n'
+                '  {"orientation", TT_ITEM_ORIENT},\n'
+                '  {"team", TT_ITEM_TEAM},\n'
+                '  {"group", TT_ITEM_GROUP},\n'
+                "  {NULL, TT_ITEM_UNKNOWN},\n"
+                "};\n"
+            ),
+            "thbase.cxx": (
+                "thcmd_option_desc thbase::get_cmd_option_desc(const char * opts)\n{\n"
+                "  int id = thmatch_token(opts, thtt_base_opt);\n"
+                "  switch (id) {\n    case TT_BASE_AUTHOR:\n      return thcmd_option_desc(id, 2);\n"
+                "    default:\n      return thcmd_option_desc(id);\n  }\n}\n"
+            ),
+            "thitem.cxx": (
+                "thcmd_option_desc thitem::get_cmd_option_desc(const char * opts)\n{\n"
+                "  int id = thmatch_token(opts, thtt_item_opt);\n"
+                "  switch (id) {\n    case TT_ITEM_GROUP:\n      return thcmd_option_desc(id,0);\n"
+                "    default:\n      return thcmd_option_desc(id,1);\n  }\n}\n"
+                "void thitem::set(thcmd_option_desc cod, char ** args, int argenc, unsigned long indataline)\n{\n"
+                "  switch (cod.id) {\n    case TT_ITEM_TEAM:\n"
+                '      if ((indataline & THOP_INLINE) == 0) throw thexception("not a command line option -- team");\n'
+                "      break;\n    case TT_ITEM_GROUP:\n      break;\n  }\n}\n"
+            ),
+        })
+        self.assertEqual(source.class_chain("thitem"), ["thitem", "thbase"])
+        self.assertEqual(
+            source.command_line_options("thitem"),
+            [(["orient", "orientation"], 1, "thitem"), (["group"], 0, "thitem"),
+             (["author"], 2, "thbase"), (["id"], 1, "thbase")],
+        )
+
+    def test_option_tokens_and_counts(self) -> None:
+        self.assertEqual(self.generator.expand_optional_letters("colo[u]r"), ["colour", "color"])
+        self.assertEqual(
+            self.generator.option_entry_tokens({"option_key": "-orientation", "signature": "orientation/orient <number>"}),
+            ["orientation", "orient"],
+        )
+        self.assertEqual([self.generator.arity_token(count) for count in (0, 1, 2)], ["0", "1", "N"])
+
+    def test_new_option_borrows_book_help_or_is_marked_undescribed(self) -> None:
+        borrowed = self.generator.new_option_entry(
+            ["author"], 2, {"signature": "author <date> <person>", "description": "author of the data"})
+        self.assertEqual(borrowed["signature"], "author <date> <person>")
+        self.assertEqual(borrowed["description"], "author of the data")
+        self.assertNotIn("described_in_book", borrowed)
+
+        undescribed = self.generator.new_option_entry(["x-size"], 1, None)
+        self.assertEqual(undescribed["signature"], "x-size <value>")
+        self.assertEqual(undescribed["value_arity"], "1")
+        self.assertIs(undescribed["described_in_book"], False)
+
+
+@unittest.skipUnless((THERION_SOURCE_ROOT / "src" / "therion-core" / "thdataobject.h").exists(),
+                     "Therion source snapshot not present (scripts/update_thbook_snapshot.sh)")
+class TherionOptionTablesCatalogTest(unittest.TestCase):
+    """The catalog built with the Therion source snapshot follows Therion's option tables."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.generator = load_generator_module()
+        cls.report: list[str] = []
+        cls.catalog = cls.generator.build_catalog(
+            [THERION_SOURCE_ROOT / "thbook" / "ch02.tex", THERION_SOURCE_ROOT / "thbook" / "ch03.tex"],
+            source_repo="snapshot-copy",
+            source_ref="snapshot-copy",
+            source_root=THERION_SOURCE_ROOT,
+            report=cls.report,
+        )
+        cls.commands_by_name = {entry["name"]: entry for entry in cls.catalog["commands"]}
+        cls.source = cls.generator.TherionOptionSource(cls.generator.therion_core_dir(THERION_SOURCE_ROOT))
+
+    def test_every_table_option_has_its_tokens_and_value_count(self) -> None:
+        mismatches = []
+        therion_options = {command_name: self.source.command_line_options(class_name)
+                           for command_name, class_name in self.generator.THERION_OPTION_CLASSES.items()}
+        therion_options["export"] = self.source.export_options()
+        for command_name, command_options in sorted(therion_options.items()):
+            options = self.commands_by_name.get(command_name, {}).get("options", [])
+            for tokens, value_count, _ in command_options:
+                option = next((entry for entry in options
+                               if set(tokens) <= set(self.generator.option_entry_tokens(entry))), None)
+                if option is None:
+                    mismatches.append(f"{command_name}: -{tokens[0]} missing")
+                    continue
+                arity = str(option.get("value_arity"))
+                if arity != self.generator.arity_token(value_count) and not (arity == "N" and value_count > 1):
+                    mismatches.append(f"{command_name}: -{tokens[0]} arity {arity}, Therion {value_count}")
+        self.assertFalse(mismatches, mismatches)
+
+    def test_label_options_take_a_value(self) -> None:
+        # GitHub issue #50: the book's headings omit the value, so these were generated as taking none.
+        options = {option["option_key"]: option for option in self.commands_by_name["point"]["options"]}
+        for key in ("-scale", "-align", "-text", "-value"):
+            self.assertEqual(options[key]["value_arity"], "1", key)
+
+    def test_options_therion_rejects_are_removed_and_reported(self) -> None:
+        map_keys = {option.get("option_key") for option in self.commands_by_name["map"]["options"]}
+        self.assertNotIn("-colour", map_keys)
+        self.assertIn("map: -colour is not an option of this command in Therion; removed", self.report)
+
+    def test_export_follows_the_exporters(self) -> None:
+        options = self.commands_by_name["export"]["options"]
+        projection = next(option for option in options if option.get("option_key") == "-projection")
+        self.assertIn("proj", self.generator.option_entry_tokens(projection))
+        enable = next(option for option in options if option.get("option_key") == "-enable")
+        self.assertEqual(enable["value_arity"], "1")
+        keys = {option.get("option_key") for option in options}
+        self.assertIn("-layout-xxx", keys)
+        # Therion's command-line switches are not export options.
+        self.assertFalse({"-d", "-q", "-print-symbols"} & keys)
+
+    def test_layout_keeps_every_heading_of_an_option(self) -> None:
+        statistics = [option for option in self.commands_by_name["layout"]["options"]
+                      if option.get("option_key") == "-statistics"]
+        self.assertGreater(len(statistics), 1)
+        self.assertTrue(all(option["value_arity"] == "N" for option in statistics))
+
+    def test_layout_block_commands_take_therion_value_counts(self) -> None:
+        # Therion reads layout block lines against the layout option table (thlayout get_default_cod).
+        for name, count in (("page-setup", 7), ("statistics", 2), ("scale", 2)):
+            arguments = self.commands_by_name[name]["arguments"]
+            self.assertEqual(len([a for a in arguments if not a["signature"].startswith("[")]), count, name)
+        # units is shared with centreline blocks, so it is only relaxed to the layout's one value.
+        units = [a for a in self.commands_by_name["units"]["arguments"] if not a["signature"].startswith("[")]
+        self.assertEqual(len(units), 1)
+
+    def test_aliases_are_in_the_signature(self) -> None:
+        projection = next(option for option in self.commands_by_name["scrap"]["options"]
+                          if option.get("option_key") == "-projection")
+        self.assertIn("proj", self.generator.option_entry_tokens(projection))
+
+
 if __name__ == "__main__":
     unittest.main()

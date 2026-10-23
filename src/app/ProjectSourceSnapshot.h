@@ -7,6 +7,7 @@
 #include <QtGlobal>
 
 #include "../core/ProjectStructureIndex.h"
+#include "../core/TherionSourceDocument.h"
 
 namespace TherionStudio
 {
@@ -45,6 +46,9 @@ struct ProjectSourceDocument
     ProjectSourceDocumentOrigin origin = ProjectSourceDocumentOrigin::Filesystem;
     qint64 filesystemSizeBytes = -1;
     bool textLoaded = true;
+    // How Therion reads the file when that differs from its name (a .th file a config inputs is config text);
+    // Unknown means the type its name gives.
+    TherionSourceDocumentType readAsType = TherionSourceDocumentType::Unknown;
 
     bool operator==(const ProjectSourceDocument &other) const = default;
 };
@@ -74,6 +78,9 @@ struct ProjectSourceSnapshot
     const QString &preferredConfigPath,
     const QHash<QString, QString> &inMemoryContentsByPath,
     qsizetype maximumTextBytes = kDefaultMaximumProjectSourceTextBytes);
+
+// The document type Therion reads the file as.
+[[nodiscard]] TherionSourceDocumentType projectSourceDocumentType(const ProjectSourceDocument &document);
 
 [[nodiscard]] ProjectStructureIndexSourceSet projectStructureIndexSourceSet(
     const ProjectSourceSnapshot &snapshot);

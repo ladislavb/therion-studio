@@ -40,6 +40,8 @@ public:
         QVector<Finding> findings;
         int searchedFileCount = 0;
         bool limitReached = false;
+        // Files Therion reads as a type other than their name gives (projectSourceDocumentType).
+        QHash<QString, TherionSourceDocumentType> readAsTypes;
         ProjectSourceProjectionCacheStats projectionCacheStats;
         ProjectStructureIndexScanStats projectIndexScanStats;
         bool projectSourceSnapshotCacheHit = false;

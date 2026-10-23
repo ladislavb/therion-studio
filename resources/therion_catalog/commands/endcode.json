@@ -6,7 +6,7 @@
     "file": "therion/thbook/ch03.tex",
     "line": 235
   },
-  "summary": "should end the TeX\\ and \\ sections",
+  "summary": "should end the TeX and sections",
   "syntax": [
     "endcode"
   ],

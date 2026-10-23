@@ -58,13 +58,13 @@
       "dependencies": []
     },
     {
-      "raw": "survey <id> = associate a survey with map (e.g.\\ all surveying statistics from this survey will be used when this map is selected for output).",
+      "raw": "survey <id> = associate a survey with map (e.g. all surveying statistics from this survey will be used when this map is selected for output).",
       "name": "survey <id>",
       "signature": "survey <id>",
       "option_key": "-survey",
       "value_arity": "1",
       "value_domain": "unknown",
-      "description": "associate a survey with map (e.g.\\ all surveying statistics from this survey will be used when this map is selected for output).",
+      "description": "associate a survey with map (e.g. all surveying statistics from this survey will be used when this map is selected for output).",
       "allowed_values": [],
       "dependencies": []
     },
@@ -83,15 +83,83 @@
       "dependencies": []
     },
     {
-      "raw": "colo[u]r <color> = set the map colour; this option overrides the automatic choice when the layout specifies colour map-fg [map].",
-      "name": "colo[u]r <color>",
-      "signature": "colo[u]r <color>",
-      "option_key": "-colour",
+      "name": "break",
+      "signature": "break",
+      "option_key": "-break",
+      "value_arity": "0",
+      "value_domain": "none",
+      "description": "",
+      "allowed_values": [],
+      "dependencies": [],
+      "described_in_book": false,
+      "raw": ""
+    },
+    {
+      "name": "attr",
+      "signature": "attr <value> <value>",
+      "option_key": "-attr",
+      "value_arity": "N",
+      "value_domain": "unknown",
+      "description": "",
+      "allowed_values": [],
+      "dependencies": [],
+      "described_in_book": false,
+      "raw": ""
+    },
+    {
+      "name": "author",
+      "signature": "author <date> <person>",
+      "option_key": "-author",
+      "value_arity": "N",
+      "value_domain": "date",
+      "description": "author of the data and its creation date",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "author <date> <person> = author of the data and its creation date"
+    },
+    {
+      "name": "copyright",
+      "signature": "copyright <date> <string>",
+      "option_key": "-copyright",
+      "value_arity": "N",
+      "value_domain": "date",
+      "description": "copyright date and name",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "copyright <date> <string> = copyright date and name"
+    },
+    {
+      "name": "cs",
+      "signature": "cs <coordinate system>",
+      "option_key": "-cs",
       "value_arity": "1",
       "value_domain": "unknown",
-      "description": "set the map colour; this option overrides the automatic choice when the layout specifies colour map-fg [map].",
+      "description": "coordinate system for stations with fixed coordinates",
       "allowed_values": [],
-      "dependencies": []
+      "dependencies": [],
+      "raw": "cs <coordinate system> = coordinate system for stations with fixed coordinates"
+    },
+    {
+      "name": "id",
+      "signature": "id <ext_keyword>",
+      "option_key": "-id",
+      "value_arity": "1",
+      "value_domain": "keyword",
+      "description": "ID of the symbol.",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "id <ext_keyword> = ID of the symbol."
+    },
+    {
+      "name": "station-names",
+      "signature": "station-names <prefix> <suffix>",
+      "option_key": "-station-names",
+      "value_arity": "N",
+      "value_domain": "station",
+      "description": "adds given prefix/suffix to all survey stations in the current scrap. Saves some typing.",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "station-names <prefix> <suffix> = adds given prefix/suffix to all survey stations in the current scrap. Saves some typing."
     }
   ],
   "dependencies": [

@@ -257,9 +257,9 @@ QStringList parseOptionValuesFromEditor(const QString &rawValue, const QString &
 
 QString quoteTherionArgument(const QString &value)
 {
+    // Therion reads "" inside a quoted value as one quote; a backslash is an ordinary character.
     QString escaped = value;
-    escaped.replace(QLatin1Char('\\'), QStringLiteral("\\\\"));
-    escaped.replace(QLatin1Char('"'), QStringLiteral("\\\""));
+    escaped.replace(QLatin1Char('"'), QStringLiteral("\"\""));
     return QStringLiteral("\"%1\"").arg(escaped);
 }
 
@@ -280,6 +280,25 @@ bool isBracketedTherionValueGroup(const QString &value)
     return trimmed.size() >= 2
         && trimmed.startsWith(QLatin1Char('['))
         && trimmed.endsWith(QLatin1Char(']'));
+}
+
+QString therionValueText(const QString &value)
+{
+    const QString trimmed = value.trimmed();
+    return isBracketedTherionValueGroup(trimmed) ? trimmed.mid(1, trimmed.size() - 2) : value;
+}
+
+QString bracketedTherionValue(const QString &text)
+{
+    int depth = 0;
+    for (const QChar character : text) {
+        if (character == QLatin1Char('[')) {
+            ++depth;
+        } else if (character == QLatin1Char(']') && --depth < 0) {
+            return QString();
+        }
+    }
+    return depth == 0 ? QStringLiteral("[%1]").arg(text.trimmed()) : QString();
 }
 
 QString serializeTherionArgumentToken(const QString &value)

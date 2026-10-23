@@ -7,6 +7,7 @@
 #include <QJsonObject>
 
 #include "../core/CommandCatalogStore.h"
+#include "../core/TherionCodeBlockRules.h"
 #include "../core/TherionSourceDocument.h"
 #include "../core/TherionSourceSnapshotCache.h"
 #include "../core/TherionSourceValidator.h"
@@ -33,7 +34,9 @@ private:
     void applyStyle(const QString &styleName, const QJsonObject &styleObject);
     void loadCommandCatalogKeywords();
     void applyValidatorInvalidTokenFormats(const QString &text);
+    void refreshCachedDocumentState();
     const TherionSourceValidationResult &cachedValidationResult();
+    TherionCodeLanguage cachedCodeLanguageAt(int blockNumber);
     const QTextCharFormat &validationFormatForSeverity(TherionSourceDiagnosticSeverity severity) const;
 
     QTextCharFormat baseTextFormat_;
@@ -42,6 +45,7 @@ private:
     QTextCharFormat identifierFormat_;
     QTextCharFormat validationWarningFormat_;
     QTextCharFormat validationErrorFormat_;
+    QTextCharFormat validationInformationFormat_;
     QTextCharFormat stringFormat_;
     QTextCharFormat numberFormat_;
     QTextCharFormat commentFormat_;
@@ -56,6 +60,7 @@ private:
     TherionSourceValidationCatalog validationCatalog_;
     TherionSourceSnapshotCache sourceSnapshotCache_;
     TherionSourceValidationResult cachedValidationResult_;
+    QVector<TherionCodeLanguage> cachedCodeLanguagesByLine_;
     QVector<TherionSourceDiagnostic> externalDiagnostics_;
     int cachedValidationRevision_ = -1;
     TherionSourceDocumentType sourceDocumentType_ = TherionSourceDocumentType::Unknown;

@@ -3,6 +3,8 @@
 #include "ProjectFileDiscovery.h"
 #include "../core/DocumentFile.h"
 #include "../core/TherionFileTypes.h"
+#include "../core/TherionSourceLogicalDocument.h"
+#include "../core/TherionSourceReferenceResolver.h"
 
 #include <QCryptographicHash>
 #include <QDir>
@@ -147,6 +149,51 @@ ProjectSourceRequestKey projectSourceRequestKey(const QString &projectRootPath,
     return key;
 }
 
+namespace
+{
+// Therion reads a file that a config inputs as config text, whatever its name (thconfig.cxx reads input through
+// the config file reader). Follows input from every config in the project, including inputs of inputs.
+void assignTherionReadAsTypes(ProjectSourceSnapshot *snapshot)
+{
+    QHash<QString, int> indexByPath;
+    QVector<int> pending;
+    for (int index = 0; index < snapshot->documents.size(); ++index) {
+        const ProjectSourceDocument &document = snapshot->documents.at(index);
+        indexByPath.insert(document.normalizedPath, index);
+        if (therionSourceDocumentTypeForFilePath(document.normalizedPath) == TherionSourceDocumentType::TherionConfig) {
+            pending.append(index);
+        }
+    }
+
+    QSet<int> visited;
+    while (!pending.isEmpty()) {
+        const int index = pending.takeLast();
+        if (visited.contains(index) || !snapshot->documents.at(index).textLoaded) {
+            continue;
+        }
+        visited.insert(index);
+        const ProjectSourceDocument &config = snapshot->documents.at(index);
+        const TherionSourceLogicalDocument logicalDocument = TherionSourceLogicalDocument::fromText(config.text);
+        for (const TherionSourceLogicalCommand &command : logicalDocument.commands()) {
+            if (command.normalizedDirective != QStringLiteral("input")) {
+                continue;
+            }
+            const QString targetPath = normalizeProjectSourcePath(
+                resolveTherionSourceReferencePath(config.normalizedPath, therionSourceReferencePathToken(command)));
+            const auto targetIt = indexByPath.constFind(targetPath);
+            if (targetIt == indexByPath.constEnd()) {
+                continue;
+            }
+            ProjectSourceDocument &target = snapshot->documents[targetIt.value()];
+            if (therionSourceDocumentTypeForFilePath(target.normalizedPath) != TherionSourceDocumentType::TherionConfig) {
+                target.readAsType = TherionSourceDocumentType::TherionConfig;
+            }
+            pending.append(targetIt.value());
+        }
+    }
+}
+}
+
 ProjectSourceSnapshot collectProjectSourceSnapshot(const QString &projectRootPath,
                                                    const QString &preferredConfigPath,
                                                    const QHash<QString, QString> &inMemoryContentsByPath,
@@ -230,7 +277,15 @@ ProjectSourceSnapshot collectProjectSourceSnapshot(const QString &projectRootPat
                                    true});
     }
 
+    assignTherionReadAsTypes(&snapshot);
     return snapshot;
+}
+
+TherionSourceDocumentType projectSourceDocumentType(const ProjectSourceDocument &document)
+{
+    return document.readAsType != TherionSourceDocumentType::Unknown
+        ? document.readAsType
+        : therionSourceDocumentTypeForFilePath(document.normalizedPath);
 }
 
 ProjectStructureIndexSourceSet projectStructureIndexSourceSet(const ProjectSourceSnapshot &snapshot)

@@ -6,6 +6,12 @@ This directory contains generated per-command metadata and local override inputs
 - `commands/*.json`: one generated file per command (for review and targeted diffs).
 - `overrides/*.override.json`: optional per-command override patches applied during generation.
 
+## Option fields from Therion
+
+For the object commands, option names, aliases (in `signature`, for example `projection/proj <specification>`), and
+`value_arity` follow Therion's option tables. An option the book does not describe anywhere has
+`"described_in_book": false` and an empty `description`; the app shows a translated note instead.
+
 ## Override naming
 
 - Override file name must match command name:

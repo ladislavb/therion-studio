@@ -21,7 +21,7 @@ TherionSourceValidationResult TextEditorTab::validateDocument() const
     }
 
     TherionSourceDocumentMetadata metadata;
-    metadata.sourceType = therionSourceDocumentTypeForFilePath(filePath_);
+    metadata.sourceType = sourceDocumentType();
     metadata.revisionId = documentRevision();
 
     const QString text = editor_->toPlainText();
@@ -35,7 +35,7 @@ TherionSourceValidationResult TextEditorTab::validateDocument() const
                                                        TherionSourceSnapshotCatalogKey::fromRevision(metadata.revisionId));
     TherionSourceValidationResult result =
         TherionSourceValidator::validate(sourceDocument, logicalDocument, catalog);
-    if (!isTherionConfigFilePath(filePath_)) {
+    if (metadata.sourceType != TherionSourceDocumentType::TherionConfig) {
         return result;
     }
 
@@ -48,6 +48,28 @@ TherionSourceValidationResult TextEditorTab::validateDocument() const
     }
     result.diagnostics = filteredDiagnostics;
     return result;
+}
+
+TherionSourceDocumentType TextEditorTab::sourceDocumentType() const
+{
+    if (readAsSourceType_ != TherionSourceDocumentType::Unknown) {
+        return readAsSourceType_;
+    }
+    return filePath_.isEmpty()
+        ? therionSourceDocumentTypeForFileName(untitledDisplayName_)
+        : therionSourceDocumentTypeForFilePath(filePath_);
+}
+
+void TextEditorTab::setReadAsSourceType(TherionSourceDocumentType sourceType)
+{
+    if (readAsSourceType_ == sourceType) {
+        return;
+    }
+    readAsSourceType_ = sourceType;
+    refreshHighlighterSourceDocumentType();
+    if (contextHelpController_ != nullptr) {
+        contextHelpController_->invalidateValidationCache();
+    }
 }
 
 void TextEditorTab::setProjectValidationDiagnostics(const QVector<TherionSourceDiagnostic> &diagnostics)

@@ -5,7 +5,7 @@
     "file": "therion/thbook/ch02.tex",
     "line": 361
   },
-  "summary": "sets the declination for subsequent shots true\\ bearing = measured\\ bearing + declination. The declination is positive when the magnetic north is east of true north. If no declination is specified, or the declination is reset (-), then a valid declination specification is searched for in all surveys the data object is in. See declination option of survey command.",
+  "summary": "sets the declination for subsequent shots true bearing = measured bearing + declination. The declination is positive when the magnetic north is east of true north. If no declination is specified, or the declination is reset (-), then a valid declination specification is searched for in all surveys the data object is in. See declination option of survey command.",
   "syntax": [
     "declination <value> <units>"
   ],

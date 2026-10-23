@@ -60,15 +60,18 @@
       "value_domain": "number",
       "description": "defines the orientation of the symbol. If not specified, it's oriented to north. 0 number < 360.",
       "allowed_values": [],
-      "dependencies": []
+      "dependencies": [],
+      "excluded_types": [
+        "station"
+      ]
     },
     {
       "raw": "align = alignment of the symbol or text. The following values are accepted: center, c, top, t, bottom, b, left, l, right, r, top-left, tl, top-right, tr, bottom-left, bl, bottom-right, br .",
       "name": "align",
-      "signature": "align",
+      "signature": "align <value>",
       "option_key": "-align",
-      "value_arity": "0",
-      "value_domain": "none",
+      "value_arity": "1",
+      "value_domain": "unknown",
       "description": "alignment of the symbol or text. The following values are accepted: center, c, top, t, bottom, b, left, l, right, r, top-left, tl, top-right, tr, bottom-left, bl, bottom-right, br .",
       "allowed_values": [],
       "dependencies": []
@@ -76,10 +79,10 @@
     {
       "raw": "scale = symbol scale, can be: tiny (xs), small (s), normal (m), large (l), huge (xl) or a numeric value . Named sizes scale by 2 , so that xs 0.5 , s 0.707 , m 1.0 , l 1.414 and xl 2.0 .",
       "name": "scale",
-      "signature": "scale",
+      "signature": "scale <value>",
       "option_key": "-scale",
-      "value_arity": "0",
-      "value_domain": "none",
+      "value_arity": "1",
+      "value_domain": "unknown",
       "description": "symbol scale, can be: tiny (xs), small (s), normal (m), large (l), huge (xl) or a numeric value . Named sizes scale by 2 , so that xs 0.5 , s 0.707 , m 1.0 , l 1.414 and xl 2.0 .",
       "allowed_values": [],
       "dependencies": []
@@ -116,7 +119,7 @@
     {
       "raw": "visibility <on/off> = displays/hides the symbol .",
       "name": "visibility <on/off>",
-      "signature": "visibility <on/off>",
+      "signature": "visibility/visible <on/off>",
       "option_key": "-visibility",
       "value_arity": "1",
       "value_domain": "enum",
@@ -178,7 +181,7 @@
     {
       "raw": "name <reference> = if the point type is station, this option gives the reference to the real survey station.",
       "name": "name <reference>",
-      "signature": "name <reference>",
+      "signature": "name/station <reference>",
       "option_key": "-name",
       "value_arity": "1",
       "value_domain": "unknown",
@@ -211,10 +214,10 @@
     {
       "raw": "text = text of the label, remark or continuation. It may contain following formatting keywords: (For SVG output, only <br>, <thsp>, <it>, <bf>, <rm> and <lang:XX> keywords are taken into account; all others are silently ignored.) <br> = line break <center>/<centre>, <left>, <right> = line alignment for multi-line labels. Ignored if there is no <br> tag. <thsp> = thin space <rm>, <it>, <bf>, <ss>, <si> = font switches <rtl> and </rtl> = marks beginning and end of a right-to-left written text <lang:XX> = creates multilingual label (see string type for detailed description) <size:N> = specify the font size in points; N should be an integer between 1 and 127. <size:N",
       "name": "text",
-      "signature": "text",
+      "signature": "text <value>",
       "option_key": "-text",
-      "value_arity": "0",
-      "value_domain": "none",
+      "value_arity": "1",
+      "value_domain": "unknown",
       "description": "text of the label, remark or continuation. It may contain following formatting keywords: (For SVG output, only <br>, <thsp>, <it>, <bf>, <rm> and <lang:XX> keywords are taken into account; all others are silently ignored.) <br> = line break <center>/<centre>, <left>, <right> = line alignment for multi-line labels. Ignored if there is no <br> tag. <thsp> = thin space <rm>, <it>, <bf>, <ss>, <si> = font switches <rtl> and </rtl> = marks beginning and end of a right-to-left written text <lang:XX> = creates multilingual label (see string type for detailed description) <size:N> = specify the font size in points; N should be an integer between 1 and 127. <size:N",
       "allowed_values": [],
       "dependencies": []
@@ -222,13 +225,116 @@
     {
       "raw": "value = value of height, passage-height, altitude, dimensions or date height: according to the sign of the value (positive, negative or unsigned), this type of symbol represents chimney height, pit depth or step height in general. The numeric value can be optionally followed by \"?\", if the value is presumed and units can be added (e.g. -value [40? ft]). Values \"+?\" and \"-?\" are also accepted, meaning unknown height or depth. passage-height: the following four forms of value are supported: +<number> (the height of the ceiling), -<number> (the depth of the floor or water depth), <number> (the distance between floor and ceiling) and [+<number> -<number>] (the distance to ceiling and distance to floor). All four forms can be optionally followed by a unit. If there is more than one piece of information - two numbers, number and unit or else - the value must be enclosed in square brackets. altitude: the value specified is the altitude difference from the nearest station. The value will be set to 0 if defined as \"-\", \".\", \"nan\", \"NAN\" or \"NaN\". If the altitude value is prefixed by \"fix\" (e.g. -value [fix 1300]), this value is used as an absolute altitude. The value can optionally be followed by length units. dimensions: -value [<above> <below> [<units>]] specifies passage dimensions a\\-bo\\-ve/below centerline plane used in 3D model. date: -value <date> sets the date for the date point.",
       "name": "value",
-      "signature": "value",
+      "signature": "value <value>",
       "option_key": "-value",
-      "value_arity": "0",
-      "value_domain": "none",
+      "value_arity": "1",
+      "value_domain": "unknown",
       "description": "value of height, passage-height, altitude, dimensions or date height: according to the sign of the value (positive, negative or unsigned), this type of symbol represents chimney height, pit depth or step height in general. The numeric value can be optionally followed by \"?\", if the value is presumed and units can be added (e.g. -value [40? ft]). Values \"+?\" and \"-?\" are also accepted, meaning unknown height or depth. passage-height: the following four forms of value are supported: +<number> (the height of the ceiling), -<number> (the depth of the floor or water depth), <number> (the distance between floor and ceiling) and [+<number> -<number>] (the distance to ceiling and distance to floor). All four forms can be optionally followed by a unit. If there is more than one piece of information - two numbers, number and unit or else - the value must be enclosed in square brackets. altitude: the value specified is the altitude difference from the nearest station. The value will be set to 0 if defined as \"-\", \".\", \"nan\", \"NAN\" or \"NaN\". If the altitude value is prefixed by \"fix\" (e.g. -value [fix 1300]), this value is used as an absolute altitude. The value can optionally be followed by length units. dimensions: -value [<above> <below> [<units>]] specifies passage dimensions a\\-bo\\-ve/below centerline plane used in 3D model. date: -value <date> sets the date for the date point.",
       "allowed_values": [],
       "dependencies": []
+    },
+    {
+      "name": "size",
+      "signature": "size <value>",
+      "option_key": "-size",
+      "value_arity": "1",
+      "value_domain": "unknown",
+      "description": "",
+      "allowed_values": [],
+      "dependencies": [],
+      "described_in_book": false,
+      "raw": ""
+    },
+    {
+      "name": "x-size",
+      "signature": "x-size <value>",
+      "option_key": "-x-size",
+      "value_arity": "1",
+      "value_domain": "unknown",
+      "description": "",
+      "allowed_values": [],
+      "dependencies": [],
+      "described_in_book": false,
+      "raw": ""
+    },
+    {
+      "name": "y-size",
+      "signature": "y-size <value>",
+      "option_key": "-y-size",
+      "value_arity": "1",
+      "value_domain": "unknown",
+      "description": "",
+      "allowed_values": [],
+      "dependencies": [],
+      "described_in_book": false,
+      "raw": ""
+    },
+    {
+      "name": "attr",
+      "signature": "attr <value> <value>",
+      "option_key": "-attr",
+      "value_arity": "N",
+      "value_domain": "unknown",
+      "description": "",
+      "allowed_values": [],
+      "dependencies": [],
+      "described_in_book": false,
+      "raw": ""
+    },
+    {
+      "name": "author",
+      "signature": "author <date> <person>",
+      "option_key": "-author",
+      "value_arity": "N",
+      "value_domain": "date",
+      "description": "author of the data and its creation date",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "author <date> <person> = author of the data and its creation date"
+    },
+    {
+      "name": "copyright",
+      "signature": "copyright <date> <string>",
+      "option_key": "-copyright",
+      "value_arity": "N",
+      "value_domain": "date",
+      "description": "copyright date and name",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "copyright <date> <string> = copyright date and name"
+    },
+    {
+      "name": "cs",
+      "signature": "cs <coordinate system>",
+      "option_key": "-cs",
+      "value_arity": "1",
+      "value_domain": "unknown",
+      "description": "coordinate system for stations with fixed coordinates",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "cs <coordinate system> = coordinate system for stations with fixed coordinates"
+    },
+    {
+      "name": "station-names",
+      "signature": "station-names <prefix> <suffix>",
+      "option_key": "-station-names",
+      "value_arity": "N",
+      "value_domain": "station",
+      "description": "adds given prefix/suffix to all survey stations in the current scrap. Saves some typing.",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "station-names <prefix> <suffix> = adds given prefix/suffix to all survey stations in the current scrap. Saves some typing."
+    },
+    {
+      "name": "title",
+      "signature": "title <string>",
+      "option_key": "-title",
+      "value_arity": "1",
+      "value_domain": "string",
+      "description": "description of the object",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "title <string> = description of the object"
     }
   ],
   "dependencies": [

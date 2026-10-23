@@ -181,6 +181,76 @@ private slots:
         overlappingFix.replacementText = QStringLiteral("x");
         QCOMPARE(TherionSourceValidator::applyFixes(contents, {diagnostic.fix, overlappingFix}), contents);
     }
+
+    // Severity follows whether Therion rejects the line (validation plan V5; each case checked with Therion 6.4.0).
+    void reportsOptionCleanupAsErrorOnlyWhenTherionRejects_data()
+    {
+        QTest::addColumn<QString>("line");
+        QTest::addColumn<bool>("therionRejects");
+
+        QTest::newRow("repeated option") << QStringLiteral("line wall -clip off -clip off") << false;
+        QTest::newRow("quoted option-like token") << QStringLiteral("line wall -clip off \"-clip off\"") << true;
+        QTest::newRow("quoted option-like subtype") << QStringLiteral("line wall -subtype \"-clip off\"") << true;
+    }
+
+    void reportsOptionCleanupAsErrorOnlyWhenTherionRejects()
+    {
+        QFETCH(QString, line);
+        QFETCH(bool, therionRejects);
+
+        const QString contents = QStringLiteral("scrap s1\n%1\n  0 0\n  1 1\nendline\nendscrap\n").arg(line);
+        const TherionSourceDiagnostic diagnostic =
+            diagnosticByCodeAtLine(TherionSourceValidator::validate(contents, basicCatalog()),
+                                   QStringLiteral("malformed-option-token"),
+                                   2);
+        QCOMPARE(diagnostic.code, QStringLiteral("malformed-option-token"));
+        QCOMPARE(diagnostic.severity,
+                 therionRejects ? TherionSourceDiagnosticSeverity::Error : TherionSourceDiagnosticSeverity::Warning);
+        QVERIFY(diagnostic.hasFix);
+    }
+
+    void warnsAboutStrayEndcodeInLayout()
+    {
+        TherionSourceValidationCatalog catalog = basicCatalog();
+        catalog.commandNames.unite({QStringLiteral("layout"), QStringLiteral("endlayout"), QStringLiteral("code"),
+                                    QStringLiteral("endcode"), QStringLiteral("scale")});
+        const QString contents = QStringLiteral("layout x\n  scale 1 200\nendcode\nendlayout\n");
+        const TherionSourceDiagnostic stray =
+            diagnosticByCodeAtLine(TherionSourceValidator::validate(contents, catalog),
+                                   QStringLiteral("unmatched-block-close"),
+                                   3);
+        QCOMPARE(stray.code, QStringLiteral("unmatched-block-close"));
+        QCOMPARE(stray.severity, TherionSourceDiagnosticSeverity::Warning);
+        QVERIFY(stray.hasFix);
+        QCOMPARE(TherionSourceValidator::applyFixes(contents, {stray.fix}),
+                 QStringLiteral("layout x\n  scale 1 200\nendlayout\n"));
+
+        // Other stray closes make Therion fail.
+        const TherionSourceDiagnostic strayScrap =
+            diagnosticByCodeAtLine(TherionSourceValidator::validate(QStringLiteral("endscrap\n"), basicCatalog()),
+                                   QStringLiteral("unmatched-block-close"),
+                                   1);
+        QCOMPARE(strayScrap.severity, TherionSourceDiagnosticSeverity::Error);
+    }
+
+    void warnsWhenCodeLineJoinsEndcode()
+    {
+        TherionSourceValidationCatalog catalog = basicCatalog();
+        catalog.commandNames.unite({QStringLiteral("layout"), QStringLiteral("endlayout"), QStringLiteral("code"),
+                                    QStringLiteral("endcode")});
+        const QString joined = QStringLiteral("layout x\n  code tex-map\n    \\def\\x{A}\\\\\n  endcode\nendlayout\n");
+        const TherionSourceDiagnostic diagnostic =
+            diagnosticByCodeAtLine(TherionSourceValidator::validate(joined, catalog),
+                                   QStringLiteral("code-line-joins-endcode"),
+                                   3);
+        QCOMPARE(diagnostic.code, QStringLiteral("code-line-joins-endcode"));
+        QCOMPARE(diagnostic.severity, TherionSourceDiagnosticSeverity::Warning);
+
+        const QString separate = QStringLiteral("layout x\n  code tex-map\n    \\def\\x{A}\n  endcode\nendlayout\n");
+        for (const TherionSourceDiagnostic &other : TherionSourceValidator::validate(separate, catalog).diagnostics) {
+            QVERIFY(other.code != QStringLiteral("code-line-joins-endcode"));
+        }
+    }
 };
 
 int runTherionSourceValidatorFixTest(int argc, char **argv)

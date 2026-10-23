@@ -1957,6 +1957,15 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <source>Showing the first %1 problem(s).</source>
         <translation>Zobrazuje se prvních %1 problémů.</translation>
     </message>
+    <message numerus="yes">
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1120"/>
+        <source>Showing the first %n findings.</source>
+        <translation>
+            <numerusform>Zobrazuje se první %n nález.</numerusform>
+            <numerusform>Zobrazují se první %n nálezy.</numerusform>
+            <numerusform>Zobrazuje se prvních %n nálezů.</numerusform>
+        </translation>
+    </message>
     <message>
         <location filename="../src/app/MainWindowValidationSidebar.cpp" line="1175"/>
         <source>Line %1: %2</source>
@@ -2306,6 +2315,11 @@ Očekávané soubory jsou `docs/USER_MANUAL.&lt;language&gt;.md` nebo `docs/USER
         <translation>Nevyřešený scrap: %1</translation>
     </message>
     <message>
+        <location filename="../src/app/MainWindowStructureBrowser.cpp" line="252"/>
+        <source>Unresolved map item: %1</source>
+        <translation>Nevyřešená položka mapy: %1</translation>
+    </message>
+    <message>
         <location filename="../src/app/MainWindowStructureBrowser.cpp" line="250"/>
         <source>Mixed map/scrap content near: %1</source>
         <translation>Smíšený obsah map/scrap poblíž: %1</translation>
@@ -2626,6 +2640,16 @@ Line-point options: %1</translation>
         <translation>Neznámý odkaz na mapový scrap</translation>
     </message>
     <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="185"/>
+        <source>Unknown map item</source>
+        <translation>Neznámá položka mapy</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="186"/>
+        <source>Map item `%1` does not exist. No scrap, map, or survey of that name was found in the project index.</source>
+        <translation>Položka mapy `%1` neexistuje. V indexu projektu nebyl nalezen žádný scrap, mapa ani survey tohoto jména.</translation>
+    </message>
+    <message>
         <location filename="../src/app/ProjectValidationScanner.cpp" line="174"/>
         <source>Map references scrap `%1`, but no matching scrap was found in the project index.</source>
         <translation>Mapa odkazuje na scrap `%1`, ale v indexu projektu nebyl nalezen odpovídající scrap.</translation>
@@ -2667,8 +2691,153 @@ Line-point options: %1</translation>
     </message>
     <message>
         <location filename="../src/app/ProjectValidationScanner.cpp" line="201"/>
-        <source>Map composition mixes child map and scrap references; `%1` changes the content kind.</source>
-        <translation>Mapová kompozice míchá odkazy na podřízené mapy a scrapy; `%1` mění druh obsahu.</translation>
+        <source>Map mixes scraps with maps or surveys at `%1`. Therion needs every item of a map to be a scrap, or every item to be a map or survey.</source>
+        <translation>Mapa míchá scrapy s mapami nebo survey u `%1`. Therion potřebuje, aby všechny položky mapy byly scrapy, nebo všechny mapy či survey.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="191"/>
+        <source>Invalid map object</source>
+        <translation>Neplatný objekt mapy</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="192"/>
+        <source>Map item `%1` is a point, line, or area. A map can only list scraps, maps, or surveys.</source>
+        <translation>Položka mapy `%1` je bod, linie nebo plocha. Mapa může obsahovat jen scrapy, mapy nebo survey.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="197"/>
+        <source>Invalid map item</source>
+        <translation>Neplatná položka mapy</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="198"/>
+        <source>A map item is a name, optionally followed by a shift in brackets and `above`, `below`, or `none`.</source>
+        <translation>Položka mapy je jméno, případně následované posunem v hranatých závorkách a `above`, `below` nebo `none`.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="202"/>
+        <source>Invalid map shift</source>
+        <translation>Neplatný posun mapy</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="203"/>
+        <source>The map item shift `%1` needs two numbers and optional units, for example `[10 20 m]`.</source>
+        <translation>Posun položky mapy `%1` potřebuje dvě čísla a volitelně jednotky, například `[10 20 m]`.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="208"/>
+        <source>Unsupported preview type</source>
+        <translation>Nepodporovaný typ náhledu</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="209"/>
+        <source>`%1` is not a preview type Therion accepts here. Use `above` or `below`, or `none` after a map item shift.</source>
+        <translation>`%1` není typ náhledu, který zde Therion přijímá. Použijte `above` nebo `below`, nebo `none` za posunem položky mapy.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="214"/>
+        <source>Empty map</source>
+        <translation>Prázdná mapa</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="215"/>
+        <source>Map `%1` lists no scraps, maps, or surveys, which Therion does not allow.</source>
+        <translation>Mapa `%1` neobsahuje žádné scrapy, mapy ani survey, což Therion nedovoluje.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="220"/>
+        <source>Map with only previews</source>
+        <translation>Mapa jen s náhledy</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="221"/>
+        <source>Map `%1` lists only previews. Therion needs at least one scrap, map, or survey.</source>
+        <translation>Mapa `%1` obsahuje jen náhledy. Therion potřebuje alespoň jeden scrap, mapu nebo survey.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="226"/>
+        <source>Invalid map survey</source>
+        <translation>Neplatný survey mapy</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="232"/>
+        <source>Recursive map reference</source>
+        <translation>Rekurzivní odkaz na mapu</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="233"/>
+        <source>Map `%1` contains, directly or through its own maps, the map that lists it.</source>
+        <translation>Mapa `%1` obsahuje, přímo nebo přes své vlastní mapy, mapu, která ji uvádí.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="238"/>
+        <source>Incompatible scrap projection</source>
+        <translation>Nekompatibilní projekce scrapu</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="239"/>
+        <source>Scrap `%1` has a different projection from the first item of this map, or from the map's `-projection`.</source>
+        <translation>Scrap `%1` má jinou projekci než první položka této mapy nebo než `-projection` mapy.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="244"/>
+        <source>Incompatible map projection</source>
+        <translation>Nekompatibilní projekce mapy</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="245"/>
+        <source>Map `%1` has a different projection from the first item of this map, or from the map's `-projection`.</source>
+        <translation>Mapa `%1` má jinou projekci než první položka této mapy nebo než `-projection` mapy.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="250"/>
+        <source>Shifted scrap</source>
+        <translation>Posunutý scrap</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="251"/>
+        <source>Scrap `%1` is shifted, which Therion allows only for maps and for the first scrap of a map.</source>
+        <translation>Scrap `%1` je posunutý, což Therion dovoluje jen u map a u prvního scrapu mapy.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="256"/>
+        <source>No projection for survey</source>
+        <translation>Chybí projekce pro survey</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="257"/>
+        <source>Survey `%1` is the first item of a map without `-projection`. Give the map a projection to draw the survey's centreline in.</source>
+        <translation>Survey `%1` je první položkou mapy bez `-projection`. Dejte mapě projekci, ve které se má polygon survey vykreslit.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="262"/>
+        <source>Unsupported projection for survey</source>
+        <translation>Nepodporovaná projekce pro survey</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="263"/>
+        <source>Survey `%1` cannot be drawn in this map's projection. A survey needs plan, extended, or elevation.</source>
+        <translation>Survey `%1` nelze vykreslit v projekci této mapy. Survey potřebuje plan, extended nebo elevation.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="268"/>
+        <source>Preview is not a map</source>
+        <translation>Náhled není mapa</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="269"/>
+        <source>Preview `%1` is not a map. A preview must name a map.</source>
+        <translation>Náhled `%1` není mapa. Náhled musí uvádět mapu.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="227"/>
+        <source>`-survey %1` does not name a survey.</source>
+        <translation>`-survey %1` neuvádí žádný survey.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureBrowser.cpp" line="261"/>
+        <source>Invalid map object: %1</source>
+        <translation>Neplatný objekt mapy: %1</translation>
     </message>
     <message>
         <location filename="../src/app/ProjectValidationScanner.cpp" line="206"/>
@@ -2730,6 +2899,21 @@ Line-point options: %1</translation>
         <location filename="../src/app/ProjectValidationScanner.cpp" line="239"/>
         <source>Object id `%1` is already used by another object in this namespace.</source>
         <translation>ID objektu `%1` už v tomto namespace používá jiný objekt.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="245"/>
+        <source>Object id `%1` is also the name of a station in this survey.</source>
+        <translation>ID objektu `%1` je zároveň jménem stanice v tomto survey.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="318"/>
+        <source>Drawing not read by the config</source>
+        <translation>Kresba není načtena konfigurací</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="319"/>
+        <source>This drawing is not read through the project&apos;s Therion config, so Therion does not compile it and its station references are not checked.</source>
+        <translation>Tato kresba není načtena konfigurací Therionu v projektu, takže ji Therion nepřekládá a její odkazy na body se nekontrolují.</translation>
     </message>
     <message>
         <location filename="../src/app/ProjectValidationScanner.cpp" line="368"/>
@@ -3630,6 +3814,11 @@ Line-point options: %1</translation>
         <location filename="../src/app/MainWindowValidationSidebar.cpp" line="238"/>
         <source>Warning</source>
         <translation>Varování</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowValidationSidebar.cpp" line="250"/>
+        <source>Information</source>
+        <translation>Informace</translation>
     </message>
     <message>
         <location filename="../src/app/MainWindowValidationSidebar.cpp" line="249"/>
@@ -6452,6 +6641,11 @@ subtype blocks</translation>
         <translation>Chyba</translation>
     </message>
     <message>
+        <location filename="../src/app/text_editor/TextEditorContextHelpController.cpp" line="435"/>
+        <source>Information</source>
+        <translation>Informace</translation>
+    </message>
+    <message>
         <location filename="../src/app/text_editor/TextEditorContextHelpController.cpp" line="433"/>
         <location filename="../src/app/text_editor/TextEditorContextHelpController.cpp" line="457"/>
         <source>Warning</source>
@@ -6764,6 +6958,11 @@ subtype blocks</translation>
         <location filename="../src/app/text_editor/TextEditorTabValidation.cpp" line="90"/>
         <source>Validation fixes skipped: document changed.</source>
         <translation>Validační opravy přeskočeny: dokument se změnil.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/text_editor/raw_editor/RawEditorCommandMetadataLoader.cpp" line="280"/>
+        <source>Not described in the Therion book.</source>
+        <translation>V knize o Therionu není popsáno.</translation>
     </message>
 </context>
 <context>
@@ -7262,6 +7461,39 @@ subtype blocks</translation>
     </message>
 </context>
 <context>
+    <name>TherionStudio::TherionRepeatedStationPoints</name>
+    <message>
+        <location filename="../src/core/TherionRepeatedStationPoints.cpp" line="87"/>
+        <source>Remove repeated station point on line %1</source>
+        <translation>Odstranit opakovaný bod stanice na řádku %1</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionRepeatedStationPoints.cpp" line="134"/>
+        <source>Station drawn twice in a scrap</source>
+        <translation>Stanice nakreslená ve scrapu dvakrát</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionRepeatedStationPoints.cpp" line="135"/>
+        <source>Station `%1` is already drawn at the same place in this scrap, on line %2.</source>
+        <translation>Stanice `%1` je v tomto scrapu už nakreslena na stejném místě, na řádku %2.</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionRepeatedStationPoints.cpp" line="136"/>
+        <source>Station `%1` is already drawn at a different place in this scrap, on line %2.</source>
+        <translation>Stanice `%1` je v tomto scrapu už nakreslena na jiném místě, na řádku %2.</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionRepeatedStationPoints.cpp" line="162"/>
+        <source>Station in several scraps</source>
+        <translation>Stanice v několika scrapech</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionRepeatedStationPoints.cpp" line="163"/>
+        <source>Station `%1` is also drawn in scrap `%2` of the same projection, on line %3.</source>
+        <translation>Stanice `%1` je nakreslena také ve scrapu `%2` stejné projekce, na řádku %3.</translation>
+    </message>
+</context>
+<context>
     <name>TherionStudio::TherionSourceValidator</name>
     <message>
         <location filename="../src/core/TherionSourceValidator.cpp" line="604"/>
@@ -7322,6 +7554,11 @@ subtype blocks</translation>
         <location filename="../src/core/TherionSourceValidator.cpp" line="921"/>
         <source>This command contains an option-like token or duplicate option/value pair that Therion may reject.</source>
         <translation>Tento příkaz obsahuje token vypadající jako volba nebo duplicitní dvojici volba/hodnota, kterou může Therion odmítnout.</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="939"/>
+        <source>This command repeats an option with the same value; Therion accepts it, and the repeat can be removed.</source>
+        <translation>Tento příkaz opakuje volbu se stejnou hodnotou; Therion to přijme a opakování lze odstranit.</translation>
     </message>
     <message>
         <location filename="../src/core/TherionSourceValidator.cpp" line="928"/>
@@ -7446,6 +7683,16 @@ subtype blocks</translation>
         <translation>Neodpovídající uzavření bloku</translation>
     </message>
     <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1263"/>
+        <source>`endcode` has no open `code` block; Therion ignores it.</source>
+        <translation>`endcode` nemá otevřený blok `code`; Therion jej ignoruje.</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1271"/>
+        <source>Remove line %1</source>
+        <translation>Odstranit řádek %1</translation>
+    </message>
+    <message>
         <location filename="../src/core/TherionSourceValidator.cpp" line="1240"/>
         <source>Closing directive `%1` does not match the currently open block.</source>
         <translation>Uzavírací direktiva `%1` neodpovídá aktuálně otevřenému bloku.</translation>
@@ -7455,6 +7702,26 @@ subtype blocks</translation>
         <location filename="../src/core/TherionSourceValidator.cpp" line="1298"/>
         <source>Unclosed block</source>
         <translation>Neuzavřený blok</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1351"/>
+        <source>Code line joins endcode</source>
+        <translation>Řádek kódu spojí endcode</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1352"/>
+        <source>This line ends in `\`, so Therion joins the `endcode` on line %1 to it and passes `endcode` to TeX or MetaPost as text.</source>
+        <translation>Tento řádek končí `\`, takže k němu Therion připojí `endcode` z řádku %1 a předá `endcode` TeXu nebo MetaPostu jako text.</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1332"/>
+        <source>Block `code` has no `endcode` before `%1` on line %2; Therion reads `%1` as a `%3` command.</source>
+        <translation>Blok `code` nemá před `%1` na řádku %2 `endcode`; Therion čte `%1` jako příkaz bloku `%3`.</translation>
+    </message>
+    <message>
+        <location filename="../src/core/TherionSourceValidator.cpp" line="1340"/>
+        <source>Block `%1` has no `%2`; Therion ends it at `%3` on line %4.</source>
+        <translation>Blok `%1` nemá `%2`; Therion jej ukončí příkazem `%3` na řádku %4.</translation>
     </message>
     <message>
         <location filename="../src/core/TherionSourceValidator.cpp" line="1253"/>
@@ -8188,6 +8455,12 @@ subtype blocks</translation>
         <translation>Chyba</translation>
     </message>
     <message>
+        <location filename="../src/app/ValidationResultsMarkdownExporter.cpp" line="20"/>
+        <location filename="../src/app/ValidationResultsMarkdownExporter.cpp" line="171"/>
+        <source>Information</source>
+        <translation>Informace</translation>
+    </message>
+    <message>
         <location filename="../src/app/ValidationResultsMarkdownExporter.cpp" line="26"/>
         <source>Untitled document</source>
         <translation>Nepojmenovaný dokument</translation>
@@ -8261,6 +8534,75 @@ subtype blocks</translation>
         <location filename="../src/app/ValidationResultsMarkdownExporter.cpp" line="202"/>
         <source>Automatic fix preview</source>
         <translation>Náhled automatické opravy</translation>
+    </message>
+</context>
+<context>
+    <name>TherionStudio::ValidationSummaryText</name>
+    <message>
+        <location filename="../src/app/ValidationSummaryText.cpp" line="36"/>
+        <source>No problems</source>
+        <translation>Žádné problémy</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ValidationSummaryText.cpp" line="40"/>
+        <source>1 error</source>
+        <translation>1 chyba</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../src/app/ValidationSummaryText.cpp" line="40"/>
+        <source>%n errors</source>
+        <translation>
+            <numerusform>%n chyba</numerusform>
+            <numerusform>%n chyby</numerusform>
+            <numerusform>%n chyb</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../src/app/ValidationSummaryText.cpp" line="44"/>
+        <source>1 warning</source>
+        <translation>1 varování</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../src/app/ValidationSummaryText.cpp" line="44"/>
+        <source>%n warnings</source>
+        <translation>
+            <numerusform>%n varování</numerusform>
+            <numerusform>%n varování</numerusform>
+            <numerusform>%n varování</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../src/app/ValidationSummaryText.cpp" line="48"/>
+        <source>1 note</source>
+        <translation>1 poznámka</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../src/app/ValidationSummaryText.cpp" line="48"/>
+        <source>%n notes</source>
+        <translation>
+            <numerusform>%n poznámka</numerusform>
+            <numerusform>%n poznámky</numerusform>
+            <numerusform>%n poznámek</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../src/app/ValidationSummaryText.cpp" line="57"/>
+        <source>1 file searched</source>
+        <translation>1 prohledaný soubor</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../src/app/ValidationSummaryText.cpp" line="57"/>
+        <source>%n files searched</source>
+        <translation>
+            <numerusform>%n prohledaný soubor</numerusform>
+            <numerusform>%n prohledané soubory</numerusform>
+            <numerusform>%n prohledaných souborů</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../src/app/ValidationSummaryText.cpp" line="62"/>
+        <source>in %1</source>
+        <translation>v %1</translation>
     </message>
 </context>
 <context>

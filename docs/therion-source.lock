@@ -1,19 +1,23 @@
 {
-  "source_repository": "snapshot-copy",
-  "source_reference": "snapshot-copy",
-  "updated_at_utc": "2026-05-15T00:00:00Z",
+  "source_repository": "https://github.com/therion/therion",
+  "source_reference": "v6.4.0 (e8a908a4240437b296351d9fce55ea0e78f67a41)",
+  "updated_at_utc": "2026-10-21T10:16:13Z",
   "files": [
     {
       "path": "therion/thbook/ch02.tex",
-      "sha256": "2ae36455040f2db09f34a5782f3362817f58cfb8910148fb3c785386cd402ce3"
+      "sha256": "7f8231ce393f0763059b1b119e7235a6e9dda1834563e5464e207720f26e7031"
     },
     {
       "path": "therion/thbook/ch03.tex",
-      "sha256": "438ca827d33564e6f2ea7d22dff13cca9a933ec155b0b4d0c332f92bc1e3fbf1"
+      "sha256": "90d76f9f532b99020a204c4b99d9d23884fbe8420a0d0f9b1b93cc6c7af0843b"
     },
     {
       "path": "therion/thbook/thbook.tex",
-      "sha256": "55ee00fc3c9036298f8124c0000c0fb63afbc708323cd04005dba151748894a0"
+      "sha256": "8c3318e1aacad79e10cda2bff5a1b228ffdafa7ee37fb2ba7e84dcd6026f4eed"
+    },
+    {
+      "path": "therion/src/therion-core/*.h *.cxx",
+      "sha256": "8687652d60b0f57794c0b5638de6660a54e59254b76bf522ed02aadbd3f1cf77"
     }
   ]
 }

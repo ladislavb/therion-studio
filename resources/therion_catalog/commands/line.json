@@ -17,13 +17,13 @@
   ],
   "arguments": [
     {
-      "raw": "<type> is a keyword that determines the type of line. The following types are supported: passages: wall, contour, slope (Slope line marks upper border of the sloping area. It's necessary to specify l-size in at least one point. Gradient lines length and orientation is an average of specified l-sizes and orientations in the nearest points. If there is no orientation specification, gradient marks are perpendicular to the slope line.) , floor-step, pit, pitch (synonym of pit), ceiling-step, chimney, overhang, ceiling-meander, floor-meander, low-ceiling, pit-chimney; passage fills: flowstone, moonmilk, rock-border (Outer outline of large boulders. If the line is closed, it is filled with the background colour.) , rock-edge (Inner edges of large boulders.) , water-flow, abyss-entrance, dripline, fault, gradient, joint, rimstone-dam, rimstone-pool; equipment: fixed-ladder, handrail, rope, rope-ladder, steps, via-ferrata, walkway; labels: label; special: border, arrow, section (Line showing cross-section position.\\ If both control points (red dots) of a B\\'ezier curve (grey line) are given then the section line (blue) is drawn up to the perpendicular projection (dotted) of the first control point and from the projection (dotted) of the section control point. No section curve is displayed. ) , survey (Survey line is automatically drawn by Therion.) , map-connection (Used to indicate connection between maps (in offset, or the same points in extended elevation).) , u (For user defined line symbols.) .",
+      "raw": "<type> is a keyword that determines the type of line. The following types are supported: passages: wall, contour, slope (Slope line marks upper border of the sloping area. It's necessary to specify l-size in at least one point. Gradient lines length and orientation is an average of specified l-sizes and orientations in the nearest points. If there is no orientation specification, gradient marks are perpendicular to the slope line.) , floor-step, pit, pitch (synonym of pit), ceiling-step, chimney, overhang, ceiling-meander, floor-meander, low-ceiling, pit-chimney; passage fills: flowstone, moonmilk, rock-border (Outer outline of large boulders. If the line is closed, it is filled with the background colour.) , rock-edge (Inner edges of large boulders.) , water-flow, abyss-entrance, dripline, fault, gradient, joint, rimstone-dam, rimstone-pool; equipment: fixed-ladder, handrail, rope, rope-ladder, steps, via-ferrata, walkway; labels: label; special: border, arrow, section (Line showing cross-section position. If both control points (red dots) of a B\\'ezier curve (grey line) are given then the section line (blue) is drawn up to the perpendicular projection (dotted) of the first control point and from the projection (dotted) of the section control point. No section curve is displayed. ) , survey (Survey line is automatically drawn by Therion.) , map-connection (Used to indicate connection between maps (in offset, or the same points in extended elevation).) , u (For user defined line symbols.) .",
       "name": "<type>",
       "signature": "<type>",
       "option_key": "",
       "value_arity": "1",
       "value_domain": "unknown",
-      "description": "is a keyword that determines the type of line. The following types are supported: passages: wall, contour, slope (Slope line marks upper border of the sloping area. It's necessary to specify l-size in at least one point. Gradient lines length and orientation is an average of specified l-sizes and orientations in the nearest points. If there is no orientation specification, gradient marks are perpendicular to the slope line.) , floor-step, pit, pitch (synonym of pit), ceiling-step, chimney, overhang, ceiling-meander, floor-meander, low-ceiling, pit-chimney; passage fills: flowstone, moonmilk, rock-border (Outer outline of large boulders. If the line is closed, it is filled with the background colour.) , rock-edge (Inner edges of large boulders.) , water-flow, abyss-entrance, dripline, fault, gradient, joint, rimstone-dam, rimstone-pool; equipment: fixed-ladder, handrail, rope, rope-ladder, steps, via-ferrata, walkway; labels: label; special: border, arrow, section (Line showing cross-section position.\\ If both control points (red dots) of a B\\'ezier curve (grey line) are given then the section line (blue) is drawn up to the perpendicular projection (dotted) of the first control point and from the projection (dotted) of the section control point. No section curve is displayed. ) , survey (Survey line is automatically drawn by Therion.) , map-connection (Used to indicate connection between maps (in offset, or the same points in extended elevation).) , u (For user defined line symbols.) .",
+      "description": "is a keyword that determines the type of line. The following types are supported: passages: wall, contour, slope (Slope line marks upper border of the sloping area. It's necessary to specify l-size in at least one point. Gradient lines length and orientation is an average of specified l-sizes and orientations in the nearest points. If there is no orientation specification, gradient marks are perpendicular to the slope line.) , floor-step, pit, pitch (synonym of pit), ceiling-step, chimney, overhang, ceiling-meander, floor-meander, low-ceiling, pit-chimney; passage fills: flowstone, moonmilk, rock-border (Outer outline of large boulders. If the line is closed, it is filled with the background colour.) , rock-edge (Inner edges of large boulders.) , water-flow, abyss-entrance, dripline, fault, gradient, joint, rimstone-dam, rimstone-pool; equipment: fixed-ladder, handrail, rope, rope-ladder, steps, via-ferrata, walkway; labels: label; special: border, arrow, section (Line showing cross-section position. If both control points (red dots) of a B\\'ezier curve (grey line) are given then the section line (blue) is drawn up to the perpendicular projection (dotted) of the first control point and from the projection (dotted) of the section control point. No section curve is displayed. ) , survey (Survey line is automatically drawn by Therion.) , map-connection (Used to indicate connection between maps (in offset, or the same points in extended elevation).) , u (For user defined line symbols.) .",
       "allowed_values": [],
       "dependencies": []
     }
@@ -52,17 +52,6 @@
       "dependencies": [
         "determines line subtype. The following subtypes are supported for given types: wall: invisible, bedrock (default), sand, clay, pebbles, debris, blocks, ice, underlying, overlying, unsurveyed, presumed, pit (Usually open to surface.) , flowstone, moonmilk; border: visible (default), invisible, temporary, presumed; water-flow: permanent (default), conjectural, intermittent; survey: cave (default), surface (default if centreline has surface flag). The subtype may be specified also directly in <type> specification using \":\" as a separator. (E.g. border:invisible) Any subtype specification can be used with user defined type (u). In this case you need also to define corresponding metapost symbol (see the chapter New map symbols ). subtype can be set either as a line option or as a line-point option (inside [LINE DATA]). When used as a line option (either as TYPE:SUBTYPE or -subtype SUBTYPE), it defines the subtype starting at the beginning of the line and stays in effect until it is overridden by another subtype specified at a line point or until the end of the line, whichever comes first. As a line point option (inside [LINE DATA]) it can be used multiple times."
       ]
-    },
-    {
-      "raw": "[LINE DATA] specify either the coordinates of a line segment <x> <y>, or coordinates of a B\\'ezier curve arc <c1x> <c1y> <c2x> <c2y> <x> <y>, where c indicates the control point.",
-      "name": "[LINE DATA]",
-      "signature": "[LINE DATA]",
-      "option_key": "",
-      "value_arity": "1",
-      "value_domain": "unknown",
-      "description": "specify either the coordinates of a line segment <x> <y>, or coordinates of a B\\'ezier curve arc <c1x> <c1y> <c2x> <c2y> <x> <y>, where c indicates the control point.",
-      "allowed_values": [],
-      "dependencies": []
     },
     {
       "raw": "close <on/off/auto> = determines whether a line is closed or not .",
@@ -180,7 +169,7 @@
     {
       "raw": "visibility <on/off> = displays/hides the symbol .",
       "name": "visibility <on/off>",
-      "signature": "visibility <on/off>",
+      "signature": "visibility/visible <on/off>",
       "option_key": "-visibility",
       "value_arity": "1",
       "value_domain": "enum",
@@ -336,10 +325,10 @@
     {
       "raw": "scale = scale affects only the text on label lines, can be: tiny (xs), small (s), normal (m), large (l), huge (xl) or a numeric value . Named sizes scale by 2 , so that xs 0.5 , s 0.707 , m 1.0 , l 1.414 and xl 2.0 . Absolute font sizes (in points) can be assigned to named sizes using fonts-setup in the layout configuration section.",
       "name": "scale",
-      "signature": "scale",
+      "signature": "scale <value>",
       "option_key": "-scale",
-      "value_arity": "0",
-      "value_domain": "none",
+      "value_arity": "1",
+      "value_domain": "unknown",
       "description": "scale affects only the text on label lines, can be: tiny (xs), small (s), normal (m), large (l), huge (xl) or a numeric value . Named sizes scale by 2 , so that xs 0.5 , s 0.707 , m 1.0 , l 1.414 and xl 2.0 . Absolute font sizes (in points) can be assigned to named sizes using fonts-setup in the layout configuration section.",
       "allowed_values": [],
       "dependencies": []
@@ -369,13 +358,103 @@
       ]
     },
     {
-      "raw": "height <value> = height of pit or wall:pit; available in \\ as a numeric variable ATTR__height.",
+      "raw": "height <value> = height of pit or wall:pit; available in as a numeric variable ATTR__height.",
       "name": "height <value>",
       "signature": "height <value>",
       "option_key": "-height",
       "value_arity": "1",
       "value_domain": "number",
-      "description": "height of pit or wall:pit; available in \\ as a numeric variable ATTR__height.",
+      "description": "height of pit or wall:pit; available in as a numeric variable ATTR__height.",
+      "allowed_values": [],
+      "dependencies": []
+    },
+    {
+      "name": "r-size",
+      "signature": "r-size <value>",
+      "option_key": "-r-size",
+      "value_arity": "1",
+      "value_domain": "unknown",
+      "description": "",
+      "allowed_values": [],
+      "dependencies": [],
+      "described_in_book": false,
+      "raw": ""
+    },
+    {
+      "name": "attr",
+      "signature": "attr <value> <value>",
+      "option_key": "-attr",
+      "value_arity": "N",
+      "value_domain": "unknown",
+      "description": "",
+      "allowed_values": [],
+      "dependencies": [],
+      "described_in_book": false,
+      "raw": ""
+    },
+    {
+      "name": "author",
+      "signature": "author <date> <person>",
+      "option_key": "-author",
+      "value_arity": "N",
+      "value_domain": "date",
+      "description": "author of the data and its creation date",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "author <date> <person> = author of the data and its creation date"
+    },
+    {
+      "name": "copyright",
+      "signature": "copyright <date> <string>",
+      "option_key": "-copyright",
+      "value_arity": "N",
+      "value_domain": "date",
+      "description": "copyright date and name",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "copyright <date> <string> = copyright date and name"
+    },
+    {
+      "name": "cs",
+      "signature": "cs <coordinate system>",
+      "option_key": "-cs",
+      "value_arity": "1",
+      "value_domain": "unknown",
+      "description": "coordinate system for stations with fixed coordinates",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "cs <coordinate system> = coordinate system for stations with fixed coordinates"
+    },
+    {
+      "name": "station-names",
+      "signature": "station-names <prefix> <suffix>",
+      "option_key": "-station-names",
+      "value_arity": "N",
+      "value_domain": "station",
+      "description": "adds given prefix/suffix to all survey stations in the current scrap. Saves some typing.",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "station-names <prefix> <suffix> = adds given prefix/suffix to all survey stations in the current scrap. Saves some typing."
+    },
+    {
+      "name": "title",
+      "signature": "title <string>",
+      "option_key": "-title",
+      "value_arity": "1",
+      "value_domain": "string",
+      "description": "description of the object",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "title <string> = description of the object"
+    },
+    {
+      "raw": "[LINE DATA] specify either the coordinates of a line segment <x> <y>, or coordinates of a B\\'ezier curve arc <c1x> <c1y> <c2x> <c2y> <x> <y>, where c indicates the control point.",
+      "name": "[LINE DATA]",
+      "signature": "[LINE DATA]",
+      "option_key": "",
+      "value_arity": "1",
+      "value_domain": "unknown",
+      "description": "specify either the coordinates of a line segment <x> <y>, or coordinates of a B\\'ezier curve arc <c1x> <c1y> <c2x> <c2y> <x> <y>, where c indicates the control point.",
       "allowed_values": [],
       "dependencies": []
     }

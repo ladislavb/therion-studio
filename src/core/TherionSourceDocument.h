@@ -51,6 +51,8 @@ struct TherionSourceBlockRange
     QString openLineText;
     QString closeLineText;
     QVector<TherionSourceBlockFrame> parentStack;
+    // Closed by the enclosing block's close (a code block ended by endlayout), not by its own close directive.
+    bool closedByEnclosingBlock = false;
 
     [[nodiscard]] bool isClosed() const;
 };
@@ -65,9 +67,13 @@ struct TherionSourceDocumentLine
     bool closesBlock = false;
     QString closeMatchesOpenDirective;
     QVector<TherionSourceBlockFrame> blockStackBefore;
+    // The previous line ends in a continuation backslash, so this line is part of that command, not a command.
+    bool continuesPreviousLine = false;
 
     [[nodiscard]] bool shouldValidateCommandCatalog() const;
     [[nodiscard]] bool hasUnmatchedClose() const;
+    // Inside `code ... endcode`: TeX or MetaPost text, not a Therion command.
+    [[nodiscard]] bool isRawCodeContent() const;
 };
 
 class TherionSourceDocument final

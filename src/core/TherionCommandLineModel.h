@@ -63,6 +63,8 @@ QHash<QString, QString> commandOptionValuesByName(const QStringList &tokens);
 QString commandOptionValue(const TherionParsedLine &parsedLine, const QString &optionName);
 QHash<QString, QString> commandOptionValuesByName(const TherionParsedLine &parsedLine);
 std::optional<bool> commandOptionToggleValue(const QStringList &tokens, const QString &optionName);
+// False for a `survey ... -namespace off` line, whose objects belong to the enclosing namespace.
+bool surveyCommandCreatesNamespace(const TherionParsedLine &parsedLine);
 QString serializeCommandArgumentValues(const QStringList &values);
 QStringList serializeCommandOptionTokens(const QString &optionToken, const QStringList &values);
 }

@@ -426,11 +426,22 @@ const TherionSourceValidationResult &TextEditorContextHelpController::cachedVali
     return cachedValidationResult_;
 }
 
+QString TextEditorContextHelpController::severityLabel(TherionSourceDiagnosticSeverity severity) const
+{
+    switch (severity) {
+    case TherionSourceDiagnosticSeverity::Error:
+        return tr("Error");
+    case TherionSourceDiagnosticSeverity::Information:
+        return tr("Information");
+    case TherionSourceDiagnosticSeverity::Warning:
+        break;
+    }
+    return tr("Warning");
+}
+
 QString TextEditorContextHelpController::validationDiagnosticHtml(const TherionSourceDiagnostic &diagnostic) const
 {
-    const QString severity = diagnostic.severity == TherionSourceDiagnosticSeverity::Error
-        ? tr("Error")
-        : tr("Warning");
+    const QString severity = severityLabel(diagnostic.severity);
     QString html;
     html += QStringLiteral("<p><strong>%1:</strong> %2</p>")
                 .arg(severity.toHtmlEscaped(), diagnostic.title.toHtmlEscaped());
@@ -452,9 +463,7 @@ QString TextEditorContextHelpController::validationDiagnosticHtml(const TherionS
 
 QString TextEditorContextHelpController::validationDiagnosticTooltip(const TherionSourceDiagnostic &diagnostic) const
 {
-    const QString severity = diagnostic.severity == TherionSourceDiagnosticSeverity::Error
-        ? tr("Error")
-        : tr("Warning");
+    const QString severity = severityLabel(diagnostic.severity);
     QString tooltip = tr("Line %1: %2: %3")
                           .arg(diagnostic.lineNumber)
                           .arg(severity, diagnostic.title);

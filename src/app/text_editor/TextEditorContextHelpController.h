@@ -77,6 +77,7 @@ private:
                                             QString *tooltipKey = nullptr) const;
     const TherionSourceDiagnostic *validationDiagnosticForTextCursor(const QTextCursor &cursor) const;
     const TherionSourceValidationResult &cachedValidationResult() const;
+    QString severityLabel(TherionSourceDiagnosticSeverity severity) const;
     QString validationDiagnosticHtml(const TherionSourceDiagnostic &diagnostic) const;
     QString validationDiagnosticTooltip(const TherionSourceDiagnostic &diagnostic) const;
     const TherionSourceLogicalDocument &logicalDocumentForEditor() const;

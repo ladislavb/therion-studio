@@ -61,6 +61,173 @@
       "description": "description of the object",
       "allowed_values": [],
       "dependencies": []
+    },
+    {
+      "name": "break",
+      "signature": "break",
+      "option_key": "-break",
+      "value_arity": "0",
+      "value_domain": "none",
+      "description": "can be used with interleaved data to separate two traverses",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "break = can be used with interleaved data to separate two traverses"
+    },
+    {
+      "name": "date",
+      "signature": "date <date>",
+      "option_key": "-date",
+      "value_arity": "1",
+      "value_domain": "unknown",
+      "description": "survey date. If multiple dates are specified, a time interval is created.",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "date <date> = survey date. If multiple dates are specified, a time interval is created."
+    },
+    {
+      "name": "declination",
+      "signature": "declination <value> <units>",
+      "option_key": "-declination",
+      "value_arity": "N",
+      "value_domain": "unknown",
+      "description": "sets the declination for subsequent shots true bearing = measured bearing + declination. The declination is positive when the magnetic north is east of true north. If no declination is specified, or the declination is reset (-), then a valid declination specification is searched for in all surveys the data object is in. See declination option of survey command.",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "declination <value> <units> = sets the declination for subsequent shots true bearing = measured bearing + declination. The declination is positive when the magnetic north is east of true north. If no declination is specified, or the declination is reset (-), then a valid declination specification is searched for in all surveys the data object is in. See declination option of survey command."
+    },
+    {
+      "name": "endgroup",
+      "signature": "endgroup",
+      "option_key": "-endgroup",
+      "value_arity": "0",
+      "value_domain": "none",
+      "description": "group/endgroup pair enables the user to make temporary changes in almost any setting (calibrate, units, sd, data, flags...)",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "endgroup = group/endgroup pair enables the user to make temporary changes in almost any setting (calibrate, units, sd, data, flags...)"
+    },
+    {
+      "name": "explo-date",
+      "signature": "explo-date <date>",
+      "option_key": "-explo-date",
+      "value_arity": "1",
+      "value_domain": "unknown",
+      "description": "discovery date. If multiple dates are specified, a time interval is created.",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "explo-date <date> = discovery date. If multiple dates are specified, a time interval is created."
+    },
+    {
+      "name": "extend",
+      "signature": "extend <spec> [<station> [<station> [<station>]]]",
+      "option_key": "-extend",
+      "value_arity": "1",
+      "value_domain": "unknown",
+      "description": "control how the centerline is extended. <spec> may be one of the following keywords normal/reverse = extend given and following stations to the same/reverse direction as previous station. If station names are given, direction is applied only to the specified station or shot. left/right = same as above, but direction is specified explicitly. vertical = do not move station (shot) in X direction, use only Z component of the shot start = specify starting station (shot) ignore = ignore specified station (shot), continue extended elevation with other station (shot) if possible hide = do not show specified station (shot) in extended elevation or a percentage in the range 0 to 200. This sets the extend ratio, i.e. the factor used for the horizontal component of a leg in extended elevation. Therion keeps the vertical component unchanged and multiplies only the horizontal displacement by the ratio. Thus 100 means the normal width of the extended leg, 50 compresses it to one half, 200 stretches it to double width, and 0 suppresses any horizontal displacement (effectively the same result as vertical for that leg). The optional station arguments are interpreted as follows: extend <spec> = set the default extend behaviour for subsequent shots in the current centreline. extend <spec> <from> = apply the extend setting to a station. extend <spec> <from> <to> = apply the extend setting to a specific shot. extend <spec> <before> <from> <to> = apply the extend setting to a specific shot, with an additional before station condition. This form is primarily useful with ignore, where the shot is ignored only if the extended-elevation traversal reaches <from> from <before>. Station names use the normal Therion object reference syntax, so station@survey may be used.",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "extend <spec> [<station> [<station> [<station>]]] = control how the centerline is extended. <spec> may be one of the following keywords normal/reverse = extend given and following stations to the same/reverse direction as previous station. If station names are given, direction is applied only to the specified station or shot. left/right = same as above, but direction is specified explicitly. vertical = do not move station (shot) in X direction, use only Z component of the shot start = specify starting station (shot) ignore = ignore specified station (shot), continue extended elevation with other station (shot) if possible hide = do not show specified station (shot) in extended elevation or a percentage in the range 0 to 200. This sets the extend ratio, i.e. the factor used for the horizontal component of a leg in extended elevation. Therion keeps the vertical component unchanged and multiplies only the horizontal displacement by the ratio. Thus 100 means the normal width of the extended leg, 50 compresses it to one half, 200 stretches it to double width, and 0 suppresses any horizontal displacement (effectively the same result as vertical for that leg). The optional station arguments are interpreted as follows: extend <spec> = set the default extend behaviour for subsequent shots in the current centreline. extend <spec> <from> = apply the extend setting to a station. extend <spec> <from> <to> = apply the extend setting to a specific shot. extend <spec> <before> <from> <to> = apply the extend setting to a specific shot, with an additional before station condition. This form is primarily useful with ignore, where the shot is ignored only if the extended-elevation traversal reaches <from> from <before>. Station names use the normal Therion object reference syntax, so station@survey may be used."
+    },
+    {
+      "name": "grid-angle",
+      "signature": "grid-angle <value> <units>",
+      "option_key": "-grid-angle",
+      "value_arity": "1",
+      "value_domain": "unknown",
+      "description": "specifies the magnetic grid angle (declination against grid north).",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "grid-angle <value> <units> = specifies the magnetic grid angle (declination against grid north)."
+    },
+    {
+      "name": "group",
+      "signature": "group",
+      "option_key": "-group",
+      "value_arity": "0",
+      "value_domain": "none",
+      "description": "",
+      "allowed_values": [],
+      "dependencies": [],
+      "described_in_book": false,
+      "raw": ""
+    },
+    {
+      "name": "infer",
+      "signature": "infer <what> <on/off>",
+      "option_key": "-infer",
+      "value_arity": "N",
+      "value_domain": "unknown",
+      "description": "\"infer plumbs on\" tells the program to interpret gradients 90 ^ as UP/DOWN (this means no clino corrections are applied). \"infer equates on\" will case program to interpret shots with 0 length as equate commands (which means that no tape corrections are applied)",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "infer <what> <on/off> = \"infer plumbs on\" tells the program to interpret gradients 90 ^ as UP/DOWN (this means no clino corrections are applied). \"infer equates on\" will case program to interpret shots with 0 length as equate commands (which means that no tape corrections are applied)"
+    },
+    {
+      "name": "mark",
+      "signature": "mark [<station list>] <type>",
+      "option_key": "-mark",
+      "value_arity": "1",
+      "value_domain": "unknown",
+      "description": "set the type of named stations. <type> is one of: fixed, painted and temporary (default). If there is no station list, all subsequent stations are marked.",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "mark [<station list>] <type> = set the type of named stations. <type> is one of: fixed, painted and temporary (default). If there is no station list, all subsequent stations are marked."
+    },
+    {
+      "name": "vthreshold",
+      "signature": "vthreshold <number> <units>",
+      "option_key": "-vthreshold",
+      "value_arity": "N",
+      "value_domain": "unknown",
+      "description": "threshold for interpreting LRUD readings as left-right-front-back reading perpendicular to the shot. If passages are horizontal (inclination < vthreshold), LR is perpendicular to the shot and UD is vertical. If passages are more or less vertical (inclination > vthreshold), even UD becomes perpendicular to the shot -- otherwise passages would not look very good. In the case of vertical shots, UD is interpreted as north-south dimension from the station to allow tube-like modeling of verticals.",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "vthreshold <number> <units> = threshold for interpreting LRUD readings as left-right-front-back reading perpendicular to the shot. If passages are horizontal (inclination < vthreshold), LR is perpendicular to the shot and UD is vertical. If passages are more or less vertical (inclination > vthreshold), even UD becomes perpendicular to the shot -- otherwise passages would not look very good. In the case of vertical shots, UD is interpreted as north-south dimension from the station to allow tube-like modeling of verticals."
+    },
+    {
+      "name": "walls",
+      "signature": "walls <auto/on/off>",
+      "option_key": "-walls",
+      "value_arity": "1",
+      "value_domain": "unknown",
+      "description": "turn on/off passage shape generation from LRUD data for subsequent shots. If set auto, passage is generated only if there is no scrap referencing given centreline.",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "walls <auto/on/off> = turn on/off passage shape generation from LRUD data for subsequent shots. If set auto, passage is generated only if there is no scrap referencing given centreline."
+    },
+    {
+      "name": "attr",
+      "signature": "attr <value> <value>",
+      "option_key": "-attr",
+      "value_arity": "N",
+      "value_domain": "unknown",
+      "description": "",
+      "allowed_values": [],
+      "dependencies": [],
+      "described_in_book": false,
+      "raw": ""
+    },
+    {
+      "name": "cs",
+      "signature": "cs <coordinate system>",
+      "option_key": "-cs",
+      "value_arity": "1",
+      "value_domain": "unknown",
+      "description": "coordinate system for stations with fixed coordinates",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "cs <coordinate system> = coordinate system for stations with fixed coordinates"
+    },
+    {
+      "name": "station-names",
+      "signature": "station-names <prefix> <suffix>",
+      "option_key": "-station-names",
+      "value_arity": "N",
+      "value_domain": "station",
+      "description": "adds given prefix/suffix to all survey stations in the current scrap. Saves some typing.",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "station-names <prefix> <suffix> = adds given prefix/suffix to all survey stations in the current scrap. Saves some typing."
     }
   ],
   "dependencies": [

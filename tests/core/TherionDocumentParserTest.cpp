@@ -51,12 +51,12 @@ void TherionDocumentParserTest::parsesCommentOnlyLinesWithoutDirectiveTokens()
     QCOMPARE(hashComment.tokenSpans.size(), 1);
     QCOMPARE(hashComment.tokenSpans.at(0).type, TherionTokenType::Comment);
 
-    const TherionParsedLine percentComment = TherionDocumentParser::parseLine(QStringLiteral("% temporary branch"), 13);
-    QVERIFY(percentComment.tokens.isEmpty());
-    QCOMPARE(percentComment.commentStart, 0);
-    QCOMPARE(percentComment.commentText, QStringLiteral(" temporary branch"));
-    QCOMPARE(percentComment.tokenSpans.size(), 1);
-    QCOMPARE(percentComment.tokenSpans.at(0).text, QStringLiteral("% temporary branch"));
+    // Therion does not treat % as a comment.
+    const TherionParsedLine percentLine = TherionDocumentParser::parseLine(QStringLiteral("% temporary branch"), 13);
+    QCOMPARE(percentLine.tokens, QStringList({QStringLiteral("%"),
+                                              QStringLiteral("temporary"),
+                                              QStringLiteral("branch")}));
+    QCOMPARE(percentLine.commentStart, -1);
 }
 
 void TherionDocumentParserTest::parsesTextWithPhysicalLineNumbers()
@@ -65,7 +65,7 @@ void TherionDocumentParserTest::parsesTextWithPhysicalLineNumbers()
         "# file header\r\n"
         "\r\n"
         "survey cave\r\n"
-        "% local note\r\n"
+        "# local note\r\n"
         "endsurvey\r\n"));
 
     QCOMPARE(parsed.size(), 2);
@@ -158,9 +158,7 @@ void TherionDocumentParserTest::parsesLinePointRowsAndReviseStations()
     QCOMPARE(revise.tokens, QStringList({QStringLiteral("revise"),
                                          QStringLiteral("dd.s@dur.dur_dom"),
                                          QStringLiteral("-stations"),
-                                         QStringLiteral("[4@monum.dur_dom"),
-                                         QStringLiteral("5@monum.dur_dom"),
-                                         QStringLiteral("6@monum.dur_dom]")}));
+                                         QStringLiteral("[4@monum.dur_dom 5@monum.dur_dom 6@monum.dur_dom]")}));
 }
 
 int runTherionDocumentParserTest(int argc, char **argv)

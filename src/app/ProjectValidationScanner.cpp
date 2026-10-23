@@ -129,7 +129,7 @@ QString documentValidationCacheKey(const ProjectSourceDocument &document,
     QStringList parts;
     parts.reserve(7);
     parts.append(QStringLiteral("path=%1").arg(document.normalizedPath));
-    parts.append(QStringLiteral("type=%1").arg(static_cast<int>(therionSourceDocumentTypeForFilePath(document.normalizedPath))));
+    parts.append(QStringLiteral("type=%1").arg(static_cast<int>(projectSourceDocumentType(document))));
     parts.append(QStringLiteral("loaded=%1").arg(document.textLoaded ? 1 : 0));
     parts.append(QStringLiteral("origin=%1").arg(static_cast<int>(document.origin)));
     parts.append(QStringLiteral("hash=%1").arg(QString::fromLatin1(projectSourceContentHash(document.text).toHex())));
@@ -180,6 +180,95 @@ TherionSourceDiagnostic diagnosticForProjectIndexDiagnostic(const ProjectIndexDi
         diagnostic.message = QObject::tr("Map references child map `%1`, but no matching map was found in the project index.")
                                  .arg(indexDiagnostic.referencedName);
         break;
+    case ProjectIndexDiagnosticKind::UnknownMapItemReference:
+        diagnostic.code = QStringLiteral("unknown-map-item-reference");
+        diagnostic.title = QObject::tr("Unknown map item");
+        diagnostic.message = QObject::tr("Map item `%1` does not exist. No scrap, map, or survey of that name was found in the project index.")
+                                 .arg(indexDiagnostic.referencedName);
+        break;
+    case ProjectIndexDiagnosticKind::InvalidMapObject:
+        diagnostic.code = QStringLiteral("invalid-map-object");
+        diagnostic.title = QObject::tr("Invalid map object");
+        diagnostic.message = QObject::tr("Map item `%1` is a point, line, or area. A map can only list scraps, maps, or surveys.")
+                                 .arg(indexDiagnostic.referencedName);
+        break;
+    case ProjectIndexDiagnosticKind::InvalidMapItem:
+        diagnostic.code = QStringLiteral("invalid-map-item");
+        diagnostic.title = QObject::tr("Invalid map item");
+        diagnostic.message = QObject::tr("A map item is a name, optionally followed by a shift in brackets and `above`, `below`, or `none`.");
+        break;
+    case ProjectIndexDiagnosticKind::InvalidMapShift:
+        diagnostic.code = QStringLiteral("invalid-map-shift");
+        diagnostic.title = QObject::tr("Invalid map shift");
+        diagnostic.message = QObject::tr("The map item shift `%1` needs two numbers and optional units, for example `[10 20 m]`.")
+                                 .arg(indexDiagnostic.referencedName);
+        break;
+    case ProjectIndexDiagnosticKind::UnsupportedMapPreviewType:
+        diagnostic.code = QStringLiteral("unsupported-map-preview-type");
+        diagnostic.title = QObject::tr("Unsupported preview type");
+        diagnostic.message = QObject::tr("`%1` is not a preview type Therion accepts here. Use `above` or `below`, or `none` after a map item shift.")
+                                 .arg(indexDiagnostic.referencedName);
+        break;
+    case ProjectIndexDiagnosticKind::EmptyMap:
+        diagnostic.code = QStringLiteral("empty-map");
+        diagnostic.title = QObject::tr("Empty map");
+        diagnostic.message = QObject::tr("Map `%1` lists no scraps, maps, or surveys, which Therion does not allow.")
+                                 .arg(indexDiagnostic.referencedName);
+        break;
+    case ProjectIndexDiagnosticKind::MapWithOnlyPreviews:
+        diagnostic.code = QStringLiteral("map-with-only-previews");
+        diagnostic.title = QObject::tr("Map with only previews");
+        diagnostic.message = QObject::tr("Map `%1` lists only previews. Therion needs at least one scrap, map, or survey.")
+                                 .arg(indexDiagnostic.referencedName);
+        break;
+    case ProjectIndexDiagnosticKind::InvalidMapSurveyReference:
+        diagnostic.code = QStringLiteral("invalid-map-survey-reference");
+        diagnostic.title = QObject::tr("Invalid map survey");
+        diagnostic.message = QObject::tr("`-survey %1` does not name a survey.")
+                                 .arg(indexDiagnostic.referencedName);
+        break;
+    case ProjectIndexDiagnosticKind::RecursiveMapReference:
+        diagnostic.code = QStringLiteral("recursive-map-reference");
+        diagnostic.title = QObject::tr("Recursive map reference");
+        diagnostic.message = QObject::tr("Map `%1` contains, directly or through its own maps, the map that lists it.")
+                                 .arg(indexDiagnostic.referencedName);
+        break;
+    case ProjectIndexDiagnosticKind::IncompatibleScrapProjection:
+        diagnostic.code = QStringLiteral("incompatible-scrap-projection");
+        diagnostic.title = QObject::tr("Incompatible scrap projection");
+        diagnostic.message = QObject::tr("Scrap `%1` has a different projection from the first item of this map, or from the map's `-projection`.")
+                                 .arg(indexDiagnostic.referencedName);
+        break;
+    case ProjectIndexDiagnosticKind::IncompatibleMapProjection:
+        diagnostic.code = QStringLiteral("incompatible-map-projection");
+        diagnostic.title = QObject::tr("Incompatible map projection");
+        diagnostic.message = QObject::tr("Map `%1` has a different projection from the first item of this map, or from the map's `-projection`.")
+                                 .arg(indexDiagnostic.referencedName);
+        break;
+    case ProjectIndexDiagnosticKind::ShiftedScrap:
+        diagnostic.code = QStringLiteral("shifted-scrap");
+        diagnostic.title = QObject::tr("Shifted scrap");
+        diagnostic.message = QObject::tr("Scrap `%1` is shifted, which Therion allows only for maps and for the first scrap of a map.")
+                                 .arg(indexDiagnostic.referencedName);
+        break;
+    case ProjectIndexDiagnosticKind::NoProjectionForSurvey:
+        diagnostic.code = QStringLiteral("no-projection-for-survey");
+        diagnostic.title = QObject::tr("No projection for survey");
+        diagnostic.message = QObject::tr("Survey `%1` is the first item of a map without `-projection`. Give the map a projection to draw the survey's centreline in.")
+                                 .arg(indexDiagnostic.referencedName);
+        break;
+    case ProjectIndexDiagnosticKind::UnsupportedSurveyProjection:
+        diagnostic.code = QStringLiteral("unsupported-survey-projection");
+        diagnostic.title = QObject::tr("Unsupported projection for survey");
+        diagnostic.message = QObject::tr("Survey `%1` cannot be drawn in this map's projection. A survey needs plan, extended, or elevation.")
+                                 .arg(indexDiagnostic.referencedName);
+        break;
+    case ProjectIndexDiagnosticKind::PreviewNotMap:
+        diagnostic.code = QStringLiteral("preview-not-map");
+        diagnostic.title = QObject::tr("Preview is not a map");
+        diagnostic.message = QObject::tr("Preview `%1` is not a map. A preview must name a map.")
+                                 .arg(indexDiagnostic.referencedName);
+        break;
     case ProjectIndexDiagnosticKind::AmbiguousMapScrapReference:
         diagnostic.code = QStringLiteral("ambiguous-map-scrap-reference");
         diagnostic.title = QObject::tr("Ambiguous map scrap reference");
@@ -196,9 +285,8 @@ TherionSourceDiagnostic diagnosticForProjectIndexDiagnostic(const ProjectIndexDi
         break;
     case ProjectIndexDiagnosticKind::MixedMapAndScrapReferences:
         diagnostic.code = QStringLiteral("mixed-map-and-scrap-references");
-        diagnostic.severity = TherionSourceDiagnosticSeverity::Warning;
         diagnostic.title = QObject::tr("Mixed map and scrap references");
-        diagnostic.message = QObject::tr("Map composition mixes child map and scrap references; `%1` changes the content kind.")
+        diagnostic.message = QObject::tr("Map mixes scraps with maps or surveys at `%1`. Therion needs every item of a map to be a scrap, or every item to be a map or survey.")
                                  .arg(indexDiagnostic.referencedName);
         break;
     case ProjectIndexDiagnosticKind::UnknownJoinReference:
@@ -239,6 +327,12 @@ TherionSourceDiagnostic diagnosticForProjectIndexDiagnostic(const ProjectIndexDi
         diagnostic.message = QObject::tr("Object id `%1` is already used by another object in this namespace.")
                                  .arg(indexDiagnostic.referencedName);
         break;
+    case ProjectIndexDiagnosticKind::ObjectIdMatchesStation:
+        diagnostic.code = QStringLiteral("duplicate-object-id");
+        diagnostic.title = QObject::tr("Duplicate object id");
+        diagnostic.message = QObject::tr("Object id `%1` is also the name of a station in this survey.")
+                                 .arg(indexDiagnostic.referencedName);
+        break;
     }
 
     return diagnostic;
@@ -266,32 +360,6 @@ QString normalizedOptionName(QString optionName)
         optionName.remove(0, 1);
     }
     return optionName;
-}
-
-const TherionSourceLogicalArgumentRange *pointStationNameRange(const TherionSourceLogicalCommand &command)
-{
-    if (command.metadata.commandName != QStringLiteral("point")
-        || command.positionalArgumentRanges.size() < 3) {
-        return nullptr;
-    }
-
-    const QString pointType = command.positionalArgumentRanges.at(2).text.trimmed().section(QLatin1Char(':'), 0, 0);
-    if (pointType.compare(QStringLiteral("station"), Qt::CaseInsensitive) != 0) {
-        return nullptr;
-    }
-
-    for (const TherionSourceLogicalOptionEntryRange &optionEntry : command.optionEntryRanges) {
-        if (normalizedOptionName(optionEntry.key) != QStringLiteral("name")) {
-            continue;
-        }
-        for (const TherionSourceLogicalArgumentRange &valueRange : optionEntry.valueRanges) {
-            if (!valueRange.text.trimmed().isEmpty()) {
-                return &valueRange;
-            }
-        }
-    }
-
-    return nullptr;
 }
 
 QSet<QString> indexedProjectSourceFiles(const ProjectIndexSnapshot &snapshot)
@@ -325,57 +393,28 @@ ProjectStructureIndexSourceSet projectStructureIndexSourceSetWithLogicalDocument
     return sourceSet;
 }
 
-void appendUnindexedTh2StationNameFindings(ProjectValidationScanner::Result *result,
-                                           const ProjectSourceDocument &document,
-                                           const ProjectIndexSnapshot &,
-                                           ProjectSourceProjectionCache &projectionCache)
+// A drawing no config reads gets one note instead of an error per station point: its stations cannot be checked
+// against the centreline, and it is not part of what Therion compiles.
+void appendUnreadDrawingFinding(ProjectValidationScanner::Result *result, const ProjectSourceDocument &document)
 {
     if (result == nullptr
         || result->limitReached
-        || therionSourceDocumentTypeForFilePath(document.normalizedPath) != TherionSourceDocumentType::TherionMap) {
+        || projectSourceDocumentType(document) != TherionSourceDocumentType::TherionMap) {
         return;
     }
 
-    const TherionSourceLogicalDocument &logicalDocument =
-        projectionCache.logicalDocument(document);
-    const QHash<int, TherionStationNameTransform> scrapStationNameTransforms =
-        therionScrapStationNameTransformsByStartLine(logicalDocument);
-    for (const TherionSourceLogicalCommand &command : logicalDocument.commands()) {
-        const TherionSourceLogicalArgumentRange *nameRange = pointStationNameRange(command);
-        if (nameRange == nullptr) {
-            continue;
-        }
-        const QString referenceName = nameRange->text.trimmed();
-        const std::optional<TherionStationNameTransform> scrapStationNameTransform =
-            therionActiveScrapStationNameTransform(command, scrapStationNameTransforms);
-        const QString effectiveReferenceName = scrapStationNameTransform.has_value()
-            ? therionStationReferenceWithScrapNameTransform(referenceName,
-                                                             scrapStationNameTransform.value())
-            : referenceName;
-
-        const bool hasNamespace = effectiveReferenceName.contains(QLatin1Char('@'));
-        if (hasNamespace) {
-            continue;
-        }
-
-        TherionSourceDiagnostic diagnostic;
-        diagnostic.severity = TherionSourceDiagnosticSeverity::Error;
-        diagnostic.lineNumber = nameRange->physicalRange.lineNumber;
-        diagnostic.columnNumber = qMax(1, nameRange->physicalRange.columnNumber);
-        diagnostic.columnLength = qMax(1, nameRange->physicalRange.columnLength);
-        diagnostic.code = QStringLiteral("unknown-station-reference");
-        diagnostic.title = QObject::tr("Unknown station reference");
-        diagnostic.message = QObject::tr("Station reference `%1` cannot be resolved because this file is not included in the project source graph.")
-                                 .arg(referenceName);
-        diagnostic.currentText = nameRange->physicalRange.lineText;
-
-        if (!containsEquivalentFinding(result->findings, document.normalizedPath, diagnostic)) {
-            result->findings.append({document.normalizedPath, diagnostic});
-        }
-        if (result->findings.size() >= kMaximumProjectValidationFindings) {
-            result->limitReached = true;
-            return;
-        }
+    TherionSourceDiagnostic diagnostic;
+    diagnostic.code = QStringLiteral("drawing-not-read");
+    diagnostic.severity = TherionSourceDiagnosticSeverity::Information;
+    diagnostic.lineNumber = 1;
+    diagnostic.columnNumber = 1;
+    diagnostic.columnLength = 1;
+    diagnostic.title = QObject::tr("Drawing not read by the config");
+    diagnostic.message = QObject::tr("This drawing is not read through the project's Therion config, so Therion does not "
+                                     "compile it and its station references are not checked.");
+    result->findings.append({document.normalizedPath, diagnostic});
+    if (result->findings.size() >= kMaximumProjectValidationFindings) {
+        result->limitReached = true;
     }
 }
 
@@ -384,8 +423,7 @@ void appendProjectIndexFindings(ProjectValidationScanner::Result *result,
                                 const ProjectIndexSnapshot &snapshot,
                                 const QString &indexErrorMessage,
                                 const QHash<QString, QString> &searchedTextByPath,
-                                const QHash<QString, ProjectSourceDocument> &searchedDocumentByPath,
-                                ProjectSourceProjectionCache &projectionCache)
+                                const QHash<QString, ProjectSourceDocument> &searchedDocumentByPath)
 {
     if (result == nullptr || result->limitReached) {
         return;
@@ -439,10 +477,7 @@ void appendProjectIndexFindings(ProjectValidationScanner::Result *result,
         if (documentIt == searchedDocumentByPath.constEnd()) {
             continue;
         }
-        appendUnindexedTh2StationNameFindings(result,
-                                              documentIt.value(),
-                                              snapshot,
-                                              projectionCache);
+        appendUnreadDrawingFinding(result, documentIt.value());
         if (result->limitReached) {
             return;
         }
@@ -488,7 +523,8 @@ void appendFindingsForDocument(ProjectValidationScanner::Result *result,
     ProjectValidationScanner::DocumentValidationCacheEntry builtEntry;
     const TherionSourceValidationResult validation =
         TherionSourceValidator::validate(sourceDocument, logicalDocument, validationCatalog);
-    const bool suppressUnknownCommandWarnings = isTherionConfigFilePath(document.normalizedPath);
+    const bool suppressUnknownCommandWarnings =
+        projectSourceDocumentType(document) == TherionSourceDocumentType::TherionConfig;
     for (const TherionSourceDiagnostic &diagnostic : validation.diagnostics) {
         if (suppressUnknownCommandWarnings && diagnostic.code == QStringLiteral("unknown-command")) {
             continue;
@@ -639,6 +675,9 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
     for (const ProjectSourceDocument &document : std::as_const(projectSourceSnapshot.documents)) {
         knownProjectFilePaths.insert(document.normalizedPath);
         projectSourceDocumentByPath.insert(document.normalizedPath, document);
+        if (document.readAsType != TherionSourceDocumentType::Unknown) {
+            result.readAsTypes.insert(document.normalizedPath, document.readAsType);
+        }
     }
     const QString knownProjectFilesSignature = knownProjectFilePathsSignature(knownProjectFilePaths);
 
@@ -711,8 +750,7 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
                                    projectIndexSnapshot,
                                    indexErrorMessage,
                                    searchedTextByPath,
-                                   projectSourceDocumentByPath,
-                                   projectionCache);
+                                   projectSourceDocumentByPath);
         projectIndexMs = projectIndexTimer.elapsed();
     }
     if (isSuperseded()) {

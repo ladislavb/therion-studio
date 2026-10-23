@@ -678,8 +678,8 @@ int runProjectIndexDiagnosticProjectionTest()
     if (!expect(findingHasSeverity(waitResult.result,
                                    rootFile,
                                    QStringLiteral("mixed-map-and-scrap-references"),
-                                   TherionSourceDiagnosticSeverity::Warning),
-                "Project validation should expose mixed map/scrap composition as a warning.")) {
+                                   TherionSourceDiagnosticSeverity::Error),
+                "Project validation should expose mixed map/scrap composition as an error, as Therion rejects it.")) {
         return 1;
     }
     if (!expect(waitResult.result.projectIndexScanStats.logicalDocumentBuilds == 0,
@@ -736,43 +736,21 @@ int runUnindexedMapStationNameValidationTest()
     if (!expect(waitResult.received, "Unindexed-map station validation did not emit validationFinished before timeout.")) {
         return 1;
     }
+    // A drawing no config reads gets one note and no station checks (validation plan V4).
     if (!expect(findingHasSeverity(waitResult.result,
                                    looseMapFile,
-                                   QStringLiteral("unknown-station-reference"),
-                                   TherionSourceDiagnosticSeverity::Error),
-                "Project validation should report station -name references in unindexed TH2 files.")) {
+                                   QStringLiteral("drawing-not-read"),
+                                   TherionSourceDiagnosticSeverity::Information)
+                    && findingCount(waitResult.result, looseMapFile, QStringLiteral("drawing-not-read")) == 1,
+                "Project validation should note an unindexed TH2 drawing once as information.")) {
         return 1;
     }
-
-    const TherionSourceDiagnostic *diagnostic =
-        findingDiagnostic(waitResult.result, looseMapFile, QStringLiteral("unknown-station-reference"));
-    if (!expect(diagnostic != nullptr,
-                "Unindexed-map station diagnostic should be available for range checks.")) {
-        return 1;
-    }
-    if (!expect(diagnostic->lineNumber == 2
-                    && diagnostic->columnLength == QStringLiteral("test").size()
-                    && diagnostic->currentText == QStringLiteral("point 0 0 station -name test"),
-                "Unindexed-map station diagnostic should cover the station name token and preserve the full source line.")) {
-        return 1;
-    }
-    if (!expect(diagnostic->message.contains(QStringLiteral("this file is not included in the project source graph"))
-                    && !diagnostic->message.contains(QStringLiteral("this map file")),
-                "Unindexed-map station diagnostic should describe the unindexed source file accurately.")) {
-        return 1;
-    }
-    if (!expect(findingCount(waitResult.result,
-                             looseMapFile,
-                             QStringLiteral("unknown-station-reference")) == 1,
-                "Unindexed-map validation should not report namespaced station references without project context.")) {
+    if (!expect(findingCount(waitResult.result, looseMapFile, QStringLiteral("unknown-station-reference")) == 0,
+                "Project validation should not check station references in an unindexed TH2 drawing.")) {
         return 1;
     }
     if (!expect(waitResult.result.projectionCacheStats.logicalDocumentBuilds == waitResult.result.searchedFileCount,
                 "Unindexed-map validation should build one plain logical projection for each project-index source.")) {
-        return 1;
-    }
-    if (!expect(waitResult.result.projectionCacheStats.logicalDocumentHits > 0,
-                "Unindexed-map validation should reuse a plain logical projection for the unindexed TH2 diagnostic helper.")) {
         return 1;
     }
     if (!expect(waitResult.result.projectionCacheStats.sourceDocumentHits

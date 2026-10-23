@@ -5,7 +5,7 @@
     "file": "therion/thbook/ch02.tex",
     "line": 616
   },
-  "summary": "Scrap is a piece of 2D map, which doesn't contain overlapping passages (i.e. all the passages may be drawn on the paper without overlapping). For small and simple caves, the whole cave may belong to one scrap. In complicated systems, a scrap is usually one chamber or one passage. Ideally, a scrap contains about 100 m of the cave. (If necessary, scraps may be much smaller - just to display a few meters of the cave. When deciding about scrap size please take into account the following: Using small scraps may take more time for cartographer to optimize scrap joins. On the other hand smaller scraps will probably be less distorted by map warping algorithms than larger scraps. Using too large scraps may exhaust 's memory if passage fills are frequently used and the map editor in XTherion is much less responsive when editing huge scraps.) Each scrap is processed separately by ; scraps which are too large may exceed 's memory and cause errors. Scrap consists of point, line and area map symbols. See chapter How the map is put together for explanation how and in which order are they displayed. Scrap border consists of lines with the -outline out or -outline in options (passage walls have -outline out by default). These lines shouldn't intersect - otherwise Therion ( ) can't determine the interior of the scrap and \\ issues a warning message \"scrap outline intersects itself\". Each scrap has its own local cartesian coordinate system, which usually corresponds with the millimeter paper (if you measure the coordinates of map symbols by hand) or pixels of the scanned image (if you use XTherion). Therion does the transformation from this local coordinate system to the real coordinates using the positions of survey stations, which are specified both in the scrap as point map symbols and in centreline data. If the scrap doesn't contain at least two survey stations with the -name reference, you have to use the -scale option for calibrating the scrap. (This is usual for cross sections.) The transformation consists of the following steps: * Linear transformation (shifting, scaling and rotation) which \"best\" fits stations drawn in the scrap to real ones. \"Best\" means that the sum of squared distances between corresponding stations before and after transformation is minimal. The result is displayed red if debug option of the layout command is set on. * Non-linear transformation of the scrap which (1) moves survey stations to their correct position, (2) is continuous. Displayed blue in the debug mode. * Non-linear transformation of the scrap which (1) moves joined points together, (2) doesn't move survey stations, (3) is continuous. Finally the position of curves' control points is adjusted to preserve smoothness. The result is final map.",
+  "summary": "Scrap is a piece of 2D map, which doesn't contain overlapping passages (i.e. all the passages may be drawn on the paper without overlapping). For small and simple caves, the whole cave may belong to one scrap. In complicated systems, a scrap is usually one chamber or one passage. Ideally, a scrap contains about 100 m of the cave. (If necessary, scraps may be much smaller - just to display a few meters of the cave. When deciding about scrap size please take into account the following: Using small scraps may take more time for cartographer to optimize scrap joins. On the other hand smaller scraps will probably be less distorted by map warping algorithms than larger scraps. Using too large scraps may exhaust 's memory if passage fills are frequently used and the map editor in XTherion is much less responsive when editing huge scraps.) Each scrap is processed separately by ; scraps which are too large may exceed 's memory and cause errors. Scrap consists of point, line and area map symbols. See chapter How the map is put together for explanation how and in which order are they displayed. Scrap border consists of lines with the -outline out or -outline in options (passage walls have -outline out by default). These lines shouldn't intersect - otherwise Therion ( ) can't determine the interior of the scrap and issues a warning message \"scrap outline intersects itself\". Each scrap has its own local cartesian coordinate system, which usually corresponds with the millimeter paper (if you measure the coordinates of map symbols by hand) or pixels of the scanned image (if you use XTherion). Therion does the transformation from this local coordinate system to the real coordinates using the positions of survey stations, which are specified both in the scrap as point map symbols and in centreline data. If the scrap doesn't contain at least two survey stations with the -name reference, you have to use the -scale option for calibrating the scrap. (This is usual for cross sections.) The transformation consists of the following steps: * Linear transformation (shifting, scaling and rotation) which \"best\" fits stations drawn in the scrap to real ones. \"Best\" means that the sum of squared distances between corresponding stations before and after transformation is minimal. The result is displayed red if debug option of the layout command is set on. * Non-linear transformation of the scrap which (1) moves survey stations to their correct position, (2) is continuous. Displayed blue in the debug mode. * Non-linear transformation of the scrap which (1) moves joined points together, (2) doesn't move survey stations, (3) is continuous. Finally the position of curves' control points is adjusted to preserve smoothness. The result is final map.",
   "syntax": [
     "scrap <id> [OPTIONS] ... point, line and area commands ... endscrap [<id>]"
   ],
@@ -31,13 +31,13 @@
   ],
   "options": [
     {
-      "raw": "projection <specification> = specifies the drawing projection. Each projection is identified by a type and optionally by an index in the form type[:index]. The index can be any keyword. The following projection types are supported: 1. none = no projection, used for cross sections or maps that are independent of survey data (e.g. digitization of old maps where no centreline data are available). No index is allowed for this projection. 2. plan = basic plan projection (default). 3. elevation = orthogonal projection (a.k.a.\\ projected profile) which optionally takes a view direction as an argument (e.g. [elevation 10] or [elevation 10 deg]). 4. extended = extended elevation (a.k.a.\\ extended profile).",
+      "raw": "projection <specification> = specifies the drawing projection. Each projection is identified by a type and optionally by an index in the form type[:index]. The index can be any keyword. The following projection types are supported: 1. none = no projection, used for cross sections or maps that are independent of survey data (e.g. digitization of old maps where no centreline data are available). No index is allowed for this projection. 2. plan = basic plan projection (default). 3. elevation = orthogonal projection (a.k.a. projected profile) which optionally takes a view direction as an argument (e.g. [elevation 10] or [elevation 10 deg]). 4. extended = extended elevation (a.k.a. extended profile).",
       "name": "projection <specification>",
-      "signature": "projection <specification>",
+      "signature": "projection/proj <specification>",
       "option_key": "-projection",
       "value_arity": "1",
       "value_domain": "projection",
-      "description": "specifies the drawing projection. Each projection is identified by a type and optionally by an index in the form type[:index]. The index can be any keyword. The following projection types are supported: 1. none = no projection, used for cross sections or maps that are independent of survey data (e.g. digitization of old maps where no centreline data are available). No index is allowed for this projection. 2. plan = basic plan projection (default). 3. elevation = orthogonal projection (a.k.a.\\ projected profile) which optionally takes a view direction as an argument (e.g. [elevation 10] or [elevation 10 deg]). 4. extended = extended elevation (a.k.a.\\ extended profile).",
+      "description": "specifies the drawing projection. Each projection is identified by a type and optionally by an index in the form type[:index]. The index can be any keyword. The following projection types are supported: 1. none = no projection, used for cross sections or maps that are independent of survey data (e.g. digitization of old maps where no centreline data are available). No index is allowed for this projection. 2. plan = basic plan projection (default). 3. elevation = orthogonal projection (a.k.a. projected profile) which optionally takes a view direction as an argument (e.g. [elevation 10] or [elevation 10 deg]). 4. extended = extended elevation (a.k.a. extended profile).",
       "allowed_values": [],
       "dependencies": []
     },
@@ -154,6 +154,29 @@
       "description": "description of the object",
       "allowed_values": [],
       "dependencies": []
+    },
+    {
+      "name": "attr",
+      "signature": "attr <value> <value>",
+      "option_key": "-attr",
+      "value_arity": "N",
+      "value_domain": "unknown",
+      "description": "",
+      "allowed_values": [],
+      "dependencies": [],
+      "described_in_book": false,
+      "raw": ""
+    },
+    {
+      "name": "id",
+      "signature": "id <ext_keyword>",
+      "option_key": "-id",
+      "value_arity": "1",
+      "value_domain": "keyword",
+      "description": "ID of the symbol.",
+      "allowed_values": [],
+      "dependencies": [],
+      "raw": "id <ext_keyword> = ID of the symbol."
     }
   ],
   "dependencies": [

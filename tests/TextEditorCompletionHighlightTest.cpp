@@ -3,6 +3,7 @@
 #include "../src/core/CommandCatalogStore.h"
 #include "../src/core/QtFileSystem.h"
 #include "../src/core/TherionDocumentParser.h"
+#include "../src/editor/TherionSyntaxHighlighter.h"
 
 #include <QAbstractItemView>
 #include <QApplication>
@@ -144,6 +145,25 @@ bool tokenHasBoldFormat(const QTextBlock &block, const QString &token)
                 && range.format.underlineStyle() != QTextCharFormat::WaveUnderline) {
                 return true;
             }
+        }
+    }
+    return false;
+}
+
+bool textFromTokenIsItalic(const QTextBlock &block, const QString &token)
+{
+    if (!block.isValid() || block.layout() == nullptr) {
+        return false;
+    }
+
+    const int tokenStart = block.text().indexOf(token);
+    if (tokenStart < 0) {
+        return false;
+    }
+    for (const QTextLayout::FormatRange &range : block.layout()->formats()) {
+        if (range.start <= tokenStart && range.start + range.length >= block.text().size()
+            && range.format.fontItalic()) {
+            return true;
         }
     }
     return false;
@@ -1246,6 +1266,68 @@ int main(int argc, char *argv[])
         }
         if (!expect(firstColor == referenceColor,
                     "Bracket-attached numeric token in -scale array should be highlighted as number.")) {
+            return 1;
+        }
+    }
+
+    {
+        editor->setPlainText(QStringLiteral("layout l\n"
+                                            "  code metapost\n"
+                                            "    scrap := \"50%\"; % mp note\n"
+                                            "  endcode\n"
+                                            "  code tex-map\n"
+                                            "    \\def\\x#1{50\\%} % tex note\n"
+                                            "    # \\cavename={}\n"
+                                            "  endcode\n"
+                                            "endlayout\n"
+                                            "survey after\n"
+                                            "endsurvey\n"));
+        pumpEvents();
+
+        const QTextDocument *document = editor->document();
+        const QTextBlock metaPostLine = document->findBlockByLineNumber(2);
+        const QTextBlock texLine = document->findBlockByLineNumber(5);
+        if (!expect(textFromTokenIsItalic(metaPostLine, QStringLiteral("% mp note"))
+                        && !textFromTokenIsItalic(metaPostLine, QStringLiteral("50%")),
+                    "A MetaPost comment should be coloured as a comment, but not a % inside a string.")) {
+            return 1;
+        }
+        if (!expect(!tokenHasBoldFormat(metaPostLine, QStringLiteral("scrap")),
+                    "A Therion keyword inside a code block should not be coloured as a keyword.")) {
+            return 1;
+        }
+        if (!expect(textFromTokenIsItalic(texLine, QStringLiteral("% tex note"))
+                        && !textFromTokenIsItalic(texLine, QStringLiteral("#1")),
+                    "A TeX comment should be coloured as a comment, but not an escaped % or a macro argument.")) {
+            return 1;
+        }
+        if (!expect(textFromTokenIsItalic(document->findBlockByLineNumber(6), QStringLiteral("# \\cavename")),
+                    "A code line starting with # is a Therion comment and should be coloured as one.")) {
+            return 1;
+        }
+        if (!expect(tokenHasBoldFormat(document->findBlockByLineNumber(9), QStringLiteral("survey")),
+                    "A Therion command after the layout should be coloured as Therion again.")) {
+            return 1;
+        }
+
+    }
+
+    {
+        // The highlighter alone, without the editor's full rehighlights: Qt rehighlights the edited line and the
+        // next, so only the block state recolours the comment two lines below.
+        QTextDocument document(QStringLiteral("layout l\n  code metapost\n    a;\n    x; % note\n  endcode\nendlayout\n"));
+        document.documentLayout();
+        TherionSyntaxHighlighter highlighter(CommandCatalogStore(), &document);
+        highlighter.rehighlight();
+        if (!expect(textFromTokenIsItalic(document.findBlockByLineNumber(3), QStringLiteral("% note")),
+                    "A MetaPost comment should be coloured as a comment by the highlighter alone.")) {
+            return 1;
+        }
+        QTextCursor cursor(document.findBlockByLineNumber(1));
+        cursor.select(QTextCursor::LineUnderCursor);
+        cursor.insertText(QStringLiteral("  scale 1 500"));
+        if (!expect(!textFromTokenIsItalic(document.findBlockByLineNumber(3), QStringLiteral("% note")),
+                    "Lines after a removed code line should no longer be coloured as code.")) {
             return 1;
         }
     }

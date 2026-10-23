@@ -518,6 +518,7 @@ private:
     QStandardItemModel *mapObjectsModel_ = nullptr;
     QVector<TherionStudio::TherionSourceDiagnostic> validationDiagnostics_;
     QVector<QString> validationDiagnosticFilePaths_;
+    QHash<QString, TherionStudio::TherionSourceDocumentType> validationReadAsTypes_;
     QVector<TherionStudio::ProjectValidationScanner::Finding> validationExportFindings_;
     QString validationDocumentPath_;
     QString validationExportScopeLabel_;

@@ -29,5 +29,9 @@ QStringList parseOptionValuesFromEditor(const QString &rawValue, const QString &
 QString quoteTherionArgument(const QString &value);
 bool shouldQuoteTherionArgument(const QString &value);
 bool isBracketedTherionValueGroup(const QString &value);
+// Text of a value as Therion reads it: a bracketed group without its outer brackets.
+QString therionValueText(const QString &value);
+// The text written as a bracketed group, or empty when its brackets do not balance.
+QString bracketedTherionValue(const QString &text);
 QString serializeTherionArgumentToken(const QString &value);
 }

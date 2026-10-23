@@ -207,6 +207,7 @@ void TherionSyntaxHighlighter::setSourceDocumentType(TherionSourceDocumentType s
 
     sourceDocumentType_ = sourceType;
     cachedValidationResult_ = {};
+    cachedCodeLanguagesByLine_.clear();
     cachedValidationRevision_ = -1;
     sourceSnapshotCache_.clear();
     rehighlight();
@@ -224,6 +225,7 @@ void TherionSyntaxHighlighter::loadPalette()
     closingDirectiveIdTokens_.clear();
     validationCatalog_ = {};
     cachedValidationResult_ = {};
+    cachedCodeLanguagesByLine_.clear();
     cachedValidationRevision_ = -1;
     sourceSnapshotCache_.clear();
 
@@ -236,6 +238,8 @@ void TherionSyntaxHighlighter::loadPalette()
         makeValidationFormat(TherionSourceDiagnosticSeverity::Warning, QGuiApplication::palette());
     validationErrorFormat_ =
         makeValidationFormat(TherionSourceDiagnosticSeverity::Error, QGuiApplication::palette());
+    validationInformationFormat_ =
+        makeValidationFormat(TherionSourceDiagnosticSeverity::Information, QGuiApplication::palette());
     stringFormat_ = makeFormat(darkPalette ? QColor(QStringLiteral("#CE9178")) : QColor(QStringLiteral("#0a3069")));
     numberFormat_ = makeFormat(darkPalette ? QColor(QStringLiteral("#B5CEA8")) : QColor(QStringLiteral("#116329")));
     commentFormat_ = makeFormat(darkPalette ? QColor(QStringLiteral("#6A9955")) : QColor(QStringLiteral("#6e7781")), false, true);
@@ -304,6 +308,19 @@ void TherionSyntaxHighlighter::applyStyle(const QString &styleName, const QJsonO
 void TherionSyntaxHighlighter::highlightBlock(const QString &text)
 {
     setFormat(0, text.length(), baseTextFormat_);
+
+    // The state is the next line's code language, so typing `code` or `endcode` recolours the lines after it.
+    const int blockNumber = currentBlock().blockNumber();
+    setCurrentBlockState(static_cast<int>(cachedCodeLanguageAt(blockNumber + 1)));
+    const TherionCodeLanguage codeLanguage = cachedCodeLanguageAt(blockNumber);
+    if (codeLanguage != TherionCodeLanguage::None) {
+        const int commentStart = therionCodeCommentStart(text, codeLanguage);
+        if (commentStart >= 0) {
+            setFormat(commentStart, text.length() - commentStart, commentFormat_);
+        }
+        applyValidatorInvalidTokenFormats(text);
+        return;
+    }
 
     const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(text);
     const TherionParsedLine parsedLine = sourceDocument.lines().isEmpty()
@@ -386,6 +403,12 @@ void TherionSyntaxHighlighter::highlightBlock(const QString &text)
                 setFormat(tokenSpan.start, tokenSpan.length, optionFormat_);
             } else if (keywordTokens_.contains(normalizedToken)) {
                 setFormat(tokenSpan.start, tokenSpan.length, keywordFormat_);
+            } else if (tokenSpan.text.startsWith(QLatin1Char('['))) {
+                for (const TherionParsedToken &part : TherionDocumentParser::bracketedValueSpans(tokenSpan)) {
+                    if (TherionTokenRules::isNumericToken(part.text)) {
+                        setFormat(part.start, part.length, numberFormat_);
+                    }
+                }
             } else if (TherionTokenRules::isNumericToken(tokenSpan.text,
                                                          TherionTokenRules::NumericTokenContext::SyntaxToken)) {
                 setFormat(tokenSpan.start, tokenSpan.length, numberFormat_);
@@ -635,6 +658,7 @@ void TherionSyntaxHighlighter::applyValidatorInvalidTokenFormats(const QString &
             && code != QStringLiteral("invalid-command-context")
             && code != QStringLiteral("invalid-document-type")
             && code != QStringLiteral("duplicate-object-id")
+            && code != QStringLiteral("repeated-station-point")
             && code != QStringLiteral("unclosed-block")
             && code != QStringLiteral("unknown-command")
             && code != QStringLiteral("unknown-area-line-reference")) {
@@ -663,15 +687,20 @@ const QTextCharFormat &TherionSyntaxHighlighter::validationFormatForSeverity(
         return validationErrorFormat_;
     case TherionSourceDiagnosticSeverity::Warning:
         return validationWarningFormat_;
+    case TherionSourceDiagnosticSeverity::Information:
+        return validationInformationFormat_;
     }
     return validationWarningFormat_;
 }
 
-const TherionSourceValidationResult &TherionSyntaxHighlighter::cachedValidationResult()
+void TherionSyntaxHighlighter::refreshCachedDocumentState()
 {
-    if (document() == nullptr) {
-        static const TherionSourceValidationResult emptyResult;
-        return emptyResult;
+    // setPlainText empties and refills the document under one revision, so an empty document is never cached.
+    if (document() == nullptr || document()->isEmpty()) {
+        cachedValidationResult_ = {};
+        cachedCodeLanguagesByLine_.clear();
+        cachedValidationRevision_ = -1;
+        return;
     }
 
     const int revision = document()->revision();
@@ -690,8 +719,20 @@ const TherionSourceValidationResult &TherionSyntaxHighlighter::cachedValidationR
         cachedValidationResult_ = TherionSourceValidator::validate(sourceDocument,
                                                                    logicalDocument,
                                                                    validationCatalog_);
+        cachedCodeLanguagesByLine_ = therionCodeLanguagesByLine(sourceDocument);
         cachedValidationRevision_ = revision;
     }
+}
+
+const TherionSourceValidationResult &TherionSyntaxHighlighter::cachedValidationResult()
+{
+    refreshCachedDocumentState();
     return cachedValidationResult_;
+}
+
+TherionCodeLanguage TherionSyntaxHighlighter::cachedCodeLanguageAt(int blockNumber)
+{
+    refreshCachedDocumentState();
+    return cachedCodeLanguagesByLine_.value(blockNumber, TherionCodeLanguage::None);
 }
 }

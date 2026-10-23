@@ -18,9 +18,9 @@
   ],
   "arguments": [
     {
-      "raw": "<dimensions>",
-      "name": "<dimensions>",
-      "signature": "<dimensions>",
+      "raw": "<value>",
+      "name": "<value>",
+      "signature": "<value>",
       "option_key": "",
       "value_arity": "1",
       "value_domain": "keyword",
@@ -29,9 +29,64 @@
       "dependencies": []
     },
     {
-      "raw": "<units>",
-      "name": "<units>",
-      "signature": "<units>",
+      "raw": "<value>",
+      "name": "<value>",
+      "signature": "<value>",
+      "option_key": "",
+      "value_arity": "1",
+      "value_domain": "keyword",
+      "description": "",
+      "allowed_values": [],
+      "dependencies": []
+    },
+    {
+      "raw": "<value>",
+      "name": "<value>",
+      "signature": "<value>",
+      "option_key": "",
+      "value_arity": "1",
+      "value_domain": "keyword",
+      "description": "",
+      "allowed_values": [],
+      "dependencies": []
+    },
+    {
+      "raw": "<value>",
+      "name": "<value>",
+      "signature": "<value>",
+      "option_key": "",
+      "value_arity": "1",
+      "value_domain": "keyword",
+      "description": "",
+      "allowed_values": [],
+      "dependencies": []
+    },
+    {
+      "raw": "<value>",
+      "name": "<value>",
+      "signature": "<value>",
+      "option_key": "",
+      "value_arity": "1",
+      "value_domain": "keyword",
+      "description": "",
+      "allowed_values": [],
+      "dependencies": []
+    },
+    {
+      "raw": "<value>",
+      "name": "<value>",
+      "signature": "<value>",
+      "option_key": "",
+      "value_arity": "1",
+      "value_domain": "keyword",
+      "description": "",
+      "allowed_values": [],
+      "dependencies": []
+    },
+    {
+      "raw": "<value>",
+      "name": "<value>",
+      "signature": "<value>",
       "option_key": "",
       "value_arity": "1",
       "value_domain": "keyword",

@@ -22,6 +22,8 @@ inline QColor validationSeverityForeground(TherionSourceDiagnosticSeverity sever
         return darkPalette ? QColor(248, 113, 113) : QColor(185, 28, 28);
     case TherionSourceDiagnosticSeverity::Warning:
         return darkPalette ? QColor(251, 191, 36) : QColor(180, 83, 9);
+    case TherionSourceDiagnosticSeverity::Information:
+        return darkPalette ? QColor(96, 165, 250) : QColor(29, 78, 216);
     }
     return palette.color(QPalette::Text);
 }
@@ -34,6 +36,8 @@ inline QColor validationSeverityAccent(TherionSourceDiagnosticSeverity severity,
         return darkPalette ? QColor(248, 113, 113) : QColor(220, 38, 38);
     case TherionSourceDiagnosticSeverity::Warning:
         return darkPalette ? QColor(251, 191, 36) : QColor(217, 119, 6);
+    case TherionSourceDiagnosticSeverity::Information:
+        return darkPalette ? QColor(96, 165, 250) : QColor(37, 99, 235);
     }
     return palette.color(QPalette::Highlight);
 }

@@ -5,7 +5,7 @@
     "file": "therion/thbook/ch02.tex",
     "line": 357
   },
-  "summary": "set the instrument calibration. The measured value is calculated using the following formula: measured\\ value = (read\\ value - zero\\ error) scale . The supported quantities are the same as sd.",
+  "summary": "set the instrument calibration. The measured value is calculated using the following formula: measured value = (read value - zero error) scale . The supported quantities are the same as sd.",
   "syntax": [
     "calibrate <quantity list> <zero error> [<scale>]"
   ],

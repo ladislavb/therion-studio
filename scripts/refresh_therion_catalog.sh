@@ -87,7 +87,8 @@ fi
 
 python3 scripts/generate_therion_catalog.py \
   --source-repo "$SOURCE_REPO" \
-  --source-ref "$SOURCE_REF"
+  --source-ref "$SOURCE_REF" \
+  --report docs/THERION_BOOK_DIFFERENCES.md
 
 echo "Refreshed resources/therion_command_catalog.json"
 echo "Refreshed resources/therion_catalog/commands/*.json"

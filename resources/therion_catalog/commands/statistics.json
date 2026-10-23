@@ -18,20 +18,25 @@
   ],
   "arguments": [
     {
-      "raw": "<explo/topo/carto/copyright all/off/number>",
-      "name": "<explo/topo/carto/copyright all/off/number>",
-      "signature": "<explo/topo/carto/copyright all/off/number>",
+      "raw": "<value>",
+      "name": "<value>",
+      "signature": "<value>",
       "option_key": "",
       "value_arity": "1",
-      "value_domain": "enum",
+      "value_domain": "keyword",
       "description": "",
-      "allowed_values": [
-        "explo",
-        "topo",
-        "carto",
-        "off",
-        "number"
-      ],
+      "allowed_values": [],
+      "dependencies": []
+    },
+    {
+      "raw": "<value>",
+      "name": "<value>",
+      "signature": "<value>",
+      "option_key": "",
+      "value_arity": "1",
+      "value_domain": "keyword",
+      "description": "",
+      "allowed_values": [],
       "dependencies": []
     }
   ],

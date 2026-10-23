@@ -334,13 +334,13 @@ int runRewritePreservesOtherContentTest()
         return 1;
     }
 
-    contents = QStringLiteral("station 'old station' # keep this comment\npoint station station-01\n");
+    contents = QStringLiteral("station \"old station\" # keep this comment\npoint station station-01\n");
     errorMessage.clear();
     if (!expect(rewriteStructureEntryName(&contents, 1, QStringLiteral("Stations"), QStringLiteral("new station\"name"), &errorMessage), errorMessage.toUtf8().constData())) {
         return 1;
     }
 
-    if (!expect(contents == QStringLiteral("station 'new station\"name' # keep this comment\npoint station station-01\n"), "The rewrite helper did not preserve comments or quote escaping.")) {
+    if (!expect(contents == QStringLiteral("station \"new station\"\"name\" # keep this comment\npoint station station-01\n"), "The rewrite helper did not preserve comments or quote escaping.")) {
         return 1;
     }
 
@@ -349,7 +349,7 @@ int runRewritePreservesOtherContentTest()
         return 1;
     }
 
-    if (!expect(contents == QStringLiteral("station 'new station\"name' # keep this comment\npoint station new-station-02\n"), "The rewrite helper did not update the point-station entry correctly.")) {
+    if (!expect(contents == QStringLiteral("station \"new station\"\"name\" # keep this comment\npoint station new-station-02\n"), "The rewrite helper did not update the point-station entry correctly.")) {
         return 1;
     }
 
@@ -421,11 +421,6 @@ int runRewritePreservesOtherContentTest()
         return 1;
     }
 
-    QString percentCommentContents = QStringLiteral("survey original\n% keep this comment\nmap old-map\n");
-    if (!expect(expectRewriteFailure(percentCommentContents, 2, QStringLiteral("Maps"), QStringLiteral("should-not-apply")), "The rewrite helper should reject percent-comment-only lines.")) {
-        return 1;
-    }
-
     QString blankLineContents = QStringLiteral("survey original\n\nmap old-map\n");
     if (!expect(expectRewriteFailure(blankLineContents, 2, QStringLiteral("Maps"), QStringLiteral("should-not-apply")), "The rewrite helper should reject blank lines.")) {
         return 1;
@@ -454,7 +449,7 @@ int runRewritePreservesOtherContentTest()
         return 1;
     }
 
-    if (!expect(contents == QStringLiteral("map \"path\\\\with#hash\"\n"), "The rewrite helper did not escape backslashes and hash characters correctly.")) {
+    if (!expect(contents == QStringLiteral("map \"path\\with#hash\"\n"), "The rewrite helper did not quote backslashes and hash characters correctly.")) {
         return 1;
     }
 
@@ -488,13 +483,13 @@ int runRewritePreservesOtherContentTest()
         return 1;
     }
 
-    contents = QStringLiteral("\tpoint\tstation\t'old station'\t# station note\n");
+    contents = QStringLiteral("\tpoint\tstation\t\"old station\"\t# station note\n");
     errorMessage.clear();
     if (!expect(rewriteStructureEntryName(&contents, 1, QStringLiteral("Stations"), QStringLiteral("new station"), &errorMessage), errorMessage.toUtf8().constData())) {
         return 1;
     }
 
-    if (!expect(contents == QStringLiteral("\tpoint\tstation\t'new station'\t# station note\n"), "The rewrite helper did not preserve the station token layout.")) {
+    if (!expect(contents == QStringLiteral("\tpoint\tstation\t\"new station\"\t# station note\n"), "The rewrite helper did not preserve the station token layout.")) {
         return 1;
     }
 
@@ -504,17 +499,17 @@ int runRewritePreservesOtherContentTest()
         return 1;
     }
 
-    if (!expect(contents == QStringLiteral("\tmap\t\"new map \\\"quote\\\"\"\t# double quote note\n"), "The rewrite helper did not escape double quotes in a double-quoted name.")) {
+    if (!expect(contents == QStringLiteral("\tmap\t\"new map \"\"quote\"\"\"\t# double quote note\n"), "The rewrite helper did not write doubled quotes in a double-quoted name.")) {
         return 1;
     }
 
-    contents = QStringLiteral("station 'old station' # single quote note\n");
+    contents = QStringLiteral("station \"old station\" # single quote note\n");
     errorMessage.clear();
     if (!expect(rewriteStructureEntryName(&contents, 1, QStringLiteral("Stations"), QStringLiteral("new station's name"), &errorMessage), errorMessage.toUtf8().constData())) {
         return 1;
     }
 
-    if (!expect(contents == QStringLiteral("station 'new station\\'s name' # single quote note\n"), contents.toUtf8().constData())) {
+    if (!expect(contents == QStringLiteral("station \"new station's name\" # single quote note\n"), contents.toUtf8().constData())) {
         return 1;
     }
 

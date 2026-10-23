@@ -8,7 +8,7 @@
     "file": "therion/thbook/ch03.tex",
     "line": 235
   },
-  "summary": "change colour of particular symbol or group of symbols. (Note: colour change currently applies to pattern fills only if (1) output format is PDF and (2) \\ version is at least 1.000) (M, A)",
+  "summary": "change colour of particular symbol or group of symbols. (Note: colour change currently applies to pattern fills only if (1) output format is PDF and (2) version is at least 1.000) (M, A)",
   "syntax": [
     "symbol-colo[u]r <point/line/area/group/special> <symbol-type> <colour>"
   ],
