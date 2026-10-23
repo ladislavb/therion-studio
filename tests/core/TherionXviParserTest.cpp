@@ -166,6 +166,9 @@ void TherionXviParserTest::doesNotTreatXviGridsHeaderAsGridDefinition()
     QVERIFY(nearlyEqual(document.gridOrigin.y(), 2224.40944882));
     QCOMPARE(document.gridCountX, 11);
     QCOMPARE(document.gridCountY, 9);
+    QVERIFY(document.hasGridSpacing);
+    QVERIFY(nearlyEqual(document.gridSpacing, 1.0));
+    QCOMPARE(document.gridSpacingUnit, QStringLiteral("m"));
 }
 
 void TherionXviParserTest::rejectsInvalidContent()

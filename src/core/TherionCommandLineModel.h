@@ -58,6 +58,8 @@ int commandLogicalOptionValueCount(const TherionParsedLine &parsedLine, int opti
 QString normalizedCommandOptionName(const QString &optionName);
 bool commandOptionNameMatches(const QString &token, const QString &optionName);
 QStringList commandOptionValueTokens(const QStringList &tokens, const QString &optionName);
+// Option values with `[...]` group brackets removed, e.g. `-scale [0 0 10 10 m]` -> 0 0 10 10 m.
+QStringList commandOptionUnbracketedValueTokens(const QStringList &tokens, const QString &optionName);
 QString commandOptionValue(const QStringList &tokens, const QString &optionName);
 QHash<QString, QString> commandOptionValuesByName(const QStringList &tokens);
 QString commandOptionValue(const TherionParsedLine &parsedLine, const QString &optionName);

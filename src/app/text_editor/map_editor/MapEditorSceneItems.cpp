@@ -939,6 +939,48 @@ QPointF mapGeometryPreviewToSource(const QPointF &point, const QRectF &sourceBou
     return sceneCoordsPreviewToSource(point, sourceBounds, targetBounds);
 }
 
+QPainterPath linePathForFeature(const MapGeometryFeature &feature, const QRectF &sourceBounds, const QRectF &previewBounds)
+{
+    QPainterPath path;
+    if (feature.lineVertices.size() < 2) {
+        return path;
+    }
+
+    auto toPreview = [&](const QPointF &point) {
+        return mapGeometryPointToPreview(point, sourceBounds, previewBounds);
+    };
+
+    path.moveTo(toPreview(feature.lineVertices.first().anchor));
+    for (int index = 1; index < feature.lineVertices.size(); ++index) {
+        const MapGeometryFeature::TH2LineVertex &previousVertex = feature.lineVertices.at(index - 1);
+        const MapGeometryFeature::TH2LineVertex &currentVertex = feature.lineVertices.at(index);
+        const QPointF cp1 = previousVertex.outgoingControl.value_or(previousVertex.anchor);
+        const QPointF cp2 = currentVertex.incomingControl.value_or(currentVertex.anchor);
+        const bool hasCurveHandle = previousVertex.outgoingControl.has_value() || currentVertex.incomingControl.has_value();
+        if (hasCurveHandle) {
+            path.cubicTo(toPreview(cp1), toPreview(cp2), toPreview(currentVertex.anchor));
+        } else {
+            path.lineTo(toPreview(currentVertex.anchor));
+        }
+    }
+
+    if (feature.closed && feature.lineVertices.size() >= 2) {
+        const MapGeometryFeature::TH2LineVertex &lastVertex = feature.lineVertices.last();
+        const MapGeometryFeature::TH2LineVertex &firstVertex = feature.lineVertices.first();
+        const QPointF cp1 = lastVertex.outgoingControl.value_or(lastVertex.anchor);
+        const QPointF cp2 = firstVertex.incomingControl.value_or(firstVertex.anchor);
+        const bool hasCurveHandle = lastVertex.outgoingControl.has_value() || firstVertex.incomingControl.has_value();
+        if (hasCurveHandle) {
+            path.cubicTo(toPreview(cp1), toPreview(cp2), toPreview(firstVertex.anchor));
+        } else {
+            path.lineTo(toPreview(firstVertex.anchor));
+        }
+        path.closeSubpath();
+    }
+
+    return path;
+}
+
 std::optional<QPointF> mirroredSmoothControlPoint(const QPointF &anchor,
                                                   const QPointF &movedControlPoint,
                                                   const std::optional<QPointF> &oppositeControlPoint)

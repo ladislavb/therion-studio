@@ -53,6 +53,8 @@ int runInstanceBackedRoundTripTest()
         store.setApplicationLanguage(QStringLiteral("cs"));
         store.setDefaultTextEditorMode(QStringLiteral("blocks"));
         store.setAutomaticProjectValidationEnabled(true);
+        store.setJoinOpensSeparateWindow(true);
+        store.setConnectionPositionRunMode(QStringLiteral("never"));
         store.setTroubleshootingLogsEnabledUntilUtc(
             utcDateTime(QDate(2026, 6, 29), QTime(12, 30, 0, 123)));
         store.setTherionExecutablePath(QStringLiteral("/usr/bin/therion"));
@@ -116,6 +118,14 @@ int runInstanceBackedRoundTripTest()
     }
     if (!expect(store.automaticProjectValidationEnabled(),
                 "Automatic project validation flag should round-trip through the injected settings file.")) {
+        return 1;
+    }
+    if (!expect(store.joinOpensSeparateWindow(),
+                "Join separate-window flag should round-trip through the injected settings file.")) {
+        return 1;
+    }
+    if (!expect(store.connectionPositionRunMode() == QStringLiteral("never"),
+                "Connection position run mode should round-trip through the injected settings file.")) {
         return 1;
     }
     if (!expect(store.troubleshootingLogsEnabledUntilUtc()
@@ -245,6 +255,14 @@ int runDefaultsTest()
     }
     if (!expect(store.defaultTextEditorMode() == QStringLiteral("raw"),
                 "Default text editor mode should be raw.")) {
+        return 1;
+    }
+    if (!expect(!store.joinOpensSeparateWindow(),
+                "Default join separate-window flag should be false.")) {
+        return 1;
+    }
+    if (!expect(store.connectionPositionRunMode() == QStringLiteral("ask"),
+                "Default connection position run mode should be ask.")) {
         return 1;
     }
     if (!expect(!store.automaticProjectValidationEnabled(),
@@ -383,6 +401,32 @@ int runInMemoryStoreTest()
 }
 }
 
+int runCopyApplicationSettingsTest()
+{
+    InMemorySessionStore source;
+    source.setApplicationLanguage(QStringLiteral("sk"));
+    source.setDefaultTextEditorMode(QStringLiteral("blocks"));
+    source.setJoinOpensSeparateWindow(true);
+    source.setConnectionPositionRunMode(QStringLiteral("run"));
+    source.setAutomaticProjectValidationEnabled(true);
+    source.setOpenDocumentPaths({QStringLiteral("/tmp/project/a.th")});
+
+    InMemorySessionStore target;
+    copyApplicationSettings(source, target);
+    if (!expect(target.applicationLanguage() == QStringLiteral("sk")
+                    && target.defaultTextEditorMode() == QStringLiteral("blocks")
+                    && target.joinOpensSeparateWindow()
+                    && target.connectionPositionRunMode() == QStringLiteral("run")
+                    && target.automaticProjectValidationEnabled(),
+                "Application settings should be copied to the new store.")) {
+        return 1;
+    }
+    if (!expect(target.openDocumentPaths().isEmpty(), "Window session state should not be copied with settings.")) {
+        return 1;
+    }
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
@@ -400,6 +444,10 @@ int main(int argc, char **argv)
     }
 
     if (const int result = runRecentProjectsFallbackTest(); result != 0) {
+        return result;
+    }
+
+    if (const int result = runCopyApplicationSettingsTest(); result != 0) {
         return result;
     }
 

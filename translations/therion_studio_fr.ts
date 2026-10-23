@@ -447,6 +447,11 @@
         <translation>Affiche ou masque la loupe du dessin dans les éditeurs de dessin.</translation>
     </message>
     <message>
+        <location filename="../src/app/MainWindow.cpp" line="676"/>
+        <source>Joined Drawings</source>
+        <translation>Dessins joints</translation>
+    </message>
+    <message>
         <location filename="../src/app/MainWindow.cpp" line="679"/>
         <source>Enter or exit full screen mode.</source>
         <translation>Active ou désactive le mode plein écran.</translation>
@@ -590,6 +595,11 @@
         <location filename="../src/app/MainWindow.cpp" line="982"/>
         <source>Language changes will take effect after restarting Therion Studio.</source>
         <translation>Les changements de langue prendront effet après le redémarrage de Therion Studio.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindow.cpp" line="676"/>
+        <source>Linked Drawings</source>
+        <translation>Dessins liés</translation>
     </message>
     <message>
         <location filename="../src/app/MainWindow.cpp" line="1007"/>
@@ -1196,6 +1206,16 @@ Si le fichier est ouvert, il sera d&apos;abord fermé.</translation>
         <translation>Topographie</translation>
     </message>
     <message>
+        <location filename="../src/app/MainWindowSidebar.cpp" line="350"/>
+        <source>Connections</source>
+        <translation>Connexions</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSidebar.cpp" line="351"/>
+        <source>Equates and joins that connect different surveys</source>
+        <translation>Commandes equate et join reliant des topographies différentes</translation>
+    </message>
+    <message>
         <location filename="../src/app/MainWindowSearchSidebar.cpp" line="146"/>
         <source>Open a project before searching.</source>
         <translation>Ouvrez un projet avant de lancer une recherche.</translation>
@@ -1262,6 +1282,31 @@ Si le fichier est ouvert, il sera d&apos;abord fermé.</translation>
         <translation>Instructions de l&apos;éditeur de dessin</translation>
     </message>
     <message>
+        <location filename="../src/app/MainWindowStatusUi.cpp" line="88"/>
+        <source>Drawings connected to this one</source>
+        <translation>Dessins reliés à celui-ci</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStatusUi.cpp" line="180"/>
+        <source>No linked drawings</source>
+        <translation>Aucun dessin lié</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStatusUi.cpp" line="98"/>
+        <source>Link Views</source>
+        <translation>Lier les vues</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStatusUi.cpp" line="103"/>
+        <source>Show Outline</source>
+        <translation>Afficher le contour</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStatusUi.cpp" line="107"/>
+        <source>Remove Connection</source>
+        <translation>Supprimer la connexion</translation>
+    </message>
+    <message>
         <location filename="../src/app/MainWindowStatusUi.cpp" line="139"/>
         <source>M: Select</source>
         <translation>M : Sélection</translation>
@@ -1270,6 +1315,21 @@ Si le fichier est ouvert, il sera d&apos;abord fermé.</translation>
         <location filename="../src/app/MainWindowStatusUi.cpp" line="139"/>
         <source>M: Insert</source>
         <translation>M : Insertion</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStatusUi.cpp" line="177"/>
+        <source>No joined drawings</source>
+        <translation>Aucun dessin joint</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStatusUi.cpp" line="201"/>
+        <source>Connected: %1</source>
+        <translation>Connecté : %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStatusUi.cpp" line="203"/>
+        <source>Connected: %1 drawings</source>
+        <translation>Dessins connectés : %1</translation>
     </message>
     <message>
         <location filename="../src/app/MainWindowStatusUi.cpp" line="197"/>
@@ -1397,6 +1457,86 @@ Si le fichier est ouvert, il sera d&apos;abord fermé.</translation>
         <location filename="../src/app/MainWindowStructureBrowser.cpp" line="1120"/>
         <source>No TH2 scraps, points, lines, or areas were found in the current document</source>
         <translation>Aucun scrap, point, ligne ou aire TH2 trouvé dans le document actuel</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="32"/>
+        <source>Computing station positions with Therion for connected drawings...</source>
+        <translation>Therion calcule les positions des stations pour les dessins connectés...</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureBrowser.cpp" line="1211"/>
+        <source>Cannot align the connected drawings because a scrap has neither enough measured legs between its station points nor an XVI background.</source>
+        <translation>Impossible d’aligner les dessins connectés, car un scrap n’a ni assez de visées mesurées entre ses points de station ni de fond XVI.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="107"/>
+        <source>No station is shared by these drawings; they will line up once Therion has computed the station positions. Open the connection again then.</source>
+        <translation>Ces dessins n’ont aucune station commune ; ils seront alignés quand Therion aura calculé les positions des stations. Rouvrez alors la connexion.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="109"/>
+        <source>No station is shared by these drawings, so they open without alignment.</source>
+        <translation>Aucune station n’est commune à ces dessins ; ils s’ouvrent donc sans alignement.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="124"/>
+        <source>No station is shared by these drawings, and drawings in an extended elevation can only be aligned at a shared station.</source>
+        <translation>Ces dessins n’ont aucune station commune, et des dessins en coupe développée ne peuvent être alignés que sur une station commune.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="126"/>
+        <source>%1 has no station point in this view; open the connection again once Therion has computed the station positions, which choose its survey&apos;s nearest drawing.</source>
+        <translation>%1 n’a pas de point de station dans cette vue ; rouvrez la connexion une fois que Therion aura calculé les positions des stations, qui choisissent le dessin le plus proche de sa topographie.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="67"/>
+        <source>Station Positions</source>
+        <translation>Positions des stations</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="68"/>
+        <source>The station positions are out of date. Run Therion to update them?</source>
+        <translation>Les positions des stations ne sont plus à jour. Lancer Therion pour les mettre à jour ?</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="69"/>
+        <source>This connection needs station positions. Run Therion now?</source>
+        <translation>Cette connexion a besoin des positions des stations. Lancer Therion maintenant ?</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="70"/>
+        <source>On a large project this can take a while.</source>
+        <translation>Sur un grand projet, cela peut prendre un moment.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="72"/>
+        <source>Use Them As They Are</source>
+        <translation>Les utiliser telles quelles</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="73"/>
+        <source>Open Without Alignment</source>
+        <translation>Ouvrir sans alignement</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="77"/>
+        <source>Don&apos;t ask again</source>
+        <translation>Ne plus demander</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="129"/>
+        <source>%1 has no station point in this view, and Therion has computed no position to choose its survey&apos;s nearest drawing.</source>
+        <translation>%1 n’a pas de point de station dans cette vue, et Therion n’a calculé aucune position pour choisir le dessin le plus proche de sa topographie.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="141"/>
+        <source>%1 has too few measured legs between its station points, so it is placed by its XVI background, which may be turned by the declination.</source>
+        <translation>Le dessin %1 a trop peu de visées mesurées entre ses points de station, il est donc placé par son fond XVI, qui peut être tourné de la déclinaison.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="145"/>
+        <source>The scale of %1 differs from its XVI background by more than a tenth.</source>
+        <translation>L’échelle du dessin %1 diffère de celle de son fond XVI de plus d’un dixième.</translation>
     </message>
     <message>
         <location filename="../src/app/MainWindowTherionRunner.cpp" line="141"/>
@@ -2114,6 +2254,54 @@ Les fichiers attendus sont `docs/USER_MANUAL.&lt;language&gt;.md` ou `docs/USER_
     </message>
 </context>
 <context>
+    <name>ProjectConnectionDataStatus</name>
+    <message>
+        <location filename="../src/app/ProjectConnectionDataStatus.cpp" line="20"/>
+        <source>No target config selected, so the drawings Therion reads are unknown.</source>
+        <translation>Aucune configuration cible n’est sélectionnée : les dessins lus par Therion sont inconnus.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectConnectionDataStatus.cpp" line="24"/>
+        <source>Computing station positions with Therion; the connection opens when they are ready.</source>
+        <translation>Therion calcule les positions des stations ; la connexion s’ouvre dès qu’elles sont prêtes.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectConnectionDataStatus.cpp" line="20"/>
+        <source>Computing station positions with Therion...</source>
+        <translation>Therion calcule les positions des stations...</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectConnectionDataStatus.cpp" line="25"/>
+        <source>Positions from the compile at %1. Sources changed since; compile to update them.</source>
+        <translation>Positions issues de la compilation de %1. Les sources ont changé depuis ; compilez pour les mettre à jour.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectConnectionDataStatus.cpp" line="26"/>
+        <source>Positions from the compile at %1.</source>
+        <translation>Positions issues de la compilation de %1.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectConnectionDataStatus.cpp" line="28"/>
+        <source>Positions from a Therion run at %1. Sources changed since.</source>
+        <translation>Positions issues d’une exécution de Therion de %1. Les sources ont changé depuis.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectConnectionDataStatus.cpp" line="29"/>
+        <source>Positions from a Therion run at %1.</source>
+        <translation>Positions issues d’une exécution de Therion de %1.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectConnectionDataStatus.cpp" line="37"/>
+        <source>The last compile wrote no database export. Add &quot;export database -fmt sql&quot; to the thconfig, or open a connection that needs station positions to run Therion once.</source>
+        <translation>La dernière compilation n’a écrit aucun export de base de données. Ajoutez "export database -fmt sql" à la configuration, ou ouvrez une connexion qui a besoin des positions des stations pour lancer Therion une fois.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectConnectionDataStatus.cpp" line="33"/>
+        <source>No station positions. Add &quot;export database -fmt sql&quot; to the thconfig and compile.</source>
+        <translation>Aucune position de station. Ajoutez "export database -fmt sql" à la configuration et compilez.</translation>
+    </message>
+</context>
+<context>
     <name>QObject</name>
     <message>
         <location filename="../src/app/MainWindow.cpp" line="191"/>
@@ -2673,6 +2861,36 @@ Lignes de points : %1</translation>
         <location filename="../src/app/ProjectValidationScanner.cpp" line="239"/>
         <source>Object id `%1` is already used by another object in this namespace.</source>
         <translation>L&apos;identifiant d&apos;objet `%1` est déjà utilisé par un autre objet dans cet espace de noms.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="245"/>
+        <source>Mixed join kinds</source>
+        <translation>Types de join mélangés</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="246"/>
+        <source>Scraps `%1` are joined both as scraps and by points or lines; use one kind of join.</source>
+        <translation>Les scraps `%1` sont joints à la fois comme scraps et par des points ou des lignes ; utilisez un seul type de join.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="252"/>
+        <source>Repeated scrap join</source>
+        <translation>Jonction de scraps répétée</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="253"/>
+        <source>Scraps `%1` are joined by %2 scrap joins; use one, with `-count` for more passages.</source>
+        <translation>Les scraps `%1` sont joints par %2 jonctions de scraps ; utilisez-en une, avec `-count` pour plusieurs galeries.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="260"/>
+        <source>Single point or line join</source>
+        <translation>Jonction unique de points ou de lignes</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="261"/>
+        <source>Scraps `%1` are joined by only one point or line join; a passage usually needs both walls joined.</source>
+        <translation>Les scraps `%1` ne sont joints que par une seule jonction de points ou de lignes ; une galerie nécessite généralement de joindre les deux parois.</translation>
     </message>
     <message>
         <location filename="../src/app/ProjectValidationScanner.cpp" line="368"/>
@@ -3664,6 +3882,41 @@ Lignes de points : %1</translation>
         <location filename="../src/app/MainWindowSettingsDialog.cpp" line="92"/>
         <source>When enabled, the Validation panel refreshes the whole project after project, document, and file changes.</source>
         <translation>Lorsque cette option est activée, le panneau Validation actualise l&apos;ensemble du projet après chaque modification de projet, de document ou de fichier.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="96"/>
+        <source>Opening a connection shows the second drawing in a separate window</source>
+        <translation>L’ouverture d’une connexion affiche le second dessin dans une fenêtre séparée</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="99"/>
+        <source>Applies to double-click and Enter on the Connections page; the right-click menu offers the other choice.</source>
+        <translation>S’applique au double-clic et à Entrée dans la page Connexions ; le menu contextuel propose l’autre choix.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="103"/>
+        <source>Ask</source>
+        <translation>Demander</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="104"/>
+        <source>Run Therion</source>
+        <translation>Lancer Therion</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="105"/>
+        <source>Never</source>
+        <translation>Jamais</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="108"/>
+        <source>When a connection needs station positions and the compile gave none, or those from a Therion run are out of date. On a large project a run can take a while.</source>
+        <translation>Quand une connexion a besoin des positions des stations et que la compilation n’en a donné aucune, ou que celles d’une exécution de Therion ne sont plus à jour. Sur un grand projet, une exécution peut prendre un moment.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="110"/>
+        <source>When a connection needs station positions</source>
+        <translation>Quand une connexion a besoin des positions des stations</translation>
     </message>
     <message>
         <location filename="../src/app/MainWindowSettingsDialog.cpp" line="96"/>
@@ -6251,6 +6504,312 @@ Supprimer le sommet malgré tout ?</translation>
         <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="1574"/>
         <source>Vertex removed from current draft (%1 remaining).</source>
         <translation>Sommet supprimé du brouillon actuel (%1 restant(s)).</translation>
+    </message>
+</context>
+<context>
+    <name>TherionStudio::ProjectJoinsPanel</name>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="54"/>
+        <source>View:</source>
+        <translation>Vue :</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="56"/>
+        <source>Scrap projection whose drawings are connected</source>
+        <translation>Projection des scraps dont les dessins sont connectés</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="63"/>
+        <source>Filter by survey or station</source>
+        <translation>Filtrer par topographie ou station</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="351"/>
+        <source>Automatic scrap join</source>
+        <translation>Jonction automatique de scraps</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="202"/>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="354"/>
+        <source>Scrap join with -count</source>
+        <translation>Jonction de scraps avec -count</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="107"/>
+        <source>Key</source>
+        <translation>Légende</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="76"/>
+        <source>Select Target Config...</source>
+        <translation>Choisir la configuration cible...</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="114"/>
+        <source>Cancel</source>
+        <translation>Annuler</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="125"/>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="244"/>
+        <source>%1 s</source>
+        <translation>%1 s</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="108"/>
+        <source>Show or hide what the row colours and markers mean</source>
+        <translation>Afficher ou masquer la signification des couleurs et des marques des lignes</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="201"/>
+        <source>Automatic scrap join, with an equate or nosurvey leg</source>
+        <translation>Jonction automatique de scraps, avec un equate ou un tronçon nosurvey</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="203"/>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="357"/>
+        <source>Point or line join</source>
+        <translation>Jonction de points ou de lignes</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="204"/>
+        <source>No join between these surveys</source>
+        <translation>Aucun join entre ces topographies</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="206"/>
+        <source>Cannot be opened in this view; hover for the reason</source>
+        <translation>Ne peut pas être ouvert dans cette vue ; survolez pour en voir la raison</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="210"/>
+        <source>More than one kind of join between these surveys</source>
+        <translation>Plusieurs types de join entre ces topographies</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="211"/>
+        <source>join with no equate or nosurvey leg</source>
+        <translation>join sans equate ni tronçon nosurvey</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="212"/>
+        <source>nosurvey leg, treated like an equate</source>
+        <translation>tronçon nosurvey, traité comme un equate</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="199"/>
+        <source>Automatic Join</source>
+        <translation>Jonction automatique</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="200"/>
+        <source>Join with -count</source>
+        <translation>Jonction avec -count</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="201"/>
+        <source>Detailed Joins</source>
+        <translation>Jonctions détaillées</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="202"/>
+        <source>No scrap Joins</source>
+        <translation>Aucune jonction de scraps</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="203"/>
+        <source>Cannot be opened</source>
+        <translation>Ne peut pas être ouvert</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="207"/>
+        <source>Joins not valid</source>
+        <translation>Jonctions non valides</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="235"/>
+        <source>Placed by its XVI only</source>
+        <translation>Placé par son XVI seulement</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="235"/>
+        <source>Needs station positions</source>
+        <translation>Nécessite les positions des stations</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="209"/>
+        <source>Join with no centreline tie</source>
+        <translation>Jonction sans lien par la centerline</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="226"/>
+        <source>A join here breaks a join rule; see the Validation panel.</source>
+        <translation>Un join ici enfreint une règle de jonction ; voir le panneau Validation.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="276"/>
+        <source>A drawing is placed by its XVI, as its scrap has too few measured legs between station points.</source>
+        <translation>Un dessin est placé par son XVI, car son scrap a trop peu de visées mesurées entre ses points de station.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="278"/>
+        <source>Lines up once there are station positions; compile with &quot;export database -fmt sql&quot; in the thconfig.</source>
+        <translation>S’aligne dès qu’il y a des positions de stations ; compilez avec "export database -fmt sql" dans la configuration.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="281"/>
+        <source>The station positions are out of date.</source>
+        <translation>Les positions des stations ne sont plus à jour.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="301"/>
+        <source>No equate or nosurvey leg links these surveys.</source>
+        <translation>Aucun equate ni tronçon nosurvey ne relie ces topographies.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="310"/>
+        <source>nosurvey leg: %1</source>
+        <translation>Tronçon nosurvey : %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="130"/>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="164"/>
+        <source>Equate: %1</source>
+        <translation>Equate : %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="360"/>
+        <source>More than one kind of join links these surveys.</source>
+        <translation>Plusieurs types de join relient ces topographies.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="364"/>
+        <source>join: %1</source>
+        <translation>join : %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="374"/>
+        <source>No station is shared by these drawings, so they open without alignment.</source>
+        <translation>Aucune station n’est commune à ces dessins ; ils s’ouvrent donc sans alignement.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="178"/>
+        <source>%1: %2 (scrap %3)</source>
+        <translation>%1 : %2 (scrap %3)</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="183"/>
+        <source>%1: station not found in any centreline</source>
+        <translation>%1 : station introuvable dans les centrelines</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="470"/>
+        <source>%1: no station point in a drawing that Therion reads; no target config is selected, so those drawings are unknown</source>
+        <translation>%1 : aucun point de station dans un dessin lu par Therion ; aucune configuration cible n’est sélectionnée, ces dessins sont donc inconnus</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="185"/>
+        <source>%1: no station point in a drawing that Therion reads</source>
+        <translation>%1 : aucun point de station dans un dessin lu par Therion</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="187"/>
+        <source>%1: not drawn in the %2 view</source>
+        <translation>%1 : non dessinée dans la vue %2</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="405"/>
+        <source>%1: no station point in its survey&apos;s %2 drawings, and an extended elevation can only be aligned at a shared station</source>
+        <translation>%1 : aucun point de station dans les dessins %2 de sa topographie, et une coupe développée ne peut être alignée que sur une station commune</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="408"/>
+        <source>%1: no station point in its survey&apos;s %2 drawings, so the drawing nearest the station opens</source>
+        <translation>%1 : aucun point de station dans les dessins %2 de sa topographie, le dessin le plus proche de la station s’ouvre donc</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="453"/>
+        <source>Go to Join in Source</source>
+        <translation>Aller au join dans la source</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="246"/>
+        <source>Open Connection</source>
+        <translation>Ouvrir la connexion</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="267"/>
+        <source>Open Connection in Tabs</source>
+        <translation>Ouvrir la connexion dans des onglets</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="267"/>
+        <source>Open Connection with Separate Window</source>
+        <translation>Ouvrir la connexion avec une fenêtre séparée</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="481"/>
+        <source>Go to nosurvey Leg in Source</source>
+        <translation>Aller au tronçon nosurvey dans la source</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="250"/>
+        <source>Go to Equate in Source</source>
+        <translation>Aller à l’equate dans la source</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="261"/>
+        <source>Open %1</source>
+        <translation>Ouvrir %1</translation>
+    </message>
+</context>
+<context>
+    <name>TherionStudio::ProjectStationPositionService</name>
+    <message>
+        <location filename="../src/app/ProjectStationPositionService.cpp" line="34"/>
+        <source>Therion could not compute station positions: %1</source>
+        <translation>Therion n’a pas pu calculer les positions des stations : %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectStationPositionService.cpp" line="110"/>
+        <source>Station positions could not be computed: no temporary folder.</source>
+        <translation>Impossible de calculer les positions des stations : aucun dossier temporaire.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectStationPositionService.cpp" line="115"/>
+        <source>Station positions could not be computed: %1 could not be read.</source>
+        <translation>Impossible de calculer les positions des stations : %1 n’a pas pu être lu.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectStationPositionService.cpp" line="121"/>
+        <source>Station positions could not be computed: the target config has no source.</source>
+        <translation>Impossible de calculer les positions des stations : la configuration cible n’a aucun source.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectStationPositionService.cpp" line="128"/>
+        <source>Station positions could not be computed: the temporary config could not be written.</source>
+        <translation>Impossible de calculer les positions des stations : la configuration temporaire n’a pas pu être écrite.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectStationPositionService.cpp" line="135"/>
+        <source>Station positions could not be computed: Therion was not found.</source>
+        <translation>Impossible de calculer les positions des stations : Therion est introuvable.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectStationPositionService.cpp" line="137"/>
+        <source>Station positions could not be computed: Therion did not start.</source>
+        <translation>Impossible de calculer les positions des stations : Therion n’a pas démarré.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectStationPositionService.cpp" line="148"/>
+        <source>Therion could not compute station positions (exit code %1); check the project in the Compiler.</source>
+        <translation>Therion n’a pas pu calculer les positions des stations (code de sortie %1) ; vérifiez le projet dans le Compilateur.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectStationPositionService.cpp" line="196"/>
+        <location filename="../src/app/ProjectStationPositionService.cpp" line="203"/>
+        <source>Station positions could not be read: %1</source>
+        <translation>Impossible de lire les positions des stations : %1</translation>
     </message>
 </context>
 <context>

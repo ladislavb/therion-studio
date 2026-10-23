@@ -21,6 +21,8 @@ public:
         QString therionExecutablePath;
         QString defaultTextEditorMode = QStringLiteral("raw");
         bool automaticProjectValidationEnabled = false;
+        bool joinOpensSeparateWindow = false;
+        QString connectionPositionRunMode = QStringLiteral("ask");
         bool troubleshootingLogsEnabled = false;
     };
 
@@ -41,6 +43,8 @@ private:
     QPushButton *therionExecutableAutoDetectButton_ = nullptr;
     QComboBox *defaultTextEditorModeCombo_ = nullptr;
     QCheckBox *automaticProjectValidationCheckBox_ = nullptr;
+    QCheckBox *joinOpensSeparateWindowCheckBox_ = nullptr;
+    QComboBox *connectionPositionRunModeCombo_ = nullptr;
     QCheckBox *troubleshootingLogsCheckBox_ = nullptr;
     QPushButton *openLogFolderButton_ = nullptr;
     QPushButton *clearLogsButton_ = nullptr;

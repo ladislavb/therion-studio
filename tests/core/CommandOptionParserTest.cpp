@@ -37,6 +37,7 @@ private slots:
     void serializesCommandArguments();
     void serializesCommandOptionTokens();
     void readsCommandOptionsWithSharedBoundaries();
+    void readsUnbracketedOptionValueTokens();
 };
 
 void CommandOptionParserTest::parsesMapObjectAttributesAndOptions()
@@ -288,6 +289,25 @@ int runCommandOptionParserTest(int argc, char **argv)
 {
     CommandOptionParserTest test;
     return QTest::qExec(&test, argc, argv);
+}
+
+void CommandOptionParserTest::readsUnbracketedOptionValueTokens()
+{
+    const QStringList tokens = {QStringLiteral("scrap"),
+                                QStringLiteral("s1"),
+                                QStringLiteral("-projection"),
+                                QStringLiteral("[elevation"),
+                                QStringLiteral("315]"),
+                                QStringLiteral("-scale"),
+                                QStringLiteral("[0"),
+                                QStringLiteral("0"),
+                                QStringLiteral("10"),
+                                QStringLiteral("m]")};
+    QCOMPARE(TherionStudio::commandOptionUnbracketedValueTokens(tokens, QStringLiteral("projection")),
+             QStringList({QStringLiteral("elevation"), QStringLiteral("315")}));
+    QCOMPARE(TherionStudio::commandOptionUnbracketedValueTokens(tokens, QStringLiteral("-scale")),
+             QStringList({QStringLiteral("0"), QStringLiteral("0"), QStringLiteral("10"), QStringLiteral("m")}));
+    QVERIFY(TherionStudio::commandOptionUnbracketedValueTokens(tokens, QStringLiteral("author")).isEmpty());
 }
 
 #include "CommandOptionParserTest.moc"

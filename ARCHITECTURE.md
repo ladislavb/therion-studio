@@ -59,6 +59,9 @@ The main source-model contracts are:
   context, catalog metadata, and logical command lookup.
 - `Th2GeometryProjection` for read-only `.th2` point, line, area, scrap, map, geometry, and background metadata
   projection used by Map consumers.
+- `Th2CentrelineAlignment` for pure scrap-to-centreline placement: station points fitted to XVI centreline stations
+  (XVI grid scale) or scrap `-scale`, and the transform that links two drawings at an equated station. It uses a
+  QtCore-only `Th2SimilarityTransform`; file loading stays in application services.
 - `TextEditorSourceTransactionController` and map source transaction helpers for user-visible source mutations, undo/redo,
   dirty state, revision checks, projection invalidation, and selection/cursor restoration.
 
@@ -87,9 +90,18 @@ Therion namespace and reference semantics are compatibility-critical. In particu
 
 ## UI Surface Ownership
 
-The main project sidebar surfaces have distinct responsibilities. `Files`, `Survey`, and `Map` may be presented as tabs in one project navigation sidebar opened from the `Structure` rail entry, but their ownership stays separate:
+The main project sidebar surfaces have distinct responsibilities. `Files`, `Survey`, `Map`, and `Joins` may be presented as tabs in one project navigation sidebar opened from the `Structure` rail entry, but their ownership stays separate:
 
 - `Files`: filesystem/project file operations and file navigation.
+- `Joins`: navigation between drawings of different surveys linked by `equate`. Two map editors are kept aligned by
+  `MapEditorJoinViewLink`, which only reads and sets each editor's view centre and scale (in drawing units) through
+  `MapEditorTab`'s view-linking API; it never touches document text. A linked view may widen its own scroll area so the
+  join can be centred at a drawing edge; scene rects remain owned by scene refresh.
+  `MapEditorJoinOutline` (owned by the host editor) draws the partner drawing as a display-only
+  `MapEditorJoinOutlineItem`; full scene refreshes delete overlay items, so the controller re-adds its item on
+  `sceneProjectionRefreshCompleted` instead of the scene-clear path learning about join overlays.
+  `MapEditorJoinPairs` is the single place that opens, lists, and closes a join between two editors (fit, outlines
+  both ways, one shared view link); `MainWindow` only opens the documents and shows the `Joined` status indicator. `ProjectJoinsPanel` presents rows built by the pure `ProjectJoinList` projection over the shared project index; it emits open/navigate requests and does not read files or own document state. Unresolved equate stations remain Validation diagnostics.
 - `Structure`: orientation and navigation for project objects and relationships. It may show structural relationship warnings that affect orientation, such as unresolved map/scrap composition references, but shall not become the general validation UI.
 - `Validation`: all validation and problem identification, including command/catalog diagnostics, context/document-type diagnostics, parse/round-trip-sensitive findings, safe fixes, and project-wide problem scans.
 - `Compiler`: Therion execution, target config selection, run output, and compiler-facing workflow state.
@@ -168,6 +180,20 @@ Validation should be conservative and catalog-backed.
 - source file and line navigation
 - map/scrap composition references
 - non-hierarchical relationships such as preview, revise, join, and equate when represented as graph data
+- cross-survey `equate` links and `data nosurvey` legs (one link list with a kind) and the `.th2` station points (scrap,
+  survey, normalized projection) that draw linked stations, scanned by `ProjectEquateLinkScanner` through the index's
+  own namespace and station-reference resolution; `nosurvey` legs are captured by the centreline station scan, which
+  already owns `data` column parsing
+- `join` commands (scrap or point/line mode, `-count`, each item resolved to its scrap), recorded by the same scan that
+  validates join references rather than a second pass; `ProjectJoinRules` checks them per scrap pair once per index
+  scan, and the result feeds both the Validation warnings and the `Joins` row marker
+- every station point of every scrap with its resolved station key (`stationPointsByScrapObjectId`), so joined
+  drawings can be fitted to Therion's measured legs and offset by its computed station positions. Both come from
+  `ProjectStationPositionService`, an application service composed by `MainWindow` that reads the SQL export of the
+  user's latest compile (from `TherionCompileResultRecorder`), or else runs Therion once on its own
+  `TherionRunnerService` instance in a temporary folder (never the project) for a join that needs positions, and reads
+  the SQL export through `TherionSqlReportDatabase` off the UI thread; the config text and row-to-key rules are pure core functions
+  (`TherionStationPositionExport`), and the fit and projection live in `Th2CentrelineAlignment`
 
 The project navigation sidebar displays file navigation and project structure projections. Its default `Survey` tree follows survey namespace and definition ownership; map composition references are graph relationships and must not reparent map or scrap definition nodes in that projection. A separate `Map` projection may display map composition using those graph relationships. Structure should not list general validation diagnostics. Validation-owned diagnostics should be surfaced in the Validation panel and may reference project-index objects when that improves navigation.
 
@@ -180,6 +206,12 @@ workflow service shall run that collector off the GUI thread, while `QFileSystem
 inventory application remain GUI-thread responsibilities.
 
 The Therion compiler remains authoritative for final export behavior. The project index is a lightweight navigation and early-feedback projection, not a compiler replacement.
+
+Views that show compiled data, such as survey statistics or station positions, read the files written by the user's
+latest compile. `TherionCompileResultRecorder` records that compile (working directory, start and finish time, result,
+the SQL database exports Therion reports writing, and `.xtherion.dat` when the compile used `-x`). Such views shall mark
+their data out of date when a source was saved after that compile started, rather than starting Therion runs of their
+own.
 
 Project-index namespace, reference, and duplicate-identifier behavior shall follow `docs/THERION_COMPATIBILITY.md`. In particular, survey/map/scrap names share their parent survey namespace, drawing object IDs share their containing scrap namespace, and identical object names in different survey namespaces are valid.
 

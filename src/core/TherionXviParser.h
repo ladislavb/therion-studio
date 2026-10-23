@@ -38,6 +38,10 @@ struct TherionXviDocument
     int gridCountX = 0;
     int gridCountY = 0;
     bool hasGridDefinition = false;
+    // `set XVIgrids {1 m}`: real length of one grid step, kept as written.
+    qreal gridSpacing = 0.0;
+    QString gridSpacingUnit;
+    bool hasGridSpacing = false;
     QVector<TherionXviStation> stationEntries;
     QHash<QString, QPointF> stations;
     QVector<TherionXviShot> shots;

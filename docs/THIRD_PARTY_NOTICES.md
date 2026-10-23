@@ -2,7 +2,8 @@
 
 ## Lucide Icons
 
-Therion Studio bundles selected SVG icons from Lucide for the map editor toolbar.
+Therion Studio bundles selected SVG icons from Lucide for the map editor toolbar and other application indicators,
+such as the `link` icon on linked map documents.
 
 - Project: https://lucide.dev/
 - Source: https://github.com/lucide-icons/lucide

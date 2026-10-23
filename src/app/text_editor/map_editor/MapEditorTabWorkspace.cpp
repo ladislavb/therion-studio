@@ -246,6 +246,9 @@ void MapEditorTab::buildUi()
     mapView_->setBackgroundBrush(mapEditorCanvasViewportBackgroundColor());
     mapView_->setFocusPolicy(Qt::StrongFocus);
     mapView_->installEventFilter(this);
+    connect(mapView_->horizontalScrollBar(), &QScrollBar::valueChanged, this, &MapEditorTab::mapViewChanged);
+    connect(mapView_->verticalScrollBar(), &QScrollBar::valueChanged, this, &MapEditorTab::mapViewChanged);
+    connect(this, &MapEditorTab::zoomStatusChanged, this, &MapEditorTab::mapViewChanged);
     if (mapView_->viewport() != nullptr) {
         mapView_->viewport()->setFocusPolicy(Qt::StrongFocus);
         mapView_->viewport()->installEventFilter(this);

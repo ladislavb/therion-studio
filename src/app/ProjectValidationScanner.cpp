@@ -239,6 +239,28 @@ TherionSourceDiagnostic diagnosticForProjectIndexDiagnostic(const ProjectIndexDi
         diagnostic.message = QObject::tr("Object id `%1` is already used by another object in this namespace.")
                                  .arg(indexDiagnostic.referencedName);
         break;
+    case ProjectIndexDiagnosticKind::MixedJoinKinds:
+        diagnostic.code = QStringLiteral("mixed-join-kinds");
+        diagnostic.severity = TherionSourceDiagnosticSeverity::Warning;
+        diagnostic.title = QObject::tr("Mixed join kinds");
+        diagnostic.message = QObject::tr("Scraps `%1` are joined both as scraps and by points or lines; use one kind of join.")
+                                 .arg(indexDiagnostic.referencedName);
+        break;
+    case ProjectIndexDiagnosticKind::RepeatedScrapJoin:
+        diagnostic.code = QStringLiteral("repeated-scrap-join");
+        diagnostic.severity = TherionSourceDiagnosticSeverity::Warning;
+        diagnostic.title = QObject::tr("Repeated scrap join");
+        diagnostic.message = QObject::tr("Scraps `%1` are joined by %2 scrap joins; use one, with `-count` for more passages.")
+                                 .arg(indexDiagnostic.referencedName)
+                                 .arg(indexDiagnostic.candidateCount);
+        break;
+    case ProjectIndexDiagnosticKind::SinglePointLineJoin:
+        diagnostic.code = QStringLiteral("single-point-line-join");
+        diagnostic.severity = TherionSourceDiagnosticSeverity::Warning;
+        diagnostic.title = QObject::tr("Single point or line join");
+        diagnostic.message = QObject::tr("Scraps `%1` are joined by only one point or line join; a passage usually needs both walls joined.")
+                                 .arg(indexDiagnostic.referencedName);
+        break;
     }
 
     return diagnostic;

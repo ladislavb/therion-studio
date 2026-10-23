@@ -1,10 +1,13 @@
 #include "MainWindow.h"
 
+#include "ProjectStationPositionService.h"
+
 #include "MainWindowTherionConsoleBootstrapper.h"
 #include "MainWindowDocumentHelpers.h"
 #include "MainWindowTherionConsoleBuilder.h"
 #include "MainWindowTherionConsoleWiring.h"
 #include "MainWindowTherionRunnerController.h"
+#include "TherionCompileResult.h"
 #include "TherionRunnerConfigDisplayController.h"
 #include "TherionRunnerLifecyclePresenter.h"
 #include "TherionRunnerOutputLinker.h"
@@ -67,6 +70,11 @@ void MainWindow::buildConsole()
     }
 
     therionRunnerService_ = new TherionStudio::TherionRunnerService(this);
+    compileResultRecorder_ = new TherionStudio::TherionCompileResultRecorder(this);
+    connect(compileResultRecorder_,
+            &TherionStudio::TherionCompileResultRecorder::latestChanged,
+            this,
+            &MainWindow::loadJoinStationPositionsFromCompile);
     TherionStudio::MainWindowTherionConsoleWiring::WiringInput wiringInput;
     wiringInput.context = this;
     wiringInput.therionRunButton = therionRunButton_;
@@ -327,6 +335,11 @@ QString MainWindow::resolvedTherionTargetConfigPath() const
 
 void MainWindow::resetProjectTherionRunContext()
 {
+    pendingConnection_.reset();
+    if (stationPositionService_ != nullptr) {
+        stationPositionService_->clear();
+        refreshConnectionDataStatus();
+    }
     if (therionWorkingDirectoryEdit_ != nullptr) {
         const QSignalBlocker blocker(therionWorkingDirectoryEdit_);
         therionWorkingDirectoryEdit_->clear();
@@ -341,6 +354,9 @@ void MainWindow::resetProjectTherionRunContext()
     }
 
     activeTherionRunConfigPath_.clear();
+    if (compileResultRecorder_ != nullptr) {
+        compileResultRecorder_->clear();
+    }
 }
 
 bool MainWindow::clearMissingTherionTargetConfig()
@@ -551,6 +567,7 @@ void MainWindow::runTherion()
 
     activeTherionRunConfigPath_ = state.resolvedConfigPath;
     activeTherionRunWorkingDirectory_ = state.resolvedWorkingDirectory;
+    compileResultRecorder_->begin(state.resolvedConfigPath, state.resolvedWorkingDirectory);
     const TherionStudio::TherionRunnerStartSuccessPresenter::Presentation successPresentation =
         TherionStudio::TherionRunnerStartSuccessPresenter::present(startResult,
                                                                    state.runArguments.join(QLatin1Char(' ')),
@@ -620,6 +637,7 @@ void MainWindow::stopTherion()
 
 void MainWindow::handleTherionRunnerStandardOutput(const QString &output)
 {
+    compileResultRecorder_->appendStandardOutput(output);
     therionConsoleController_.appendProcessStandardOutput(output, activeTherionRunWorkingDirectory_);
 }
 
@@ -638,6 +656,7 @@ void MainWindow::handleTherionRunnerFinished(int exitCode, QProcess::ExitStatus 
                                                                         exitStatus,
                                                                         activeTherionRunStandardError_);
     setCompilerStatusResult(eventPresentation.succeeded, eventPresentation.statusText);
+    compileResultRecorder_->finish(eventPresentation.succeeded);
     activeTherionRunConfigPath_.clear();
     activeTherionRunWorkingDirectory_.clear();
     activeTherionRunStandardError_.clear();
@@ -650,6 +669,7 @@ void MainWindow::handleTherionRunnerError(const QString &errorText)
     const TherionStudio::TherionRunnerLifecyclePresenter::EventPresentation eventPresentation =
         TherionStudio::TherionRunnerLifecyclePresenter::presentError(errorText);
     setCompilerStatusResult(false, eventPresentation.statusText);
+    compileResultRecorder_->abandon();
     activeTherionRunConfigPath_.clear();
     activeTherionRunWorkingDirectory_.clear();
     activeTherionRunStandardError_.clear();

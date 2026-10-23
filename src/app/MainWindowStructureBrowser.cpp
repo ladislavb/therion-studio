@@ -1,4 +1,5 @@
 #include "MainWindow.h"
+#include "ProjectJoinsPanel.h"
 
 #include "MainWindowDocumentHelpers.h"
 #include "MainWindowStructureRoles.h"
@@ -24,7 +25,9 @@
 #include <QSignalBlocker>
 #include <QSet>
 #include <QStandardItem>
+#include <QStackedWidget>
 #include <QStandardItemModel>
+#include <QStatusBar>
 #include <QStyle>
 #include <QStringList>
 #include <QSvgRenderer>
@@ -230,6 +233,9 @@ bool isStructureRelationshipDiagnostic(const TherionStudio::ProjectIndexDiagnost
     case TherionStudio::ProjectIndexDiagnosticKind::UnknownStationReference:
     case TherionStudio::ProjectIndexDiagnosticKind::AmbiguousStationReference:
     case TherionStudio::ProjectIndexDiagnosticKind::DuplicateObjectId:
+    case TherionStudio::ProjectIndexDiagnosticKind::MixedJoinKinds:
+    case TherionStudio::ProjectIndexDiagnosticKind::RepeatedScrapJoin:
+    case TherionStudio::ProjectIndexDiagnosticKind::SinglePointLineJoin:
         return false;
     }
     return false;
@@ -254,6 +260,9 @@ QString diagnosticStructureItemText(const TherionStudio::ProjectIndexDiagnostic 
     case TherionStudio::ProjectIndexDiagnosticKind::UnknownStationReference:
     case TherionStudio::ProjectIndexDiagnosticKind::AmbiguousStationReference:
     case TherionStudio::ProjectIndexDiagnosticKind::DuplicateObjectId:
+    case TherionStudio::ProjectIndexDiagnosticKind::MixedJoinKinds:
+    case TherionStudio::ProjectIndexDiagnosticKind::RepeatedScrapJoin:
+    case TherionStudio::ProjectIndexDiagnosticKind::SinglePointLineJoin:
         break;
     }
 
@@ -707,6 +716,10 @@ void MainWindow::storeCurrentStructureExpansionState()
 void MainWindow::applyStructureSidebarIndex(const TherionStudio::ProjectIndexSnapshot &projectIndex)
 {
     lastStructureSidebarProjectIndex_ = projectIndex;
+    if (projectJoinsPanel_ != nullptr) {
+        projectJoinsPanel_->setProjectIndex(projectIndex);
+        refreshConnectionDataStatus();
+    }
 
     const QString currentExpansionProjectRootPath = normalizedStructurePathKey(projectRootPath_);
     if (structureExpansionProjectRootPath_ != currentExpansionProjectRootPath) {
@@ -1157,10 +1170,13 @@ void MainWindow::openStructureSourceIndex(const QModelIndex &current, QTreeView 
         return;
     }
 
-    const QString sourceFile = current.data(SourceFileRole).toString();
-    const int lineNumber = current.data(LineNumberRole).toInt();
+    openProjectSourceLocation(current.data(SourceFileRole).toString(), current.data(LineNumberRole).toInt());
+}
+
+QWidget *MainWindow::openProjectSourceLocation(const QString &sourceFile, int lineNumber)
+{
     if (sourceFile.isEmpty()) {
-        return;
+        return nullptr;
     }
 
     QWidget *tabWidget = nullptr;
@@ -1174,6 +1190,7 @@ void MainWindow::openStructureSourceIndex(const QModelIndex &current, QTreeView 
     if (tabWidget != nullptr && lineNumber > 0) {
         documentGoToLineForWidget(tabWidget, lineNumber);
     }
+    return tabWidget;
 }
 
 void MainWindow::handleStructureItemActivated(const QModelIndex &index, QTreeView *sourceTree)

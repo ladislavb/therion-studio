@@ -57,6 +57,7 @@ void MapEditorTab::detachMapPaneToWindow()
     auto *window = new MapEditorDetachedPaneWindow(this, this);
     window->setWindowTitle(tr("%1 — Map").arg(displayName()));
     window->setWindowFilePath(filePath());
+    window->setWindowIcon(detachedPaneState_.windowIcon_);
     window->setMapPaneWidget(mapPaneContainer_);
     window->setCloseCallback([this]() { reattachMapPaneFromWindow(); });
 
@@ -109,5 +110,13 @@ void MapEditorTab::focusDetachedMapPaneWindow()
     detachedPaneState_.window_->showNormal();
     detachedPaneState_.window_->raise();
     detachedPaneState_.window_->activateWindow();
+}
+
+void MapEditorTab::setMapPaneWindowIcon(const QIcon &icon)
+{
+    detachedPaneState_.windowIcon_ = icon;
+    if (detachedPaneState_.window_ != nullptr) {
+        detachedPaneState_.window_->setWindowIcon(icon);
+    }
 }
 }

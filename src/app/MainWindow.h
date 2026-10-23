@@ -11,6 +11,7 @@
 
 #include <memory>
 
+#include "ConnectionPositionRunPolicy.h"
 #include "MainWindowTherionConsoleController.h"
 #include "ProjectOutputsScanner.h"
 #include "ProjectFileWatchInventoryService.h"
@@ -60,7 +61,16 @@ class MapEditorTab;
 class ThreeDViewerTab;
 class TherionSqlReportTab;
 class TherionRunnerService;
+class TherionCompileResultRecorder;
 class ProjectScanCacheService;
+class ProjectJoinsPanel;
+struct ProjectJoinPair;
+struct ProjectJoinGroup;
+struct MapEditorJoinPlacement;
+struct MapEditorJoinResult;
+enum class MapEditorJoinFailure;
+class ProjectStationPositionService;
+struct Th2StationPosition;
 }
 
 class MainWindow final : public QMainWindow
@@ -225,6 +235,39 @@ private:
     bool reloadDocumentWidgetFromDisk(QWidget *documentWidget, QString *errorMessage = nullptr);
     QByteArray documentFileFingerprint(const QString &filePath) const;
     void openStructureSourceIndex(const QModelIndex &current, QTreeView *sourceTree);
+    QWidget *openProjectSourceLocation(const QString &sourceFile, int lineNumber);
+    void openProjectJoin(const TherionStudio::ProjectJoinPair &pair, bool separateWindow);
+    void openProjectJoinOnly(const TherionStudio::ProjectJoinGroup &group, bool separateWindow);
+    // Open with the station positions there are; openProjectJoin and openProjectJoinOnly first settle whether
+    // Therion runs.
+    void openProjectJoinNow(const TherionStudio::ProjectJoinPair &pair, bool separateWindow);
+    void openProjectJoinOnlyNow(const TherionStudio::ProjectJoinGroup &group, bool separateWindow);
+    // Opens two drawings, links and outlines them; shared by equate and join-only rows (MainWindowJoinPlacement).
+    void openProjectJoinDrawings(const QString &firstFile,
+                                 int firstLine,
+                                 const QString &secondFile,
+                                 int secondLine,
+                                 bool separateWindow,
+                                 const TherionStudio::MapEditorJoinPlacement &placement);
+    [[nodiscard]] QString joinFailureMessage(TherionStudio::MapEditorJoinFailure failure, const QString &projection) const;
+    // Says which drawings are placed by their XVI rather than measured legs, or do not match their XVI.
+    [[nodiscard]] QString joinPlacementNotes(const TherionStudio::MapEditorJoinResult &result,
+                                             const QString &firstFile,
+                                             const QString &secondFile) const;
+    void setupJoinStationPositions();
+    // For a connection that needs station positions: true to open it now, false when it waits for a Therion run (it
+    // then opens when the run ends) or the user closed the prompt.
+    bool prepareConnectionPositions(const TherionStudio::ProjectConnectionPendingOpen &open);
+    void openPendingConnection();
+    void cancelStationPositionRun();
+    void loadJoinStationPositionsFromCompile();
+    void refreshConnectionDataStatus();
+    // Computed station positions, or none while Therion is running or before it has run.
+    [[nodiscard]] const QHash<QString, TherionStudio::Th2StationPosition> *currentStationPositions() const;
+    [[nodiscard]] TherionStudio::MapEditorJoinPlacement joinPlacement(const QString &firstScrapObjectId,
+                                                                      const QString &secondScrapObjectId,
+                                                                      const QString &projection,
+                                                                      bool sameStation) const;
     void handleStructureItemActivated(const QModelIndex &index, QTreeView *sourceTree);
     bool confirmCloseTab(int index);
     bool closeOpenDocumentForFilePath(const QString &filePath);
@@ -289,6 +332,10 @@ private:
     void initializeDocumentStatusWidgets();
     void refreshDocumentStatusWidgets();
     void updateStatusHintLabel(const QString &text);
+    void refreshMapJoinStatusButton(TherionStudio::MapEditorTab *mapTab);
+    void populateMapJoinMenu(QMenu *menu);
+    void refreshMapJoinLinkIcons();
+    void applyJoinConnectionColors();
     void updateDocumentMenuActionState();
     void setCompilerStatusIdle();
     void setCompilerStatusRunning(const QString &configPath);
@@ -455,11 +502,13 @@ private:
     QString projectFileWatcherInventoryRootPath_;
     QStringList projectFileWatcherFailedPaths_;
     TherionStudio::TherionRunnerService *therionRunnerService_ = nullptr;
+    TherionStudio::TherionCompileResultRecorder *compileResultRecorder_ = nullptr;
     TherionStudio::MainWindowTherionConsoleController therionConsoleController_;
     QLabel *statusHintLabel_ = nullptr;
     QLabel *statusMapZoomLabel_ = nullptr;
     QLabel *statusMapModeLabel_ = nullptr;
     QToolButton *statusCompilerButton_ = nullptr;
+    QToolButton *statusMapJoinButton_ = nullptr;
     QLabel *statusDocumentEncodingLabel_ = nullptr;
     QString activeTherionRunConfigPath_;
     QString activeTherionRunWorkingDirectory_;
@@ -568,4 +617,7 @@ private:
     TherionStudio::ProjectOutputsScanner *projectOutputsScanner_ = nullptr;
     TherionStudio::ProjectValidationController *projectValidationController_ = nullptr;
     TherionStudio::ProjectStructureScanner *structureSidebarScanner_ = nullptr;
+    TherionStudio::ProjectJoinsPanel *projectJoinsPanel_ = nullptr;
+    TherionStudio::ProjectStationPositionService *stationPositionService_ = nullptr;
+    std::optional<TherionStudio::ProjectConnectionPendingOpen> pendingConnection_;
 };

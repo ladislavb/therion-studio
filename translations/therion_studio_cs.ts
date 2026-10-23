@@ -316,6 +316,11 @@
         <translation>Zavřít kartu</translation>
     </message>
     <message>
+        <location filename="../src/app/MainWindow.cpp" line="676"/>
+        <source>Linked Drawings</source>
+        <translation>Propojené kresby</translation>
+    </message>
+    <message>
         <location filename="../src/app/MainWindow.cpp" line="862"/>
         <source>Open Existing Project...</source>
         <translation>Otevřít existující projekt...</translation>
@@ -453,6 +458,11 @@
         <location filename="../src/app/MainWindow.cpp" line="663"/>
         <source>Show or hide the map magnifier overlay in map editors.</source>
         <translation>Zobrazit nebo skrýt překryv lupy v mapových editorech.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindow.cpp" line="676"/>
+        <source>Joined Drawings</source>
+        <translation>Spojené kresby</translation>
     </message>
     <message>
         <location filename="../src/app/MainWindow.cpp" line="679"/>
@@ -1219,6 +1229,16 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <translation>Kompilovat konfiguraci projektu</translation>
     </message>
     <message>
+        <location filename="../src/app/MainWindowSidebar.cpp" line="350"/>
+        <source>Connections</source>
+        <translation>Spojení</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSidebar.cpp" line="351"/>
+        <source>Equates and joins that connect different surveys</source>
+        <translation>Příkazy equate a join spojující různé survey</translation>
+    </message>
+    <message>
         <source>Browse project files, surveys, maps, and scraps.</source>
         <translation type="vanished">Procházet soubory projektu, surveye, mapy a scrapy.</translation>
     </message>
@@ -1302,6 +1322,31 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <translation>Pokyny map editoru</translation>
     </message>
     <message>
+        <location filename="../src/app/MainWindowStatusUi.cpp" line="88"/>
+        <source>Drawings connected to this one</source>
+        <translation>Kresby spojené s touto kresbou</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStatusUi.cpp" line="180"/>
+        <source>No linked drawings</source>
+        <translation>Žádné propojené kresby</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStatusUi.cpp" line="98"/>
+        <source>Link Views</source>
+        <translation>Propojit pohledy</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStatusUi.cpp" line="103"/>
+        <source>Show Outline</source>
+        <translation>Zobrazit obrys</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStatusUi.cpp" line="107"/>
+        <source>Remove Connection</source>
+        <translation>Odebrat spojení</translation>
+    </message>
+    <message>
         <location filename="../src/app/MainWindowStatusUi.cpp" line="139"/>
         <source>M: Select</source>
         <translation>M: Vybrat</translation>
@@ -1310,6 +1355,21 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <location filename="../src/app/MainWindowStatusUi.cpp" line="139"/>
         <source>M: Insert</source>
         <translation>M: Vložit</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStatusUi.cpp" line="177"/>
+        <source>No joined drawings</source>
+        <translation>Žádné spojené kresby</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStatusUi.cpp" line="201"/>
+        <source>Connected: %1</source>
+        <translation>Spojeno: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStatusUi.cpp" line="203"/>
+        <source>Connected: %1 drawings</source>
+        <translation>Spojené kresby: %1</translation>
     </message>
     <message>
         <location filename="../src/app/MainWindowStatusUi.cpp" line="197"/>
@@ -1437,6 +1497,86 @@ Pokud je soubor otevřený, nejprve se zavře.</translation>
         <location filename="../src/app/MainWindowStructureBrowser.cpp" line="1120"/>
         <source>No TH2 scraps, points, lines, or areas were found in the current document</source>
         <translation>V aktuálním dokumentu nebyly nalezeny žádné TH2 scrappy, body, linie ani plochy</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="32"/>
+        <source>Computing station positions with Therion for connected drawings...</source>
+        <translation>Therion počítá polohy stanic pro spojené kresby...</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureBrowser.cpp" line="1211"/>
+        <source>Cannot align the connected drawings because a scrap has neither enough measured legs between its station points nor an XVI background.</source>
+        <translation>Spojené kresby nelze zarovnat, protože scrap nemá dost naměřených tahů mezi body stanic ani podklad XVI.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="107"/>
+        <source>No station is shared by these drawings; they will line up once Therion has computed the station positions. Open the connection again then.</source>
+        <translation>Tyto kresby nemají společnou stanici; zarovnají se, až Therion vypočítá polohy stanic. Pak spojení otevřete znovu.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="109"/>
+        <source>No station is shared by these drawings, so they open without alignment.</source>
+        <translation>Žádná stanice není těmto kresbám společná, proto se otevřou bez zarovnání.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="124"/>
+        <source>No station is shared by these drawings, and drawings in an extended elevation can only be aligned at a shared station.</source>
+        <translation>Tyto kresby nemají společnou stanici a kresby v rozvinutém řezu lze zarovnat jen na společné stanici.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="126"/>
+        <source>%1 has no station point in this view; open the connection again once Therion has computed the station positions, which choose its survey&apos;s nearest drawing.</source>
+        <translation>%1 nemá v tomto pohledu bod stanice; otevřete spojení znovu, až Therion vypočte polohy stanic, podle nichž se vybere nejbližší kresba jejího měření.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="67"/>
+        <source>Station Positions</source>
+        <translation>Polohy stanic</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="68"/>
+        <source>The station positions are out of date. Run Therion to update them?</source>
+        <translation>Polohy stanic jsou zastaralé. Spustit Therion a aktualizovat je?</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="69"/>
+        <source>This connection needs station positions. Run Therion now?</source>
+        <translation>Toto spojení potřebuje polohy stanic. Spustit Therion teď?</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="70"/>
+        <source>On a large project this can take a while.</source>
+        <translation>U velkého projektu to může chvíli trvat.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="72"/>
+        <source>Use Them As They Are</source>
+        <translation>Použít je tak, jak jsou</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="73"/>
+        <source>Open Without Alignment</source>
+        <translation>Otevřít bez zarovnání</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="77"/>
+        <source>Don&apos;t ask again</source>
+        <translation>Už se neptat</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="129"/>
+        <source>%1 has no station point in this view, and Therion has computed no position to choose its survey&apos;s nearest drawing.</source>
+        <translation>%1 nemá v tomto pohledu bod stanice a Therion nevypočetl žádnou polohu, podle níž by se vybrala nejbližší kresba jejího měření.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="141"/>
+        <source>%1 has too few measured legs between its station points, so it is placed by its XVI background, which may be turned by the declination.</source>
+        <translation>Kresba %1 má příliš málo naměřených tahů mezi body stanic, proto je umístěna podle podkladu XVI, který může být natočený o deklinaci.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowJoinPlacement.cpp" line="145"/>
+        <source>The scale of %1 differs from its XVI background by more than a tenth.</source>
+        <translation>Měřítko kresby %1 se od podkladu XVI liší o více než desetinu.</translation>
     </message>
     <message>
         <location filename="../src/app/MainWindowTherionRunner.cpp" line="141"/>
@@ -2166,6 +2306,54 @@ Očekávané soubory jsou `docs/USER_MANUAL.&lt;language&gt;.md` nebo `docs/USER
     </message>
 </context>
 <context>
+    <name>ProjectConnectionDataStatus</name>
+    <message>
+        <location filename="../src/app/ProjectConnectionDataStatus.cpp" line="20"/>
+        <source>No target config selected, so the drawings Therion reads are unknown.</source>
+        <translation>Není vybrána cílová konfigurace, takže není známo, které kresby Therion čte.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectConnectionDataStatus.cpp" line="24"/>
+        <source>Computing station positions with Therion; the connection opens when they are ready.</source>
+        <translation>Therion počítá polohy stanic; spojení se otevře, až budou hotové.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectConnectionDataStatus.cpp" line="20"/>
+        <source>Computing station positions with Therion...</source>
+        <translation>Therion počítá polohy stanic...</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectConnectionDataStatus.cpp" line="25"/>
+        <source>Positions from the compile at %1. Sources changed since; compile to update them.</source>
+        <translation>Polohy z kompilace v %1. Zdroje se od té doby změnily; pro aktualizaci projekt zkompilujte.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectConnectionDataStatus.cpp" line="26"/>
+        <source>Positions from the compile at %1.</source>
+        <translation>Polohy z kompilace v %1.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectConnectionDataStatus.cpp" line="28"/>
+        <source>Positions from a Therion run at %1. Sources changed since.</source>
+        <translation>Polohy z běhu Therionu v %1. Zdroje se od té doby změnily.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectConnectionDataStatus.cpp" line="29"/>
+        <source>Positions from a Therion run at %1.</source>
+        <translation>Polohy z běhu Therionu v %1.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectConnectionDataStatus.cpp" line="37"/>
+        <source>The last compile wrote no database export. Add &quot;export database -fmt sql&quot; to the thconfig, or open a connection that needs station positions to run Therion once.</source>
+        <translation>Poslední kompilace nezapsala export databáze. Přidejte do konfigurace "export database -fmt sql", nebo otevřete spojení, které potřebuje polohy stanic, a Therion se jednou spustí.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectConnectionDataStatus.cpp" line="33"/>
+        <source>No station positions. Add &quot;export database -fmt sql&quot; to the thconfig and compile.</source>
+        <translation>Žádné polohy stanic. Přidejte do konfigurace "export database -fmt sql" a projekt zkompilujte.</translation>
+    </message>
+</context>
+<context>
     <name>QObject</name>
     <message>
         <location filename="../src/platform/DiagnosticLogging.cpp" line="270"/>
@@ -2730,6 +2918,36 @@ Line-point options: %1</translation>
         <location filename="../src/app/ProjectValidationScanner.cpp" line="239"/>
         <source>Object id `%1` is already used by another object in this namespace.</source>
         <translation>ID objektu `%1` už v tomto namespace používá jiný objekt.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="245"/>
+        <source>Mixed join kinds</source>
+        <translation>Smíšené druhy join</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="246"/>
+        <source>Scraps `%1` are joined both as scraps and by points or lines; use one kind of join.</source>
+        <translation>Scrapy `%1` jsou spojeny jako scrapy i body nebo čarami; použijte jeden druh join.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="252"/>
+        <source>Repeated scrap join</source>
+        <translation>Opakované spojení scrapů</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="253"/>
+        <source>Scraps `%1` are joined by %2 scrap joins; use one, with `-count` for more passages.</source>
+        <translation>Scrapy `%1` spojuje %2 spojení scrapů; použijte jedno, pro více chodeb s `-count`.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="260"/>
+        <source>Single point or line join</source>
+        <translation>Jediné spojení bodů nebo čar</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectValidationScanner.cpp" line="261"/>
+        <source>Scraps `%1` are joined by only one point or line join; a passage usually needs both walls joined.</source>
+        <translation>Scrapy `%1` spojuje jen jedno spojení bodů nebo čar; chodba obvykle potřebuje spojit obě stěny.</translation>
     </message>
     <message>
         <location filename="../src/app/ProjectValidationScanner.cpp" line="368"/>
@@ -3728,6 +3946,41 @@ Line-point options: %1</translation>
         <location filename="../src/app/MainWindowSettingsDialog.cpp" line="92"/>
         <source>When enabled, the Validation panel refreshes the whole project after project, document, and file changes.</source>
         <translation>Když je zapnuto, panel Validace obnoví celý projekt po změnách projektu, dokumentů a souborů.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="96"/>
+        <source>Opening a connection shows the second drawing in a separate window</source>
+        <translation>Otevření spojení zobrazí druhou kresbu v samostatném okně</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="99"/>
+        <source>Applies to double-click and Enter on the Connections page; the right-click menu offers the other choice.</source>
+        <translation>Platí pro dvojklik a Enter na stránce Spojení; nabídka pravého tlačítka nabízí druhou možnost.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="103"/>
+        <source>Ask</source>
+        <translation>Zeptat se</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="104"/>
+        <source>Run Therion</source>
+        <translation>Spustit Therion</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="105"/>
+        <source>Never</source>
+        <translation>Nikdy</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="108"/>
+        <source>When a connection needs station positions and the compile gave none, or those from a Therion run are out of date. On a large project a run can take a while.</source>
+        <translation>Když spojení potřebuje polohy stanic a kompilace žádné nedala, nebo jsou polohy z běhu Therionu zastaralé. U velkého projektu může běh chvíli trvat.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowSettingsDialog.cpp" line="110"/>
+        <source>When a connection needs station positions</source>
+        <translation>Když spojení potřebuje polohy stanic</translation>
     </message>
     <message>
         <location filename="../src/app/MainWindowSettingsDialog.cpp" line="96"/>
@@ -6416,6 +6669,312 @@ subtype blocks</translation>
         <location filename="../src/app/text_editor/map_editor/MapEditorViewportInputController.cpp" line="1574"/>
         <source>Vertex removed from current draft (%1 remaining).</source>
         <translation>Vrchol odebrán z aktuálního návrhu (zbývá %1).</translation>
+    </message>
+</context>
+<context>
+    <name>TherionStudio::ProjectJoinsPanel</name>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="54"/>
+        <source>View:</source>
+        <translation>Pohled:</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="56"/>
+        <source>Scrap projection whose drawings are connected</source>
+        <translation>Projekce scrapů, jejichž kresby se spojují</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="63"/>
+        <source>Filter by survey or station</source>
+        <translation>Filtrovat podle survey nebo stanice</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="351"/>
+        <source>Automatic scrap join</source>
+        <translation>Automatické spojení scrapů</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="202"/>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="354"/>
+        <source>Scrap join with -count</source>
+        <translation>Spojení scrapů s -count</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="107"/>
+        <source>Key</source>
+        <translation>Legenda</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="76"/>
+        <source>Select Target Config...</source>
+        <translation>Vybrat cílovou konfiguraci...</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="114"/>
+        <source>Cancel</source>
+        <translation>Zrušit</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="125"/>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="244"/>
+        <source>%1 s</source>
+        <translation>%1 s</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="108"/>
+        <source>Show or hide what the row colours and markers mean</source>
+        <translation>Zobrazí nebo skryje význam barev a značek řádků</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="201"/>
+        <source>Automatic scrap join, with an equate or nosurvey leg</source>
+        <translation>Automatické spojení scrapů, s equate nebo úsekem nosurvey</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="203"/>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="357"/>
+        <source>Point or line join</source>
+        <translation>Spojení bodů nebo čar</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="204"/>
+        <source>No join between these surveys</source>
+        <translation>Mezi těmito měřeními není join</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="206"/>
+        <source>Cannot be opened in this view; hover for the reason</source>
+        <translation>V tomto pohledu nelze otevřít; důvod uvidíte po najetí myší</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="210"/>
+        <source>More than one kind of join between these surveys</source>
+        <translation>Mezi těmito měřeními je více druhů join</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="211"/>
+        <source>join with no equate or nosurvey leg</source>
+        <translation>join bez equate nebo úseku nosurvey</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="212"/>
+        <source>nosurvey leg, treated like an equate</source>
+        <translation>úsek nosurvey, chápaný jako equate</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="199"/>
+        <source>Automatic Join</source>
+        <translation>Automatické spojení</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="200"/>
+        <source>Join with -count</source>
+        <translation>Spojení s -count</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="201"/>
+        <source>Detailed Joins</source>
+        <translation>Podrobná spojení</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="202"/>
+        <source>No scrap Joins</source>
+        <translation>Bez spojení scrapů</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="203"/>
+        <source>Cannot be opened</source>
+        <translation>Nelze otevřít</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="207"/>
+        <source>Joins not valid</source>
+        <translation>Neplatná spojení</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="235"/>
+        <source>Placed by its XVI only</source>
+        <translation>Umístěno jen podle XVI</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="235"/>
+        <source>Needs station positions</source>
+        <translation>Potřebuje polohy stanic</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="209"/>
+        <source>Join with no centreline tie</source>
+        <translation>Spojení bez vazby na polygon</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="226"/>
+        <source>A join here breaks a join rule; see the Validation panel.</source>
+        <translation>Join zde porušuje pravidlo spojení; viz panel Validace.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="276"/>
+        <source>A drawing is placed by its XVI, as its scrap has too few measured legs between station points.</source>
+        <translation>Kresba je umístěna podle svého XVI, protože její scrap má příliš málo naměřených tahů mezi body stanic.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="278"/>
+        <source>Lines up once there are station positions; compile with &quot;export database -fmt sql&quot; in the thconfig.</source>
+        <translation>Zarovná se, jakmile budou polohy stanic; zkompilujte s "export database -fmt sql" v konfiguraci.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="281"/>
+        <source>The station positions are out of date.</source>
+        <translation>Polohy stanic jsou zastaralé.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="301"/>
+        <source>No equate or nosurvey leg links these surveys.</source>
+        <translation>Tato měření nespojuje žádný equate ani úsek nosurvey.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="310"/>
+        <source>nosurvey leg: %1</source>
+        <translation>Úsek nosurvey: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="130"/>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="164"/>
+        <source>Equate: %1</source>
+        <translation>Equate: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="360"/>
+        <source>More than one kind of join links these surveys.</source>
+        <translation>Tato měření spojuje více druhů join.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="364"/>
+        <source>join: %1</source>
+        <translation>join: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="374"/>
+        <source>No station is shared by these drawings, so they open without alignment.</source>
+        <translation>Žádná stanice není těmto kresbám společná, proto se otevřou bez zarovnání.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="178"/>
+        <source>%1: %2 (scrap %3)</source>
+        <translation>%1: %2 (scrap %3)</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="183"/>
+        <source>%1: station not found in any centreline</source>
+        <translation>%1: stanice nebyla nalezena v žádném centreline</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="470"/>
+        <source>%1: no station point in a drawing that Therion reads; no target config is selected, so those drawings are unknown</source>
+        <translation>%1: žádný bod stanice v kresbě, kterou Therion čte; není vybrána cílová konfigurace, takže tyto kresby nejsou známy</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="185"/>
+        <source>%1: no station point in a drawing that Therion reads</source>
+        <translation>%1: žádný bod stanice v kresbě, kterou Therion načítá</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="187"/>
+        <source>%1: not drawn in the %2 view</source>
+        <translation>%1: není nakreslena v pohledu %2</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="405"/>
+        <source>%1: no station point in its survey&apos;s %2 drawings, and an extended elevation can only be aligned at a shared station</source>
+        <translation>%1: žádný bod stanice v kresbách %2 jejího měření, a rozvinutý řez lze zarovnat jen na společné stanici</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="408"/>
+        <source>%1: no station point in its survey&apos;s %2 drawings, so the drawing nearest the station opens</source>
+        <translation>%1: žádný bod stanice v kresbách %2 jejího měření, proto se otevře kresba nejbližší ke stanici</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="453"/>
+        <source>Go to Join in Source</source>
+        <translation>Přejít na join ve zdroji</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="246"/>
+        <source>Open Connection</source>
+        <translation>Otevřít spojení</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="267"/>
+        <source>Open Connection in Tabs</source>
+        <translation>Otevřít spojení v kartách</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="267"/>
+        <source>Open Connection with Separate Window</source>
+        <translation>Otevřít spojení se samostatným oknem</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="481"/>
+        <source>Go to nosurvey Leg in Source</source>
+        <translation>Přejít na úsek nosurvey ve zdroji</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="250"/>
+        <source>Go to Equate in Source</source>
+        <translation>Přejít na equate ve zdroji</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectJoinsPanel.cpp" line="261"/>
+        <source>Open %1</source>
+        <translation>Otevřít %1</translation>
+    </message>
+</context>
+<context>
+    <name>TherionStudio::ProjectStationPositionService</name>
+    <message>
+        <location filename="../src/app/ProjectStationPositionService.cpp" line="34"/>
+        <source>Therion could not compute station positions: %1</source>
+        <translation>Therion nemohl vypočítat polohy stanic: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectStationPositionService.cpp" line="110"/>
+        <source>Station positions could not be computed: no temporary folder.</source>
+        <translation>Polohy stanic nelze vypočítat: chybí dočasná složka.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectStationPositionService.cpp" line="115"/>
+        <source>Station positions could not be computed: %1 could not be read.</source>
+        <translation>Polohy stanic nelze vypočítat: %1 nelze přečíst.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectStationPositionService.cpp" line="121"/>
+        <source>Station positions could not be computed: the target config has no source.</source>
+        <translation>Polohy stanic nelze vypočítat: cílová konfigurace nemá žádný source.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectStationPositionService.cpp" line="128"/>
+        <source>Station positions could not be computed: the temporary config could not be written.</source>
+        <translation>Polohy stanic nelze vypočítat: dočasnou konfiguraci nelze zapsat.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectStationPositionService.cpp" line="135"/>
+        <source>Station positions could not be computed: Therion was not found.</source>
+        <translation>Polohy stanic nelze vypočítat: Therion nebyl nalezen.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectStationPositionService.cpp" line="137"/>
+        <source>Station positions could not be computed: Therion did not start.</source>
+        <translation>Polohy stanic nelze vypočítat: Therion se nespustil.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectStationPositionService.cpp" line="148"/>
+        <source>Therion could not compute station positions (exit code %1); check the project in the Compiler.</source>
+        <translation>Therion nemohl vypočítat polohy stanic (návratový kód %1); zkontrolujte projekt v Kompilátoru.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/ProjectStationPositionService.cpp" line="196"/>
+        <location filename="../src/app/ProjectStationPositionService.cpp" line="203"/>
+        <source>Station positions could not be read: %1</source>
+        <translation>Polohy stanic nelze načíst: %1</translation>
     </message>
 </context>
 <context>

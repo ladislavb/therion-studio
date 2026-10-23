@@ -1,5 +1,7 @@
 #pragma once
 
+#include "TherionSourceLogicalDocument.h"
+
 #include <QHash>
 #include <QString>
 
@@ -7,9 +9,6 @@
 
 namespace TherionStudio
 {
-struct TherionSourceLogicalCommand;
-class TherionSourceLogicalDocument;
-
 struct TherionStationNameTransform
 {
     QString prefix;
@@ -27,4 +26,8 @@ therionScrapStationNameTransformsByStartLine(const TherionSourceLogicalDocument 
 therionActiveScrapStationNameTransform(
     const TherionSourceLogicalCommand &command,
     const QHash<int, TherionStationNameTransform> &transformsByStartLine);
+
+// The `-name` value of a `point <x> <y> station` command; nullopt for any other command.
+[[nodiscard]] std::optional<TherionSourceLogicalArgumentRange> therionStationPointNameRange(
+    const TherionSourceLogicalCommand &command);
 }

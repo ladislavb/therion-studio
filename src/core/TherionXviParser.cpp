@@ -126,6 +126,20 @@ bool parseTherionXviDocumentText(const QString &content, TherionXviDocument *doc
             block = Block::SketchLines;
             continue;
         }
+        if (trimmed.startsWith(QStringLiteral("set XVIgrids"))) {
+            const int open = trimmed.indexOf(QLatin1Char('{'));
+            const int close = trimmed.lastIndexOf(QLatin1Char('}'));
+            if (open >= 0 && close > open) {
+                const QStringList tokens = tokenizeWhitespace(trimmed.mid(open + 1, close - open - 1));
+                qreal spacing = 0.0;
+                if (tokens.size() >= 2 && tryParseLeadingNumber(tokens.at(0), &spacing) && spacing > 0.0) {
+                    document->gridSpacing = spacing;
+                    document->gridSpacingUnit = tokens.at(1);
+                    document->hasGridSpacing = true;
+                }
+            }
+            continue;
+        }
         if (isXviGridDefinitionLine(trimmed)) {
             const int open = trimmed.indexOf(QLatin1Char('{'));
             const int close = trimmed.lastIndexOf(QLatin1Char('}'));

@@ -107,6 +107,8 @@ set(THERION_CORE_SOURCES
     src/core/TherionXviParser.cpp
     src/core/TherionXviParser.h
     src/core/TherionFileTypes.h
+    src/core/Th2CentrelineAlignment.cpp
+    src/core/Th2CentrelineAlignment.h
     src/core/Th2GeometryProjection.cpp
     src/core/Th2GeometryProjection.h
     src/core/ThreeDViewerCamera.cpp
@@ -135,10 +137,18 @@ set(THERION_CORE_SOURCES
     src/core/TherionSourceValidationCatalog.h
     src/core/TherionSourceValidator.cpp
     src/core/TherionSourceValidator.h
+    src/core/ProjectEquateLinkScanner.cpp
+    src/core/ProjectEquateLinkScanner.h
+    src/core/ProjectJoinList.cpp
+    src/core/ProjectJoinList.h
+    src/core/ProjectJoinRules.cpp
+    src/core/ProjectJoinRules.h
     src/core/ProjectStructureIndex.cpp
     src/core/ProjectStructureIndex.h
     src/core/TherionStationNameRules.cpp
     src/core/TherionStationNameRules.h
+    src/core/TherionStationPositionExport.cpp
+    src/core/TherionStationPositionExport.h
     src/core/TherionDocumentParser.cpp
     src/core/TherionDocumentParser.h
     src/core/SessionStore.cpp
@@ -179,6 +189,10 @@ set(THERION_CORE_QTEST_SUITES
     MapBackgroundPlacementTest
     PocketTopoImportTest
     Th2GeometryProjectionTest
+    Th2CentrelineAlignmentTest
+    ProjectJoinListTest
+    ProjectJoinRulesTest
+    TherionStationPositionExportTest
     TherionFileTypesTest
     TherionBackgroundMetadataTest
     TherionDocumentParserTest
@@ -271,6 +285,7 @@ set(THERION_BLOCK_EDITOR_QTEST_SUITES
     BlockEditorMoveSourceRewriterTest)
 
 set(THERION_RUNNER_SUPPORT_QTEST_SUITES
+    TherionCompileResultTest
     TherionExecutableSelectionControllerTest
     TherionRunnerConfigDisplayControllerTest
     TherionRunnerConfigResolverTest
@@ -386,6 +401,12 @@ set(THERION_APP_SOURCES
     src/app/ProjectScanCacheService.h
     src/app/ProjectFileDiscovery.cpp
     src/app/ProjectFileDiscovery.h
+    src/app/ConnectionPositionRunPolicy.cpp
+    src/app/ConnectionPositionRunPolicy.h
+    src/app/ProjectConnectionDataStatus.cpp
+    src/app/ProjectConnectionDataStatus.h
+    src/app/ProjectJoinsPanel.cpp
+    src/app/ProjectJoinsPanel.h
     src/app/ProjectFileWatchInventory.cpp
     src/app/ProjectFileWatchInventory.h
     src/app/ProjectFileWatchInventoryService.cpp
@@ -404,6 +425,8 @@ set(THERION_APP_SOURCES
     src/app/ValidationResultsMarkdownExporter.h
     src/app/ProjectStructureScanner.cpp
     src/app/ProjectStructureScanner.h
+    src/app/TherionCompileResult.cpp
+    src/app/TherionCompileResult.h
     src/app/TherionExecutableSelectionController.cpp
     src/app/TherionExecutableSelectionController.h
     src/app/TherionExecutableDetector.cpp
@@ -416,6 +439,8 @@ set(THERION_APP_SOURCES
     src/app/TherionRunnerLifecyclePresenter.h
     src/app/TherionRunnerOutputLinker.cpp
     src/app/TherionRunnerOutputLinker.h
+    src/app/ProjectStationPositionService.cpp
+    src/app/ProjectStationPositionService.h
     src/app/TherionRunnerService.cpp
     src/app/TherionRunnerService.h
     src/app/TherionRunnerStartResultPresenter.cpp
@@ -511,6 +536,7 @@ set(THERION_MAIN_WINDOW_SOURCES
     src/app/MainWindowHelpDialog.cpp
     src/app/MainWindowHelpDialog.h
     src/app/MainWindowMapBackground.cpp
+    src/app/MainWindowJoinPlacement.cpp
     src/app/MainWindowProjectFileWatcher.cpp
     src/app/MainWindowProjectBrowserSidebar.cpp
     src/app/MainWindowOutputsSidebar.cpp
@@ -790,6 +816,13 @@ set(THERION_MAP_EDITOR_SOURCES
     src/app/text_editor/map_editor/MapEditorTabWorkspace.cpp
     src/app/text_editor/map_editor/MapEditorTabCommandSurfaceDelegates.cpp
     src/app/text_editor/map_editor/MapEditorTabWorkspaceDelegates.cpp
+    src/app/text_editor/map_editor/MapEditorTabViewLinking.cpp
+    src/app/text_editor/map_editor/MapEditorJoinOutline.cpp
+    src/app/text_editor/map_editor/MapEditorJoinOutline.h
+    src/app/text_editor/map_editor/MapEditorJoinPairs.cpp
+    src/app/text_editor/map_editor/MapEditorJoinPairs.h
+    src/app/text_editor/map_editor/MapEditorJoinViewLink.cpp
+    src/app/text_editor/map_editor/MapEditorJoinViewLink.h
     src/app/text_editor/map_editor/MapEditorUndoArbitrationService.cpp
     src/app/text_editor/map_editor/MapEditorUndoArbitrationService.h
     src/app/text_editor/map_editor/MapEditorTabDocumentValidation.cpp
@@ -903,10 +936,12 @@ set(THERION_STUDIO_RESOURCE_FILES
     resources/project_templates/default/scraps/scrap1.th2
     resources/icons/lucide/LICENSE
     resources/icons/lucide/check.svg
+    resources/icons/lucide/circle-dashed.svg
     resources/icons/lucide/code.svg
     resources/icons/lucide/cog.svg
     resources/icons/lucide/compass.svg
     resources/icons/lucide/copy.svg
+    resources/icons/lucide/database.svg
     resources/icons/lucide/download.svg
     resources/icons/lucide/external-link.svg
     resources/icons/lucide/grip-vertical.svg
@@ -919,6 +954,7 @@ set(THERION_STUDIO_RESOURCE_FILES
     resources/icons/lucide/hand.svg
     resources/icons/lucide/house.svg
     resources/icons/lucide/image.svg
+    resources/icons/lucide/link.svg
     resources/icons/lucide/spell-check.svg
     resources/icons/lucide/map-pin.svg
     resources/icons/lucide/locate-fixed.svg
@@ -1201,6 +1237,7 @@ therion_add_core_qtest_runner(TherionCoreQTests
     tests/core/MapBackgroundPlacementTest.cpp
     tests/PocketTopoImportTest.cpp
     tests/core/Th2GeometryProjectionTest.cpp
+    tests/core/Th2CentrelineAlignmentTest.cpp
     tests/core/ThreeDViewerCameraTest.cpp
     tests/core/TherionFileTypesTest.cpp
     tests/core/TherionBackgroundMetadataTest.cpp
@@ -1221,6 +1258,9 @@ therion_add_core_qtest_runner(TherionCoreQTests
     tests/core/TherionSourceValidatorFixTest.cpp
     tests/core/TherionSourceValidatorProjectionTest.cpp
     tests/core/ProjectStructureIndexQTest.cpp
+    tests/core/ProjectJoinListTest.cpp
+    tests/core/ProjectJoinRulesTest.cpp
+    tests/core/TherionStationPositionExportTest.cpp
     tests/core/TherionSourceTextTest.cpp
     tests/core/TherionTokenRulesTest.cpp)
 
@@ -1452,6 +1492,7 @@ target_link_libraries(ValidationResultsMarkdownExporterTest PRIVATE therion_app 
 
 qt_add_executable(TherionRunnerSupportQTests
     tests/TherionRunnerSupportQTestMain.cpp
+    tests/TherionCompileResultTest.cpp
     tests/TherionExecutableSelectionControllerTest.cpp
     tests/TherionRunnerConfigDisplayControllerTest.cpp
     tests/TherionRunnerConfigResolverTest.cpp
@@ -1462,6 +1503,10 @@ target_link_libraries(TherionRunnerSupportQTests PRIVATE therion_app Qt6::Test)
 
 therion_add_app_unit_test(TherionRunnerServiceTest
     tests/TherionRunnerServiceTest.cpp)
+
+therion_add_app_unit_test(ProjectStationPositionServiceTest
+    tests/ProjectStationPositionServiceTest.cpp)
+target_link_libraries(ProjectStationPositionServiceTest PRIVATE Qt6::Test)
 
 therion_add_app_unit_test(MainWindowTherionRunnerControllerTest
     tests/MainWindowTherionRunnerControllerTest.cpp)
@@ -1725,6 +1770,21 @@ function(therion_add_map_editor_ui_test target_name test_source resource_name)
             ${THERION_STUDIO_RESOURCE_FILES})
 endfunction()
 
+qt_add_executable(ProjectJoinsPanelTest
+    tests/ProjectJoinsPanelTest.cpp)
+target_link_libraries(ProjectJoinsPanelTest PRIVATE therion_app Qt6::Test)
+qt_add_resources(ProjectJoinsPanelTest ProjectJoinsPanelTestResources
+    PREFIX "/"
+    FILES
+        resources/icons/lucide/circle-dashed.svg
+        resources/icons/lucide/database.svg)
+
+therion_add_map_editor_ui_test(MapEditorJoinTest
+    tests/MapEditorJoinTest.cpp
+    "MapEditorJoinResources")
+target_link_libraries(MapEditorJoinTest PRIVATE Qt6::Test)
+target_compile_definitions(MapEditorJoinTest PRIVATE THERION_STUDIO_TESTING)
+
 therion_add_map_editor_ui_test(MapEditorDetachedPaneTest
     tests/MapEditorDetachedPaneTest.cpp
     "MapEditorDetachedPaneResources")
@@ -1853,9 +1913,11 @@ set(THERION_UNIT_TEST_TARGETS
     BlockEditorToolboxControllerTest
     TherionRunnerSupportQTests
     TherionRunnerServiceTest
+    ProjectStationPositionServiceTest
     MainWindowValidationFixApplyServiceTest)
 
 set(THERION_UI_TEST_TARGETS
+    ProjectJoinsPanelTest
     TherionSqlReportTabTest
     TextEditorCaretInteractionTest
     TextEditorCompletionHighlightTest
@@ -1864,6 +1926,7 @@ set(THERION_UI_TEST_TARGETS
     TextEditorImportInsertionTransactionTest
     TextEditorSystemNormalizationTransactionTest
     MapEditorDetachedPaneTest
+    MapEditorJoinTest
     MapEditorDragUndoRedoSmokeTest
     MapEditorLargeScenePerformanceSmokeTest
     MapEditorSplitAreaBorderSmokeTest

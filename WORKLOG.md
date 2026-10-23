@@ -15,6 +15,11 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Active Work
 
+### Compile Results
+
+- `TherionCompileResultRecorder` records the user's latest compile and the database and xtherion files it wrote, for
+  views that show compiled data (the planned structure info panel and the Join Viewer). Nothing reads it yet.
+
 ### 2026.7.2 Planning
 
 - Keep the `2026.7.2` scope open for the focused performance sequence: Map runtime ownership R4-R5 and map refresh
@@ -281,6 +286,57 @@ Active planning only. Completed history belongs in archive files. Stable archite
   layers continue loading; Gamma and Fit With Background are verified baseline behavior.
 - Preserve Mapiah `format=svg` semantics and existing background source transaction paths.
 - Keep general background cache/provider work in `plans/MAP_RUNTIME_OWNERSHIP_PLAN.md`.
+
+### Join Viewer
+
+- Plan: `plans/JOIN_VIEWER_PLAN.md`. Phase 1 (Joins sidebar, centreline alignment, faded partner outline, linked views,
+  `Joined` indicator) is implemented on `JoinViewer`.
+- Phase 3 (planned 2026-10-23): `Connections` naming, positions and legs from the user's compile instead of the
+  automatic background run (via `feature/compile-results`), a status line and row symbols (plan E1-E4). E2 (compile
+  data, one-off run only for joins that need positions) is committed; E1 (`Connections` naming in the UI, spec,
+  manuals and catalogs) is committed; E3 (status line) and E4 (row symbols) are
+  committed. E5 fixes found in use: E5a (status line explains a missing target config or database export) is
+  committed, as are E5b (row icon alignment) and E5c (a setting and prompt for the one-off run, with
+  progress and Cancel).
+- Phase 2 slice A (awaiting review): `Open Join with Separate Window` and the Settings option that makes it the
+  activation default (SPECIFICATION 3.8.6, 3.12).
+- Specification review for the join work (2026-10-14): the `Survey`/`Map` "only surveys, maps, and scraps" rule is
+  scoped to those views so the `Joins` view does not contradict it (3.5, 3.8.6, 8.1.5); the join viewer is listed as
+  Post-MVP (9.2); keyboard routes added for the `Joins` context menu and `View -> Linked Drawings` (3.13.1, 3.9);
+  Czech, French, and Slovak manuals now cover `Joins` (3.14, 8.1.12).
+- Phase 2 slice B (awaiting review): Lucide `link` icon on linked drawings' tabs and separate map windows
+  (SPECIFICATION 3.8.6).
+- Phase 2 stage C1 (done): index records `join` commands and cross-survey `nosurvey` legs.
+- Phase 2 stage C2 (awaiting review): Joins rows coloured by `join` kind with a foldable themed key below the list (all row styles and markers), `nosurvey` rows, and
+  join-only rows that open both scraps unaligned (SPECIFICATION 3.8.6, 8.1.5). Entrance joins stay uncoloured on this
+  branch until `NamespaceOffBug` is merged.
+- Phase 2 stage C3 (awaiting review): join-rule Validation warnings per scrap pair (mixed kinds, repeated scrap
+  join, single point/line join) and a warning marker on affected Joins rows (SPECIFICATION 3.8.2, 3.8.6, 8.1.5; THERION_COMPATIBILITY).
+- Phase 2 stage C4 (awaiting review): joined drawings placed from Therion-computed station positions (background
+  `export database -fmt sql` run outside the project, shared-frame fit per scrap; XVI fit stays as the fallback);
+  join-only rows open aligned (SPECIFICATION 3.8.6, 8.1.5). Open joins are not re-placed when positions arrive.
+- Review changes (done): `View -> Joined Drawings` renamed `Linked Drawings` (empty entry
+  `No linked drawings`), and the `Link Views` toggle removed so joined drawings always move together, and each drawing's name in that menu brings it to the front (tab or separate map window).
+- Phase 2 stage C5 (fallback placement without Therion) dropped: Therion Studio already needs Therion for much of
+  its work; without positions the XVI fit remains. Extended elevations without an equate stay unlinked (no work
+  planned). Phase 2 is complete pending review and the PR.
+- Phase 2 section D (done 2026-10-22): fixes found in use. D1 done (wrong `-scale` fallback; `-scale` now only for scraps
+  with fewer than two stations, computed and XVI fits mixed at the join station); D2 open rows whose station is not drawn in the view; D3 join-only rows opening
+  unaligned while positions are stale or a run is going (reduced 2026-10-22 to drawing saves no longer starting a
+  run, done; the rest a known problem); D4 centre on the closest station pair (done 2026-10-22); D2 done 2026-10-22, its survey's nearest scrap stands in; D5 (done,
+  replaces the D1 fix) place drawings as drawn from measured leg vectors, XVI fallback, no `-scale`.
+- Found during C1 (pre-existing, not from the join work): references such as `EntranceSP2@Entrance` to objects in a
+  `-namespace off` survey resolve in Therion but not in the project index, so Validation reports false
+  `unknown join reference` warnings and C2 would leave those joins uncoloured. Proposed as its own fix branch.
+- Out of scope, possible upstream suggestion: unresolved map-block references are only reported when named with the
+  `.m`/`.s` suffix convention; user-configurable naming conventions (Settings) would let other conventions be checked.
+- Release note: the join viewer is feature work while 2026.7.2 is scoped to performance; propose it for the release
+  after 2026.7.2 unless the maintainers decide otherwise.
+- Next: review and the PR. Left for later (see the plan): re-placing joins opened during a Therion run, rows without
+  a shared station in extended elevations, and chaining legs through undrawn stations.
+- Opening a join centres the second view from the requested point, not from the first view's pixel-rounded centre,
+  so only one view's rounding separates them. Found when combining with PR 38, whose view changes pushed the double
+  rounding past `MapEditorJoinTest`'s 3 pixel tolerance.
 
 ### Raster Background Placement (issue #30)
 

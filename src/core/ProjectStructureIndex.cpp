@@ -1,6 +1,8 @@
 #include "ProjectStructureIndex.h"
 
 #include "DocumentFile.h"
+#include "ProjectEquateLinkScanner.h"
+#include "ProjectJoinRules.h"
 #include "TherionCommandLineModel.h"
 #include "TherionFileTypes.h"
 #include "TherionSourceLogicalDocument.h"
@@ -14,6 +16,7 @@
 #include <QDirIterator>
 #include <QFileInfo>
 #include <QHash>
+#include <QScopeGuard>
 #include <QSet>
 
 #include <algorithm>
@@ -115,7 +118,8 @@ MapReferenceScanResult scanMapReferences(const QVector<ProjectStructureEntry> &e
 QVector<ProjectIndexDiagnostic> scanJoinReferences(const QVector<ProjectStructureEntry> &entries,
                                                    ParsedFileCache *cache,
                                                    const QHash<QString, QString> &inMemoryFileContentsByPath,
-                                                   const std::function<bool()> &shouldCancel);
+                                                   const std::function<bool()> &shouldCancel,
+                                                   QVector<ProjectJoinCommand> *joinCommands);
 QVector<ProjectIndexDiagnostic> scanStationReferences(const QVector<ProjectStructureEntry> &entries,
                                                       const StationReferenceIndex &stationIndex,
                                                       ParsedFileCache *cache,
@@ -127,6 +131,12 @@ StationReferenceIndex stationReferencesFromProject(
     ParsedFileCache *cache,
     const QHash<QString, QString> &inMemoryFileContentsByPath,
     const std::function<bool()> &shouldCancel);
+ProjectEquateLinkScanResult scanEquateLinks(const QVector<ProjectStructureEntry> &entries,
+                                            const QSet<QString> &sourceFiles,
+                                            const StationReferenceIndex &stationIndex,
+                                            ParsedFileCache *cache,
+                                            const QHash<QString, QString> &inMemoryFileContentsByPath,
+                                            const std::function<bool()> &shouldCancel);
 QVector<ProjectIndexDiagnostic> scanDuplicateObjectIds(const QVector<ProjectStructureEntry> &entries,
                                                        ParsedFileCache *cache,
                                                        const QHash<QString, QString> &inMemoryFileContentsByPath,
@@ -299,10 +309,20 @@ struct ReferenceKeyIndex
     QHash<QString, QVector<QString>> keysByNameAndNamespace;
 };
 
+struct NoSurveyLegReference
+{
+    QString sourceFile;
+    int lineNumber = 0;
+    QString fromReference;
+    QString toReference;
+    QString ownerNamespacePath;
+};
+
 struct StationReferenceIndex
 {
     QHash<QString, QVector<QString>> keysByExactReference;
     ReferenceKeyIndex keysByNameAndNamespace;
+    QVector<NoSurveyLegReference> noSurveyLegs;
 };
 
 enum class ReferenceResolutionState
@@ -481,9 +501,7 @@ QString stationReferenceCandidateKey(const QString &referenceName, const QString
     const QString namespacePath = reference.hasNamespace
         ? namespacePathForReference(ownerNamespacePath, reference.namespacePath)
         : ownerNamespacePath;
-    return namespacePath.trimmed().isEmpty()
-        ? normalizedStationReferenceToken(reference.name)
-        : normalizedStationReferenceToken(QStringLiteral("%1@%2").arg(reference.name, namespacePath));
+    return ProjectStructureIndex::stationKey(reference.name, namespacePath);
 }
 
 QString stationReferenceDefinitionKey(const QString &referenceName, const QString &ownerNamespacePath)
@@ -565,33 +583,6 @@ ReferenceResolution resolveStationPointReference(const StationReferenceIndex &in
 bool stationReferenceShouldReportMissing(const QString &referenceName)
 {
     return referenceName.contains(QLatin1Char('@'));
-}
-
-std::optional<TherionSourceLogicalArgumentRange> pointStationNameReferenceRange(
-    const TherionSourceLogicalCommand &command)
-{
-    if (command.metadata.commandName != QStringLiteral("point")
-        || command.positionalArgumentRanges.size() < 3) {
-        return std::nullopt;
-    }
-
-    const QString pointType = command.positionalArgumentRanges.at(2).text.trimmed().section(QLatin1Char(':'), 0, 0);
-    if (pointType.compare(QStringLiteral("station"), Qt::CaseInsensitive) != 0) {
-        return std::nullopt;
-    }
-
-    for (const TherionSourceLogicalOptionEntryRange &optionEntry : command.optionEntryRanges) {
-        if (normalizedCommandOptionName(optionEntry.key) != QStringLiteral("name")) {
-            continue;
-        }
-        for (const TherionSourceLogicalArgumentRange &valueRange : optionEntry.valueRanges) {
-            if (!valueRange.text.trimmed().isEmpty()) {
-                return valueRange;
-            }
-        }
-    }
-
-    return std::nullopt;
 }
 
 void appendStationReferenceDiagnosticsForRange(QVector<ProjectIndexDiagnostic> *diagnostics,
@@ -763,6 +754,48 @@ void appendProjectIndexDiagnostic(QVector<ProjectIndexDiagnostic> *diagnostics,
     diagnostic.referencedName = referencedName;
     diagnostic.candidateCount = candidateCount;
     diagnostics->append(diagnostic);
+}
+
+// One warning on each `join` line of a broken join rule. `referencedName` names the two scraps as `A ~ B` and
+// `candidateCount` is the number of join commands between them.
+QVector<ProjectIndexDiagnostic> joinRuleDiagnostics(const QVector<ProjectJoinRuleViolation> &violations,
+                                                    const QVector<ProjectStructureEntry> &entries)
+{
+    QHash<QString, QString> scrapNamesByObjectId;
+    for (const ProjectStructureEntry &entry : entries) {
+        if (entry.kind == ProjectStructureEntryKind::Scrap) {
+            scrapNamesByObjectId.insert(entry.objectId, entry.name);
+        }
+    }
+    QVector<ProjectIndexDiagnostic> diagnostics;
+    for (const ProjectJoinRuleViolation &violation : violations) {
+        ProjectIndexDiagnosticKind kind = ProjectIndexDiagnosticKind::MixedJoinKinds;
+        switch (violation.kind) {
+        case ProjectJoinRuleViolationKind::MixedJoinKinds:
+            kind = ProjectIndexDiagnosticKind::MixedJoinKinds;
+            break;
+        case ProjectJoinRuleViolationKind::RepeatedScrapJoin:
+            kind = ProjectIndexDiagnosticKind::RepeatedScrapJoin;
+            break;
+        case ProjectJoinRuleViolationKind::SinglePointLineJoin:
+            kind = ProjectIndexDiagnosticKind::SinglePointLineJoin;
+            break;
+        }
+        const QString scraps = QStringLiteral("%1 ~ %2").arg(scrapNamesByObjectId.value(violation.firstScrapObjectId),
+                                                             scrapNamesByObjectId.value(violation.secondScrapObjectId));
+        for (const ProjectJoinCommand &join : violation.joins) {
+            appendProjectIndexDiagnostic(&diagnostics,
+                                         kind,
+                                         join.ownerObjectId,
+                                         join.sourceFile,
+                                         join.lineNumber,
+                                         join.columnNumber,
+                                         join.columnLength,
+                                         scraps,
+                                         violation.joins.size());
+        }
+    }
+    return diagnostics;
 }
 
 TherionSourcePhysicalRange parsedLineTokenPhysicalRange(const TherionParsedLine &parsedLine, int tokenIndex)
@@ -1561,10 +1594,13 @@ ProjectIndexSnapshot scanProjectIndexFromFilePaths(const QString &projectRootPat
     snapshot.diagnostics += scanJoinReferences(snapshot.entries,
                                                &cache,
                                                inMemoryFileContentsByPath,
-                                               shouldCancel);
+                                               shouldCancel,
+                                               &snapshot.joinCommands);
     if (projectIndexScanShouldCancel(shouldCancel)) {
         return cancelSnapshot();
     }
+    snapshot.joinRuleViolations = projectJoinRuleViolations(snapshot.joinCommands);
+    snapshot.diagnostics += joinRuleDiagnostics(snapshot.joinRuleViolations, snapshot.entries);
     QSet<QString> sourceFiles;
     for (const ProjectStructureEntry &entry : snapshot.entries) {
         if (!entry.sourceFile.trimmed().isEmpty()) {
@@ -1588,6 +1624,15 @@ ProjectIndexSnapshot scanProjectIndexFromFilePaths(const QString &projectRootPat
             candidateKeys.insert(candidateKey);
         }
         snapshot.stationReferenceCandidateKeysByLookupKey.insert(it.key(), candidateKeys);
+    }
+    ProjectEquateLinkScanResult equateLinkScan =
+        scanEquateLinks(snapshot.entries, sourceFiles, stationReferenceIndex, &cache, inMemoryFileContentsByPath, shouldCancel);
+    snapshot.equateLinks = std::move(equateLinkScan.equateLinks);
+    snapshot.stationDrawingPointsByStationKey = std::move(equateLinkScan.stationDrawingPointsByStationKey);
+    snapshot.scrapProjectionByObjectId = std::move(equateLinkScan.scrapProjectionByObjectId);
+    snapshot.stationPointsByScrapObjectId = std::move(equateLinkScan.stationPointsByScrapObjectId);
+    if (projectIndexScanShouldCancel(shouldCancel)) {
+        return cancelSnapshot();
     }
     snapshot.diagnostics += scanStationReferences(snapshot.entries,
                                                   stationReferenceIndex,
@@ -1815,7 +1860,8 @@ MapReferenceScanResult scanMapReferences(const QVector<ProjectStructureEntry> &e
 QVector<ProjectIndexDiagnostic> scanJoinReferences(const QVector<ProjectStructureEntry> &entries,
                                                    ParsedFileCache *cache,
                                                    const QHash<QString, QString> &inMemoryFileContentsByPath,
-                                                   const std::function<bool()> &shouldCancel)
+                                                   const std::function<bool()> &shouldCancel,
+                                                   QVector<ProjectJoinCommand> *joinCommands)
 {
     QVector<ProjectIndexDiagnostic> diagnostics;
     const ReferenceKeyIndex joinObjectKeysByName = mergedReferenceKeysByReferenceName(
@@ -1826,6 +1872,19 @@ QVector<ProjectIndexDiagnostic> scanJoinReferences(const QVector<ProjectStructur
          ProjectStructureEntryKind::Station});
     const QHash<QString, ProjectStructureEntry> entriesByKey = entriesByStructureKey(entries);
     const NamespaceEntriesByFile namespaceEntries = namespaceEntriesByFile(entries);
+    QHash<QString, ProjectStructureEntry> entriesByObjectId;
+    for (const ProjectStructureEntry &entry : entries) {
+        entriesByObjectId.insert(entry.objectId, entry);
+    }
+    const auto containingScrapObjectId = [&entriesByObjectId](const ProjectStructureEntry &entry) {
+        for (ProjectStructureEntry current = entry; !current.objectId.isEmpty();
+             current = entriesByObjectId.value(current.parentObjectId)) {
+            if (current.kind == ProjectStructureEntryKind::Scrap) {
+                return current.objectId;
+            }
+        }
+        return QString();
+    };
 
     QSet<QString> sourceFiles;
     for (const ProjectStructureEntry &entry : entries) {
@@ -1850,6 +1909,32 @@ QVector<ProjectIndexDiagnostic> scanJoinReferences(const QVector<ProjectStructur
 
             const ProjectStructureEntry ownerEntry =
                 nearestNamespaceEntryForLine(namespaceEntries, sourceFile, command.startLineNumber);
+            ProjectJoinCommand joinCommand;
+            joinCommand.sourceFile = sourceFile;
+            joinCommand.lineNumber = command.startLineNumber;
+            joinCommand.count = commandOptionValue(command.parsed, QStringLiteral("count")).toInt();
+            const TherionSourcePhysicalRange keywordRange = parsedLineTokenPhysicalRange(command.parsed, 0);
+            joinCommand.columnNumber = keywordRange.columnNumber;
+            joinCommand.columnLength = keywordRange.columnLength;
+            joinCommand.ownerObjectId = ownerEntry.objectId;
+            const auto recordJoinCommand = qScopeGuard([&joinCommand, joinCommands]() {
+                if (joinCommands == nullptr) {
+                    return;
+                }
+                // Therion treats a join of scrap IDs as a scrap join; anything else joins points and lines.
+                bool allScraps = false;
+                for (const ProjectJoinItem &item : std::as_const(joinCommand.items)) {
+                    if (!item.resolved) {
+                        continue;
+                    }
+                    allScraps = item.kind == ProjectStructureEntryKind::Scrap;
+                    if (!allScraps) {
+                        break;
+                    }
+                }
+                joinCommand.mode = allScraps ? ProjectJoinMode::Scraps : ProjectJoinMode::PointsAndLines;
+                joinCommands->append(joinCommand);
+            });
             for (int tokenIndex = 1; tokenIndex < command.parsed.tokens.size(); ++tokenIndex) {
                 const QString referenceName = command.parsed.tokens.value(tokenIndex).trimmed();
                 if (referenceName.isEmpty() || referenceName.startsWith(QLatin1Char('-'))) {
@@ -1863,11 +1948,24 @@ QVector<ProjectIndexDiagnostic> scanJoinReferences(const QVector<ProjectStructur
 
                 const ReferenceResolution resolution =
                     resolveReferenceKey(joinObjectKeysByName, referenceParts.lookupName, ownerEntry.namespacePath);
+                const ProjectStructureEntry resolvedEntry = resolution.state == ReferenceResolutionState::Unique
+                    ? entriesByKey.value(resolution.key)
+                    : ProjectStructureEntry();
+                ProjectJoinItem joinItem;
+                joinItem.reference = referenceName;
+                joinItem.linePointMark = referenceParts.linePointMark;
+                if (resolution.state == ReferenceResolutionState::Unique) {
+                    joinItem.kind = resolvedEntry.kind;
+                    joinItem.objectId = resolvedEntry.objectId;
+                    joinItem.scrapObjectId = containingScrapObjectId(resolvedEntry);
+                    joinItem.namespacePath = resolvedEntry.namespacePath;
+                    joinItem.resolved = true;
+                }
+                joinCommand.items.append(joinItem);
                 const TherionSourcePhysicalRange referenceRange =
                     parsedLineTokenPhysicalRange(command.parsed, tokenIndex);
                 if (resolution.state == ReferenceResolutionState::Unique) {
                     if (referenceParts.requiresLinePointMark) {
-                        const ProjectStructureEntry resolvedEntry = entriesByKey.value(resolution.key);
                         if (resolvedEntry.kind == ProjectStructureEntryKind::Line
                             && !resolvedEntry.linePointMarks.contains(referenceParts.linePointMark.toLower())) {
                             appendProjectIndexDiagnostic(&diagnostics,
@@ -1914,6 +2012,48 @@ QVector<ProjectIndexDiagnostic> scanJoinReferences(const QVector<ProjectStructur
     return diagnostics;
 }
 
+ProjectEquateLinkScanResult scanEquateLinks(const QVector<ProjectStructureEntry> &entries,
+                                            const QSet<QString> &sourceFiles,
+                                            const StationReferenceIndex &stationIndex,
+                                            ParsedFileCache *cache,
+                                            const QHash<QString, QString> &inMemoryFileContentsByPath,
+                                            const std::function<bool()> &shouldCancel)
+{
+    ProjectEquateLinkScanInput input;
+    input.sourceFiles = QVector<QString>(sourceFiles.cbegin(), sourceFiles.cend());
+    std::sort(input.sourceFiles.begin(), input.sourceFiles.end());
+    for (const ProjectStructureEntry &entry : entries) {
+        input.entriesByFile[normalizedFilePathKey(entry.sourceFile)].append(entry);
+        input.entriesByObjectId.insert(entry.objectId, entry);
+    }
+    const NamespaceEntriesByFile namespaceEntries = namespaceEntriesByFile(entries);
+    input.logicalDocumentForFile = [&](const QString &sourceFile) -> const TherionSourceLogicalDocument & {
+        return logicalDocumentForFile(sourceFile, cache, inMemoryFileContentsByPath);
+    };
+    input.ownerNamespacePath = [&](const QString &sourceFile, int lineNumber) {
+        return nearestNamespaceEntryForLine(namespaceEntries, sourceFile, lineNumber).namespacePath;
+    };
+    input.resolveStation = [&](const QString &reference, const QString &ownerNamespacePath) {
+        const MapReferenceParts parts = parseMapReference(reference);
+        ProjectEquateStation station;
+        station.reference = reference;
+        station.namespacePath = parts.hasNamespace
+            ? namespacePathForReference(ownerNamespacePath, parts.namespacePath)
+            : ownerNamespacePath;
+        station.stationKey = stationReferenceCandidateKey(reference, ownerNamespacePath);
+        station.resolved = stationIndex.keysByExactReference.contains(station.stationKey);
+        return station;
+    };
+    input.shouldCancel = shouldCancel;
+    for (const NoSurveyLegReference &leg : stationIndex.noSurveyLegs) {
+        input.noSurveyLegs.append(ProjectEquateLink{leg.sourceFile,
+                                                    leg.lineNumber,
+                                                    {input.resolveStation(leg.fromReference, leg.ownerNamespacePath),
+                                                     input.resolveStation(leg.toReference, leg.ownerNamespacePath)}});
+    }
+    return scanProjectEquateLinks(input);
+}
+
 bool commandIsInCenterline(const TherionSourceLogicalCommand &command)
 {
     const QString currentBlock = normalizedStructureDirective(command.currentBlockDirective);
@@ -1937,6 +2077,7 @@ StationReferenceIndex stationReferencesFromProject(const QVector<ProjectStructur
             logicalDocumentForFile(sourceFile, cache, inMemoryFileContentsByPath);
         int fromColumn = -1;
         int toColumn = -1;
+        bool noSurveyData = false;
         QString dataNamespacePath;
         for (const TherionSourceLogicalCommand &command : logicalDocument.commands()) {
             if (projectIndexScanShouldCancel(shouldCancel)) {
@@ -1945,6 +2086,7 @@ StationReferenceIndex stationReferencesFromProject(const QVector<ProjectStructur
             if (!commandIsInCenterline(command)) {
                 fromColumn = -1;
                 toColumn = -1;
+                noSurveyData = false;
                 dataNamespacePath.clear();
                 continue;
             }
@@ -1952,6 +2094,7 @@ StationReferenceIndex stationReferencesFromProject(const QVector<ProjectStructur
             if (command.metadata.commandName == QStringLiteral("data")) {
                 fromColumn = -1;
                 toColumn = -1;
+                noSurveyData = command.parsed.tokens.value(1).compare(QStringLiteral("nosurvey"), Qt::CaseInsensitive) == 0;
                 for (int tokenIndex = 2; tokenIndex < command.parsed.tokens.size(); ++tokenIndex) {
                     const QString columnName = command.parsed.tokens.at(tokenIndex).toLower();
                     if (columnName == QStringLiteral("from")) {
@@ -1988,6 +2131,15 @@ StationReferenceIndex stationReferencesFromProject(const QVector<ProjectStructur
             if (command.metadata.commandName == QStringLiteral("station")
                 || command.metadata.commandName == QStringLiteral("equate")) {
                 continue;
+            }
+
+            if (noSurveyData && fromColumn >= 0 && toColumn >= 0
+                && fromColumn < command.parsed.tokens.size() && toColumn < command.parsed.tokens.size()) {
+                index.noSurveyLegs.append(NoSurveyLegReference{sourceFile,
+                                                               command.startLineNumber,
+                                                               command.parsed.tokens.at(fromColumn),
+                                                               command.parsed.tokens.at(toColumn),
+                                                               dataNamespacePath});
             }
 
             const QVector<int> stationColumns = {fromColumn, toColumn};
@@ -2042,7 +2194,7 @@ QVector<ProjectIndexDiagnostic> scanStationReferences(const QVector<ProjectStruc
                 return diagnostics;
             }
             if (const std::optional<TherionSourceLogicalArgumentRange> stationPointReference =
-                    pointStationNameReferenceRange(command)) {
+                    therionStationPointNameRange(command)) {
                 const ProjectStructureEntry ownerEntry =
                     nearestNamespaceEntryForLine(namespaceEntries, sourceFile, command.startLineNumber);
                 appendStationReferenceDiagnosticsForRange(&diagnostics,
@@ -2414,6 +2566,13 @@ QVector<ProjectStructureEntry> ProjectStructureIndex::scanTh2Objects(
     const QVector<TherionSourceLogicalCommand> &commands)
 {
     return scanTh2ObjectsFromLogicalCommands(sourceFile, commands);
+}
+
+QString ProjectStructureIndex::stationKey(const QString &name, const QString &namespacePath)
+{
+    return namespacePath.trimmed().isEmpty()
+        ? normalizedStationReferenceToken(name)
+        : normalizedStationReferenceToken(QStringLiteral("%1@%2").arg(name, namespacePath));
 }
 
 QString ProjectStructureIndex::structureEntryNodeKey(const ProjectStructureEntry &entry)

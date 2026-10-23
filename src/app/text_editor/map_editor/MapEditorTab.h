@@ -13,7 +13,10 @@
 #include <QElapsedTimer>
 #include <QSet>
 #include <QVector>
+#include <QIcon>
+#include <QPainterPath>
 #include <QPointer>
+#include <QTransform>
 #include <QPersistentModelIndex>
 #include <functional>
 #include <memory>
@@ -23,6 +26,7 @@
 #include "MapEditorInteractiveDrawContext.h"
 #include "MapEditorInteractiveDrawLogic.h"
 #include "MapEditorBackgroundAssetCache.h"
+#include "../../../core/Th2CentrelineAlignment.h"
 #include "MapEditorLogicalSourceContext.h"
 #include "MapEditorObjectDetailsLogic.h"
 #include "MapEditorObjectStyleCatalog.h"
@@ -175,6 +179,14 @@ public:
     void triggerAddArea();
     void triggerSmartArea();
 #ifdef THERION_STUDIO_TESTING
+    void testRecordLineAreaVertexMove(int lineNumber,
+                                      const QString &kind,
+                                      int vertexIndex,
+                                      const QPointF &oldPoint,
+                                      const QPointF &newPoint)
+    {
+        recordLineAreaVertexMove(lineNumber, kind, vertexIndex, oldPoint, newPoint);
+    }
     bool testBeginLineExtensionFromSelection(int lineNumber, int sourceVertexIndex, bool prepend)
     {
         return beginLineExtensionFromSelection(lineNumber, sourceVertexIndex, prepend);
@@ -279,6 +291,31 @@ public:
 public slots:
     void setWorkspaceMode(WorkspaceMode mode);
     void toggleMapPaneWindow();
+    // Brings the separate map window to the front, when the map pane is in one.
+    void focusDetachedMapPaneWindow();
+
+    // Visible map area in drawing (source) coordinates, used to link two map views.
+    QPointF mapViewCentreSourcePosition() const;
+    qreal mapViewPixelsPerSourceUnit() const;
+    int mapViewportPixelWidth() const;
+    void setMapViewCentreAndScale(const QPointF &sourceCentre, qreal pixelsPerSourceUnit);
+    // Icon for the separate map window, now and whenever it is opened later (e.g. the join link icon).
+    void setMapPaneWindowIcon(const QIcon &icon);
+    // Centreline placement of the scrap containing `lineNumber`, from the current text and cached XVI backgrounds.
+    Th2CentrelineFit centrelineFitForSourceLine(int lineNumber);
+    std::optional<QPointF> stationPointSourcePosition(int lineNumber) const;
+    // Fit of the scrap containing `lineNumber` to the measured legs between its station points.
+    Th2CentrelineFit measuredLegFitForSourceLine(int lineNumber,
+                                                 const QHash<int, QString> &stationKeysByLine,
+                                                 const QVector<Th2MeasuredLeg> &legs,
+                                                 const QString &projection) const;
+    // Station points of the scrap containing `lineNumber`.
+    QVector<Th2ScrapStationPoint> scrapStationPointsForSourceLine(int lineNumber) const;
+    // Lines and station points of the current drawing as one path in scene coordinates.
+    QPainterPath mapOutlineScenePath() const;
+    QTransform mapSourceToSceneTransform() const;
+    // Adds a display-only item to the map scene; full scene refreshes remove it, so owners re-add it.
+    void addMapOverlayItem(QGraphicsItem *item);
 
 signals:
     void titleChanged();
@@ -294,6 +331,7 @@ signals:
     void workspaceModeChanged(TherionStudio::MapEditorTab::WorkspaceMode mode);
     void mapPaneDetachStateChanged(bool detached);
     void zoomStatusChanged(int zoomPercent);
+    void mapViewChanged();
     void commandSurfaceStateChanged();
     void openDedicatedWindowRequested(TherionStudio::MapEditorTab *tab);
 
@@ -331,6 +369,7 @@ private:
         bool detached_ = false;
         bool inlineWorkspaceModeSelectorVisible_ = true;
         bool reattaching_ = false;
+        QIcon windowIcon_;
     };
 
     struct SelectionSyncState
@@ -552,6 +591,7 @@ private:
     void fitMapToView(bool includeBackgroundImages = false);
     void fitMapToViewAfterViewportResize(bool includeBackgroundImages = false);
     void syncZoomFactorFromView();
+    void ensureMapViewCanCentreOn(const QPointF &sceneCentre);
     void applyZoomAtViewportPosition(qreal factor, const QPointF &viewportPosition);
     void refreshToolbarSummary();
     void adjustMapZoom(qreal factor);
@@ -677,7 +717,6 @@ private:
     void syncMapSelectionFromTextCursor(int lineNumber, int columnNumber);
     void detachMapPaneToWindow();
     void reattachMapPaneFromWindow();
-    void focusDetachedMapPaneWindow();
     void refreshTitle();
     void refreshStatus();
     QString displayPath() const;
@@ -841,6 +880,7 @@ private:
     bool mapViewportPreservationInProgress_ = false;
     bool autoFitEnabled_ = true;
     qreal zoomFactor_ = 1.0;
+    bool mapViewScrollAreaExtended_ = false;
     bool fitBackgroundRequested_ = false;
     mutable bool cachedParsedLinesValid_ = false;
     mutable int cachedParsedLinesRevision_ = -1;

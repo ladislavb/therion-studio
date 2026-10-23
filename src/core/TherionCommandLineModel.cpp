@@ -237,6 +237,14 @@ QStringList commandOptionValueTokens(const QStringList &tokens, const QString &o
     return {};
 }
 
+QStringList commandOptionUnbracketedValueTokens(const QStringList &tokens, const QString &optionName)
+{
+    QString value = commandOptionValueTokens(tokens, optionName).join(QLatin1Char(' '));
+    value.remove(QLatin1Char('['));
+    value.remove(QLatin1Char(']'));
+    return value.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+}
+
 QString commandOptionValue(const QStringList &tokens, const QString &optionName)
 {
     const QStringList values = commandOptionValueTokens(tokens, optionName);

@@ -1,4 +1,5 @@
 #include "MainWindow.h"
+#include "ProjectJoinsPanel.h"
 
 #include "ui/ApplicationStyleSheets.h"
 #include "LucideIconFactory.h"
@@ -21,6 +22,7 @@
 #include <QSignalBlocker>
 #include <QSplitter>
 #include <QStackedWidget>
+#include <QStatusBar>
 #include <QStandardItemModel>
 #include <QSizePolicy>
 #include <QStyle>
@@ -36,7 +38,8 @@ enum StructurePanelPage
 {
     StructurePanelFilesPage = 0,
     StructurePanelSurveyPage = 1,
-    StructurePanelMapPage = 2
+    StructurePanelMapPage = 2,
+    StructurePanelJoinsPage = 3
 };
 
 class PaletteEventFilter final : public QObject
@@ -344,7 +347,9 @@ void MainWindow::buildStructureSidebar()
     auto *filesViewButton = new QPushButton(tr("Files"), structureViewSelector);
     auto *surveyViewButton = new QPushButton(tr("Survey"), structureViewSelector);
     auto *mapViewButton = new QPushButton(QStringLiteral("Map"), structureViewSelector);
-    const QList<QPushButton *> structureViewButtons = {filesViewButton, surveyViewButton, mapViewButton};
+    auto *joinsViewButton = new QPushButton(tr("Connections"), structureViewSelector);
+    joinsViewButton->setToolTip(tr("Equates and joins that connect different surveys"));
+    const QList<QPushButton *> structureViewButtons = {filesViewButton, surveyViewButton, mapViewButton, joinsViewButton};
     for (QPushButton *button : structureViewButtons) {
         button->setCheckable(true);
         button->setObjectName(QStringLiteral("structureSegmentButton"));
@@ -353,12 +358,13 @@ void MainWindow::buildStructureSidebar()
         structureViewSelectorLayout->addWidget(button);
     }
     filesViewButton->setProperty("firstSegment", true);
-    mapViewButton->setProperty("lastSegment", true);
+    joinsViewButton->setProperty("lastSegment", true);
     structureViewSelector->setStyleSheet(
         TherionStudio::segmentedControlButtonStyleSheet(QStringLiteral("QPushButton#structureSegmentButton")));
     structureViewModeButtons_->addButton(filesViewButton, StructurePanelFilesPage);
     structureViewModeButtons_->addButton(surveyViewButton, StructurePanelSurveyPage);
     structureViewModeButtons_->addButton(mapViewButton, StructurePanelMapPage);
+    structureViewModeButtons_->addButton(joinsViewButton, StructurePanelJoinsPage);
     structureLayout->addWidget(structureViewSelector);
 
     structureViewStack_ = new QStackedWidget(structurePage);
@@ -379,6 +385,23 @@ void MainWindow::buildStructureSidebar()
     structureViewStack_->addWidget(projectFilesPage_);
     structureViewStack_->addWidget(surveyStructurePage);
     structureViewStack_->addWidget(mapStructurePage);
+    projectJoinsPanel_ = new TherionStudio::ProjectJoinsPanel(structureViewStack_);
+    if (sessionStore_ != nullptr) {
+        projectJoinsPanel_->setActivationOpensSeparateWindow(sessionStore_->joinOpensSeparateWindow());
+    }
+    applyJoinConnectionColors();
+    structureViewStack_->addWidget(projectJoinsPanel_);
+    connect(projectJoinsPanel_, &TherionStudio::ProjectJoinsPanel::joinRequested, this, &MainWindow::openProjectJoin);
+    connect(projectJoinsPanel_, &TherionStudio::ProjectJoinsPanel::joinOnlyRequested, this, &MainWindow::openProjectJoinOnly);
+    connect(projectJoinsPanel_, &TherionStudio::ProjectJoinsPanel::targetConfigRequested, this, &MainWindow::browseTherionTargetConfig);
+    setupJoinStationPositions();
+    connect(projectJoinsPanel_,
+            &TherionStudio::ProjectJoinsPanel::sourceLocationRequested,
+            this,
+            &MainWindow::openProjectSourceLocation);
+    connect(projectJoinsPanel_, &TherionStudio::ProjectJoinsPanel::statusMessageRequested, this, [this](const QString &message) {
+        statusBar()->showMessage(message, 5000);
+    });
     connect(structureViewModeButtons_, &QButtonGroup::idClicked, this, [this](int pageIndex) {
         setStructurePanelPage(pageIndex);
     });
@@ -446,7 +469,7 @@ void MainWindow::setStructurePanelPage(int pageIndex)
 
     const int boundedPageIndex = qBound(static_cast<int>(StructurePanelFilesPage),
                                         pageIndex,
-                                        static_cast<int>(StructurePanelMapPage));
+                                        static_cast<int>(StructurePanelJoinsPage));
     structureViewStack_->setCurrentIndex(boundedPageIndex);
     if (QAbstractButton *button = structureViewModeButtons_ != nullptr
             ? structureViewModeButtons_->button(boundedPageIndex)
@@ -465,6 +488,10 @@ void MainWindow::setStructurePanelPage(int pageIndex)
     activeSidebarPane_ = SidebarPane::StructureBrowser;
     if (sidebarStructureButton_ != nullptr) {
         sidebarStructureButton_->setChecked(true);
+    }
+    // Joins has its own list; the shared Survey/Map tree and its view mode stay as they were.
+    if (boundedPageIndex == StructurePanelJoinsPage) {
+        return;
     }
 
     const StructureViewMode nextMode = boundedPageIndex == StructurePanelMapPage
