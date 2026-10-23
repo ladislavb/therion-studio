@@ -148,5 +148,7 @@ public:
     static QVector<ProjectStructureEntry> scanTh2Objects(const QString &sourceFile,
                                                          const QVector<TherionSourceLogicalCommand> &commands);
     static QString structureEntryNodeKey(const ProjectStructureEntry &entry);
+    // Therion full name of a survey (child.parent), also for -namespace off surveys.
+    static QString surveyFullName(const ProjectStructureEntry &entry);
 };
 }

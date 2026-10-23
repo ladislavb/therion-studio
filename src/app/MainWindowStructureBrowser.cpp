@@ -1,7 +1,9 @@
 #include "MainWindow.h"
 
 #include "MainWindowDocumentHelpers.h"
+#include "MainWindowStructureInfoPresenter.h"
 #include "MainWindowStructureRoles.h"
+#include "TherionCompileFiguresLoader.h"
 #include "three_d_viewer/ThreeDViewerTab.h"
 #include "../core/TherionFileTypes.h"
 
@@ -21,6 +23,7 @@
 #include <QModelIndex>
 #include <QPainter>
 #include <QPalette>
+#include <QScopeGuard>
 #include <QSignalBlocker>
 #include <QSet>
 #include <QStandardItem>
@@ -29,6 +32,7 @@
 #include <QStringList>
 #include <QSvgRenderer>
 #include <QTabWidget>
+#include <QTextBrowser>
 #include <QToolButton>
 #include <QTreeView>
 
@@ -304,10 +308,7 @@ QStandardItem *createDiagnosticItem(const TherionStudio::ProjectIndexDiagnostic 
 
 QString structureBrowserItemText(const TherionStudio::ProjectStructureEntry &entry)
 {
-    const QString displayName = entry.category == QStringLiteral("Scraps")
-            && entry.name == QStringLiteral("Unnamed Scrap")
-        ? QObject::tr("Unnamed Scrap")
-        : entry.name;
+    const QString displayName = TherionStudio::structureEntryDisplayName(entry);
     if (entry.category == QStringLiteral("Surveys") && !entry.createsNamespace) {
         return QObject::tr("%1 (namespace off)").arg(displayName);
     }
@@ -317,10 +318,7 @@ QString structureBrowserItemText(const TherionStudio::ProjectStructureEntry &ent
 
 QString mapObjectItemText(const TherionStudio::ProjectStructureEntry &entry)
 {
-    const QString displayName = entry.category == QStringLiteral("Scraps")
-            && entry.name == QStringLiteral("Unnamed Scrap")
-        ? QObject::tr("Unnamed Scrap")
-        : entry.name;
+    const QString displayName = TherionStudio::structureEntryDisplayName(entry);
     if (entry.category == QStringLiteral("Scraps")) {
         return displayName;
     }
@@ -707,6 +705,11 @@ void MainWindow::storeCurrentStructureExpansionState()
 void MainWindow::applyStructureSidebarIndex(const TherionStudio::ProjectIndexSnapshot &projectIndex)
 {
     lastStructureSidebarProjectIndex_ = projectIndex;
+    // Entries change on every apply, so the info box is refreshed on each exit path.
+    const auto refreshInfoBoxOnExit = qScopeGuard([this]() {
+        updateCompileFiguresSourcesChanged();
+        refreshStructureInfoBox();
+    });
 
     const QString currentExpansionProjectRootPath = normalizedStructurePathKey(projectRootPath_);
     if (structureExpansionProjectRootPath_ != currentExpansionProjectRootPath) {
@@ -1035,6 +1038,9 @@ void MainWindow::applyStructureSidebarIndex(const TherionStudio::ProjectIndexSna
 
     if (hasExpansionState) {
         restoreStructureNodeExpansion(structureTree_, expandedNodeKeys);
+    } else if (structureViewMode_ == StructureViewMode::Survey) {
+        // Top-level surveys open with their child surveys, maps and scraps listed but collapsed.
+        structureTree_->expandToDepth(0);
     } else {
         structureTree_->expandAll();
     }
@@ -1303,6 +1309,78 @@ void MainWindow::updateStructureSelectionFromEditorLocation(const QString &fileP
     }
 
     structureTree_->scrollTo(targetIndex, QAbstractItemView::PositionAtCenter);
+    refreshStructureInfoBox();
+}
+
+const TherionStudio::ProjectStructureEntry *MainWindow::structureEntryForIndex(const QModelIndex &index) const
+{
+    return structureEntryForObjectId(index.isValid() ? index.data(ObjectIdRole).toString() : QString());
+}
+
+const TherionStudio::ProjectStructureEntry *MainWindow::structureEntryForObjectId(const QString &objectId) const
+{
+    if (objectId.isEmpty()) {
+        return nullptr;
+    }
+    for (const TherionStudio::ProjectStructureEntry &entry : lastStructureSidebarProjectIndex_.entries) {
+        if (entry.objectId == objectId) {
+            return &entry;
+        }
+    }
+    return nullptr;
+}
+
+void MainWindow::refreshStructureInfoBox()
+{
+    if (structureInfoBox_ == nullptr || structureTree_ == nullptr) {
+        return;
+    }
+
+    const TherionStudio::ProjectStructureEntry *entry = structureEntryForIndex(structureTree_->currentIndex());
+    const QString sourcePath = entry != nullptr ? relativeStructurePath(projectRootPath_, entry->sourceFile) : QString();
+    TherionStudio::MainWindowStructureInfoPresenter::CompileFiguresInput figuresInput;
+    if (entry != nullptr && compileFiguresLoader_ != nullptr) {
+        const TherionStudio::TherionCompileFigures &figures = compileFiguresLoader_->figures();
+        figuresInput.available = figures.isAvailable();
+        figuresInput.databaseAvailable = figures.database.isAvailable();
+        figuresInput.sourcesChanged = compileFiguresSourcesChanged_;
+        figuresInput.laterCompileFailed = figures.laterCompileFailed;
+        if (entry->kind == TherionStudio::ProjectStructureEntryKind::Survey) {
+            const auto survey = figures.surveysByFullName.constFind(
+                TherionStudio::ProjectStructureIndex::surveyFullName(*entry));
+            figuresInput.survey = survey != figures.surveysByFullName.constEnd() ? &survey.value() : nullptr;
+        } else {
+            // Therion files maps and scraps under the survey block they are in, also with -namespace off.
+            const TherionStudio::ProjectStructureEntry *survey = structureEntryForObjectId(entry->parentObjectId);
+            const QString key = TherionStudio::therionCompiledObjectKey(
+                entry->name,
+                survey != nullptr ? TherionStudio::ProjectStructureIndex::surveyFullName(*survey) : QString());
+            const auto map = figures.database.mapsByKey.constFind(key);
+            figuresInput.map = map != figures.database.mapsByKey.constEnd() ? &map.value() : nullptr;
+            const auto scrap = figures.database.scrapsByKey.constFind(key);
+            figuresInput.scrap = scrap != figures.database.scrapsByKey.constEnd() ? &scrap.value() : nullptr;
+        }
+    }
+    structureInfoBox_->setHtml(TherionStudio::MainWindowStructureInfoPresenter::html(
+        TherionStudio::MainWindowStructureInfoPresenter::present(entry, sourcePath, figuresInput)));
+}
+
+void MainWindow::updateCompileFiguresSourcesChanged()
+{
+    if (compileFiguresLoader_ == nullptr || !compileFiguresLoader_->figures().isAvailable()) {
+        compileFiguresSourcesChanged_ = false;
+        return;
+    }
+
+    QSet<QString> sourceFiles{compileFiguresLoader_->figures().compile.configPath};
+    if (!lastStructureSidebarProjectIndex_.rootConfigPath.isEmpty()) {
+        sourceFiles.insert(lastStructureSidebarProjectIndex_.rootConfigPath);
+    }
+    for (const TherionStudio::ProjectStructureEntry &entry : lastStructureSidebarProjectIndex_.entries) {
+        sourceFiles.insert(entry.sourceFile);
+    }
+    compileFiguresSourcesChanged_ = TherionStudio::therionCompileResultIsOutOfDate(
+        compileFiguresLoader_->figures().compile, sourceFiles.values());
 }
 
 QModelIndex MainWindow::findMapObjectIndexForSourceLocation(const QString &filePath, int lineNumber) const

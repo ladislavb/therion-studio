@@ -181,6 +181,16 @@ inventory application remain GUI-thread responsibilities.
 
 The Therion compiler remains authoritative for final export behavior. The project index is a lightweight navigation and early-feedback projection, not a compiler replacement.
 
+Views that show compiled data, such as survey statistics or station positions, read the files written by the user's
+latest compile. `TherionCompileResultRecorder` records that compile (working directory, start and finish time, result,
+the SQL database exports Therion reports writing, and `.xtherion.dat` when the compile used `-x`). Such views shall mark
+their data out of date when a source was saved after that compile started, rather than starting Therion runs of their
+own. `TherionCompileFiguresLoader` reads `.xtherion.dat` off the GUI thread with the core parser
+`parseTherionXtherionSurveys`, and that compile's SQL database export with `readTherionCompileDatabaseFigures`, which
+reuses `TherionSqlReportDatabase` rather than a second importer. It keeps the figures of the last compile that wrote a
+survey tree. `TherionDatabaseExportCompile` writes the temporary config for a one-off compile that adds a database
+export without changing the user's config; the compile itself runs through the normal runner.
+
 Project-index namespace, reference, and duplicate-identifier behavior shall follow `docs/THERION_COMPATIBILITY.md`. In particular, survey/map/scrap names share their parent survey namespace, drawing object IDs share their containing scrap namespace, and identical object names in different survey namespaces are valid.
 
 ## Catalog and Metadata

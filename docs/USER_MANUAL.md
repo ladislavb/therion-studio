@@ -194,9 +194,15 @@ The `Structure` activity opens the project navigation pane with a compact `Files
 
 `Files` shows the project folder tree and supports file navigation and file/folder context-menu actions. `Survey` shows the survey namespace and definition hierarchy for `survey`, `map`, and `scrap` objects and recognizes both Therion centerline spellings: `centreline` and `centerline`. `Map` shows map composition: top-level maps, child maps, and referenced scraps.
 
-`Survey` and `Map` remember their expanded and collapsed tree state separately while the same project remains open.
+`Survey` and `Map` remember their expanded and collapsed tree state separately while the same project remains open. The first time, `Survey` opens one level deep, with the top-level surveys open and their child surveys, maps and scraps listed but collapsed, and `Map` opens fully expanded.
 
 Select a row to inspect it in the tree. Double-click a source row, or select it and press `Enter`, to open its source document and navigate to the matching line.
+
+An info box under the `Survey` and `Map` trees shows details of the selected survey, map or scrap. It gives the Therion full name (for example `inner.cave` for a survey or `MP1@inner.cave` for a map), says when a survey namespace is off, and gives the file and line where the object is defined. Click the file and line to open the source there. The text can be selected and copied. Drag the divider above the box to resize it, or drag it to the bottom to hide the box.
+
+For a survey the box also shows its title and the statistics Therion calculates for it, the same as the xtherion `Survey info` panel. They give the length, the vertical, north-south and east-west range with their end stations, and the number of shots and stations. These come from your last successful compile, so compile once to see them. Therion Studio adds Therion's `-x` option to each compile for this, and Therion leaves a hidden `.xtherion.dat` file in the working folder, as it does for xtherion. You may want to add `.xtherion.dat` to your project's `.gitignore`. When you save a change after the compile, the figures stay but are marked out of date. When a compile fails, the figures from the earlier compile stay with a note.
+
+For a map the box shows its title, length and depth, and its contents, one map or scrap per line, with `preview above` or `preview below` where the map only shows another as a preview. For a scrap it shows the average and maximum distortion. These come from Therion's SQL database export, so add `export database -fmt sql` to your `thconfig` to see them. The box tells you when the export is missing. It then also offers `Compile once with a database export, without changing the config`. This runs your normal compile from a temporary hidden copy of your config, next to it with the export line added, and removes the copy afterwards. The next compile is your normal one again.
 
 Within each parent, rows are grouped as surveys, maps, then scraps, and each group is sorted alphabetically by the displayed name. Warning rows appear after the project objects they relate to.
 

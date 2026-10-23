@@ -2,6 +2,7 @@
 
 #include "ui/ApplicationStyleSheets.h"
 #include "LucideIconFactory.h"
+#include "MainWindowStructureInfoPresenter.h"
 #include "ui/ApplicationControlMetrics.h"
 #include "ui/ApplicationSegmentedControlStyle.h"
 
@@ -20,6 +21,8 @@
 #include <QPushButton>
 #include <QSignalBlocker>
 #include <QSplitter>
+#include <QTextBrowser>
+#include <QUrl>
 #include <QStackedWidget>
 #include <QStandardItemModel>
 #include <QSizePolicy>
@@ -397,7 +400,34 @@ void MainWindow::buildStructureSidebar()
         handleStructureItemActivated(index, structureTree_);
     });
 
-    structureSurveyLayout_->addWidget(structureTree_, 1);
+    // Tree and info box move together between the Survey and Map pages.
+    structureSplitter_ = new QSplitter(Qt::Vertical, surveyStructurePage);
+    structureSplitter_->setObjectName(QStringLiteral("structureInfoSplitter"));
+    structureSplitter_->setChildrenCollapsible(true);
+    structureTree_->setParent(structureSplitter_);
+    structureSplitter_->addWidget(structureTree_);
+    structureInfoBox_ = new QTextBrowser(structureSplitter_);
+    structureInfoBox_->setObjectName(QStringLiteral("structureInfoBox"));
+    structureInfoBox_->setOpenLinks(false);
+    structureInfoBox_->setMinimumHeight(0);
+    structureSplitter_->addWidget(structureInfoBox_);
+    structureSplitter_->setCollapsible(0, false);
+    structureSplitter_->setStretchFactor(0, 1);
+    structureSplitter_->setStretchFactor(1, 0);
+    structureSplitter_->setSizes({400, 240});
+    connect(structureInfoBox_, &QTextBrowser::anchorClicked, this, [this](const QUrl &url) {
+        if (url.toString() == TherionStudio::MainWindowStructureInfoPresenter::sourceLinkTarget()) {
+            openStructureSourceIndex(structureTree_->currentIndex(), structureTree_);
+        } else if (url.toString() == TherionStudio::MainWindowStructureInfoPresenter::databaseExportCompileLinkTarget()) {
+            runTherionWithDatabaseExport();
+        }
+    });
+    connect(structureTree_->selectionModel(), &QItemSelectionModel::currentChanged, this, [this]() {
+        refreshStructureInfoBox();
+    });
+    refreshStructureInfoBox();
+
+    structureSurveyLayout_->addWidget(structureSplitter_, 1);
     structureLayout->addWidget(structureViewStack_, 1);
     sidebarPages_->addWidget(structurePage);
     structureViewStack_->setCurrentIndex(StructurePanelSurveyPage);
@@ -470,11 +500,11 @@ void MainWindow::setStructurePanelPage(int pageIndex)
     const StructureViewMode nextMode = boundedPageIndex == StructurePanelMapPage
         ? StructureViewMode::Map
         : StructureViewMode::Survey;
-    if (structureTree_ != nullptr) {
+    if (structureSplitter_ != nullptr) {
         if (nextMode == StructureViewMode::Map && structureMapLayout_ != nullptr) {
-            structureMapLayout_->addWidget(structureTree_, 1);
+            structureMapLayout_->addWidget(structureSplitter_, 1);
         } else if (nextMode == StructureViewMode::Survey && structureSurveyLayout_ != nullptr) {
-            structureSurveyLayout_->addWidget(structureTree_, 1);
+            structureSurveyLayout_->addWidget(structureSplitter_, 1);
         }
     }
     if (structureViewMode_ == nextMode) {

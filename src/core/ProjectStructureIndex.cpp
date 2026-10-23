@@ -2416,6 +2416,11 @@ QVector<ProjectStructureEntry> ProjectStructureIndex::scanTh2Objects(
     return scanTh2ObjectsFromLogicalCommands(sourceFile, commands);
 }
 
+QString ProjectStructureIndex::surveyFullName(const ProjectStructureEntry &entry)
+{
+    return entry.createsNamespace ? entry.namespacePath : namespacePathWithChild(entry.namespacePath, entry.name);
+}
+
 QString ProjectStructureIndex::structureEntryNodeKey(const ProjectStructureEntry &entry)
 {
     if (!entry.objectId.isEmpty()) {

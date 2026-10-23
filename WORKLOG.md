@@ -15,6 +15,19 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Active Work
 
+### Structure Info Panel
+
+- Planned in `plans/STRUCTURE_INFO_PANEL_PLAN.md`: an info box under the `Survey` and `Map` Structure trees, with
+  survey statistics from Therion's xtherion output first, then map and scrap details and survey extras from the SQL
+  export, all read from the user's compile.
+- Slices 1 (source details), 2 (survey statistics from `.xtherion.dat`, compiles add `-x`) and 3 (map and scrap
+  details from the SQL export) implemented. Next is slice 4, survey extras from the SQL export.
+
+### Compile Results
+
+- `TherionCompileResultRecorder` records the user's latest compile and the database and xtherion files it wrote, for
+  views that show compiled data (the planned structure info panel and the Join Viewer). Nothing reads it yet.
+
 ### 2026.7.2 Planning
 
 - Keep the `2026.7.2` scope open for the focused performance sequence: Map runtime ownership R4-R5 and map refresh

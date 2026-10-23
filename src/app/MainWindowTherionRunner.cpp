@@ -5,12 +5,15 @@
 #include "MainWindowTherionConsoleBuilder.h"
 #include "MainWindowTherionConsoleWiring.h"
 #include "MainWindowTherionRunnerController.h"
+#include "TherionCompileResult.h"
+#include "TherionDatabaseExportCompile.h"
 #include "TherionRunnerConfigDisplayController.h"
 #include "TherionRunnerLifecyclePresenter.h"
 #include "TherionRunnerOutputLinker.h"
 #include "TherionRunnerService.h"
 #include "TherionRunnerStartResultPresenter.h"
 #include "TherionRunnerStartSuccessPresenter.h"
+#include "TherionCompileFiguresLoader.h"
 #include "text_editor/TextEditorTab.h"
 #include "text_editor/map_editor/MapEditorTab.h"
 
@@ -25,6 +28,8 @@
 #include <QStringList>
 #include <QTextBrowser>
 #include <QUrl>
+
+#include <utility>
 
 namespace
 {
@@ -67,6 +72,15 @@ void MainWindow::buildConsole()
     }
 
     therionRunnerService_ = new TherionStudio::TherionRunnerService(this);
+    compileResultRecorder_ = new TherionStudio::TherionCompileResultRecorder(this);
+    compileFiguresLoader_ = new TherionStudio::TherionCompileFiguresLoader(this);
+    connect(compileResultRecorder_, &TherionStudio::TherionCompileResultRecorder::latestChanged, this, [this]() {
+        compileFiguresLoader_->updateFromCompile(compileResultRecorder_->latest());
+    });
+    connect(compileFiguresLoader_, &TherionStudio::TherionCompileFiguresLoader::figuresChanged, this, [this]() {
+        updateCompileFiguresSourcesChanged();
+        refreshStructureInfoBox();
+    });
     TherionStudio::MainWindowTherionConsoleWiring::WiringInput wiringInput;
     wiringInput.context = this;
     wiringInput.therionRunButton = therionRunButton_;
@@ -341,6 +355,9 @@ void MainWindow::resetProjectTherionRunContext()
     }
 
     activeTherionRunConfigPath_.clear();
+    if (compileResultRecorder_ != nullptr) {
+        compileResultRecorder_->clear();
+    }
 }
 
 bool MainWindow::clearMissingTherionTargetConfig()
@@ -525,12 +542,34 @@ void MainWindow::runTherion()
         activeTherionRunStandardError_.clear();
     }
 
+    // One-off compile from the Structure info box: the same config with a database export added.
+    QStringList runArguments = state.runArguments;
+    bool usesTemporaryConfig = false;
+    if (std::exchange(nextCompileAddsDatabaseExport_, false) && !therionRunnerService_->isRunning()) {
+        QString message = tr("A compile with a database export needs the config from Target Config, not from the "
+                             "command-line options.");
+        const QString temporaryConfigPath = state.hasExplicitConfigArgument
+            ? QString()
+            : databaseExportCompile_.prepare(state.resolvedConfigPath, &message);
+        if (temporaryConfigPath.isEmpty()) {
+            QMessageBox::warning(this, tr("Run Therion"), message);
+            setCompilerStatusResult(false, message);
+            return;
+        }
+        // Without an explicit config argument the config path is the last argument.
+        runArguments.last() = temporaryConfigPath;
+        usesTemporaryConfig = true;
+    }
+    const QStringList compileArguments = TherionStudio::therionCompileArguments(runArguments);
     const TherionStudio::TherionRunnerService::StartResult startResult =
-        therionRunnerService_->start(state.executableInput, state.resolvedWorkingDirectory, state.runArguments);
+        therionRunnerService_->start(state.executableInput, state.resolvedWorkingDirectory, compileArguments);
     const TherionStudio::TherionRunnerStartResultPresenter::Presentation startPresentation =
         TherionStudio::TherionRunnerStartResultPresenter::present(startResult.code, state.executableInput);
 
     if (startPresentation.isHandled) {
+        if (usesTemporaryConfig) {
+            databaseExportCompile_.removeTemporaryConfig();
+        }
         if (startPresentation.showWarningDialog) {
             QMessageBox::warning(this,
                                  startPresentation.warningDialogTitle,
@@ -551,14 +590,22 @@ void MainWindow::runTherion()
 
     activeTherionRunConfigPath_ = state.resolvedConfigPath;
     activeTherionRunWorkingDirectory_ = state.resolvedWorkingDirectory;
+    compileResultRecorder_->begin(state.resolvedConfigPath, state.resolvedWorkingDirectory);
     const TherionStudio::TherionRunnerStartSuccessPresenter::Presentation successPresentation =
         TherionStudio::TherionRunnerStartSuccessPresenter::present(startResult,
-                                                                   state.runArguments.join(QLatin1Char(' ')),
+                                                                   compileArguments.join(QLatin1Char(' ')),
                                                                    state.resolvedWorkingDirectory);
     therionConsoleController_.appendConsoleLine(successPresentation.consoleMessage);
     setCompilerStatusRunning(activeTherionRunConfigPath_);
 
     updateTherionRunnerState();
+}
+
+void MainWindow::runTherionWithDatabaseExport()
+{
+    nextCompileAddsDatabaseExport_ = true;
+    runTherion();
+    nextCompileAddsDatabaseExport_ = false;
 }
 
 void MainWindow::runTherionProjectConfig()
@@ -620,6 +667,7 @@ void MainWindow::stopTherion()
 
 void MainWindow::handleTherionRunnerStandardOutput(const QString &output)
 {
+    compileResultRecorder_->appendStandardOutput(output);
     therionConsoleController_.appendProcessStandardOutput(output, activeTherionRunWorkingDirectory_);
 }
 
@@ -638,6 +686,8 @@ void MainWindow::handleTherionRunnerFinished(int exitCode, QProcess::ExitStatus 
                                                                         exitStatus,
                                                                         activeTherionRunStandardError_);
     setCompilerStatusResult(eventPresentation.succeeded, eventPresentation.statusText);
+    compileResultRecorder_->finish(eventPresentation.succeeded);
+    databaseExportCompile_.removeTemporaryConfig();
     activeTherionRunConfigPath_.clear();
     activeTherionRunWorkingDirectory_.clear();
     activeTherionRunStandardError_.clear();
@@ -650,6 +700,8 @@ void MainWindow::handleTherionRunnerError(const QString &errorText)
     const TherionStudio::TherionRunnerLifecyclePresenter::EventPresentation eventPresentation =
         TherionStudio::TherionRunnerLifecyclePresenter::presentError(errorText);
     setCompilerStatusResult(false, eventPresentation.statusText);
+    compileResultRecorder_->abandon();
+    databaseExportCompile_.removeTemporaryConfig();
     activeTherionRunConfigPath_.clear();
     activeTherionRunWorkingDirectory_.clear();
     activeTherionRunStandardError_.clear();

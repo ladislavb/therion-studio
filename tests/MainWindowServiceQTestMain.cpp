@@ -13,6 +13,8 @@ int runMainWindowSessionRestoreOrchestrationServiceTest(int argc, char **argv);
 int runMainWindowSessionRestoreUiFlowServiceTest(int argc, char **argv);
 int runMainWindowSessionStateServiceTest(int argc, char **argv);
 int runMainWindowSessionWindowRestoreServiceTest(int argc, char **argv);
+int runMainWindowStructureInfoPresenterTest(int argc, char **argv);
+int runTherionCompileDatabaseFiguresTest(int argc, char **argv);
 int runMainWindowStructureNameOverridesServiceTest(int argc, char **argv);
 int runTherionSqlReportDatabaseTest(int argc, char **argv);
 int runTherionSqlReportWorkerTest(int argc, char **argv);
@@ -52,6 +54,8 @@ int main(int argc, char **argv)
         {"MainWindowSessionRestoreUiFlowServiceTest", runMainWindowSessionRestoreUiFlowServiceTest},
         {"MainWindowSessionStateServiceTest", runMainWindowSessionStateServiceTest},
         {"MainWindowSessionWindowRestoreServiceTest", runMainWindowSessionWindowRestoreServiceTest},
+        {"MainWindowStructureInfoPresenterTest", runMainWindowStructureInfoPresenterTest},
+        {"TherionCompileDatabaseFiguresTest", runTherionCompileDatabaseFiguresTest},
         {"MainWindowStructureNameOverridesServiceTest", runMainWindowStructureNameOverridesServiceTest},
         {"TherionSqlReportDatabaseTest", runTherionSqlReportDatabaseTest},
         {"TherionSqlReportWorkerTest", runTherionSqlReportWorkerTest}});

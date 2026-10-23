@@ -1425,6 +1425,11 @@ Si le fichier est ouvert, il sera d&apos;abord fermé.</translation>
         <translation>Sortie de la console effacée</translation>
     </message>
     <message>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="549"/>
+        <source>A compile with a database export needs the config from Target Config, not from the command-line options.</source>
+        <translation>Une compilation avec export de base de données nécessite la configuration du champ Configuration cible, pas celle des options de ligne de commande.</translation>
+    </message>
+    <message>
         <location filename="../src/app/TherionExecutableSelectionController.cpp" line="34"/>
         <source>Select Therion Executable</source>
         <translation>Sélectionner l&apos;exécutable Therion</translation>
@@ -2114,6 +2119,135 @@ Les fichiers attendus sont `docs/USER_MANUAL.&lt;language&gt;.md` ou `docs/USER_
     </message>
 </context>
 <context>
+    <name>MainWindowStructureInfoPresenter</name>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="31"/>
+        <source>Survey statistics appear after a successful compile.</source>
+        <translation>Les statistiques de la topographie apparaissent après une compilation réussie.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="35"/>
+        <source>This survey is not in the last successful compile.</source>
+        <translation>Cette topographie ne figure pas dans la dernière compilation réussie.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="38"/>
+        <source>Title</source>
+        <translation>Titre</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="43"/>
+        <source>The last compile failed, so these figures are from an earlier compile.</source>
+        <translation>La dernière compilation a échoué, ces chiffres proviennent d’une compilation antérieure.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="50"/>
+        <source>%1 m</source>
+        <translation>%1 m</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="55"/>
+        <source>%1 %</source>
+        <translation>%1 %</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="46"/>
+        <source>Out of date because sources changed after the last compile.</source>
+        <translation>Périmé, car les sources ont changé après la dernière compilation.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="93"/>
+        <source>Map and scrap details appear after a successful compile.</source>
+        <translation>Les détails des cartes et des scraps apparaissent après une compilation réussie.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="97"/>
+        <source>Map and scrap details need a database export. Add export database -fmt sql to the config.</source>
+        <translation>Les détails des cartes et des scraps nécessitent un export de base de données. Ajoutez export database -fmt sql à la configuration.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="113"/>
+        <source>This map is not in the last successful compile.</source>
+        <translation>Cette carte ne figure pas dans la dernière compilation réussie.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="121"/>
+        <source>Length</source>
+        <translation>Longueur</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="124"/>
+        <source>Depth</source>
+        <translation>Profondeur</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="142"/>
+        <source>This scrap is not in the last successful compile.</source>
+        <translation>Ce scrap ne figure pas dans la dernière compilation réussie.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="146"/>
+        <source>Average distortion</source>
+        <translation>Distorsion moyenne</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="149"/>
+        <source>Maximum distortion</source>
+        <translation>Distorsion maximale</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="47"/>
+        <source>Select a survey, map or scrap to see its details.</source>
+        <translation>Sélectionnez une topographie, une carte ou un scrap pour afficher ses détails.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="53"/>
+        <source>Survey %1</source>
+        <translation>Topographie %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="55"/>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="64"/>
+        <source>Full name</source>
+        <translation>Nom complet</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="57"/>
+        <source>Namespace</source>
+        <translation>Espace de noms</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="57"/>
+        <source>off</source>
+        <translation>désactivé</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="61"/>
+        <source>Map %1</source>
+        <translation>Carte %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="62"/>
+        <source>Scrap %1</source>
+        <translation>Scrap %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="69"/>
+        <source>%1, line %2</source>
+        <translation>%1, ligne %2</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="89"/>
+        <source>Defined in</source>
+        <translation>Défini dans</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="258"/>
+        <source>Compile once with a database export, without changing the config</source>
+        <translation>Compiler une fois avec un export de base de données, sans modifier la configuration</translation>
+    </message>
+</context>
+<context>
     <name>QObject</name>
     <message>
         <location filename="../src/app/MainWindow.cpp" line="191"/>
@@ -2771,6 +2905,24 @@ Lignes de points : %1</translation>
         <location filename="../src/platform/DiagnosticLogging.cpp" line="270"/>
         <source>Could not remove log file `%1`.</source>
         <translation>Impossible de supprimer le fichier journal `%1`.</translation>
+    </message>
+</context>
+<context>
+    <name>TherionDatabaseExportCompile</name>
+    <message>
+        <location filename="../src/app/TherionDatabaseExportCompile.cpp" line="39"/>
+        <source>Could not read %1.</source>
+        <translation>Impossible de lire %1.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/TherionDatabaseExportCompile.cpp" line="46"/>
+        <source>Could not create a temporary folder for the database export.</source>
+        <translation>Impossible de créer un dossier temporaire pour l’export de base de données.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/TherionDatabaseExportCompile.cpp" line="54"/>
+        <source>Could not write %1.</source>
+        <translation>Impossible d’écrire %1.</translation>
     </message>
 </context>
 <context>

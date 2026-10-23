@@ -1465,6 +1465,11 @@ Ak je súbor otvorený, najprv sa zavrie.</translation>
         <translation>Výstup konzoly vymazaný</translation>
     </message>
     <message>
+        <location filename="../src/app/MainWindowTherionRunner.cpp" line="549"/>
+        <source>A compile with a database export needs the config from Target Config, not from the command-line options.</source>
+        <translation>Preklad s exportom databázy potrebuje konfiguráciu z poľa Cieľová konfigurácia, nie z volieb príkazového riadka.</translation>
+    </message>
+    <message>
         <location filename="../src/app/TherionExecutableSelectionController.cpp" line="34"/>
         <source>Select Therion Executable</source>
         <translation>Vyberte spustiteľný súbor Therion</translation>
@@ -2166,6 +2171,135 @@ Očakávané súbory sú `docs/USER_MANUAL.&lt;language&gt;.md` alebo `docs/USER
     </message>
 </context>
 <context>
+    <name>MainWindowStructureInfoPresenter</name>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="31"/>
+        <source>Survey statistics appear after a successful compile.</source>
+        <translation>Štatistika survey sa zobrazí po úspešnom preklade.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="35"/>
+        <source>This survey is not in the last successful compile.</source>
+        <translation>Tento survey nie je v poslednom úspešnom preklade.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="38"/>
+        <source>Title</source>
+        <translation>Titulok</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="43"/>
+        <source>The last compile failed, so these figures are from an earlier compile.</source>
+        <translation>Posledný preklad zlyhal, tieto údaje sú z predchádzajúceho prekladu.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="50"/>
+        <source>%1 m</source>
+        <translation>%1 m</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="55"/>
+        <source>%1 %</source>
+        <translation>%1 %</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="46"/>
+        <source>Out of date because sources changed after the last compile.</source>
+        <translation>Zastarané, pretože sa zdroje po poslednom preklade zmenili.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="93"/>
+        <source>Map and scrap details appear after a successful compile.</source>
+        <translation>Podrobnosti o mapách a scrapoch sa zobrazia po úspešnom preklade.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="97"/>
+        <source>Map and scrap details need a database export. Add export database -fmt sql to the config.</source>
+        <translation>Podrobnosti o mapách a scrapoch vyžadujú export databázy. Pridajte do konfigurácie export database -fmt sql.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="113"/>
+        <source>This map is not in the last successful compile.</source>
+        <translation>Táto mapa nie je v poslednom úspešnom preklade.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="121"/>
+        <source>Length</source>
+        <translation>Dĺžka</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="124"/>
+        <source>Depth</source>
+        <translation>Hĺbka</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="142"/>
+        <source>This scrap is not in the last successful compile.</source>
+        <translation>Tento scrap nie je v poslednom úspešnom preklade.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="146"/>
+        <source>Average distortion</source>
+        <translation>Priemerné skreslenie</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="149"/>
+        <source>Maximum distortion</source>
+        <translation>Najväčšie skreslenie</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="47"/>
+        <source>Select a survey, map or scrap to see its details.</source>
+        <translation>Vyberte survey, mapu alebo scrap a zobrazia sa jeho podrobnosti.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="53"/>
+        <source>Survey %1</source>
+        <translation>Survey %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="55"/>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="64"/>
+        <source>Full name</source>
+        <translation>Úplný názov</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="57"/>
+        <source>Namespace</source>
+        <translation>Menný priestor</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="57"/>
+        <source>off</source>
+        <translation>vypnutý</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="61"/>
+        <source>Map %1</source>
+        <translation>Mapa %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="62"/>
+        <source>Scrap %1</source>
+        <translation>Scrap %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="69"/>
+        <source>%1, line %2</source>
+        <translation>%1, riadok %2</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="89"/>
+        <source>Defined in</source>
+        <translation>Definované v</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowStructureInfoPresenter.cpp" line="258"/>
+        <source>Compile once with a database export, without changing the config</source>
+        <translation>Preložiť raz s exportom databázy, bez zmeny konfigurácie</translation>
+    </message>
+</context>
+<context>
     <name>QObject</name>
     <message>
         <location filename="../src/platform/DiagnosticLogging.cpp" line="270"/>
@@ -2827,6 +2961,24 @@ Line-point options: %1</translation>
     <message>
         <source>Line %1: %2: %3%4</source>
         <translation type="obsolete">Riadok %1: %2: %3%4</translation>
+    </message>
+</context>
+<context>
+    <name>TherionDatabaseExportCompile</name>
+    <message>
+        <location filename="../src/app/TherionDatabaseExportCompile.cpp" line="39"/>
+        <source>Could not read %1.</source>
+        <translation>Nedá sa prečítať %1.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/TherionDatabaseExportCompile.cpp" line="46"/>
+        <source>Could not create a temporary folder for the database export.</source>
+        <translation>Nedá sa vytvoriť dočasný priečinok pre export databázy.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/TherionDatabaseExportCompile.cpp" line="54"/>
+        <source>Could not write %1.</source>
+        <translation>Nedá sa zapísať %1.</translation>
     </message>
 </context>
 <context>
