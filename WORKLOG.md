@@ -310,6 +310,11 @@ Active planning only. Completed history belongs in archive files. Stable archite
 - Keep the viewer read-only and keep `.lox` loading/model/statistics in core.
 - Decide whether to add Therion `.3d` model support to the 3D viewer or keep `.3d` outputs hidden from the Outputs pane.
 
+### Map Pointer Status
+
+- `plans/MAP_POINTER_STATUS_PLAN.md` is implemented on `feature/map-pointer-status` (pointer TH2 coordinates and the
+  hovered XVI station name in the map status bar). Open: push, PR, then archive the plan once merged.
+
 ## Blocked / Needs Input
 
 - Resolved Linux/macOS Map UI crash: immutable map source-snapshot construction recursively requested the same snapshot

@@ -29,6 +29,10 @@ const auto kTherionRunTargetModeKey = QStringLiteral("session/therionRunTargetMo
 const auto kTherionTargetConfigPathKey = QStringLiteral("session/therionTargetConfigPath");
 const auto kTherionMapTouchFriendlyControlsEnabledKey = QStringLiteral("session/therionMapTouchFriendlyControlsEnabled");
 const auto kTherionMapMagnifierEnabledKey = QStringLiteral("session/therionMapMagnifierEnabled");
+const auto kTherionMapPointerCoordinatesInStatusBarEnabledKey =
+    QStringLiteral("settings/therionMapPointerCoordinatesInStatusBarEnabled");
+const auto kTherionMapXviStationNamesInStatusBarEnabledKey =
+    QStringLiteral("settings/therionMapXviStationNamesInStatusBarEnabled");
 const auto kTherionMapObjectsAutoCollapseExpandScrapsEnabledKey =
     QStringLiteral("session/therionMapObjectsAutoCollapseExpandScrapsEnabled");
 const auto kTherionMapRecentInsertTypeSubtypeHistoryKey =
@@ -293,6 +297,26 @@ void SessionSettingsStore::setTherionMapMagnifierEnabled(bool enabled)
     settings_->setValue(kTherionMapMagnifierEnabledKey, enabled);
 }
 
+bool SessionSettingsStore::therionMapPointerCoordinatesInStatusBarEnabled() const
+{
+    return settings_->value(kTherionMapPointerCoordinatesInStatusBarEnabledKey, false).toBool();
+}
+
+void SessionSettingsStore::setTherionMapPointerCoordinatesInStatusBarEnabled(bool enabled)
+{
+    settings_->setValue(kTherionMapPointerCoordinatesInStatusBarEnabledKey, enabled);
+}
+
+bool SessionSettingsStore::therionMapXviStationNamesInStatusBarEnabled() const
+{
+    return settings_->value(kTherionMapXviStationNamesInStatusBarEnabledKey, false).toBool();
+}
+
+void SessionSettingsStore::setTherionMapXviStationNamesInStatusBarEnabled(bool enabled)
+{
+    settings_->setValue(kTherionMapXviStationNamesInStatusBarEnabledKey, enabled);
+}
+
 bool SessionSettingsStore::therionMapObjectsAutoCollapseExpandScrapsEnabled() const
 {
     return settings_->value(kTherionMapObjectsAutoCollapseExpandScrapsEnabledKey, false).toBool();
@@ -515,6 +539,26 @@ bool InMemorySessionStore::therionMapMagnifierEnabled() const
 void InMemorySessionStore::setTherionMapMagnifierEnabled(bool enabled)
 {
     therionMapMagnifierEnabled_ = enabled;
+}
+
+bool InMemorySessionStore::therionMapPointerCoordinatesInStatusBarEnabled() const
+{
+    return therionMapPointerCoordinatesInStatusBarEnabled_;
+}
+
+void InMemorySessionStore::setTherionMapPointerCoordinatesInStatusBarEnabled(bool enabled)
+{
+    therionMapPointerCoordinatesInStatusBarEnabled_ = enabled;
+}
+
+bool InMemorySessionStore::therionMapXviStationNamesInStatusBarEnabled() const
+{
+    return therionMapXviStationNamesInStatusBarEnabled_;
+}
+
+void InMemorySessionStore::setTherionMapXviStationNamesInStatusBarEnabled(bool enabled)
+{
+    therionMapXviStationNamesInStatusBarEnabled_ = enabled;
 }
 
 bool InMemorySessionStore::therionMapObjectsAutoCollapseExpandScrapsEnabled() const

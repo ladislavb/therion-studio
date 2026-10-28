@@ -265,13 +265,13 @@ void MapEditorTab::buildUi()
             connect(mapView_->horizontalScrollBar(),
                     &QScrollBar::valueChanged,
                     this,
-                    &MapEditorTab::refreshVisibleMagnifierOverlay);
+                    &MapEditorTab::refreshPointerReadout);
         }
         if (mapView_->verticalScrollBar() != nullptr) {
             connect(mapView_->verticalScrollBar(),
                     &QScrollBar::valueChanged,
                     this,
-                    &MapEditorTab::refreshVisibleMagnifierOverlay);
+                    &MapEditorTab::refreshPointerReadout);
         }
     }
 

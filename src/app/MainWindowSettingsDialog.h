@@ -20,6 +20,8 @@ public:
         QString applicationLanguage = QStringLiteral("system");
         QString therionExecutablePath;
         QString defaultTextEditorMode = QStringLiteral("raw");
+        bool mapPointerCoordinatesInStatusBarEnabled = false;
+        bool mapXviStationNamesInStatusBarEnabled = false;
         bool automaticProjectValidationEnabled = false;
         bool troubleshootingLogsEnabled = false;
     };
@@ -40,6 +42,8 @@ private:
     QPushButton *therionExecutableBrowseButton_ = nullptr;
     QPushButton *therionExecutableAutoDetectButton_ = nullptr;
     QComboBox *defaultTextEditorModeCombo_ = nullptr;
+    QCheckBox *mapPointerCoordinatesCheckBox_ = nullptr;
+    QCheckBox *mapXviStationNamesCheckBox_ = nullptr;
     QCheckBox *automaticProjectValidationCheckBox_ = nullptr;
     QCheckBox *troubleshootingLogsCheckBox_ = nullptr;
     QPushButton *openLogFolderButton_ = nullptr;

@@ -270,7 +270,7 @@ Les blocs Therion `area ... endarea` existants qui référencent des bordures `l
 
 Pendant le placement des points ou le dessin des lignes et des aires, les sommets d’objets proches sont mis en évidence comme candidats à l’accrochage. La cible active est accentuée davantage ; les poignées de Bézier restent libres.
 
-Lorsque l’éditeur de dessin est actif, la partie gauche de la barre d’état affiche l’instruction correspondant à l’opération actuelle, notamment les étapes du dessin et les indications de validation avec Enter ou Esc. La pastille compacte du mode emploie `M : Sélection` ou `M : Insertion`.
+Lorsque l’éditeur de dessin est actif, la partie gauche de la barre d’état affiche l’instruction correspondant à l’opération actuelle, notamment les étapes du dessin et les indications de validation avec Enter ou Esc. La pastille compacte du mode emploie `M : Sélection` ou `M : Insertion`. Si `Afficher les coordonnées du pointeur dans la barre d'état du dessin` est coché dans les paramètres, la barre d’état affiche la position du pointeur en coordonnées de dessin TH2 avant le zoom lorsqu’il survole le dessin, sous la même forme que la loupe, par exemple `x 1234.5  y -67.8`. Elle fonctionne même loupe masquée et disparaît lorsque le pointeur quitte le dessin. Si `Afficher les noms des stations XVI dans la barre d'état du dessin` est coché, le nom de la station tiré du fichier `.xvi` s’affiche lorsque le pointeur survole une station d’un arrière-plan `.xvi` visible, par exemple `Station : 1.1@cave`. Les deux options sont désactivées par défaut et peuvent être utilisées séparément. Dans une fenêtre de dessin détachée, elle apparaît dans la barre d’état de cette fenêtre.
 
 Pendant le dessin d’une ligne ou d’une aire :
 
@@ -422,6 +422,7 @@ Les paramètres comprennent :
 - la langue de l’application (`Système par défaut`, anglais, tchèque, français ou slovaque) ;
 - le chemin de l’exécutable Therion ;
 - l’éditeur par défaut des nouveaux onglets `.th` et de configuration Therion (`Raw` ou `Blocs`) ;
+- les options de la barre d’état du dessin qui affichent les coordonnées du pointeur et les noms des stations XVI sous le pointeur (désactivées par défaut) ;
 - la validation automatique de l’ensemble du projet après les modifications du projet, des documents ou des fichiers ;
 - l’activation pendant 24 heures des journaux de dépannage, avec des actions permettant d’ouvrir leur dossier ou d’effacer les journaux existants.
 

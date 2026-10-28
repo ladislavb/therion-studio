@@ -85,6 +85,20 @@ MainWindowSettingsDialog::MainWindowSettingsDialog(const Settings &settings, QWi
                     QStringLiteral("raw"));
     formLayout->addRow(tr("Default .th / config editor"), defaultTextEditorModeCombo_);
 
+    mapPointerCoordinatesCheckBox_ =
+        new QCheckBox(tr("Show pointer coordinates in the map status bar"), this);
+    mapPointerCoordinatesCheckBox_->setChecked(settings.mapPointerCoordinatesInStatusBarEnabled);
+    mapPointerCoordinatesCheckBox_->setToolTip(
+        tr("Shows the pointer position in TH2 drawing coordinates, as in the map magnifier."));
+    formLayout->addRow(tr("Map status bar"), mapPointerCoordinatesCheckBox_);
+
+    mapXviStationNamesCheckBox_ =
+        new QCheckBox(tr("Show XVI station names in the map status bar"), this);
+    mapXviStationNamesCheckBox_->setChecked(settings.mapXviStationNamesInStatusBarEnabled);
+    mapXviStationNamesCheckBox_->setToolTip(
+        tr("Shows the name of the station in a visible .xvi background under the pointer."));
+    formLayout->addRow(QString(), mapXviStationNamesCheckBox_);
+
     automaticProjectValidationCheckBox_ =
         new QCheckBox(tr("Run full project validation automatically"), this);
     automaticProjectValidationCheckBox_->setChecked(settings.automaticProjectValidationEnabled);
@@ -145,6 +159,10 @@ MainWindowSettingsDialog::Settings MainWindowSettingsDialog::settings() const
     result.defaultTextEditorMode = defaultTextEditorModeCombo_ != nullptr
         ? defaultTextEditorModeCombo_->currentData().toString()
         : QStringLiteral("raw");
+    result.mapPointerCoordinatesInStatusBarEnabled = mapPointerCoordinatesCheckBox_ != nullptr
+        && mapPointerCoordinatesCheckBox_->isChecked();
+    result.mapXviStationNamesInStatusBarEnabled = mapXviStationNamesCheckBox_ != nullptr
+        && mapXviStationNamesCheckBox_->isChecked();
     result.automaticProjectValidationEnabled = automaticProjectValidationCheckBox_ != nullptr
         && automaticProjectValidationCheckBox_->isChecked();
     result.troubleshootingLogsEnabled = troubleshootingLogsCheckBox_ != nullptr

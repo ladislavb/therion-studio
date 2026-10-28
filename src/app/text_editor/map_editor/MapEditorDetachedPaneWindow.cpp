@@ -155,6 +155,9 @@ MapEditorDetachedPaneWindow::MapEditorDetachedPaneWindow(MapEditorTab *mapTab, Q
         connect(mapTab_, &MapEditorTab::statusHintChanged, this, [this]() {
             refreshStatusHint();
         });
+        connect(mapTab_, &MapEditorTab::pointerStatusChanged, this, [this]() {
+            refreshPointerStatus();
+        });
         connect(mapTab_, &MapEditorTab::backgroundLayersChanged, this, [this]() {
             refreshCommandBarState();
         });
@@ -170,6 +173,9 @@ MapEditorDetachedPaneWindow::MapEditorDetachedPaneWindow(MapEditorTab *mapTab, Q
     statusHintLabel_->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
     statusHintLabel_->setMinimumWidth(0);
     statusHintLabel_->setContentsMargins(12, 0, 0, 0);
+    pointerLabel_ = new QLabel(statusBar());
+    pointerLabel_->setAlignment(Qt::AlignCenter);
+    pointerLabel_->setToolTip(QObject::tr("Map pointer position"));
     zoomLabel_ = new QLabel(statusBar());
     zoomLabel_->setAlignment(Qt::AlignCenter);
     zoomLabel_->setMinimumWidth(56);
@@ -177,9 +183,11 @@ MapEditorDetachedPaneWindow::MapEditorDetachedPaneWindow(MapEditorTab *mapTab, Q
     modeLabel_->setAlignment(Qt::AlignCenter);
     modeLabel_->setMinimumWidth(78);
     statusBar()->addWidget(statusHintLabel_, 1);
+    statusBar()->addPermanentWidget(pointerLabel_, 0);
     statusBar()->addPermanentWidget(zoomLabel_, 0);
     statusBar()->addPermanentWidget(modeLabel_, 0);
     refreshStatusHint();
+    refreshPointerStatus();
 }
 
 void MapEditorDetachedPaneWindow::setMapPaneWidget(QWidget *mapPaneWidget)
@@ -289,5 +297,19 @@ void MapEditorDetachedPaneWindow::refreshStatusHint()
     statusHintLabel_->setText(text);
     statusHintLabel_->setToolTip(text.isEmpty() ? QString() : QObject::tr("Map editor instructions"));
     statusHintLabel_->setVisible(!text.isEmpty());
+}
+
+void MapEditorDetachedPaneWindow::refreshPointerStatus()
+{
+    if (pointerLabel_ == nullptr || mapTab_ == nullptr) {
+        return;
+    }
+
+    const bool visible = mapTab_->isPointerStatusEnabled();
+    pointerLabel_->setText(visible ? mapTab_->pointerStatusText() : QString());
+    if (visible) {
+        pointerLabel_->setMinimumWidth(mapTab_->pointerStatusMinimumWidth(pointerLabel_->fontMetrics()));
+    }
+    pointerLabel_->setVisible(visible);
 }
 }

@@ -65,7 +65,6 @@
 #include "MainWindowDocumentOpenController.h"
 #include "MainWindowDocumentTabOpenController.h"
 #include "MainWindowHelpDialog.h"
-#include "MainWindowSettingsDialog.h"
 #include "TherionExecutableDetector.h"
 #include "MainWindowSessionDocumentController.h"
 #include "MainWindowSessionController.h"
@@ -80,7 +79,6 @@
 #include "../core/PocketTopoImport.h"
 #include "../core/SessionStore.h"
 #include "../core/TherionFileTypes.h"
-#include "../platform/ApplicationLanguageOverride.h"
 #include "../platform/DiagnosticLogging.h"
 
 namespace
@@ -916,6 +914,10 @@ void MainWindow::createNewWindow()
         sessionStore->setAutomaticProjectValidationEnabled(sessionStore_->automaticProjectValidationEnabled());
         sessionStore->setTroubleshootingLogsEnabledUntilUtc(sessionStore_->troubleshootingLogsEnabledUntilUtc());
         sessionStore->setTherionMapMagnifierEnabled(sessionStore_->therionMapMagnifierEnabled());
+        sessionStore->setTherionMapPointerCoordinatesInStatusBarEnabled(
+            sessionStore_->therionMapPointerCoordinatesInStatusBarEnabled());
+        sessionStore->setTherionMapXviStationNamesInStatusBarEnabled(
+            sessionStore_->therionMapXviStationNamesInStatusBarEnabled());
         sessionStore->setTherionMapObjectsAutoCollapseExpandScrapsEnabled(
             sessionStore_->therionMapObjectsAutoCollapseExpandScrapsEnabled());
         sessionStore->setLastProjectParentDirectory(sessionStore_->lastProjectParentDirectory());
@@ -927,63 +929,6 @@ void MainWindow::createNewWindow()
                                   nullptr,
                                   SessionRestoreMode::StartEmpty);
     window->show();
-}
-
-void MainWindow::showSettingsDialog()
-{
-    if (sessionStore_ == nullptr) {
-        return;
-    }
-
-    TherionStudio::MainWindowSettingsDialog::Settings initialSettings;
-    const QString nativeApplicationLanguage =
-        TherionStudio::Platform::applicationLanguageOverride();
-    initialSettings.applicationLanguage = nativeApplicationLanguage != QStringLiteral("system")
-        ? nativeApplicationLanguage
-        : sessionStore_->applicationLanguage();
-    initialSettings.therionExecutablePath = sessionStore_->therionExecutablePath();
-    initialSettings.defaultTextEditorMode = sessionStore_->defaultTextEditorMode();
-    initialSettings.automaticProjectValidationEnabled =
-        sessionStore_->automaticProjectValidationEnabled();
-    initialSettings.troubleshootingLogsEnabled =
-        sessionStore_->troubleshootingLogsEnabledUntilUtc().isValid()
-        && sessionStore_->troubleshootingLogsEnabledUntilUtc() > QDateTime::currentDateTimeUtc();
-
-    TherionStudio::MainWindowSettingsDialog dialog(initialSettings, this);
-    if (dialog.exec() != QDialog::Accepted) {
-        return;
-    }
-
-    const TherionStudio::MainWindowSettingsDialog::Settings updatedSettings = dialog.settings();
-    const QString updatedApplicationLanguage =
-        TherionStudio::Platform::normalizeApplicationLanguageSetting(
-            updatedSettings.applicationLanguage);
-    const bool languageChanged =
-        updatedApplicationLanguage
-        != TherionStudio::Platform::normalizeApplicationLanguageSetting(
-            initialSettings.applicationLanguage);
-    const bool troubleshootingLogsChanged =
-        updatedSettings.troubleshootingLogsEnabled != initialSettings.troubleshootingLogsEnabled;
-
-    sessionStore_->setApplicationLanguage(updatedApplicationLanguage);
-    TherionStudio::Platform::setApplicationLanguageOverride(updatedApplicationLanguage);
-    sessionStore_->setTherionExecutablePath(updatedSettings.therionExecutablePath);
-    sessionStore_->setDefaultTextEditorMode(updatedSettings.defaultTextEditorMode);
-    sessionStore_->setAutomaticProjectValidationEnabled(
-        updatedSettings.automaticProjectValidationEnabled);
-    sessionStore_->setTroubleshootingLogsEnabledUntilUtc(
-        updatedSettings.troubleshootingLogsEnabled
-            ? QDateTime::currentDateTimeUtc().addSecs(24 * 60 * 60)
-            : QDateTime());
-    refreshTherionConfigDisplay();
-    updateProjectValidationStatusMessage();
-
-    if (languageChanged) {
-        offerApplicationRestart(tr("Language changes will take effect after restarting Therion Studio."));
-    }
-    if (troubleshootingLogsChanged) {
-        offerApplicationRestart(tr("Troubleshooting log changes will take effect after restarting Therion Studio."));
-    }
 }
 
 void MainWindow::offerApplicationRestart(const QString &message)
@@ -1666,8 +1611,7 @@ void MainWindow::connectMapEditorTabUiSignals(TherionStudio::MapEditorTab *tab)
                     refreshViewMenuActions();
                 }
             });
-    connect(tab, &TherionStudio::MapEditorTab::statusHintChanged, this,
-            [this, tab]() { if (currentDocumentWidget() == tab) { refreshDocumentStatusWidgets(); } });
+    connectMapEditorTabStatusSignals(tab);
     connect(tab, &TherionStudio::MapEditorTab::commandSurfaceStateChanged, this, [this, tab]() {
         if (currentDocumentWidget() == tab) {
             refreshWorkspaceModeSwitcher();
@@ -1676,19 +1620,24 @@ void MainWindow::connectMapEditorTabUiSignals(TherionStudio::MapEditorTab *tab)
     });
 }
 
-void MainWindow::setMapMagnifierEnabledForOpenTabs(bool enabled)
+void MainWindow::forEachOpenMapEditorTab(const std::function<void(TherionStudio::MapEditorTab *)> &action)
 {
     for (int index = 0; index < editorTabs_->count(); ++index) {
         if (auto *mapTab = qobject_cast<TherionStudio::MapEditorTab *>(editorTabs_->widget(index))) {
-            mapTab->setMagnifierEnabled(enabled);
+            action(mapTab);
         }
     }
 
     for (TherionStudio::MapEditorTab *detachedTab : detachedMapEditorTabs()) {
         if (detachedTab != nullptr) {
-            detachedTab->setMagnifierEnabled(enabled);
+            action(detachedTab);
         }
     }
+}
+
+void MainWindow::setMapMagnifierEnabledForOpenTabs(bool enabled)
+{
+    forEachOpenMapEditorTab([enabled](TherionStudio::MapEditorTab *mapTab) { mapTab->setMagnifierEnabled(enabled); });
 }
 
 TherionStudio::MapEditorTab *MainWindow::openMapEditorTab(const QString &filePath,

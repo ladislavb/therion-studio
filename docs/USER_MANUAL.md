@@ -270,7 +270,7 @@ Existing Therion `area ... endarea` blocks that reference `line -id ...` borders
 
 While placing points or drafting lines and areas, nearby object vertices are highlighted as snap candidates. The active snap target is highlighted more strongly; Bezier control handles remain free-form.
 
-When the map editor is active, the left side of the status bar shows the current workflow instruction, including drawing steps and Enter/Esc completion hints. The compact map mode badge uses `M: Select` or `M: Insert`.
+When the map editor is active, the left side of the status bar shows the current workflow instruction, including drawing steps and Enter/Esc completion hints. The compact map mode badge uses `M: Select` or `M: Insert`. If `Show pointer coordinates in the map status bar` is ticked in Settings, the status bar shows the pointer position in TH2 drawing coordinates before the zoom while the pointer is over the map, in the same form as the map magnifier, for example `x 1234.5  y -67.8`. It works with the magnifier hidden and clears when the pointer leaves the map. If `Show XVI station names in the map status bar` is ticked, the station name from the `.xvi` file is shown when the pointer is over a station of a visible `.xvi` background, for example `Station: 1.1@cave`. Both options are off by default and can be used separately. In a detached map window it appears in that window's status bar.
 
 While drafting a line or area:
 
@@ -422,6 +422,7 @@ Settings include:
 - application language (`System Default`, English, Czech, French, Slovak)
 - Therion executable path
 - default editor for newly opened `.th` and Therion config tabs (`Raw` or `Blocks`)
+- map status bar options to show the pointer coordinates and the names of XVI stations under the pointer (both off by default)
 - automatic full-project validation after project, document, and file changes
 - troubleshooting logs for 24 hours, with actions to open the log folder or clear existing logs
 

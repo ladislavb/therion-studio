@@ -240,7 +240,7 @@ Existující Therion bloky `area ... endarea`, které odkazují na hranice `line
 
 Během vkládání bodů nebo kreslení linií a ploch se vertexy blízkého objektu zvýrazní jako kandidáti snapu. Aktivní snap cíl se zvýrazní výrazněji; Bezier kontrolní body zůstávají bez snapu.
 
-Když je aktivní map editor, levá část stavového řádku ukazuje aktuální pokyn workflow, včetně kroků kreslení a nápovědy pro dokončení Enter/Esc. Kompaktní odznak režimu mapy používá `M: Vybrat` nebo `M: Vložit`.
+Když je aktivní map editor, levá část stavového řádku ukazuje aktuální pokyn workflow, včetně kroků kreslení a nápovědy pro dokončení Enter/Esc. Kompaktní odznak režimu mapy používá `M: Vybrat` nebo `M: Vložit`. Je-li v Nastavení zaškrtnuto `Zobrazit souřadnice ukazatele ve stavovém řádku mapy`, stavový řádek před zoomem ukazuje polohu ukazatele nad mapou v souřadnicích výkresu TH2 ve stejném tvaru jako lupa mapy, například `x 1234.5  y -67.8`. Funguje i se skrytou lupou a po opuštění mapy zmizí. Je-li zaškrtnuto `Zobrazit názvy stanic XVI ve stavovém řádku mapy`, zobrazí se název stanice ze souboru `.xvi`, když je ukazatel nad stanicí viditelného pozadí `.xvi`, například `Stanice: 1.1@cave`. Obě volby jsou ve výchozím stavu vypnuté a lze je používat samostatně. V samostatném okně mapy se zobrazuje ve stavovém řádku tohoto okna.
 
 Během kreslení čáry nebo plochy:
 
@@ -372,7 +372,8 @@ Nastavení obsahuje:
 
 - jazyk aplikace (`Podle systému`, `Angličtina`, `Čeština`, `Slovenština`),
 - cestu ke spustitelnému souboru Therion,
-- výchozí editor pro nově otevřené `.th` a Therion config záložky (`Zdroj` nebo `Bloky`).
+- výchozí editor pro nově otevřené `.th` a Therion config záložky (`Zdroj` nebo `Bloky`),
+- volby stavového řádku mapy pro zobrazení souřadnic ukazatele a názvů stanic XVI pod ukazatelem (obě ve výchozím stavu vypnuté).
 
 ## 9. Klávesové zkratky
 

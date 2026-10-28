@@ -74,6 +74,22 @@ public:
 
     bool therionMapMagnifierEnabled() const override { return therionMapMagnifierEnabled_; }
     void setTherionMapMagnifierEnabled(bool enabled) override { therionMapMagnifierEnabled_ = enabled; }
+    bool therionMapPointerCoordinatesInStatusBarEnabled() const override
+    {
+        return therionMapPointerCoordinatesInStatusBarEnabled_;
+    }
+    void setTherionMapPointerCoordinatesInStatusBarEnabled(bool enabled) override
+    {
+        therionMapPointerCoordinatesInStatusBarEnabled_ = enabled;
+    }
+    bool therionMapXviStationNamesInStatusBarEnabled() const override
+    {
+        return therionMapXviStationNamesInStatusBarEnabled_;
+    }
+    void setTherionMapXviStationNamesInStatusBarEnabled(bool enabled) override
+    {
+        therionMapXviStationNamesInStatusBarEnabled_ = enabled;
+    }
 
     bool therionMapObjectsAutoCollapseExpandScrapsEnabled() const override
     {
@@ -116,6 +132,8 @@ private:
     QString therionTargetConfigPath_;
     bool therionMapTouchFriendlyControlsEnabled_ = false;
     bool therionMapMagnifierEnabled_ = true;
+    bool therionMapPointerCoordinatesInStatusBarEnabled_ = false;
+    bool therionMapXviStationNamesInStatusBarEnabled_ = false;
     bool therionMapObjectsAutoCollapseExpandScrapsEnabled_ = false;
     QString therionMapRecentInsertTypeSubtypeHistory_;
     QString therionMapBackgroundLayers_;

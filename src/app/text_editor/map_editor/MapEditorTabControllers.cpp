@@ -1,9 +1,11 @@
 #include "MapEditorTab.h"
 
+#include <QFontMetrics>
 #include <QGraphicsView>
 #include <QPoint>
 #include <QShortcut>
 #include <QSplitter>
+#include <QStringList>
 #include <QTimer>
 
 #include "../../../core/ISessionStore.h"
@@ -15,7 +17,7 @@ namespace TherionStudio
 {
 namespace
 {
-constexpr int kMagnifierUpdateIntervalMs = 16;
+constexpr int kPointerReadoutUpdateIntervalMs = 16;
 }
 
 void MapEditorTab::updateCommandSurfaceState()
@@ -91,8 +93,8 @@ void MapEditorTab::syncZoomFactorFromView()
 void MapEditorTab::applyZoomAtViewportPosition(qreal factor, const QPointF &viewportPosition)
 {
     MapEditorSceneLifecycleController(sceneLifecycleContext()).applyZoomAtViewportPosition(factor, viewportPosition);
-    if (magnifierEnabled_ && mapMagnifierOverlay_ != nullptr && mapMagnifierOverlay_->isVisible()) {
-        scheduleMagnifierOverlayUpdateFromViewportPosition(viewportPosition.toPoint());
+    if (pointerHasViewportPosition_) {
+        schedulePointerReadoutUpdate(viewportPosition.toPoint());
     }
 }
 
@@ -108,68 +110,78 @@ void MapEditorTab::updateMagnifierOverlayGeometry()
     }
 }
 
-void MapEditorTab::updateMagnifierOverlayFromViewportPosition(const QPoint &viewportPosition, bool active)
+// Drives both the magnifier and the status bar pointer coordinates.
+void MapEditorTab::updatePointerReadoutFromViewportPosition(const QPoint &viewportPosition)
 {
-    if (mapMagnifierOverlay_ == nullptr || mapView_ == nullptr || mapView_->viewport() == nullptr) {
-        return;
-    }
-    if (!magnifierEnabled_) {
-        hideMagnifierOverlay();
+    if (mapView_ == nullptr || mapView_->viewport() == nullptr) {
         return;
     }
     if (!mapView_->viewport()->rect().contains(viewportPosition)) {
-        hideMagnifierOverlay();
+        clearPointerReadout();
         return;
     }
 
     const QPointF scenePosition = mapView_->mapToScene(viewportPosition);
-    mapMagnifierOverlay_->setCursorPosition(viewportPosition,
-                                            scenePosition,
-                                            magnifierCoordinateTextForScenePosition(scenePosition));
-    mapMagnifierOverlay_->setOverlayActive(active);
-}
-
-void MapEditorTab::scheduleMagnifierOverlayUpdateFromViewportPosition(const QPoint &viewportPosition)
-{
-    if (mapMagnifierOverlay_ == nullptr || mapView_ == nullptr || mapView_->viewport() == nullptr) {
+    const QString coordinateText = pointerCoordinateTextForScenePosition(scenePosition);
+    QString xviStationName;
+    if (sessionStore_ != nullptr && sessionStore_->therionMapXviStationNamesInStatusBarEnabled()) {
+        if (const std::optional<MapEditorXviStationSnapCandidate> xviStation =
+                xviStationSnapAtScenePosition(scenePosition)) {
+            xviStationName = xviStation->name;
+        }
+    }
+    const bool coordinatesEnabled =
+        sessionStore_ != nullptr && sessionStore_->therionMapPointerCoordinatesInStatusBarEnabled();
+    setPointerStatusText(pointerStatusLabelText(coordinatesEnabled ? coordinateText : QString(), xviStationName));
+    if (mapMagnifierOverlay_ == nullptr) {
         return;
     }
     if (!magnifierEnabled_) {
         hideMagnifierOverlay();
         return;
     }
+    mapMagnifierOverlay_->setCursorPosition(viewportPosition, scenePosition, coordinateText);
+    mapMagnifierOverlay_->setOverlayActive(true);
+}
 
-    magnifierPendingViewportPosition_ = viewportPosition;
-    magnifierLastViewportPosition_ = viewportPosition;
-    magnifierHasViewportPosition_ = true;
-    if (magnifierUpdatePending_) {
+void MapEditorTab::schedulePointerReadoutUpdate(const QPoint &viewportPosition)
+{
+    if (mapView_ == nullptr || mapView_->viewport() == nullptr) {
         return;
     }
 
-    const int elapsedMs = magnifierThrottleActive_
-        ? static_cast<int>(magnifierLastUpdateElapsed_.elapsed())
-        : kMagnifierUpdateIntervalMs;
-    const int delayMs = qMax(0, kMagnifierUpdateIntervalMs - elapsedMs);
+    pointerPendingViewportPosition_ = viewportPosition;
+    pointerLastViewportPosition_ = viewportPosition;
+    pointerHasViewportPosition_ = true;
+    if (pointerUpdatePending_) {
+        return;
+    }
 
-    magnifierUpdatePending_ = true;
+    const int elapsedMs = pointerThrottleActive_
+        ? static_cast<int>(pointerLastUpdateElapsed_.elapsed())
+        : kPointerReadoutUpdateIntervalMs;
+    const int delayMs = qMax(0, kPointerReadoutUpdateIntervalMs - elapsedMs);
+
+    pointerUpdatePending_ = true;
     QTimer::singleShot(delayMs, this, [this]() {
-        magnifierUpdatePending_ = false;
-        magnifierThrottleActive_ = true;
-        magnifierLastUpdateElapsed_.restart();
-        updateMagnifierOverlayFromViewportPosition(magnifierPendingViewportPosition_, true);
+        pointerUpdatePending_ = false;
+        // The pointer may have left the map while the update was pending.
+        if (!pointerHasViewportPosition_) {
+            return;
+        }
+        pointerThrottleActive_ = true;
+        pointerLastUpdateElapsed_.restart();
+        updatePointerReadoutFromViewportPosition(pointerPendingViewportPosition_);
     });
 }
 
-void MapEditorTab::refreshVisibleMagnifierOverlay()
+void MapEditorTab::refreshPointerReadout()
 {
-    if (!magnifierEnabled_
-        || mapMagnifierOverlay_ == nullptr
-        || !mapMagnifierOverlay_->isVisible()
-        || !magnifierHasViewportPosition_) {
+    if (!pointerHasViewportPosition_) {
         return;
     }
 
-    scheduleMagnifierOverlayUpdateFromViewportPosition(magnifierLastViewportPosition_);
+    schedulePointerReadoutUpdate(pointerLastViewportPosition_);
 }
 
 bool MapEditorTab::isMagnifierEnabled() const
@@ -223,8 +235,8 @@ void MapEditorTab::setMagnifierEnabled(bool enabled)
     }
     if (!magnifierEnabled_) {
         hideMagnifierOverlay();
-    } else if (magnifierHasViewportPosition_) {
-        scheduleMagnifierOverlayUpdateFromViewportPosition(magnifierLastViewportPosition_);
+    } else if (pointerHasViewportPosition_) {
+        schedulePointerReadoutUpdate(pointerLastViewportPosition_);
     }
 }
 
@@ -280,15 +292,75 @@ void MapEditorTab::hideMagnifierOverlay()
     if (mapMagnifierOverlay_ != nullptr) {
         mapMagnifierOverlay_->setOverlayActive(false);
     }
-    magnifierHasViewportPosition_ = false;
-    magnifierThrottleActive_ = false;
 }
 
-QString MapEditorTab::magnifierCoordinateTextForScenePosition(const QPointF &scenePosition) const
+void MapEditorTab::clearPointerReadout()
 {
-    const QPointF sourcePosition = sourcePointFromScenePosition(scenePosition);
+    hideMagnifierOverlay();
+    pointerHasViewportPosition_ = false;
+    pointerThrottleActive_ = false;
+    setPointerStatusText(QString());
+}
+
+void MapEditorTab::setPointerStatusText(const QString &text)
+{
+    if (pointerStatusText_ == text) {
+        return;
+    }
+    pointerStatusText_ = text;
+    emit pointerStatusChanged();
+}
+
+QString MapEditorTab::pointerStatusText() const
+{
+    return pointerStatusText_;
+}
+
+QString MapEditorTab::pointerCoordinateText(const QPointF &sourcePosition)
+{
     return tr("x %1  y %2").arg(QString::number(sourcePosition.x(), 'f', 1),
                                 QString::number(sourcePosition.y(), 'f', 1));
+}
+
+QString MapEditorTab::pointerStatusLabelText(const QString &coordinateText, const QString &xviStationName)
+{
+    QStringList parts;
+    if (!coordinateText.isEmpty()) {
+        parts.append(coordinateText);
+    }
+    if (!xviStationName.isEmpty()) {
+        parts.append(tr("Station: %1").arg(xviStationName));
+    }
+    return parts.join(QStringLiteral("   "));
+}
+
+bool MapEditorTab::isPointerStatusEnabled() const
+{
+    return sessionStore_ != nullptr
+        && (sessionStore_->therionMapPointerCoordinatesInStatusBarEnabled()
+            || sessionStore_->therionMapXviStationNamesInStatusBarEnabled());
+}
+
+// Wide enough for any coordinates, so the status bar does not shift as the pointer moves.
+int MapEditorTab::pointerStatusMinimumWidth(const QFontMetrics &metrics) const
+{
+    if (sessionStore_ == nullptr || !sessionStore_->therionMapPointerCoordinatesInStatusBarEnabled()) {
+        return 0;
+    }
+    return metrics.horizontalAdvance(pointerCoordinateText(QPointF(-99999.9, -99999.9))) + 12;
+}
+
+void MapEditorTab::refreshPointerStatusOptions()
+{
+    setPointerStatusText(QString());
+    // Labels re-read the options even when the text was already empty.
+    emit pointerStatusChanged();
+    refreshPointerReadout();
+}
+
+QString MapEditorTab::pointerCoordinateTextForScenePosition(const QPointF &scenePosition) const
+{
+    return pointerCoordinateText(sourcePointFromScenePosition(scenePosition));
 }
 
 QRectF MapEditorTab::mapGeometryFitBounds() const
