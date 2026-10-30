@@ -163,7 +163,7 @@ bool ThreeDViewerViewportController::mouseMove(const QPoint &position, int viewp
     const QPoint delta = position - lastMousePosition_;
     camera_.setState(cameraAtPress_);
     if (interactionMode_ == InteractionMode::Orbit) {
-        camera_.orbitByPixels(delta.x(), delta.y());
+        camera_.orbitByPixels(-delta.x(), delta.y());
     } else if (interactionMode_ == InteractionMode::Pan) {
         camera_.panByPixels(delta.x(), delta.y(), viewportHeight);
     }

@@ -29,6 +29,7 @@ QStringList watchedPaths(const QFileSystemWatcher *watcher)
 
 void MainWindow::rebuildProjectFileWatcher()
 {
+    refreshProjectVersioning();
     if (projectFileWatcher_ == nullptr) {
         return;
     }

@@ -1,7 +1,14 @@
 #include "../src/app/three_d_viewer/ThreeDViewerInspectorState.h"
+#include "../src/app/three_d_viewer/ThreeDViewerTab.h"
+#include "../src/core/TherionCentreline.h"
 
+#include <QDir>
+#include <QFile>
+#include <QTemporaryDir>
 #include <QtTest/QtTest>
 #include <QLocale>
+
+#include <cmath>
 
 using namespace TherionStudio;
 
@@ -11,13 +18,124 @@ class ThreeDViewerInspectorStateTest : public QObject
 
 private slots:
     void tracksFilePathAndSceneMetrics();
+    void tracksSceneWarnings();
     void tracksMeshColorMode();
+    void tracksCenterlineColorMode();
     void tracksBackgroundMode();
     void tracksMeasurementMode();
     void tracksSceneOverlayVisibility();
     void tracksAutoRotationSettings();
     void tracksCameraSettings();
+    void loadsCentrelineFromThFile();
+    void loadsScrapObjectsWithoutSurfaces();
+    void selectsOnlyRequestedSurveySourceForTh2();
+    void respectsTh2VisibilityAndSourceSnapshot();
 };
+
+void ThreeDViewerInspectorStateTest::respectsTh2VisibilityAndSourceSnapshot()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString th2 = QStringLiteral(
+        "scrap visible -projection plan\n"       // 1
+        "point 0 0 station -name A\n"            // 2
+        "point 10 0 station -name B\n"           // 3
+        "line wall\n0 1\n10 1\nendline\n"       // 4-7
+        "line wall\n0 2\n10 2\nendline\n"       // 8-11
+        "endscrap\n"                            // 12
+        "scrap hidden -projection plan\n"        // 13
+        "point 0 0 station -name A\n"
+        "point 10 0 station -name B\n"
+        "line wall\n0 3\n10 3\nendline\n"
+        "endscrap\n");
+    const auto writeFile = [&directory](const QString &name, const QString &contents) {
+        QFile file(directory.filePath(name));
+        return file.open(QIODevice::WriteOnly) && file.write(contents.toUtf8()) == contents.toUtf8().size();
+    };
+    QVERIFY(writeFile(QStringLiteral("map.th2"), th2));
+    QVERIFY(writeFile(QStringLiteral("other.th2"), th2));
+    const QString survey = directory.filePath(QStringLiteral("survey.th"));
+    QVERIFY(writeFile(QStringLiteral("survey.th"), QStringLiteral(
+        "survey cave\ninput map.th2\ninput other.th2\n"
+        "centreline\ndata normal from to length compass clino\nA B 10 90 0\n"
+        "endcentreline\nendsurvey\n")));
+
+    ThreeDViewerTab tab;
+    const QString path = directory.filePath(QStringLiteral("map.th2"));
+    QString error;
+    QVERIFY2(tab.loadFile(path, survey, &error), qPrintable(error));
+    QCOMPARE(tab.sceneModel().scrapLinework.size(), 3);
+
+    tab.setTh2SourceSnapshot(th2, {8, 13});
+    QVERIFY2(tab.loadFile(path, survey, &error), qPrintable(error));
+    QCOMPARE(tab.sceneModel().scrapLinework.size(), 1);
+    QVERIFY2(tab.reloadFile(&error), qPrintable(error));
+    QCOMPARE(tab.sceneModel().scrapLinework.size(), 1);
+
+    tab.setTh2SourceSnapshot(th2, {1, 13});
+    QVERIFY2(tab.reloadFile(&error), qPrintable(error));
+    QVERIFY(tab.sceneModel().scrapLinework.isEmpty());
+    QCOMPARE(tab.sceneModel().stations.size(), 2);
+
+    const QString editedTh2 = QString(th2).replace(QStringLiteral("0 1\n10 1"), QStringLiteral("0 5\n10 5"));
+    ThreeDViewerTab firstOpenTab;
+    firstOpenTab.setTh2SourceSnapshot(editedTh2, {8, 13});
+    QVERIFY2(firstOpenTab.loadFile(path, survey, &error), qPrintable(error));
+    QCOMPARE(firstOpenTab.sceneModel().scrapLinework.size(), 1);
+    QVERIFY(std::abs(firstOpenTab.sceneModel().scrapLinework.first().points.first().y - 5.0) < 1e-6);
+
+    tab.setTh2SourceSnapshot(editedTh2, {8, 13});
+    QVERIFY2(tab.reloadFile(&error), qPrintable(error));
+    QCOMPARE(tab.sceneModel().scrapLinework.size(), 1);
+    QVERIFY(std::abs(tab.sceneModel().scrapLinework.first().points.first().y - 5.0) < 1e-6);
+
+    const QString withObjects = QString(editedTh2).replace(
+        QStringLiteral("endscrap\nscrap hidden"),
+        QStringLiteral("line border\n0 2\n10 2\nendline\n"
+                       "line slope\n0 3\n10 3\nendline\n"
+                       "point 5 2 stalactite\npoint 7 2 stalagmite\nendscrap\nscrap hidden"));
+    tab.setTh2SourceSnapshot(withObjects, {8, 23});
+    QVERIFY2(tab.reloadFile(&error), qPrintable(error));
+    QCOMPARE(tab.sceneModel().scrapLinework.size(), 2);
+    QCOMPARE(tab.sceneModel().scrapPoints.size(), 2);
+    const qreal wallWidth = tab.sceneModel().scrapLinework.first().strokeWidth;
+    for (const auto &line : tab.sceneModel().scrapLinework) {
+        QVERIFY(line.type != QStringLiteral("border"));
+        if (line.type != QStringLiteral("wall")) {
+            QVERIFY(line.strokeWidth < wallWidth);
+            QVERIFY(line.strokeWidth <= wallWidth * 0.45);
+        }
+    }
+    QVERIFY(!tab.sceneModel().scrapPoints.first().symbolStrokes.isEmpty());
+    QVERIFY(tab.sceneModel().meshGroups.isEmpty());
+    QVERIFY(tab.sceneModel().surfaces.isEmpty());
+    tab.setTh2SourceSnapshot(withObjects, {8, 16, 20, 23});
+    QVERIFY2(tab.reloadFile(&error), qPrintable(error));
+    QCOMPARE(tab.sceneModel().scrapLinework.size(), 1);
+    QCOMPARE(tab.sceneModel().scrapPoints.size(), 1);
+    tab.setTh2SourceSnapshot(withObjects, {1, 23});
+    QVERIFY2(tab.reloadFile(&error), qPrintable(error));
+    QVERIFY(tab.sceneModel().scrapLinework.isEmpty());
+    QVERIFY(tab.sceneModel().scrapPoints.isEmpty());
+
+    const QString filteredObjects = withObjects.left(withObjects.indexOf(QStringLiteral("scrap hidden")))
+        .replace(QStringLiteral("endscrap\n"),
+                 QStringLiteral("line border:invisible -id water-border -close on\n"
+                                "1000 1000\n1010 1000\n1010 1010\nendline\n"
+                                "area water\nwater-border\nendarea\n"
+                                "line wall:invisible\n2000 2000\n2010 2000\nendline\n"
+                                "line wall -subtype invisible\n3000 3000\n3010 3000\nendline\nendscrap\n"));
+    tab.setTh2SourceSnapshot(filteredObjects, {8});
+    QVERIFY2(tab.reloadFile(&error), qPrintable(error));
+    QCOMPARE(tab.sceneModel().scrapLinework.size(), 2);
+    QCOMPARE(tab.sceneModel().scrapPoints.size(), 2);
+    for (const auto &line : tab.sceneModel().scrapLinework) {
+        QVERIFY(line.type == QStringLiteral("wall") || line.type == QStringLiteral("slope"));
+        QVERIFY(line.subtype != QStringLiteral("invisible"));
+    }
+    QVERIFY(tab.sceneModel().meshGroups.isEmpty());
+    QVERIFY(tab.sceneModel().surfaces.isEmpty());
+}
 
 void ThreeDViewerInspectorStateTest::tracksFilePathAndSceneMetrics()
 {
@@ -55,6 +173,22 @@ void ThreeDViewerInspectorStateTest::tracksFilePathAndSceneMetrics()
     QCOMPARE(state.surfaceCount(), 1);
 }
 
+void ThreeDViewerInspectorStateTest::tracksSceneWarnings()
+{
+    ThreeDViewerInspectorState state;
+    QSignalSpy spy(&state, &ThreeDViewerInspectorState::sceneWarningsChanged);
+
+    const QStringList warnings{QStringLiteral("Scrap is approximate.")};
+    state.setSceneWarnings(warnings);
+
+    QCOMPARE(state.sceneWarnings(), warnings);
+    QCOMPARE(spy.count(), 1);
+
+    state.setSceneWarnings({});
+    QVERIFY(state.sceneWarnings().isEmpty());
+    QCOMPARE(spy.count(), 2);
+}
+
 void ThreeDViewerInspectorStateTest::tracksMeshColorMode()
 {
     ThreeDViewerInspectorState state;
@@ -63,6 +197,17 @@ void ThreeDViewerInspectorStateTest::tracksMeshColorMode()
     state.setMeshColorMode(int(ThreeDViewerMeshColorMode::None));
 
     QCOMPARE(state.meshColorMode(), int(ThreeDViewerMeshColorMode::None));
+    QCOMPARE(spy.count(), 1);
+}
+
+void ThreeDViewerInspectorStateTest::tracksCenterlineColorMode()
+{
+    ThreeDViewerInspectorState state;
+    QSignalSpy spy(&state, &ThreeDViewerInspectorState::centerlineColorModeChanged);
+
+    QCOMPARE(state.centerlineColorMode(), int(ThreeDViewerCenterlineColorMode::Red));
+    state.setCenterlineColorMode(int(ThreeDViewerCenterlineColorMode::Altitude));
+    QCOMPARE(state.centerlineColorMode(), int(ThreeDViewerCenterlineColorMode::Altitude));
     QCOMPARE(spy.count(), 1);
 }
 
@@ -174,6 +319,121 @@ void ThreeDViewerInspectorStateTest::tracksCameraSettings()
 
     state.setCameraFocalLengthMm(0.0);
     QCOMPARE(state.cameraFocalLengthMm(), 10.0);
+}
+
+void ThreeDViewerInspectorStateTest::loadsCentrelineFromThFile()
+{
+    // Test that computeTherionCentreline creates a ThreeDViewerSceneModel compatible with ThreeDViewerInspectorState
+    const QString hpPath = QDir(QStringLiteral(THERION_STUDIO_TEST_FIXTURE_ROOT))
+        .filePath(QStringLiteral("projects/map_editor_regression/real_cave_raster/data/hp.th"));
+
+    ThreeDViewerTab tab;
+    QString error;
+    QVERIFY(tab.loadFile(hpPath, &error));
+    QVERIFY(error.isEmpty());
+
+    const ThreeDViewerSceneModel &scene = tab.sceneModel();
+    QCOMPARE(scene.stations.size(), 10);
+    QCOMPARE(scene.shots.size(), 9);
+    QVERIFY(scene.meshGroups.isEmpty());
+    QVERIFY(scene.scrapLinework.isEmpty());
+    QVERIFY(scene.scrapPoints.isEmpty());
+    QVERIFY(scene.surfaces.isEmpty());
+    QVERIFY(!scene.stations.first().name.isEmpty());
+}
+
+void ThreeDViewerInspectorStateTest::loadsScrapObjectsWithoutSurfaces()
+{
+    const QString th2Path = QDir(QStringLiteral(THERION_STUDIO_TEST_FIXTURE_ROOT))
+        .filePath(QStringLiteral("projects/map_editor_regression/real_cave_raster/data/clopy01.th2"));
+
+    ThreeDViewerTab tab;
+    QString error;
+    QVERIFY(tab.loadFile(th2Path, &error));
+    QVERIFY(error.isEmpty());
+
+    const ThreeDViewerSceneModel &model = tab.sceneModel();
+    QCOMPARE(model.stations.size(), 10);
+    QCOMPARE(model.shots.size(), 9);
+    QVERIFY(model.bounds().valid);
+    QVERIFY(model.meshGroups.isEmpty());
+    QVERIFY(!model.scrapLinework.isEmpty());
+    for (const ThreeDViewerScrapPolyline &line : model.scrapLinework) {
+        QVERIFY(line.points.size() >= 2);
+        if (line.type == QStringLiteral("wall")) {
+            QCOMPARE(line.strokeWidth, qreal(3.0));
+        } else {
+            QVERIFY(line.strokeWidth < 3.0);
+        }
+    }
+    QVERIFY(model.surfaces.isEmpty());
+    const auto *inspectorState = tab.findChild<ThreeDViewerInspectorState *>();
+    QVERIFY(inspectorState != nullptr);
+    QVERIFY(inspectorState->sceneWarnings().isEmpty());
+}
+
+void ThreeDViewerInspectorStateTest::selectsOnlyRequestedSurveySourceForTh2()
+{
+    QTemporaryDir projectDir;
+    QVERIFY(projectDir.isValid());
+
+    const QString th2Path = QDir(QStringLiteral(THERION_STUDIO_TEST_FIXTURE_ROOT))
+        .filePath(QStringLiteral("projects/map_editor_regression/real_cave_raster/data/clopy01.th2"));
+    const QString sharedTh2Path = projectDir.filePath(QStringLiteral("shared.th2"));
+    QVERIFY(QFile::copy(th2Path, sharedTh2Path));
+
+    const auto writeSurvey = [&projectDir](const QString &fileName, const QString &readings) {
+        QFile file(projectDir.filePath(fileName));
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            return false;
+        }
+        const QByteArray contents = QStringLiteral(
+            "survey hp\n"
+            "  input shared.th2\n"
+            "  centreline\n"
+            "    data normal from to length compass clino\n"
+            "%1"
+            "  endcentreline\n"
+            "endsurvey\n")
+                                        .arg(readings)
+                                        .toUtf8();
+        return file.write(contents) == contents.size();
+    };
+    QVERIFY(writeSurvey(QStringLiteral("source_a.th"),
+                        QStringLiteral("    0 1 10 90 0\n"
+                                       "    1 2 10 90 0\n")));
+    QVERIFY(writeSurvey(QStringLiteral("source_b.th"), QStringLiteral("    0 1 20 90 0\n")));
+
+    const QStringList candidates =
+        ThreeDViewerTab::surveySourceCandidatesForTh2(sharedTh2Path, projectDir.path());
+    QCOMPARE(candidates.size(), 2);
+    QVERIFY(candidates.at(0).endsWith(QStringLiteral("source_a.th")));
+    QVERIFY(candidates.at(1).endsWith(QStringLiteral("source_b.th")));
+
+    ThreeDViewerTab tab;
+    tab.setProjectRootPath(projectDir.path());
+    QString error;
+    QVERIFY(tab.loadFile(sharedTh2Path, candidates.at(1), &error));
+    QVERIFY(error.isEmpty());
+    QCOMPARE(tab.sceneModel().stations.size(), 2);
+    QVERIFY(tab.sceneModel().meshGroups.isEmpty());
+    QVERIFY(!tab.sceneModel().scrapLinework.isEmpty());
+    for (const ThreeDViewerScrapPolyline &line : tab.sceneModel().scrapLinework) {
+        QVERIFY(line.points.size() >= 2);
+    }
+
+    QVERIFY(tab.reloadFile(&error));
+    QVERIFY(error.isEmpty());
+    QCOMPARE(tab.sceneModel().stations.size(), 2);
+
+    QVERIFY(tab.loadFile(sharedTh2Path, candidates.at(0), &error));
+    QVERIFY(error.isEmpty());
+    QCOMPARE(tab.sceneModel().stations.size(), 3);
+    QVERIFY(tab.sceneModel().meshGroups.isEmpty());
+    QVERIFY(!tab.sceneModel().scrapLinework.isEmpty());
+    for (const ThreeDViewerScrapPolyline &line : tab.sceneModel().scrapLinework) {
+        QVERIFY(line.points.size() >= 2);
+    }
 }
 
 int runThreeDViewerInspectorStateTest(int argc, char **argv)

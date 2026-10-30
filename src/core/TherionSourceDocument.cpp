@@ -1,9 +1,61 @@
 #include "TherionSourceDocument.h"
 
+#include <QHashFunctions>
+#include <QMutex>
+#include <QMutexLocker>
+
+#include <deque>
+
 namespace TherionStudio
 {
 namespace
 {
+// Large documents are parsed by many independent components after every edit
+// (highlighter, completion, context help, map projection, planners). The result
+// is a value type built from implicitly shared Qt containers, so a small
+// process-wide memo keyed by content turns repeated parses into cheap copies.
+constexpr qsizetype kParseMemoMinChars = 16 * 1024;
+constexpr std::size_t kParseMemoCapacity = 3;
+
+struct ParseMemoEntry
+{
+    size_t hash = 0;
+    TherionSourceDocumentType sourceType = TherionSourceDocumentType::Unknown;
+    QString encodingName;
+    QString text;
+    TherionSourceDocument document;
+};
+
+QMutex &parseMemoMutex()
+{
+    static QMutex mutex;
+    return mutex;
+}
+
+std::deque<ParseMemoEntry> &parseMemo()
+{
+    static std::deque<ParseMemoEntry> entries;
+    return entries;
+}
+
+const TherionSourceDocument *findParseMemoLocked(const QString &contents,
+                                                 const TherionSourceDocumentMetadata &metadata,
+                                                 size_t hash)
+{
+    auto &entries = parseMemo();
+    for (auto it = entries.begin(); it != entries.end(); ++it) {
+        if (it->hash == hash && it->sourceType == metadata.sourceType && it->encodingName == metadata.encodingName
+            && it->text == contents) {
+            if (it != entries.begin()) {
+                ParseMemoEntry hit = std::move(*it);
+                entries.erase(it);
+                entries.push_front(std::move(hit));
+            }
+            return &entries.front().document;
+        }
+    }
+    return nullptr;
+}
 struct BlockPair
 {
     QString openDirective;
@@ -108,6 +160,42 @@ bool lineInsideCodeBlockIsRawContent(const QString &currentBlockDirective,
 }
 
 TherionSourceDocument TherionSourceDocument::fromText(
+    const QString &contents,
+    const TherionSourceDocumentMetadata &metadata)
+{
+    if (contents.size() < kParseMemoMinChars) {
+        return parseText(contents, metadata);
+    }
+
+    const size_t hash = qHash(contents);
+    {
+        QMutexLocker locker(&parseMemoMutex());
+        if (const TherionSourceDocument *hit = findParseMemoLocked(contents, metadata, hash)) {
+            TherionSourceDocument document = *hit;
+            document.metadata_ = metadata;
+            return document;
+        }
+    }
+
+    TherionSourceDocument document = parseText(contents, metadata);
+    QMutexLocker locker(&parseMemoMutex());
+    if (findParseMemoLocked(contents, metadata, hash) == nullptr) {
+        auto &entries = parseMemo();
+        entries.push_front(ParseMemoEntry{
+            .hash = hash,
+            .sourceType = metadata.sourceType,
+            .encodingName = metadata.encodingName,
+            .text = contents,
+            .document = document,
+        });
+        while (entries.size() > kParseMemoCapacity) {
+            entries.pop_back();
+        }
+    }
+    return document;
+}
+
+TherionSourceDocument TherionSourceDocument::parseText(
     const QString &contents,
     const TherionSourceDocumentMetadata &metadata)
 {

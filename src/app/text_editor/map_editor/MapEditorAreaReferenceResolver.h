@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QHash>
 #include <QSet>
 #include <QString>
 #include <QVector>
@@ -24,4 +25,8 @@ QVector<MapEditorAreaReference> mapEditorAreaReferencesForBorderLine(const QVect
                                                                      int borderLineNumber);
 QVector<MapEditorAreaReference> mapEditorAreaReferencesForBorderLine(const Th2GeometryProjection &projection,
                                                                      int borderLineNumber);
+// Whole-document indexes for callers that need references for many lines (linear instead of per-line rescans).
+QHash<int, QVector<MapEditorAreaReference>> mapEditorAreaReferencesByBorderLine(
+    const QVector<TherionSourceLogicalCommand> &commands);
+QHash<int, QVector<MapEditorAreaReference>> mapEditorAreaReferencesByBorderLine(const Th2GeometryProjection &projection);
 }

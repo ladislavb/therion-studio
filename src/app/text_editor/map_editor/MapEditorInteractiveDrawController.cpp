@@ -343,9 +343,23 @@ bool MapEditorInteractiveDrawController::handleInteractiveDrawClick(const QPoint
         TherionDraftObjectOptions objectOptions = draftObjectOptionsFor(context_, QStringLiteral("point"));
         QPointF sourcePoint = context_.sourcePointFromScenePosition(scenePosition);
         if (objectOptions.type.trimmed().compare(QStringLiteral("station"), Qt::CaseInsensitive) == 0
-            && context_.xviStationSnapAtScenePosition) {
-            if (const std::optional<MapEditorXviStationSnapCandidate> snap =
-                    context_.xviStationSnapAtScenePosition(scenePosition)) {
+            && context_.xviStationSnapsAtScenePosition) {
+            const QVector<MapEditorXviStationSnapCandidate> snaps =
+                context_.xviStationSnapsAtScenePosition(scenePosition);
+            std::optional<MapEditorXviStationSnapCandidate> snap;
+            if (snaps.size() == 1) {
+                snap = snaps.constFirst();
+            } else if (snaps.size() > 1) {
+                snap = context_.chooseXviStationSnap ? context_.chooseXviStationSnap(snaps, scenePosition)
+                                                     : std::nullopt;
+                if (!snap.has_value()) {
+                    (*context_.toolbarStatusNote) = tr("Station insert cancelled: %1 XVI stations are near the click.")
+                                                        .arg(snaps.size());
+                    context_.refreshToolbarSummary();
+                    return true;
+                }
+            }
+            if (snap.has_value()) {
                 sourcePoint = context_.sourcePointFromScenePosition(snap->scenePosition);
                 objectOptions.name = snap->name;
                 objectOptions.nameEnabled = true;

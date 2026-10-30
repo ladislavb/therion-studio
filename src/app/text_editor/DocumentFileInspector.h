@@ -29,6 +29,7 @@ public:
     explicit DocumentFileInspector(DocumentFileInspectorContext context, QWidget *parent = nullptr);
 
     void refresh();
+    void setBackupWidget(QWidget *widget);
 
 protected:
     void changeEvent(QEvent *event) override;

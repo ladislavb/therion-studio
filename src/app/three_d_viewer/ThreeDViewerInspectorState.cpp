@@ -66,6 +66,21 @@ void ThreeDViewerInspectorState::setFilePath(const QString &filePath)
     emit filePathChanged();
 }
 
+QStringList ThreeDViewerInspectorState::sceneWarnings() const
+{
+    return sceneWarnings_;
+}
+
+void ThreeDViewerInspectorState::setSceneWarnings(const QStringList &sceneWarnings)
+{
+    if (sceneWarnings_ == sceneWarnings) {
+        return;
+    }
+
+    sceneWarnings_ = sceneWarnings;
+    emit sceneWarningsChanged();
+}
+
 int ThreeDViewerInspectorState::meshColorMode() const
 {
     return int(meshColorMode_);
@@ -82,6 +97,24 @@ void ThreeDViewerInspectorState::setMeshColorMode(int meshColorMode)
 
     meshColorMode_ = newMode;
     emit meshColorModeChanged();
+}
+
+int ThreeDViewerInspectorState::centerlineColorMode() const
+{
+    return int(centerlineColorMode_);
+}
+
+void ThreeDViewerInspectorState::setCenterlineColorMode(int centerlineColorMode)
+{
+    const auto newMode = centerlineColorMode == int(ThreeDViewerCenterlineColorMode::Altitude)
+        ? ThreeDViewerCenterlineColorMode::Altitude
+        : ThreeDViewerCenterlineColorMode::Red;
+    if (centerlineColorMode_ == newMode) {
+        return;
+    }
+
+    centerlineColorMode_ = newMode;
+    emit centerlineColorModeChanged();
 }
 
 int ThreeDViewerInspectorState::backgroundMode() const

@@ -1,5 +1,8 @@
 #pragma once
 
+#include "MapEditorAltitudeUnderlay.h"
+#include "../../../core/MapAppearanceSettings.h"
+
 #include <QColor>
 #include <QString>
 #include <QStringList>
@@ -27,6 +30,7 @@
 #include "MapEditorObjectDetailsLogic.h"
 #include "MapEditorObjectStyleCatalog.h"
 #include "MapEditorSceneGeneration.h"
+#include "MapEditorSceneInteractionIndex.h"
 #include "MapEditorSmartAreaPlanner.h"
 #include "MapEditorUndoArbitrationService.h"
 #include "../../../core/CommandCatalogStore.h"
@@ -139,10 +143,14 @@ public:
     bool isDirty() const;
     int currentLineNumber() const;
     QString text() const;
+    QSet<int> hiddenObjectLines() const;
     QString statusPathText() const;
     QString statusEncodingText() const;
     QString statusModeText() const;
     QString statusHintText() const;
+    void setAltitudeUnderlayData(bool enabled, const ProjectIndexSnapshot &index,
+                                const ScrapAltitudeStations &stations);
+    void setMapAppearance(const MapAppearanceSettings &appearance);
     int zoomPercent() const;
     MapEditorUndoOwner nextUndoOwner() const;
     MapEditorUndoOwner nextRedoOwner() const;
@@ -206,6 +214,10 @@ public:
     bool testHasMapSceneItemForLine(int lineNumber) const
     {
         return mapItemsByLine_.contains(lineNumber);
+    }
+    void testRefreshMapScene()
+    {
+        refreshMapScene();
     }
 #endif
     void setMagnifierEnabled(bool enabled);
@@ -560,6 +572,9 @@ private:
     void scheduleMagnifierOverlayUpdateFromViewportPosition(const QPoint &viewportPosition);
     void refreshVisibleMagnifierOverlay();
     void hideMagnifierOverlay();
+    void scheduleViewportHoverUpdate(const QPoint &viewportPosition);
+    void flushPendingViewportHoverUpdate();
+    void cancelPendingViewportHoverUpdate();
     QString magnifierCoordinateTextForScenePosition(const QPointF &scenePosition) const;
     QRectF mapGeometryFitBounds() const;
     QRectF mapBackgroundFitBounds() const;
@@ -605,7 +620,10 @@ private:
     QPointF backgroundLayerPivotScenePosition(QGraphicsPixmapItem *item) const;
     void restoreBackgroundLayerPivotScenePosition(QGraphicsPixmapItem *item,
                                                   const QPointF &pivotScenePosition);
-    std::optional<MapEditorXviStationSnapCandidate> xviStationSnapAtScenePosition(const QPointF &scenePosition) const;
+    QVector<MapEditorXviStationSnapCandidate> xviStationSnapsAtScenePosition(const QPointF &scenePosition) const;
+    std::optional<MapEditorXviStationSnapCandidate> chooseXviStationSnap(
+        const QVector<MapEditorXviStationSnapCandidate> &snaps,
+        const QPointF &scenePosition);
     void refreshBackgroundPivotMarkerVisibility();
     void setSelectedBackgroundLayerPivotAtScenePosition(const QPointF &scenePosition);
     void cancelBackgroundPivotPickMode();
@@ -685,6 +703,10 @@ private:
     void refreshWorkspaceModeUi();
     MapEditorInspectorObjectContext inspectorObjectContext();
     void rebuildInspectorObjectsTree();
+    // Defers the (expensive) objects tree rebuild until the scene refresh has been painted.
+    // Anything that maps a source line to a tree row calls flushDeferredInspectorTreeRebuild() first.
+    void scheduleInspectorObjectsTreeRebuild();
+    void flushDeferredInspectorTreeRebuild();
     QModelIndex findInspectorObjectIndexForLine(int lineNumber) const;
     void syncInspectorObjectSelectionToLine(int lineNumber);
     void syncInspectorObjectSelectionToLine(int lineNumber, bool scrollToSelection);
@@ -698,6 +720,10 @@ private:
     void setObjectsInspectorAutoCollapseExpandScrapsEnabled(bool enabled);
     std::optional<bool> handleInspectorObjectViewportEvent(QEvent *event);
     void applyInspectorObjectVisibility();
+    void hideAllObjects();
+    void showAllObjects();
+    void selectNextObject();
+    void selectPreviousObject();
     void configureInspectorBackgroundLayerTreeColumns();
     void handleInspectorBackgroundLayerSelectionChanged(const QModelIndex &current);
     void handleInspectorBackgroundLayerClicked(const QModelIndex &index);
@@ -776,9 +802,26 @@ private:
     bool magnifierHasViewportPosition_ = false;
     bool magnifierThrottleActive_ = false;
     bool magnifierEnabled_ = true;
+    QTimer *hoverUpdateTimer_ = nullptr;
+    QPoint pendingHoverViewportPosition_;
+    QElapsedTimer lastHoverUpdateElapsed_;
+    mutable int draftSourceBoundsRevision_ = -1;
+    mutable QRectF draftSourceBoundsPreview_;
+    mutable QRectF draftSourceBounds_;
+    mutable size_t draftSourceBoundsBackgroundKey_ = 0;
     bool mapInspectorCollapsed_ = false;
     int mapInspectorPanelExtent_ = 320;
     QGraphicsScene *mapScene_ = nullptr;
+    int lastInteractionHoverLineNumber_ = 0;
+    quint64 lastInteractionHoverGeneration_ = 0;
+    bool altitudeUnderlayEnabled_ = false;
+    MapAppearanceSettings mapAppearance_;
+    ProjectIndexSnapshot altitudeProjectIndex_;
+    ScrapAltitudeStations altitudeStations_;
+    QString altitudeUnderlayHint_;
+    void refreshAltitudeUnderlay();
+    void refreshXviAltitudeColors();
+    void updateXviAltitudeLegend();
     QWidget *mapPaneContainer_ = nullptr;
     QFrame *mapPaneTopSeparator_ = nullptr;
     QSplitter *mapDetailsSplitter_ = nullptr;
@@ -788,8 +831,21 @@ private:
     int mapInspectorBackgroundTabIndex_ = -1;
     QFrame *mapInspectorLeftEdge_ = nullptr;
     QCheckBox *mapObjectsAutoCollapseExpandScrapsCheck_ = nullptr;
+    QPushButton *mapObjectsHideAllButton_ = nullptr;
+    QPushButton *mapObjectsShowAllButton_ = nullptr;
+    QPushButton *mapObjectsPreviousButton_ = nullptr;
+    QPushButton *mapObjectsNextButton_ = nullptr;
     QTreeView *mapObjectsTree_ = nullptr;
     QStandardItemModel *mapObjectsModel_ = nullptr;
+    QWidget *xviAltitudeLegend_ = nullptr;
+    QLabel *xviAltitudeLegendTitle_ = nullptr;
+    QLabel *xviAltitudeLegendBar_ = nullptr;
+    QWidget *xviAltitudeLegendTicks_ = nullptr;
+    QLabel *xviAltitudeLegendLow_ = nullptr;
+    QLabel *xviAltitudeLegendMiddle_ = nullptr;
+    QLabel *xviAltitudeLegendHigh_ = nullptr;
+    QLabel *xviAltitudeLegendFallback_ = nullptr;
+    QLabel *xviAltitudeLegendScrapFallback_ = nullptr;
     QTreeView *mapBackgroundLayersTree_ = nullptr;
     QStandardItemModel *mapBackgroundLayersModel_ = nullptr;
     QToolButton *mapBackgroundAddButton_ = nullptr;
@@ -830,6 +886,7 @@ private:
     QVector<QGraphicsPixmapItem *> backgroundImageItems_;
     MapEditorBackgroundAssetCache backgroundAssetCache_;
     quint64 backgroundRasterJobGeneration_ = 0;
+    QHash<QGraphicsPixmapItem *, std::optional<qreal>> activeBackgroundGammaJobs_;
     QUndoStack *undoStack_ = nullptr;
     int nextDraftGeometryId_ = 1;
     WorkspaceMode workspaceMode_ = WorkspaceMode::Visual;
@@ -842,6 +899,9 @@ private:
     bool autoFitEnabled_ = true;
     qreal zoomFactor_ = 1.0;
     bool fitBackgroundRequested_ = false;
+    QSize lastResizeFitAvailableSize_;
+    QRectF lastResizeFitGeometryBounds_;
+    bool lastResizeFitIncludedBackground_ = false;
     mutable bool cachedParsedLinesValid_ = false;
     mutable int cachedParsedLinesRevision_ = -1;
     mutable QVector<TherionParsedLine> cachedParsedLines_;
@@ -875,9 +935,13 @@ private:
     QHash<QString, QGraphicsItem *> mapVertexItemsByKey_;
     bool preserveNextSourceDrivenMapRefresh_ = false;
     int preserveMapUndoForSourceRevision_ = 0;
+    quint64 sourceTextChangeSerial_ = 0;
+    quint64 sceneProjectedTextSerial_ = 0;
     bool mapSceneRefreshPending_ = false;
+    bool inspectorTreeRebuildPending_ = false;
     bool mapSceneRefreshWhenVisiblePending_ = false;
     MapEditorSceneGeneration sceneGeneration_;
+    MapEditorSceneInteractionIndex sceneInteractionIndex_;
     quint64 lastCompletedSceneProjectionGeneration_ = 0;
     QTimer *sourceDrivenMapRefreshTimer_ = nullptr;
     DetachedPaneState detachedPaneState_;

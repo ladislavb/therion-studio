@@ -1,6 +1,6 @@
 # Používateľská príručka Therion Studio
 
-Aktualizované: 2026-06-25
+Aktualizované: 2026-10-22
 
 Táto príručka opisuje bežnú prácu v Therion Studio. Zámerne nie je úplnou referenciou jazyka Therion. Syntax Therionu, názvy príkazov, voľby a obsah ukladaný do súborov zostávajú v kanonickej podobe Therionu.
 
@@ -16,6 +16,10 @@ Aplikácia používa jazyk operačného systému, ak je dostupný vstavaný prek
 - [6. Vizuálna editácia máp (`.th2`)](#6-vizuálna-editácia-máp-th2)
 - [7. Spúšťanie Therionu](#7-spúšťanie-therionu)
 - [8. Nastavenia](#8-nastavenia)
+- [Lokálne zálohy a verzovanie](#81-lokálne-zálohy-a-verzovanie)
+- [Prvé nastavenie GitHubu](#82-prvé-nastavenie-githubu)
+- [Odoslanie jedným kliknutím](#83-odoslanie-aktuálneho-projektu-jedným-kliknutím)
+- [Ukončenie a riešenie chýb záloh](#84-ukončenie-výnimky-a-riešenie-chýb)
 - [9. Klávesové skratky](#9-klávesové-skratky)
 - [10. Pomocník a O aplikácii](#10-pomocník-a-o-aplikácii)
 - [11. Riešenie problémov](#11-riešenie-problémov)
@@ -236,6 +240,8 @@ Ak `.th2` nemá XTherion metadata `xth_me_area_adjust`, prvé potvrdené vložen
 
 Existujúce Therion bloky `area ... endarea`, ktoré odkazujú na hranice `line -id ...`, sa vykresľujú z čiar v tom istom scrape. Hraničné čiary môžu byť otvorené; ak ich priesečníky tvoria uzavretú plochu, Therion Studio ju vyplní bez zmeny zdrojového textu referencovaných čiar.
 
+Ak vyplnená plocha prekrýva iný vyberateľný objekt, výber uprednostní bod, čiaru alebo iný objekt v bežnom dosahu výberu. Plochu možno stále vybrať kliknutím do jej voľného vnútra; výplň neblokuje udalosti ukazovateľa pre geometriu pod ňou. Skutočná hraničná čiara plochy zostáva samostatne vyberateľná a použiteľná na prichytávanie.
+
 `Smart Area` vytvára práve túto referenčnú formu plochy namiesto kreslenia novej hraničnej geometrie. Pri potvrdení môže doplniť chýbajúce ID referencovaným hraničným čiaram, aby na ne nový blok `area ... endarea` mohol odkazovať, ale nemení ich geometriu. Po potvrdení sa mapa vráti do režimu výberu. `Esc` náhľad zruší.
 
 Počas vkladania bodov alebo kreslenia čiar a plôch sa vertexy blízkeho objektu zvýraznia ako kandidáti snapu. Aktívny snap cieľ sa zvýrazní výraznejšie; Bezier kontrolné body zostávajú bez snapu.
@@ -332,6 +338,26 @@ Therion Studio negeneruje samostatný metrický grid. Pre referenčnú mriežku 
 
 `Oddeliť mapu` presunie vizuálnu mapu do samostatného okna, napríklad na druhý monitor. `Vrátiť mapu` alebo zatvorenie samostatného okna mapu vráti späť.
 
+### 6.11 Náhľad 3D
+
+Otvorenie 3D z mapy preberá aktuálny obsah TH2 vrátane neuložených zmien
+a viditeľnosť z panela **Objekty**. Zobrazia sa len neskryté scrapy a ich
+neskryté čiary a body; scrapy z ostatných TH2 súborov projektu sa nepridávajú.
+Skryté značky staníc zostávajú kotvami pre správne umiestnenie stien.
+Polygón naďalej pochádza z vybraného meračského zdroja.
+
+Plošná výplň chodieb je v 3D vypnutá. Všetky `area`, čiary `border`
+(vrátane hraníc oblastí) a `wall:invisible` sa vynechávajú.
+Vrstva **Steny** zahŕňa aj ostatné čiary (`slope` a ďalšie)
+a obrysové značky bodov podľa štýlov TH2.
+Vedľajšie čiary majú najviac 45 % hrúbky základnej steny. Čiarkovanie
+a neviditeľné čiary sa rešpektujú; ozdobné značky pozdĺž čiar sa zatiaľ
+neprenášajú. Body a čiary sa umiestnia podľa kotiev staníc a možno ich
+farbiť podľa výšky alebo štýlu TH2. Podfarbenie v samotnej TH2 mape sa nemení.
+
+Po zmene viditeľnosti sa vráťte do mapy a opäť otvorte 3D. Existujúca
+3D záložka sa aktualizuje bez vytvorenia ďalšej kópie.
+
 ## 7. Spúšťanie Therionu
 
 Panel `Kompilátor` otvoríte v ľavej aktivitnej lište. Popis panelu ho označuje ako miesto na spustenie Therionu pre aktuálny projekt alebo aktívny config.
@@ -362,9 +388,38 @@ Zatvorenie projektu vyčistí `Cieľovú konfiguráciu` a `Náhradný pracovný 
 - `Vymazať výstup`
 - `Kopírovať výstup`
 
+Konzola zobrazuje posledných 10 000 riadkov. `Kopírovať výstup` naďalej kopíruje celý výstup,
+uložený ako protokol UTF-8 v lokálnych dátach aplikácie (`compiler-logs`). Cestu nájdete v pomocnom texte
+po prejdení myšou nad výstupom. Každé okno má vlastný protokol; ďalšia kompilácia alebo `Vymazať výstup`
+vymaže jeho predchádzajúci obsah. Protokoly zostávajú na disku aj po zatvorení okna.
+Chyba vytvorenia či zápisu sa zobrazí; neúplný protokol sa nevydáva za úplný výstup.
+
 Stavový riadok ukazuje stav kompilácie s kompaktným prefixom `C:`: `C: Nečinný`, `C: Beží...`, `C: OK` alebo `C: Zlyhal`.
 
 ## 8. Nastavenia
+
+**Pastelové výškové podfarbenie scrapov** je voliteľné a predvolene vypnuté.
+**Intenzita podfarbenia scrapov** nastavuje nepriehľadnosť **0–100 %**, predvolená
+je **19 %**; nula znamená neviditeľné podfarbenie. Platí pre presné aj približné
+obrysy a pre výškové aj kategorické farby. Vypnutie podfarbenia hodnotu zachová.
+
+**Farba polygónu XVI** otvorí výber farby vrátane priehľadnosti.
+Režim **Podľa výšky** používa jednoznačne priradené výšky koncových staníc LOX,
+relatívne k označenému vchodu, nie absolútne nadmorské výšky. Legenda uvádza
+počty výškovo zafarbených úsekov a úsekov v náhradnej farbe aj dôvod chýbajúcich dát.
+Viac výstupov LOX sa nevyberá náhodne; je potrebný jednoznačný výstup.
+Meračské čiary TH2 nie sú podklady XVI a toto nastavenie ich nefarbí.
+Priblíženie mapy kolieskom, gestom či akciami dosahuje **20 000 %**; minimum ručného
+zoomu zostáva **10 %**, vrátane oddeleného okna a zachovania kotvy pod kurzorom.
+**Hrúbka polygónu XVI** umožňuje **0,1–12 px**, predvolená je **1,8 px** a
+farba RGBA **18, 44, 88, 130**. Menia sa iba spojnice staníc polygónu XVI,
+nie obrysy/výplne chodieb LRUD, priečne zámery, mriežka, skice, značky staníc
+ani iné vrstvy. Šírka je v pixeloch, nie v mapových jednotkách; pri oddialení
+sa zachováva doterajšie stenčenie.
+
+Potvrdenie **OK** uloží tieto hodnoty a ihneď ich použije vo všetkých otvorených
+mapách vrátane oddelených okien, bez zmeny dokumentu či histórie späť.
+**Zrušiť** zmeny zahodí.
 
 Nastavenia otvoríte cez `Súbor -> Nastavenia...` alebo `Nastavenia...` v natívnom macOS menu.
 
@@ -373,6 +428,186 @@ Nastavenia obsahujú:
 - jazyk aplikácie (`Podľa systému`, `Angličtina`, `Čeština`, `Slovenčina`),
 - cestu k spustiteľnému súboru Therion,
 - východiskový editor pre novo otvorené `.th` a Therion config záložky (`Zdroj` alebo `Bloky`).
+
+### 8.1 Lokálne zálohy a verzovanie
+
+Táto časť je pre používateľa, ktorý zálohovanie nastavuje prvýkrát. Podľa nej
+vytvoríte lokálne kontrolné body a odošlete overenú zálohu projektu na GitHub.
+Lokálna história a GitHub sú samostatné voľby pre každý projekt; zapnutie jednej
+nezapne druhú. Potrebný je Git; na GitHub aj GitHub CLI (`gh`), účet a internet.
+Chýbajúce nástroje nainštalujte podľa oficiálnych pokynov pre svoj systém:
+[Git](https://git-scm.com/downloads) a [GitHub CLI](https://cli.github.com/).
+
+Pre aktuálny projekt otvorte **Súbor → Nastavenia → Zálohy a verzovanie**.
+Ak je otvorený iba samostatný súbor, najprv vyberte koreňový priečinok cez
+**Súbor → Otvoriť projekt**. Na karte skontrolujte zobrazenú cestu projektu
+a výnimky. Funkcia je pre každý projekt predvolene vypnutá.
+
+Pred zálohovaním použite **Uložiť všetko**. Zapnite **Zapnúť lokálnu históriu
+pre tento projekt** a potvrďte dialóg; vytvorí sa prvý kontrolný bod z uložených
+súborov. Ďalšie zmeny uložíte tlačidlom **Vytvoriť kontrolný bod**. Ak sa
+zahrnuté súbory nezmenili, duplicitný kontrolný bod nevznikne. Tabuľka
+zobrazuje čas, označenie a ID; **Obnoviť zoznam** znovu načíta históriu.
+
+Pre pravidelné zálohovanie zapnite **Vytvárať kontrolné body automaticky**
+a nastavte interval **Kontrolovať zmeny každých** (1–1440 minút, predvolene
+5 minút). Automatické zálohovanie je predvolene vypnuté a neplánuje odosielanie
+na GitHub. Kontrola beží na
+pozadí počas otvorenia projektu, aj keď nastavenia zatvoríte. Kontrolný bod
+vznikne iba pri rozdiele v zahrnutých uložených súboroch; zmena ignorovaného
+exportu nestačí. Neuložené zmeny v editore sa nezálohujú. Po zatvorení
+projektu sa kontroly zastavia; nastavenia sa zachovajú pre jeho ďalšie otvorenie.
+Výsledok alebo chybu kontroly nájdete v stavovom riadku; zoznam na karte
+aktualizujete cez **Obnoviť zoznam**.
+
+Sekcia **Projektový .gitignore** načíta súbor z koreňa projektu. Upravte
+pravidlá a použite **Uložiť .gitignore**; toto mení skutočný projektový súbor
+a pravidlá aj pre ostatné Git nástroje. **Znovu načítať .gitignore** zahodí
+neuložený text editora a načíta aktuálny obsah z disku. Ak súbor medzičasom
+zmenil iný program, uloženie sa odmietne, aby sa jeho zmeny neprepísali.
+Vnorené `.gitignore` sa tu neupravujú, ale naďalej platia. Nové výnimky
+ovplyvnia ďalšie kontrolné body; z minulých bodov súbory neodstránia.
+
+Tieto ovládacie prvky sa používajú **ihneď**, nezávisle od tlačidiel **OK**
+a **Zrušiť** vo všeobecných nastaveniach. Vypnutím histórie zostanú kontrolné
+body zachované, aj po opätovnom otvorení nastavení. Zobrazené úložisko je
+mimo projektu a nemení jeho existujúci Git repozitár. Na počítači musí byť
+nainštalovaný Git; chyby vytvorenia sa zobrazia na karte.
+
+Platia projektové pravidlá `.gitignore` a predvolené výnimky pre priečinky
+`output/`, `outputs/`, exporty `.3d`, `.lox`, `.plt` a metadáta Gitu.
+Lokálna história nie je šifrovaná. Kontrolný bod pred kompiláciou zatiaľ
+nie je dostupný.
+Vnorené Git repozitáre zatiaľ nie sú podporované; pri chybe ich zálohujte
+ako samostatné projekty alebo ich priečinky vylúčte cez projektový `.gitignore`.
+
+Tlačidlo **Odstrániť lokálnu históriu...** po samostatnom potvrdení natrvalo
+odstráni všetky miestne kontrolné body tohto projektu a vypne lokálnu históriu,
+aby sa okamžite nevytvorila znova. Súbory projektu ani jeho `.git` sa nemenia.
+Operáciu nemožno vrátiť späť; nejde o návrat projektu na staršiu verziu.
+Ak práve beží checkpoint, počkajte na dokončenie a odstránenie zopakujte.
+Opätovným zapnutím histórie môžete začať od nového kontrolného bodu.
+
+V pravom bočnom paneli na karte **Súbor** je sekcia **Zálohy a obnova** s malými
+ikonami, popismi a stavom aktuálnej zálohy. Zálohy platia pre celý projekt,
+nie iba pre zobrazený súbor; sú oddelené od bežného kroku späť pri editovaní.
+**Staršia** a **Novšia** vracajú celý projekt
+medzi kontrolnými bodmi; **Vybrať zálohu** zobrazí dátum, čas, označenie a ID
+jednotlivých bodov. Označená položka je aktuálne obnovená verzia. Ponuka obsahuje
+aj vstup do nastavení. Tlačidlo **Nastavenia záloh...** otvorí priamo kartu
+**Zálohy a verzovanie**. Podkarty **Lokálne zálohy**, **GitHub** a
+**Vylúčené súbory (.gitignore)** oddeľujú ovládanie bez rolovania celej stránky.
+Rolujú sa iba dlhé zoznamy histórie a obsah editora súboru.
+Ak je história vypnutá, navigácia nie je aktívna.
+
+Pred obnovením potvrďte vybraný bod. Aplikácia najprv uloží zmeny otvorených
+editorov a vytvorí záchranný kontrolný bod aktuálneho projektu. Ak uloženie alebo
+checkpoint zlyhá, obnova sa nezačne. Zahrnuté súbory sa nahradia presnými bajtmi
+zo zálohy; zahrnuté novšie súbory, ktoré v zálohe neboli, sa odstránia. Ignorované
+súbory a `.git` sa nemenia. Otvorené editory sa znovu načítajú; karty odstránených
+súborov sa zavrú. Počas obnovy je úprava projektu zablokovaná. Najprv ukončite
+kompiláciu a neupravujte rovnaký projekt v inej aplikácii ani inom okne.
+
+Po úspechu sa zobrazí okno **Projekt obnovený** s tlačidlom **OK**. Obsahuje
+obnovenú verziu, počty pridaných, zmenených a odstránených súborov oproti stavu
+pred obnovou a ID záchranného bodu; **Podrobnosti** obsahujú názvy súborov.
+Záchranný bod je dostupný cez **Vybrať zálohu**, takže sa môžete vrátiť aj
+k práci, ktorá pred obnovou ešte nebola uložená. Bežné Undo editora je od tejto
+histórie nezávislé.
+
+Obnova pri chybe zápisu skúsi vrátiť už zmenené súbory späť a nahlási prípadnú
+neúplnú obnovu. Po prerušení aplikácie zostane záznam so záchranným ID; najprv
+obnovte tento bod, až potom pokračujte v zálohovaní. Symbolické odkazy,
+vnorené repozitáre, kolízie súbor/priečinok a prepísanie teraz ignorovaného
+súboru obnova bezpečne odmietne. Prázdne priečinky sa neverzujú.
+
+### 8.2 Prvé nastavenie GitHubu
+
+**Súkromný neznamená šifrovaný.** GitHub a osoby s prístupom do repozitára môžu
+čítať odoslané súbory. Pre jaskyniarsky projekt použite samostatný súkromný
+repozitár, nikdy repozitár zdrojového kódu aplikácie Therion Studio.
+
+1. Otvorte celý projekt cez **Súbor → Otvoriť projekt**. Skontrolujte, či koreňový
+   priečinok obsahuje všetky požadované vstupy; súbory mimo neho sa nezálohujú.
+2. Otvorte **Súbor → Nastavenia → Zálohy a verzovanie → GitHub**. Ak chýba Git
+   alebo GitHub CLI (`gh`), nainštalujte ho a nastavenia otvorte znova.
+3. Použite **Prihlásiť cez prehliadač...** a postupujte podľa zobrazeného kódu.
+   Existujúce prihlásenie skontrolujte cez **Overiť účet GitHub**. Kontrola účtu
+   vyžaduje prihlasovacie údaje v systémovej kľúčenke, nie token zo súboru či prostredia.
+4. Vyplňte samostatne vlastníka (účet alebo organizáciu) a názov repozitára,
+   nie URL. Potvrďte **Vytvoriť súkromný repozitár...**, alebo zadajte už
+   existujúci samostatný prázdny súkromný repozitár a použite **Overiť repozitár**.
+   Nevytvárajte v ňom README, licenciu ani iné súbory: prvé odoslanie odmietne
+   existujúce vetvy aj tagy. Predvolený náhodný názov neprezrádza názov jaskyne.
+5. Pred odoslaním skontrolujte **Vylúčené súbory (.gitignore)**. Potom zapnite
+   **Povoliť nešifrované zálohy do tohto súkromného repozitára** a potvrďte
+   upozornenie. **Samotné prihlásenie ani overenie repozitára odosielanie nepovolí.**
+6. Zatvorte nastavenia a kliknite na hornú ikonu **GitHub**, čím odošlete prvú
+   zálohu. Samotné nastavenie súbory neodosiela.
+
+Vlastník, repozitár a voľby zálohovania sa ukladajú do projektu a načítajú sa
+pri ďalšom otvorení jeho nastavení. Prihlasovacie údaje zostávajú v kľúčenke
+počítača. Tieto voľby sa ukladajú ihneď, aj pri zatvorení cez **Zrušiť**;
+ďalšie odosielanie zastavíte vypnutím príslušnej voľby. Neplatná alebo externe
+zmenená konfigurácia sa neprepíše potichu.
+
+Samotné otvorenie projektu nekontaktuje GitHub. Otvorenie podkarty **GitHub**
+s uloženým cieľom automaticky overí prihlásenie a súkromný repozitár.
+**Overiť účet GitHub** zopakuje obe kontroly. Repozitár sa nikdy nevytvára
+automaticky. Ak vytváranie skončí časovým limitom, pred opakovaním použite
+**Overiť repozitár**.
+
+### 8.3 Odoslanie aktuálneho projektu jedným kliknutím
+
+Kliknite na ikonu **GitHub** vedľa **Uložiť** na hornej lište. Rovnakú akciu
+má malé tlačidlo **GitHub** pri nastaveniach záloh v pravom paneli **Súbor**.
+Najprv počkajte na dokončenie kompilácie alebo obnovy.
+
+Akcia uloží zmenené otvorené dokumenty, overí existujúce prihlásenie, súkromie
+repozitára a oprávnenie zapisovať, potom odošle zahrnuté uložené súbory projektu.
+Nový neuložený dokument môže ešte vyžadovať výber miesta uloženia; pri chybe
+uloženia sa odosielanie zastaví. Inak netreba opakované prihlásenie, klikanie
+na overenie ani dialóg commitu. Použije sa automatický text s UTC časom.
+
+Po potvrdení vzdialeného commitu spodný stavový riadok zobrazí **GitHub OK -
+projekt odoslaný** s ID commitu, alebo **GitHub OK - projekt je aktuálny**, ak
+nie sú nové zmeny. Netreba zatvárať okno úspechu. Lokálna história kontrolných
+a záchranných bodov sa neodosiela a existujúci projektový Git sa nemení.
+
+Pri neúplnom nastavení akcia vysvetlí potrebné kroky a otvorí priamo podkartu
+**GitHub** v nastaveniach. Chyba odoslania zobrazí hlásenie a otvorí tú istú
+podkartu; pri úspechu sa nastavenia neotvárajú.
+
+Ide o jednosmernú zálohu do vzdialenej vetvy `main`, nie sťahovanie, zlučovanie
+ani synchronizáciu viacerých počítačov. Ďalšie odoslanie do existujúceho cieľa
+je povolené iba pri zhode vetvy s poslednou potvrdenou zálohou z tohto počítača.
+Používajte rovnaké umiestnenie projektu na tomto počítači; presun projektu ani
+iný počítač neprenesie lokálny stav odosielania.
+
+### 8.4 Ukončenie, výnimky a riešenie chýb
+
+Zapnite **Pred ukončením sa opýtať, ak uložené zmeny projektu neboli odoslané**,
+ak chcete pri neodoslaných zmenách ponuku **Odoslať a ukončiť**, **Ukončiť bez
+odoslania** alebo **Zrušiť**. Kontrola zmien je lokálna, bez spojenia s GitHubom.
+Najprv prebehne bežné uloženie alebo zahodenie zmien editorov; zahodené zmeny sa
+neodošlú. **Odoslať a ukončiť** si na rozdiel od hornej ikony vypýta text commitu.
+Zlyhanie či zrušenie odoslania nechá aplikáciu otvorenú. Ak zlyhá lokálna kontrola,
+samostatné upozornenie sa opýta, či chcete ukončiť aplikáciu bez zálohy.
+
+Platia projektové `.gitignore` a predvolené výnimky `output/`, `outputs/`,
+`*.3d`, `*.lox`, `*.plt` a metadáta Gitu. Ostatné exporty a citlivé vstupy vylúčte
+**pred prvým odoslaním**. Neskoršia výnimka už odoslané dáta z histórie GitHubu
+neodstráni. Šifrovanie, obnova z GitHubu a synchronizácia počítačov nie sú dostupné.
+
+| Čo sa zobrazí | Čo urobiť |
+|---|---|
+| Nastavenia sa otvoria, hoci ste prihlásený | Skontrolujte koreň projektu, vlastníka, repozitár a samostatnú voľbu nešifrovaných záloh. Prihlásenie nie je nastavenie projektu. |
+| Zlyhá kontrola účtu alebo oprávnení | V otvorených nastaveniach GitHubu overte účet alebo sa prihláste znova. Skontrolujte právo zapisovať, súkromie a internet. Verejný repozitár sa neprijme. |
+| Prvé odoslanie odmietne neprázdny repozitár | Vyberte samostatný prázdny súkromný repozitár, nie repozitár aplikácie. Nemažte existujúci repozitár na obídenie kontroly. |
+| Konflikt vzdialených zmien alebo identity repozitára | Prestaňte opakovať odosielanie a zachovajte obe kópie. Studio cudzie zmeny neprepisuje ani nezlučuje. Vyriešte konflikt mimo Studia alebo zvoľte nový prázdny súkromný repozitár. |
+| Po chybe siete nie je jasné, či odoslanie prešlo | Obnovte spojenie a zopakujte akciu pre rovnaký projekt a cieľ. Studio najprv skontroluje, či čakajúci commit dorazil na GitHub. |
+| V zálohe chýba zdroj alebo pozadie | Skontrolujte, či je v koreni projektu alebo jeho podpriečinkoch a či ho nevylučujú pravidlá. PDF, SVG a XVI nie sú plošne vylúčené; citlivé vstupy vylúčte sami. |
+| Konfiguráciu projektu zmenil iný program | Pred ďalšou úpravou zatvorte a znova otvorte nastavenia. Neprepisujte cudzie zmeny. |
 
 ## 9. Klávesové skratky
 

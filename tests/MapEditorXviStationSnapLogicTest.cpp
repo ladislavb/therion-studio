@@ -15,6 +15,7 @@ private slots:
     void ignoresStationsOutsideRadius();
     void rejectsAmbiguousNearbyStations();
     void acceptsDuplicateLayerRepresentations();
+    void listsEquatedAliasesNearestFirst();
 };
 
 void MapEditorXviStationSnapLogicTest::selectsSingleNearbyStation()
@@ -56,6 +57,24 @@ void MapEditorXviStationSnapLogicTest::acceptsDuplicateLayerRepresentations()
 
     QVERIFY(snap.has_value());
     QCOMPARE(snap->name, QStringLiteral("12"));
+}
+
+void MapEditorXviStationSnapLogicTest::listsEquatedAliasesNearestFirst()
+{
+    // Jasovska v041: 5109@Jaskyna_Okno and 5109@pripojenie_vchodov share one XVI position.
+    const QVector<MapEditorXviStationSnapCandidate> candidates{
+        {QStringLiteral("149@a"), QPointF(352.0, 296.0), QPointF(50.0, 60.0)},
+        {QStringLiteral("5109@a"), QPointF(358.0, 307.0), QPointF(44.0, 60.0)},
+        {QStringLiteral("5109@b"), QPointF(358.0, 307.0), QPointF(44.0, 60.0)}};
+
+    const QVector<MapEditorXviStationSnapCandidate> nearby =
+        mapEditorNearbyXviStationSnaps(QPointF(43.0, 60.0), candidates, 12.0);
+
+    QCOMPARE(nearby.size(), 3);
+    QCOMPARE(nearby.at(0).name, QStringLiteral("5109@a"));
+    QCOMPARE(nearby.at(1).name, QStringLiteral("5109@b"));
+    QCOMPARE(nearby.at(2).name, QStringLiteral("149@a"));
+    QVERIFY(!mapEditorUniqueXviStationSnap(QPointF(43.0, 60.0), candidates, 12.0).has_value());
 }
 } // namespace
 

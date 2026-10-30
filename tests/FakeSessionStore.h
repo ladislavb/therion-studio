@@ -74,6 +74,17 @@ public:
 
     bool therionMapMagnifierEnabled() const override { return therionMapMagnifierEnabled_; }
     void setTherionMapMagnifierEnabled(bool enabled) override { therionMapMagnifierEnabled_ = enabled; }
+    bool therionMapAltitudeUnderlayEnabled() const override { return therionMapAltitudeUnderlayEnabled_; }
+    void setTherionMapAltitudeUnderlayEnabled(bool enabled) override { therionMapAltitudeUnderlayEnabled_ = enabled; }
+    MapAppearanceSettings therionMapAppearance() const override { return therionMapAppearance_; }
+    void setTherionMapAppearance(const MapAppearanceSettings &appearance) override
+    {
+        if (!appearance.isValid()) {
+            qWarning("Invalid map appearance settings; keeping previous values.");
+            return;
+        }
+        therionMapAppearance_ = appearance;
+    }
 
     bool therionMapObjectsAutoCollapseExpandScrapsEnabled() const override
     {
@@ -116,6 +127,8 @@ private:
     QString therionTargetConfigPath_;
     bool therionMapTouchFriendlyControlsEnabled_ = false;
     bool therionMapMagnifierEnabled_ = true;
+    bool therionMapAltitudeUnderlayEnabled_ = false;
+    MapAppearanceSettings therionMapAppearance_;
     bool therionMapObjectsAutoCollapseExpandScrapsEnabled_ = false;
     QString therionMapRecentInsertTypeSubtypeHistory_;
     QString therionMapBackgroundLayers_;

@@ -665,6 +665,8 @@ void MainWindow::handleStructureSidebarScanFinished(const TherionStudio::Project
             return;
         }
         applyStructureSidebarIndex(result.projectIndex);
+        altitudeProjectIndex_ = result.projectIndex;
+        updateMapAltitudeUnderlays();
     }
 }
 

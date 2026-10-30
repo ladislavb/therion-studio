@@ -1,9 +1,12 @@
 #include "MapEditorSelectionController.h"
+#include "MapEditorSceneItems.h"
 
 #include "../TextEditorTab.h"
 #include "MapEditorAreaReferenceResolver.h"
 #include "MapEditorLineDecorationItem.h"
 #include "MapEditorObjectDetailsLogic.h"
+#include "MapEditorSceneGeneration.h"
+#include "MapEditorSceneInteractionIndex.h"
 #include "MapEditorSceneInternals.h"
 #include "MapEditorSceneSupport.h"
 #include "MapEditorSourceReferenceResolver.h"
@@ -18,6 +21,7 @@
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QScopedValueRollback>
+#include <QSignalBlocker>
 #include <QTransform>
 #include <QWidget>
 
@@ -46,7 +50,7 @@ bool isInteractiveMapSelectionItem(const QGraphicsItem *item)
     if (!(item->flags() & QGraphicsItem::ItemIsSelectable)) {
         return false;
     }
-    if (item->acceptedMouseButtons() == Qt::NoButton) {
+    if (!mapSceneItemParticipatesInPointerSelection(item)) {
         return false;
     }
     return true;
@@ -234,8 +238,10 @@ QGraphicsItem *preferredMapHitItem(const QList<QGraphicsItem *> &hitItems,
                                    const QTransform &viewTransform = QTransform())
 {
     QGraphicsItem *bestItem = nullptr;
+    QGraphicsItem *bestAreaFillItem = nullptr;
     int bestPriority = std::numeric_limits<int>::max();
     qreal bestDistancePixels = std::numeric_limits<qreal>::max();
+    qreal bestAreaFillDistancePixels = std::numeric_limits<qreal>::max();
     bool bestUsesDistanceRanking = false;
     for (QGraphicsItem *item : hitItems) {
         if (!isInteractiveMapSelectionItem(item)) {
@@ -268,6 +274,14 @@ QGraphicsItem *preferredMapHitItem(const QList<QGraphicsItem *> &hitItems,
             }
         }
 
+        if (isMapSceneAreaFillItem(item)) {
+            if (distancePixels < bestAreaFillDistancePixels) {
+                bestAreaFillDistancePixels = distancePixels;
+                bestAreaFillItem = item;
+            }
+            continue;
+        }
+
         const int priority = mapSelectionHitPriority(item);
         const bool betterDistanceRankedPath = usesDistanceRanking
             && ((bestUsesDistanceRanking
@@ -288,7 +302,7 @@ QGraphicsItem *preferredMapHitItem(const QList<QGraphicsItem *> &hitItems,
             }
         }
     }
-    return bestItem;
+    return bestItem != nullptr ? bestItem : bestAreaFillItem;
 }
 
 QList<QGraphicsItem *> expandedMapHitItemsAtScenePosition(QGraphicsScene *scene,
@@ -342,6 +356,7 @@ QGraphicsItem *takePendingPrimarySelectionItem(QGraphicsScene *scene)
     }
 
     QGraphicsItem *pendingPrimaryItem = nullptr;
+    ++mapEditorPerformanceCounters().fullSceneItemScans;
     for (QGraphicsItem *item : scene->items()) {
         if (item == nullptr || !item->data(kMapScenePendingPrimarySelectionRole).toBool()) {
             continue;
@@ -539,26 +554,35 @@ void setSelectedObjectStateForSourceLine(const MapEditorSelectionContext &contex
     }
 }
 
-QSet<int> selectedAreaBorderLineNumbers(const QVector<TherionSourceLogicalCommand> &commands,
-                                        const QSet<int> &selectedLines)
+QHash<int, QSet<int>> areaBorderLineNumbersByArea(
+    const QVector<TherionSourceLogicalCommand> &commands,
+    const std::optional<Th2GeometryProjection> &projection)
 {
-    QSet<int> borderLineNumbers;
-    for (const int selectedLine : selectedLines) {
-        borderLineNumbers.unite(mapEditorBorderLineNumbersForArea(commands, selectedLine));
+    const auto invertReferences = [](const QHash<int, QVector<MapEditorAreaReference>> &references) {
+        QHash<int, QSet<int>> result;
+        for (auto it = references.cbegin(); it != references.cend(); ++it) {
+            for (const MapEditorAreaReference &reference : it.value()) {
+                result[reference.areaLineNumber].insert(it.key());
+            }
+        }
+        return result;
+    };
+    auto result = invertReferences(mapEditorAreaReferencesByBorderLine(commands));
+    if (projection.has_value()) {
+        const auto projected = invertReferences(mapEditorAreaReferencesByBorderLine(projection.value()));
+        for (auto it = projected.cbegin(); it != projected.cend(); ++it) {
+            result.insert(it.key(), it.value());
+        }
     }
-    return borderLineNumbers;
+    return result;
 }
 
-QSet<int> selectedAreaBorderLineNumbers(const Th2GeometryProjection &projection,
-                                        const QVector<TherionSourceLogicalCommand> &commands,
+QSet<int> selectedAreaBorderLineNumbers(const QHash<int, QSet<int>> &bordersByArea,
                                         const QSet<int> &selectedLines)
 {
     QSet<int> borderLineNumbers;
     for (const int selectedLine : selectedLines) {
-        const QSet<int> projectedBorderLines = mapEditorBorderLineNumbersForArea(projection, selectedLine);
-        borderLineNumbers.unite(projectedBorderLines.isEmpty()
-                                    ? mapEditorBorderLineNumbersForArea(commands, selectedLine)
-                                    : projectedBorderLines);
+        borderLineNumbers.unite(bordersByArea.value(selectedLine));
     }
     return borderLineNumbers;
 }
@@ -618,6 +642,7 @@ MapEditableGeometryVertexItem *findGeometryVertexItem(QGraphicsScene *scene,
         return nullptr;
     }
 
+    ++mapEditorPerformanceCounters().fullSceneItemScans;
     const auto items = scene->items();
     for (QGraphicsItem *item : items) {
         auto *vertexItem = dynamic_cast<MapEditableGeometryVertexItem *>(item);
@@ -1147,6 +1172,7 @@ void MapEditorSelectionController::updateGeometrySelectionPresentation()
 
     QSet<int> selectedLines;
     QHash<int, QSet<int>> selectedLineControlOwnersByLine;
+    QSet<int> selectedStationScraps;
     const QList<QGraphicsItem *> selectedItems = context_.scene->selectedItems();
     for (QGraphicsItem *item : selectedItems) {
         if (item == nullptr) {
@@ -1156,6 +1182,10 @@ void MapEditorSelectionController::updateGeometrySelectionPresentation()
         const int lineNumber = item->data(kMapSceneLineNumberRole).toInt();
         if (lineNumber > 0) {
             selectedLines.insert(lineNumber);
+        }
+        const int stationScrapLine = item->data(kMapSceneStationScrapRole).toInt();
+        if (lineNumber > 0 && stationScrapLine > 0) {
+            selectedStationScraps.insert(stationScrapLine);
         }
 
         const int subtype = item->data(kMapSceneSelectionSubtypeRole).toInt();
@@ -1186,20 +1216,43 @@ void MapEditorSelectionController::updateGeometrySelectionPresentation()
         }
     }
     if (context_.logicalSource.logicalCommandsForCurrentDocument) {
-        if (context_.logicalSource.geometryProjectionForCurrentDocument) {
-            selectedLines.unite(selectedAreaBorderLineNumbers(context_.logicalSource.geometryProjectionForCurrentDocument(),
-                                                             context_.logicalSource.logicalCommandsForCurrentDocument(),
-                                                             selectedLines));
-        } else {
-            selectedLines.unite(selectedAreaBorderLineNumbers(context_.logicalSource.logicalCommandsForCurrentDocument(),
-                                                             selectedLines));
-        }
+        const auto projection = context_.logicalSource.geometryProjectionForCurrentDocument
+            ? std::optional<Th2GeometryProjection>(context_.logicalSource.geometryProjectionForCurrentDocument())
+            : std::nullopt;
+        const auto bordersByArea = areaBorderLineNumbersByArea(
+            context_.logicalSource.logicalCommandsForCurrentDocument(), projection);
+        selectedLines.unite(selectedAreaBorderLineNumbers(bordersByArea, selectedLines));
     }
 
-    const auto sceneItems = context_.scene->items();
-    for (QGraphicsItem *item : sceneItems) {
+    MapEditorSceneInteractionIndex *index = context_.sceneInteractionIndex;
+    const bool sceneSettled = context_.sceneGeneration == nullptr || context_.sceneGeneration->isSettled();
+    const quint64 generation = context_.sceneGeneration != nullptr ? context_.sceneGeneration->current() : 0;
+
+    // Other stations of the selected stations' scraps get a secondary
+    // highlight so the user can see which stations belong to that scrap.
+    QSet<int> siblingStationLines;
+    if (!selectedStationScraps.isEmpty()) {
+        if (index != nullptr && sceneSettled) {
+            const QHash<int, QVector<int>> &stationsByScrap = index->stationLinesByScrap(context_.scene, generation);
+            for (const int scrapLine : std::as_const(selectedStationScraps)) {
+                for (const int stationLine : stationsByScrap.value(scrapLine)) {
+                    siblingStationLines.insert(stationLine);
+                }
+            }
+        } else {
+            ++mapEditorPerformanceCounters().fullSceneItemScans;
+            for (QGraphicsItem *item : unsortedSceneItems(context_.scene)) {
+                if (item != nullptr && selectedStationScraps.contains(item->data(kMapSceneStationScrapRole).toInt())) {
+                    siblingStationLines.insert(item->data(kMapSceneLineNumberRole).toInt());
+                }
+            }
+        }
+        siblingStationLines.subtract(selectedLines);
+    }
+
+    const auto updateItemPresentation = [&](QGraphicsItem *item) {
         if (item == nullptr) {
-            continue;
+            return;
         }
         const int lineNumber = item->data(kMapSceneLineNumberRole).toInt();
         const int subtype = item->data(kMapSceneSelectionSubtypeRole).toInt();
@@ -1222,9 +1275,16 @@ void MapEditorSelectionController::updateGeometrySelectionPresentation()
             item->setData(kMapSceneInteractionSelectionRole, visuallySelected);
             item->update();
         }
+        const bool scrapSiblingStation = lineNumber > 0
+            && siblingStationLines.contains(lineNumber)
+            && item->data(kMapSceneStationScrapRole).toInt() > 0;
+        if (item->data(kMapSceneScrapSiblingStationRole).toBool() != scrapSiblingStation) {
+            item->setData(kMapSceneScrapSiblingStationRole, scrapSiblingStation);
+            item->update();
+        }
 
         if (!item->data(kMapSceneSelectionGatedRole).toBool()) {
-            continue;
+            return;
         }
 
         bool visible = lineNumber > 0
@@ -1242,6 +1302,41 @@ void MapEditorSelectionController::updateGeometrySelectionPresentation()
         }
 
         item->setVisible(visible);
+    };
+
+    const int focusedLineNumber = (*context_.selectedObjectKind) == QStringLiteral("line")
+        ? (*context_.selectedObjectLineNumber) : 0;
+    QSet<int> presentedLines = selectedLines;
+    if (focusedLineNumber > 0) {
+        presentedLines.insert(focusedLineNumber);
+    }
+    presentedLines.unite(siblingStationLines);
+    if (index != nullptr && sceneSettled && index->hasSelectionPresentation(context_.scene, generation)) {
+        // Delta update: only lines presented last time or now can change state.
+        QSet<int> affectedLines = presentedLines;
+        affectedLines.unite(index->presentedSelectionLines());
+        const auto &itemsByLine = index->itemsByLine(context_.scene, generation);
+        for (const int lineNumber : std::as_const(affectedLines)) {
+            const auto itemIt = itemsByLine.constFind(lineNumber);
+            if (itemIt == itemsByLine.constEnd()) {
+                continue;
+            }
+            for (QGraphicsItem *item : itemIt.value()) {
+                updateItemPresentation(item);
+            }
+        }
+    } else {
+        ++mapEditorPerformanceCounters().fullSceneItemScans;
+        for (QGraphicsItem *item : unsortedSceneItems(context_.scene)) {
+            updateItemPresentation(item);
+        }
+    }
+    if (index != nullptr) {
+        if (sceneSettled) {
+            index->recordSelectionPresentation(context_.scene, generation, presentedLines);
+        } else {
+            index->invalidate();
+        }
     }
 }
 
@@ -1276,7 +1371,12 @@ void MapEditorSelectionController::selectMapLine(int lineNumber, bool centerOnSe
                                       lineNumber);
         }
         if (centerOnSelection && !(*context_.autoFitEnabled) && context_.view != nullptr) {
-            context_.view->centerOn(selectedItem);
+            const QRectF itemBounds = selectedItem->sceneBoundingRect();
+            if (!itemBounds.isNull() || (itemBounds.x() != 0.0 || itemBounds.y() != 0.0)) {
+                context_.view->centerOn(itemBounds.center());
+            } else {
+                context_.view->centerOn(selectedItem);
+            }
         }
     }
 
@@ -1300,11 +1400,14 @@ void MapEditorSelectionController::selectMapLines(const QSet<int> &lineNumbers, 
     (*context_.selectedLineSegmentStartVertexIndex) = -1;
     (*context_.selectedLineSegmentEndVertexIndex) = -1;
     (*context_.updatingSelection) = true;
+    const QSignalBlocker selectionSignals(context_.scene);
     context_.scene->clearSelection();
 
     QList<int> sortedLines = lineNumbers.values();
     std::sort(sortedLines.begin(), sortedLines.end());
     QGraphicsItem *firstSelectedItem = nullptr;
+    QVector<QGraphicsItem *> selectedItems;
+    QVector<QGraphicsItem *> passageItems;
     const QVector<TherionSourceLogicalCommand> logicalCommands = context_.logicalSource.logicalCommandsForCurrentDocument
         ? context_.logicalSource.logicalCommandsForCurrentDocument()
         : QVector<TherionSourceLogicalCommand>();
@@ -1312,34 +1415,68 @@ void MapEditorSelectionController::selectMapLines(const QSet<int> &lineNumbers, 
     if (context_.logicalSource.geometryProjectionForCurrentDocument) {
         geometryProjection = context_.logicalSource.geometryProjectionForCurrentDocument();
     }
+    const auto bordersByArea = areaBorderLineNumbersByArea(logicalCommands, geometryProjection);
     for (const int lineNumber : std::as_const(sortedLines)) {
         auto selectedItemIt = (*context_.itemsByLine).find(lineNumber);
         if (selectedItemIt == (*context_.itemsByLine).end() || selectedItemIt.value() == nullptr) {
             continue;
         }
-        selectedItemIt.value()->setSelected(true);
+        QGraphicsItem *item = selectedItemIt.value();
+        item->setSelected(true);
+        selectedItems.append(item);
+        const bool isStation = item->data(kMapSceneStationScrapRole).toInt() > 0;
+        if (!isStation) {
+            passageItems.append(item);
+        }
         if (!logicalCommands.isEmpty()) {
-            if (geometryProjection.has_value()) {
-                selectAreaBorderLineItems(context_.scene,
-                                          *context_.itemsByLine,
-                                          geometryProjection.value(),
-                                          logicalCommands,
-                                          lineNumber);
-            } else {
-                selectAreaBorderLineItems(context_.scene, *context_.itemsByLine, logicalCommands, lineNumber);
-            }
+            selectAreaBorderLineItems(context_.scene, *context_.itemsByLine,
+                                      bordersByArea.value(lineNumber));
         }
         if (firstSelectedItem == nullptr) {
-            firstSelectedItem = selectedItemIt.value();
+            firstSelectedItem = item;
         }
     }
 
-    if (centerOnSelection && firstSelectedItem != nullptr && !(*context_.autoFitEnabled) && context_.view != nullptr) {
-        context_.view->centerOn(firstSelectedItem);
+    if (centerOnSelection && !(*context_.autoFitEnabled) && context_.view != nullptr) {
+        const QVector<QGraphicsItem *> &targetItems = !passageItems.isEmpty() ? passageItems : selectedItems;
+        bool hasValidPoint = false;
+        qreal minX = 0.0, maxX = 0.0, minY = 0.0, maxY = 0.0;
+        for (QGraphicsItem *item : targetItems) {
+            if (item == nullptr) {
+                continue;
+            }
+            const QRectF itemBounds = item->sceneBoundingRect();
+            if (itemBounds.isNull() && itemBounds.x() == 0.0 && itemBounds.y() == 0.0) {
+                continue;
+            }
+            const qreal left = std::min(itemBounds.left(), itemBounds.right());
+            const qreal right = std::max(itemBounds.left(), itemBounds.right());
+            const qreal top = std::min(itemBounds.top(), itemBounds.bottom());
+            const qreal bottom = std::max(itemBounds.top(), itemBounds.bottom());
+            if (!hasValidPoint) {
+                minX = left;
+                maxX = right;
+                minY = top;
+                maxY = bottom;
+                hasValidPoint = true;
+            } else {
+                minX = std::min(minX, left);
+                maxX = std::max(maxX, right);
+                minY = std::min(minY, top);
+                maxY = std::max(maxY, bottom);
+            }
+        }
+        if (hasValidPoint) {
+            const QPointF centerPoint((minX + maxX) * 0.5, (minY + maxY) * 0.5);
+            context_.view->centerOn(centerPoint);
+        } else if (firstSelectedItem != nullptr) {
+            context_.view->centerOn(firstSelectedItem);
+        }
     }
 
     (*context_.updatingSelection) = false;
     updateGeometrySelectionPresentation();
+    context_.refreshObjectDetailsPanel();
 }
 
 }

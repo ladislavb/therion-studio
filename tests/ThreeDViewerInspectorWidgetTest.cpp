@@ -15,6 +15,7 @@ class ThreeDViewerInspectorWidgetTest : public QObject
 
 private slots:
     void loadsTheQmlInspectorSurface();
+    void exposesScrapColoringModes();
     void keepsCheckboxTextReadableWithDarkPalette();
 };
 
@@ -26,6 +27,19 @@ void ThreeDViewerInspectorWidgetTest::loadsTheQmlInspectorSurface()
 
     QTRY_COMPARE(widget.status(), QQuickWidget::Ready);
     QVERIFY(widget.rootObject() != nullptr);
+}
+
+void ThreeDViewerInspectorWidgetTest::exposesScrapColoringModes()
+{
+    ThreeDViewerInspectorWidget widget;
+    widget.resize(640, 480);
+    widget.show();
+
+    QTRY_COMPARE(widget.status(), QQuickWidget::Ready);
+    QObject *colorMode = widget.rootObject()->findChild<QObject *>(QStringLiteral("scrapColorModeComboBox"));
+    QVERIFY(colorMode != nullptr);
+    QCOMPARE(colorMode->property("count").toInt(), 2);
+    QCOMPARE(colorMode->property("currentIndex").toInt(), 0);
 }
 
 void ThreeDViewerInspectorWidgetTest::keepsCheckboxTextReadableWithDarkPalette()

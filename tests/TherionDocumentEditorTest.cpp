@@ -3521,10 +3521,83 @@ int runAppendReferencedAreaTest()
 
     return 0;
 }
+
+int runCombinedLineVertexRewriteMatchesSequentialTest()
+{
+    const QString contents = QStringLiteral("scrap s1\r\n"
+                                            "line wall\r\n"
+                                            "  10 20\r\n"
+                                            "  30 40 50 60 70 80 # keep\r\n"
+                                            "  90 100\r\n"
+                                            "endline\r\n"
+                                            "endscrap\r\n");
+    QString errorMessage;
+
+    // Vertices 0, 3 and 4 sit on different rows, so combined edits must equal the sequential result.
+    const QVector<std::pair<int, QPointF>> moves = {
+        {0, QPointF(1.25, 2.5)},
+        {3, QPointF(71.5, 81.5)},
+        {4, QPointF(-9.0, 101.75)},
+    };
+
+    QString sequential = contents;
+    for (const auto &move : moves) {
+        QVector<TherionSourceTextEdit> single;
+        if (!expect(TherionDocumentEditor::lineAreaVertexRewriteEdits(sequential, 2, QStringLiteral("line"),
+                                                                      move.first, move.second, &single, &errorMessage),
+                    "sequential reference rewrite should succeed.")
+            || !expect(TherionDocumentEditor::applySourceTextEdits(&sequential, single, &errorMessage),
+                       "sequential reference edits should apply.")) {
+            return 1;
+        }
+    }
+
+    QVector<TherionSourceTextEdit> combined;
+    if (!expect(TherionDocumentEditor::lineAreaVerticesRewriteEdits(contents, 2, QStringLiteral("line"), moves,
+                                                                    &combined, &errorMessage),
+                "combined rewrite over distinct rows should succeed.")) {
+        return 1;
+    }
+    QString viaCombined = contents;
+    if (!expect(TherionDocumentEditor::applySourceTextEdits(&viaCombined, combined, &errorMessage),
+                "combined edits should apply.")) {
+        return 1;
+    }
+    if (!expect(viaCombined == sequential, "combined edits must produce exactly the sequential text.")) {
+        return 1;
+    }
+    if (!expect(viaCombined.contains(QStringLiteral("# keep")) && viaCombined.count(QStringLiteral("\r\n")) == 7,
+                "combined edits must keep comments and CRLF line endings.")) {
+        return 1;
+    }
+
+    // Two vertices on the same coordinate row overlap, so the combined form must refuse and let callers fall back.
+    const QVector<std::pair<int, QPointF>> sameRow = {
+        {1, QPointF(31.0, 41.0)},
+        {2, QPointF(51.0, 61.0)},
+    };
+    QVector<TherionSourceTextEdit> overlapping;
+    QString overlapError;
+    if (!expect(!TherionDocumentEditor::lineAreaVerticesRewriteEdits(contents, 2, QStringLiteral("line"), sameRow,
+                                                                     &overlapping, &overlapError),
+                "combined rewrite over one shared row must be rejected.")) {
+        return 1;
+    }
+    if (!expect(overlapping.isEmpty(), "rejected combined rewrite must not leak partial edits.")) {
+        return 1;
+    }
+
+    return 0;
+}
 }
 
 int main()
 {
+    const int combinedVertexResult = runCombinedLineVertexRewriteMatchesSequentialTest();
+    if (combinedVertexResult != 0) {
+        return combinedVertexResult;
+    }
+
     const int rewriteResult = runRewritePreservesOtherContentTest();
     if (rewriteResult != 0) {
         return rewriteResult;

@@ -5,6 +5,7 @@
 #include <QSet>
 #include <QHash>
 #include <QJsonObject>
+#include <QFutureWatcher>
 
 #include "../core/CommandCatalogStore.h"
 #include "../core/TherionSourceDocument.h"
@@ -24,6 +25,9 @@ public:
     void reloadPaletteForApplicationAppearance();
     void setSourceDocumentType(TherionSourceDocumentType sourceType);
     void setExternalDiagnostics(const QVector<TherionSourceDiagnostic> &diagnostics);
+    // QSyntaxHighlighter re-formatting emits QTextDocument::contentsChanged even though the
+    // text is unchanged; listeners use this to tell such notifications from real edits.
+    [[nodiscard]] bool applyingFormatsOnly() const { return formatOnlyDepth_ > 0; }
 
 protected:
     void highlightBlock(const QString &text) override;
@@ -34,6 +38,9 @@ private:
     void loadCommandCatalogKeywords();
     void applyValidatorInvalidTokenFormats(const QString &text);
     const TherionSourceValidationResult &cachedValidationResult();
+    void rehighlightFormatsOnly();
+    void startAsyncValidation(int revision);
+    void handleAsyncValidationFinished();
     const QTextCharFormat &validationFormatForSeverity(TherionSourceDiagnosticSeverity severity) const;
 
     QTextCharFormat baseTextFormat_;
@@ -58,6 +65,12 @@ private:
     TherionSourceValidationResult cachedValidationResult_;
     QVector<TherionSourceDiagnostic> externalDiagnostics_;
     int cachedValidationRevision_ = -1;
+    QFutureWatcher<TherionSourceValidationResult> asyncValidationWatcher_;
+    int asyncValidationRevision_ = -1;
+    int asyncValidationGeneration_ = 0;
+    int validationGeneration_ = 0;
+    bool applyingAsyncValidation_ = false;
+    int formatOnlyDepth_ = 0;
     TherionSourceDocumentType sourceDocumentType_ = TherionSourceDocumentType::Unknown;
     CommandCatalogStore catalogStore_;
 };

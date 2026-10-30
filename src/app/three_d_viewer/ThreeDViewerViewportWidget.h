@@ -29,6 +29,7 @@ public:
     void setLayerVisibility(const std::array<bool, 5> &layerVisibility);
     void setFeatureVisibility(const ThreeDViewerLayerListModel::FeatureVisibility &featureVisibility);
     void setMeshColorMode(ThreeDViewerMeshColorMode meshColorMode);
+    void setCenterlineColorMode(ThreeDViewerCenterlineColorMode colorMode);
     void setBackgroundMode(ThreeDViewerBackgroundMode backgroundMode);
     void setMeasurementMode(bool measurementMode);
     void setAutoRotationEnabled(bool autoRotationEnabled);
@@ -61,6 +62,7 @@ private:
     std::array<bool, 5> layerVisibility_ = {true, true, true, true, true};
     ThreeDViewerLayerListModel::FeatureVisibility featureVisibility_;
     ThreeDViewerMeshColorMode meshColorMode_ = ThreeDViewerMeshColorMode::Altitude;
+    ThreeDViewerCenterlineColorMode centerlineColorMode_ = ThreeDViewerCenterlineColorMode::Red;
     ThreeDViewerBackgroundMode backgroundMode_ = ThreeDViewerBackgroundMode::Black;
     bool measurementMode_ = false;
     bool orthographicProjection_ = false;

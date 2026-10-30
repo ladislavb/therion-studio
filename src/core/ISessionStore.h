@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MapAppearanceSettings.h"
+
 #include <QByteArray>
 #include <QDateTime>
 #include <QString>
@@ -68,6 +70,12 @@ public:
 
     virtual bool therionMapMagnifierEnabled() const = 0;
     virtual void setTherionMapMagnifierEnabled(bool enabled) = 0;
+
+    virtual bool therionMapAltitudeUnderlayEnabled() const = 0;
+    virtual void setTherionMapAltitudeUnderlayEnabled(bool enabled) = 0;
+
+    virtual MapAppearanceSettings therionMapAppearance() const = 0;
+    virtual void setTherionMapAppearance(const MapAppearanceSettings &appearance) = 0;
 
     virtual bool therionMapObjectsAutoCollapseExpandScrapsEnabled() const = 0;
     virtual void setTherionMapObjectsAutoCollapseExpandScrapsEnabled(bool enabled) = 0;

@@ -21,6 +21,27 @@ class QKeyEvent;
 class QWheelEvent;
 class QSGNode;
 
+#include "../../core/ThreeDViewerSceneStatistics.h"
+
+#include <QHash>
+#include <QSizeF>
+#include <memory>
+
+namespace TherionStudio
+{
+struct ThreeDViewerPreparedScene
+{
+    ThreeDViewerSceneModel sceneModel;
+    ThreeDViewerBounds bounds;
+    QHash<quint32, int> stationIndexById;
+    QVector<QString> stationQualifiedNames;
+    QVector<QString> stationDisplayLabels;
+    QVector<QSizeF> stationLabelSizes;
+    ThreeDViewerSceneStatistics statistics;
+    bool stationFeatureFiltersActive = false;
+};
+} // namespace TherionStudio
+
 namespace TherionStudio
 {
 
@@ -35,6 +56,7 @@ public:
     void setLayerVisibility(const std::array<bool, 5> &layerVisibility);
     void setFeatureVisibility(const ThreeDViewerLayerListModel::FeatureVisibility &featureVisibility);
     void setMeshColorMode(ThreeDViewerMeshColorMode meshColorMode);
+    void setCenterlineColorMode(ThreeDViewerCenterlineColorMode colorMode);
     void setBackgroundMode(ThreeDViewerBackgroundMode backgroundMode);
     void setMeasurementMode(bool measurementMode);
     void setAutoRotationEnabled(bool autoRotationEnabled);
@@ -69,10 +91,16 @@ signals:
 private:
     struct Snapshot
     {
-        ThreeDViewerSceneModel sceneModel;
+        std::shared_ptr<const ThreeDViewerPreparedScene> preparedScene;
+        const ThreeDViewerSceneModel &sceneModel() const
+        {
+            static const ThreeDViewerSceneModel kEmpty;
+            return preparedScene ? preparedScene->sceneModel : kEmpty;
+        }
         std::array<bool, 5> layerVisibility = {true, true, true, true, true};
         ThreeDViewerLayerListModel::FeatureVisibility featureVisibility;
         ThreeDViewerMeshColorMode meshColorMode = ThreeDViewerMeshColorMode::Altitude;
+        ThreeDViewerCenterlineColorMode centerlineColorMode = ThreeDViewerCenterlineColorMode::Red;
         ThreeDViewerBackgroundMode backgroundMode = ThreeDViewerBackgroundMode::Black;
         bool measurementMode = false;
         bool orthographicProjection = false;
@@ -99,10 +127,11 @@ private:
     void rebuildAutoRotationDeclutterLocks();
 
     mutable QMutex mutex_;
-    ThreeDViewerSceneModel sceneModel_;
+    std::shared_ptr<const ThreeDViewerPreparedScene> preparedScene_;
     std::array<bool, 5> layerVisibility_ = {true, true, true, true, true};
     ThreeDViewerLayerListModel::FeatureVisibility featureVisibility_;
     ThreeDViewerMeshColorMode meshColorMode_ = ThreeDViewerMeshColorMode::Altitude;
+    ThreeDViewerCenterlineColorMode centerlineColorMode_ = ThreeDViewerCenterlineColorMode::Red;
     ThreeDViewerBackgroundMode backgroundMode_ = ThreeDViewerBackgroundMode::Black;
     bool measurementMode_ = false;
     bool orthographicProjection_ = false;

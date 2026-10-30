@@ -31,22 +31,14 @@ bool hasProjectSourceFileName(const QString &filePath)
 QHash<QString, QString> normalizedInMemoryContents(const QHash<QString, QString> &inMemoryContentsByPath)
 {
     QHash<QString, QString> normalizedContents;
-    QVector<QString> originalPaths;
-    originalPaths.reserve(inMemoryContentsByPath.size());
+    QVector<QPair<QString, QString>> normalizedPaths;
+    normalizedPaths.reserve(inMemoryContentsByPath.size());
     for (auto it = inMemoryContentsByPath.constBegin(); it != inMemoryContentsByPath.constEnd(); ++it) {
-        originalPaths.append(it.key());
+        normalizedPaths.append({normalizeProjectSourcePath(it.key()), it.key()});
     }
-    std::sort(originalPaths.begin(), originalPaths.end(), [](const QString &left, const QString &right) {
-        const QString normalizedLeft = normalizeProjectSourcePath(left);
-        const QString normalizedRight = normalizeProjectSourcePath(right);
-        if (normalizedLeft == normalizedRight) {
-            return left < right;
-        }
-        return normalizedLeft < normalizedRight;
-    });
+    std::sort(normalizedPaths.begin(), normalizedPaths.end());
 
-    for (const QString &originalPath : std::as_const(originalPaths)) {
-        const QString normalizedPath = normalizeProjectSourcePath(originalPath);
+    for (const auto &[normalizedPath, originalPath] : std::as_const(normalizedPaths)) {
         if (!normalizedPath.isEmpty()) {
             normalizedContents.insert(normalizedPath, inMemoryContentsByPath.value(originalPath));
         }
@@ -169,18 +161,19 @@ ProjectSourceSnapshot collectProjectSourceSnapshot(const QString &projectRootPat
         ProjectFileDiscovery::collectFiles(normalizedProjectRootPath, [](const QFileInfo &info) {
             return info.isFile() && hasProjectSourceFileName(info.absoluteFilePath());
         });
-    QVector<QString> candidateFilePaths;
+    QVector<QPair<QString, QString>> candidateFilePaths;
     candidateFilePaths.reserve(discoveredFiles.size());
     for (const ProjectDiscoveredFile &file : discoveredFiles) {
-        candidateFilePaths.append(file.filePath);
+        const QString normalizedPath = normalizeProjectSourcePath(file.filePath);
+        candidateFilePaths.append({normalizedPath.toLower(), normalizedPath});
     }
-    std::sort(candidateFilePaths.begin(), candidateFilePaths.end(), [](const QString &left, const QString &right) {
-        return normalizeProjectSourcePath(left).toLower() < normalizeProjectSourcePath(right).toLower();
+    std::sort(candidateFilePaths.begin(), candidateFilePaths.end(), [](const auto &left, const auto &right) {
+        return left.first < right.first;
     });
 
     QSet<QString> collectedPaths;
-    for (const QString &candidateFilePath : std::as_const(candidateFilePaths)) {
-        const QString normalizedPath = normalizeProjectSourcePath(candidateFilePath);
+    for (const auto &candidateFilePath : std::as_const(candidateFilePaths)) {
+        const QString &normalizedPath = candidateFilePath.second;
         if (normalizedPath.isEmpty() || collectedPaths.contains(normalizedPath)) {
             continue;
         }

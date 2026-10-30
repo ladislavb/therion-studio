@@ -3,6 +3,66 @@
 <TS version="2.1" language="sk_SK">
 <context>
     <name>MainWindow</name>
+    <message><source>Compiler log error (%1): %2</source><translation>Chyba protokolu kompilácie (%1): %2</translation></message>
+    <message><source>Preview: last 10,000 lines. Complete output: %1</source><translation>Náhľad: posledných 10 000 riadkov. Úplný výstup: %1</translation></message>
+    <message><source>Copy the complete compiler output, including lines no longer in the preview.</source><translation>Skopírovať úplný výstup kompilácie vrátane riadkov, ktoré už nie sú v náhľade.</translation></message>
+    <message><source>Restore project</source><translation>Obnoviť projekt</translation></message>
+    <message><source>Stop compilation before restoring a project backup.</source><translation>Pred obnovením zálohy projektu zastavte kompiláciu.</translation></message>
+    <message><source>Local history is disabled or busy. Wait and try again.</source><translation>Lokálna história je vypnutá alebo zaneprázdnená. Počkajte a skúste to znova.</translation></message>
+    <message><source>Restore this project backup?
+%1
+
+Current editor changes will be saved first, then a safety checkpoint will be created. Included project files will be replaced; files absent from the backup will be removed. Ignored exports and the project's Git repository are left untouched.</source><translation>Obnoviť túto zálohu projektu?
+%1
+
+Najprv sa uložia aktuálne zmeny v editoroch a vytvorí sa záchranný kontrolný bod. Zahrnuté súbory projektu sa nahradia; súbory, ktoré v zálohe neboli, sa odstránia. Ignorované exporty a Git repozitár projektu zostanú nezmenené.</translation></message>
+    <message><source>Saving a safety checkpoint and restoring project files...</source><translation>Ukladanie záchranného kontrolného bodu a obnova súborov projektu...</translation></message>
+    <message><source>Project restore failed:
+%1
+
+Safety checkpoint: %2</source><translation>Obnova projektu zlyhala:
+%1
+
+Záchranný kontrolný bod: %2</translation></message>
+    <message><source>Not created</source><translation>Nevytvorený</translation></message>
+    <message><source>Added: %1</source><translation>Pridané: %1</translation></message>
+    <message><source>Changed: %1</source><translation>Zmenené: %1</translation></message>
+    <message><source>Removed: %1</source><translation>Odstránené: %1</translation></message>
+    <message><source>Restored backup:
+%1
+
+Compared with the project before restore:
+Added: %2 file(s)
+Changed: %3 file(s)
+Removed: %4 file(s)
+
+Previous project saved in safety checkpoint: %5
+Use Newer or Choose backup to return to it.</source><translation>Obnovená záloha:
+%1
+
+Porovnanie s projektom pred obnovou:
+Pridané súbory: %2
+Zmenené súbory: %3
+Odstránené súbory: %4
+
+Predchádzajúci projekt je uložený v záchrannom kontrolnom bode: %5
+Na návrat použite Novšia alebo Vybrať zálohu.</translation></message>
+    <message><source>
+
+Some open views could not be reloaded. See details.</source><translation>
+
+Niektoré otvorené zobrazenia sa nepodarilo znovu načítať. Pozrite podrobnosti.</translation></message>
+    <message><source>Project restored</source><translation>Projekt obnovený</translation></message>
+    <message><source>Could not close the removed file: %1</source><translation>Nepodarilo sa zavrieť odstránený súbor: %1</translation></message>
+    <message><source>Could not reload %1: %2</source><translation>Nepodarilo sa znovu načítať %1: %2</translation></message>
+    <message>
+        <source>Automatic local history check completed.</source>
+        <translation>Automatická kontrola lokálnej histórie je dokončená.</translation>
+    </message>
+    <message>
+        <source>Automatic local history error: %1</source>
+        <translation>Chyba automatickej lokálnej histórie: %1</translation>
+    </message>
     <message>
         <location filename="../src/app/MainWindow.cpp" line="403"/>
         <location filename="../src/app/MainWindow.cpp" line="860"/>
@@ -220,6 +280,16 @@
         <location filename="../src/app/MainWindowWorkspaceCommandBar.cpp" line="386"/>
         <source>Separate Map</source>
         <translation>Oddeliť mapu</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowWorkspaceCommandBar.cpp" line="388"/>
+        <source>3D View</source>
+        <translation>3D pohľad</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowWorkspaceCommandBar.cpp" line="390"/>
+        <source>Open scrap and centreline in 3D Viewer</source>
+        <translation>Otvoriť scrap a polygón v 3D prehliadači</translation>
     </message>
     <message>
         <location filename="../src/app/MainWindowWorkspaceCommandBar.cpp" line="397"/>
@@ -3621,6 +3691,16 @@ Line-point options: %1</translation>
 <context>
     <name>TherionStudio::MainWindow</name>
     <message>
+        <location filename="../src/app/MainWindowFileOpen.cpp" line="155"/>
+        <source>Select Survey Source</source>
+        <translation>Vybrať zdrojový survey</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowFileOpen.cpp" line="156"/>
+        <source>Several survey files reference this scrap. Choose the source for its 3D centreline.</source>
+        <translation>Na tento scrap odkazuje viacero survey súborov. Vyberte zdroj jeho 3D stredovej čiary.</translation>
+    </message>
+    <message>
         <location filename="../src/app/MainWindowValidationSidebar.cpp" line="234"/>
         <source>Error</source>
         <translation>Chyba</translation>
@@ -5981,6 +6061,38 @@ subtype blocks</translation>
         <translation>V inšpektore Objekty nechá rozbalený iba scrap vybraného objektu.</translation>
     </message>
     <message>
+        <source>Hide All</source>
+        <translation>Skryť všetko</translation>
+    </message>
+    <message>
+        <source>Show All</source>
+        <translation>Zobraziť všetko</translation>
+    </message>
+    <message>
+        <source>Hide all objects in the map.</source>
+        <translation>Skryje všetky objekty v mape.</translation>
+    </message>
+    <message>
+        <source>Show all objects in the map.</source>
+        <translation>Zobrazí všetky objekty v mape.</translation>
+    </message>
+    <message>
+        <source>◀ Previous</source>
+        <translation>◀ Predchádzajúci</translation>
+    </message>
+    <message>
+        <source>Next ▶</source>
+        <translation>Nasledujúci ▶</translation>
+    </message>
+    <message>
+        <source>Navigate to previous scrap or object (Alt+Left).</source>
+        <translation>Prejsť na predchádzajúci scrap alebo objekt (Alt+Vľavo).</translation>
+    </message>
+    <message>
+        <source>Navigate to next scrap or object (Alt+Right).</source>
+        <translation>Prejsť na nasledujúci scrap alebo objekt (Alt+Vpravo).</translation>
+    </message>
+    <message>
         <location filename="../src/app/text_editor/map_editor/MapEditorTabInspectorBackgroundUi.cpp" line="44"/>
         <source>Layers</source>
         <translation>Vrstvy</translation>
@@ -8056,8 +8168,8 @@ subtype blocks</translation>
     </message>
     <message>
         <location filename="../src/app/three_d_viewer/ThreeDViewerLayerListModel.cpp" line="403"/>
-        <source>Meshes</source>
-        <translation>Modely</translation>
+        <source>Walls</source>
+        <translation>Steny</translation>
     </message>
     <message>
         <location filename="../src/app/three_d_viewer/ThreeDViewerLayerListModel.cpp" line="405"/>
@@ -8067,6 +8179,31 @@ subtype blocks</translation>
 </context>
 <context>
     <name>TherionStudio::ThreeDViewerTab</name>
+    <message>
+        <location filename="../src/app/three_d_viewer/ThreeDViewerTab.cpp" line="135"/>
+        <source>Unable to read referenced scrap file: %1</source>
+        <translation>Nepodarilo sa načítať referencovaný súbor scrapu: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/app/three_d_viewer/ThreeDViewerTab.cpp" line="149"/>
+        <source>Scrap '%1' omitted: no matching centreline station anchor.</source>
+        <translation>Scrap „%1“ bol vynechaný: nenašla sa zodpovedajúca kotva stanice v stredovej čiare.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/three_d_viewer/ThreeDViewerTab.cpp" line="155"/>
+        <source>Scrap '%1' is approximate: its station anchors do not determine a unique orientation and scale.</source>
+        <translation>Scrap „%1“ je umiestnený približne: jeho kotvy neurčujú jednoznačnú orientáciu a mierku.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/three_d_viewer/ThreeDViewerTab.cpp" line="152"/>
+        <source>Scrap '%1' omitted: its station anchors do not define a valid transform.</source>
+        <translation>Scrap „%1“ bol vynechaný: jeho kotvy neurčujú platnú transformáciu.</translation>
+    </message>
+    <message>
+        <location filename="../src/app/three_d_viewer/ThreeDViewerTab.cpp" line="163"/>
+        <source>Scrap '%1' has incomplete geometry: %2</source>
+        <translation>Scrap „%1“ má neúplnú geometriu: %2</translation>
+    </message>
     <message>
         <location filename="../src/app/three_d_viewer/ThreeDViewerTab.cpp" line="258"/>
         <source>Export 3D Image</source>
@@ -8270,9 +8407,14 @@ subtype blocks</translation>
         <translation type="obsolete">Scéna</translation>
     </message>
     <message>
-        <location filename="../resources/qml/three_d_viewer/ThreeDViewerInspector.qml" line="317"/>
-        <source>Model Coloring</source>
-        <translation>Farbenie modelu</translation>
+        <location filename="../resources/qml/three_d_viewer/ThreeDViewerInspector.qml" line="326"/>
+        <source>Centerline Coloring</source>
+        <translation>Farbenie polygónu</translation>
+    </message>
+    <message>
+        <location filename="../resources/qml/three_d_viewer/ThreeDViewerInspector.qml" line="332"/>
+        <source>Red</source>
+        <translation>Červená</translation>
     </message>
     <message>
         <location filename="../resources/qml/three_d_viewer/ThreeDViewerInspector.qml" line="391"/>
@@ -8331,17 +8473,22 @@ subtype blocks</translation>
         <translation>Ohnisková vzdialenosť je v ortografickej projekcii vypnutá.</translation>
     </message>
     <message>
-        <location filename="../resources/qml/three_d_viewer/ThreeDViewerInspector.qml" line="323"/>
+        <location filename="../resources/qml/three_d_viewer/ThreeDViewerInspector.qml" line="332"/>
         <source>Altitude</source>
         <translation>Výškopis</translation>
     </message>
     <message>
-        <location filename="../resources/qml/three_d_viewer/ThreeDViewerInspector.qml" line="323"/>
-        <source>None</source>
-        <translation>Bez farbenia</translation>
+        <location filename="../resources/qml/three_d_viewer/ThreeDViewerInspector.qml" line="348"/>
+        <source>Scrap Coloring</source>
+        <translation>Farbenie stien</translation>
     </message>
     <message>
-        <location filename="../resources/qml/three_d_viewer/ThreeDViewerInspector.qml" line="339"/>
+        <location filename="../resources/qml/three_d_viewer/ThreeDViewerInspector.qml" line="355"/>
+        <source>TH2 Style</source>
+        <translation>Štýl TH2</translation>
+    </message>
+    <message>
+        <location filename="../resources/qml/three_d_viewer/ThreeDViewerInspector.qml" line="371"/>
         <source>Background</source>
         <translation>Pozadie</translation>
     </message>
@@ -8447,5 +8594,251 @@ subtype blocks</translation>
         <source>Surfaces</source>
         <translation type="vanished">Povrchy</translation>
     </message>
+</context>
+<context><name>TherionStudio::MainWindowSettingsDialog</name>
+<message><source>General</source><translation>Všeobecné</translation></message>
+<message><source>Backups and versioning</source><translation>Zálohy a verzovanie</translation></message>
+<message><source>XVI centerline coloring</source><translation>Farba polygónu XVI</translation></message>
+<message><source>One color</source><translation>Jedna farba</translation></message>
+<message><source>By altitude</source><translation>Podľa výšky</translation></message>
+<message><source>Pastel scrap altitude underlay</source><translation>Pastelové výškové podfarbenie scrapov</translation></message>
+<message><source>Scrap underlay strength</source><translation>Intenzita podfarbenia scrapov</translation></message>
+<message><source> %</source><translation> %</translation></message>
+<message><source> px</source><translation> px</translation></message>
+<message><source>XVI centerline color</source><translation>Farba polygónu XVI</translation></message>
+<message><source>Choose XVI centerline color</source><translation>Vybrať farbu polygónu XVI</translation></message>
+<message><source>XVI centerline thickness</source><translation>Hrúbka polygónu XVI</translation></message>
+<message><source>Cosmetic stroke width; retains the existing thinning when zoomed out. Only XVI station-to-station centerline legs change, not passage outlines or other layers.</source><translation>Šírka čiary v pixeloch; zachováva stenčenie pri oddialení. Menia sa iba úseky polygónu XVI medzi stanicami, nie obrysy chodieb ani iné vrstvy.</translation></message>
+<message><source>Mean mapped LOX station heights relative to a flagged entrance; otherwise stable scrap colors (not altitude). Editor only; off by default.</source><translation>Priemer výšok priradených bodov LOX vzhľadom na označený vchod; inak stále farby scrapov (nie výšky). Iba v editore; predvolene vypnuté.</translation></message>
+</context>
+<context><name>TherionStudio::ProjectVersioningWidget</name>
+<message><source>Current project</source><translation>Aktuálny projekt</translation></message>
+<message><source>Only changed, saved files create checkpoints. Unsaved edits are not included. Local history is not encrypted; disabling it keeps existing backups.</source><translation>Kontrolné body vznikajú iba pri zmene uložených súborov. Neuložené úpravy nie sú zahrnuté. Lokálna história nie je šifrovaná; vypnutie zachová existujúce zálohy.</translation></message>
+<message><source>GitHub</source><translation>GitHub</translation></message>
+<message><source>Excluded files (.gitignore)</source><translation>Vylúčené súbory (.gitignore)</translation></message>
+<message><source>Checkpoints contain saved files, not unsaved editor changes. Automatic checks run at the chosen interval while this project is open; a checkpoint is created only when included files differ. Restore project backups using Backups and restore in the right sidebar's File tab. Pre-compilation checkpoints are not available yet.</source><translation>Kontrolné body obsahujú uložené súbory, nie neuložené zmeny v editore. Automatické kontroly bežia vo zvolenom intervale, kým je projekt otvorený; kontrolný bod vznikne iba pri zmene zahrnutých súborov. Zálohy projektu obnovíte cez sekciu Zálohy a obnova na karte Súbor v pravom bočnom paneli. Kontrolné body pred kompiláciou zatiaľ nie sú dostupné.</translation></message>
+<message><source>Safety checkpoint before restore</source><translation>Záchranný kontrolný bod pred obnovou</translation></message>
+<message><source>Restored checkpoint %1</source><translation>Obnovený kontrolný bod %1</translation></message>
+<message><source>Checkpoints contain saved files, not unsaved editor changes. Automatic checks run at the chosen interval while this project is open; a checkpoint is created only when included files differ. Pre-compilation checkpoints and restoring from the UI are not available yet.</source><translation>Kontrolné body obsahujú uložené súbory, nie neuložené zmeny v editore. Automatické kontroly bežia vo zvolenom intervale, kým je projekt otvorený; kontrolný bod vznikne iba pri zmene zahrnutých súborov. Kontrolné body pred kompiláciou a obnova cez rozhranie zatiaľ nie sú dostupné.</translation></message>
+<message><source>Create checkpoints automatically</source><translation>Vytvárať kontrolné body automaticky</translation></message>
+<message><source>Check for changes every</source><translation>Kontrolovať zmeny každých</translation></message>
+<message><source> min</source><translation> min</translation></message>
+<message><source>Automatic checkpoint</source><translation>Automatický kontrolný bod</translation></message>
+<message><source>Automatic checks every %1 minute(s) while this project is open.</source><translation>Automatická kontrola každých %1 minút, kým je projekt otvorený.</translation></message>
+<message><source>Automatic checkpoints disabled.</source><translation>Automatické kontrolné body sú vypnuté.</translation></message>
+<message><source>Delete local history...</source><translation>Odstrániť lokálnu históriu...</translation></message>
+<message><source>Delete local history</source><translation>Odstrániť lokálnu históriu</translation></message>
+<message><source>Permanently delete all local checkpoints for this project?
+%1
+
+Project files and the project's Git repository will NOT be changed. Local history will be disabled. This cannot be undone.</source><translation>Natrvalo odstrániť všetky lokálne kontrolné body tohto projektu?
+%1
+
+Súbory projektu ani jeho Git repozitár sa NEZMENIA. Lokálna história sa vypne. Túto operáciu nemožno vrátiť späť.</translation></message>
+<message><source>Deleting local history...</source><translation>Odstraňovanie lokálnej histórie...</translation></message>
+<message><source>Local history deleted. Local history is now disabled.</source><translation>Lokálna história bola odstránená. Zálohovanie je teraz vypnuté.</translation></message>
+<message><source>Project .gitignore</source><translation>Projektový .gitignore</translation></message>
+<message><source>Edit the root .gitignore. Saving also affects your project's Git tools. Nested .gitignore files still apply. Old checkpoints keep previously included files.</source><translation>Upravte .gitignore v koreňovom priečinku projektu. Uloženie ovplyvní aj Git nástroje projektu. Vnorené súbory .gitignore naďalej platia. Staré kontrolné body obsahujú aj súbory zahrnuté predtým.</translation></message>
+<message><source>Save .gitignore</source><translation>Uložiť .gitignore</translation></message>
+<message><source>Reload .gitignore</source><translation>Znovu načítať .gitignore</translation></message>
+<message><source>Cannot edit a linked or non-regular .gitignore file.</source><translation>Nemožno upraviť .gitignore, ktorý je odkazom alebo nie je bežným súborom.</translation></message>
+<message><source>Could not read .gitignore: %1</source><translation>Nepodarilo sa načítať .gitignore: %1</translation></message>
+<message><source>The .gitignore file must be UTF-8 text to edit it here.</source><translation>Na úpravu v tomto rozhraní musí byť .gitignore text v kódovaní UTF-8.</translation></message>
+<message><source>The project .gitignore changed on disk. Reload it before saving.</source><translation>Projektový .gitignore sa na disku zmenil. Pred uložením ho znovu načítajte.</translation></message>
+<message><source>Could not save .gitignore: %1</source><translation>Nepodarilo sa uložiť .gitignore: %1</translation></message>
+<message><source>Project .gitignore saved. New rules apply to future checkpoints.</source><translation>Projektový .gitignore bol uložený. Nové pravidlá platia pre budúce kontrolné body.</translation></message>
+<message><source>Manual checkpoint</source><translation>Ručný kontrolný bod</translation></message>
+<message><source>Current project: %1</source><translation>Aktuálny projekt: %1</translation></message>
+<message><source>No project open</source><translation>Nie je otvorený projekt</translation></message>
+<message><source>These backup controls apply immediately, independently of OK or Cancel. Local history is stored outside the project. The project's Git repository is not changed.</source><translation>Ovládanie záloh sa použije ihneď, nezávisle od tlačidiel OK a Zrušiť. Lokálna história sa ukladá mimo projektu. Git repozitár projektu sa nemení.</translation></message>
+<message><source>Local backups</source><translation>Lokálne zálohy</translation></message>
+<message><source>Enable local history for this project</source><translation>Zapnúť lokálnu históriu pre tento projekt</translation></message>
+<message><source>This first version creates checkpoints on demand from saved files. Save all documents before creating a checkpoint. Automatic monitoring, pre-compilation checkpoints and restoring from the UI are not available yet.</source><translation>Táto prvá verzia vytvára kontrolné body ručne z uložených súborov. Pred vytvorením kontrolného bodu uložte všetky dokumenty. Automatické sledovanie, kontrolné body pred kompiláciou a obnova cez rozhranie zatiaľ nie sú dostupné.</translation></message>
+<message><source>Exclusions: project .gitignore rules; output/ and outputs/ folders; *.3d, *.lox and *.plt exports; Git metadata. Local history is not encrypted. Disabling history does not delete existing checkpoints.</source><translation>Výnimky: pravidlá .gitignore v projekte; priečinky output/ a outputs/; exporty *.3d, *.lox a *.plt; metadáta Gitu. Lokálna história nie je šifrovaná. Vypnutím histórie sa existujúce kontrolné body nezmažú.</translation></message>
+<message><source>Create checkpoint</source><translation>Vytvoriť kontrolný bod</translation></message>
+<message><source>Refresh history</source><translation>Obnoviť zoznam</translation></message>
+<message><source>Open history folder</source><translation>Otvoriť priečinok histórie</translation></message>
+<message><source>Created</source><translation>Vytvorené</translation></message>
+<message><source>Checkpoint</source><translation>Kontrolný bod</translation></message>
+<message><source>ID</source><translation>ID</translation></message>
+<message><source>GitHub backup</source><translation>Záloha na GitHube</translation></message>
+<message><source>Not available in this version. Browser sign-in, selecting or creating a private repository, encryption and synchronization are not implemented. No project data is sent to GitHub.</source><translation>V tejto verzii nie je dostupná. Prihlásenie cez prehliadač, výber alebo vytvorenie súkromného repozitára, šifrovanie a synchronizácia ešte nie sú implementované. Žiadne projektové dáta sa na GitHub neodosielajú.</translation></message>
+<message><source>Local history enabled. %1 checkpoint(s).</source><translation>Lokálna história je zapnutá. Počet kontrolných bodov: %1.</translation></message>
+<message><source>Local history disabled. Existing checkpoints are retained.</source><translation>Lokálna história je vypnutá. Existujúce kontrolné body zostávajú zachované.</translation></message>
+<message><source>Could not open the local history folder.</source><translation>Nepodarilo sa otvoriť priečinok lokálnej histórie.</translation></message>
+<message><source>Open a project using File &gt; Open Project, then return to Settings &gt; Backups and versioning.</source><translation>Otvorte projekt cez Súbor &gt; Otvoriť projekt a potom sa vráťte do Nastavenia &gt; Zálohy a verzovanie.</translation></message>
+<message><source>Local history enabled.</source><translation>Lokálna história je zapnutá.</translation></message>
+<message><source>Local history disabled.</source><translation>Lokálna história je vypnutá.</translation></message>
+<message><source>Enable local history</source><translation>Zapnúť lokálnu históriu</translation></message>
+<message><source>Back up saved files under this project root?
+%1
+
+Project .gitignore rules and the exclusions shown in this tab apply. Existing plaintext checkpoints remain readable on this computer. An initial checkpoint will be created now; unsaved editor changes are not included.</source><translation>Zálohovať uložené súbory v tomto koreňovom priečinku projektu?
+%1
+
+Platia pravidlá .gitignore projektu a výnimky zobrazené na tejto karte. Nešifrované kontrolné body zostávajú na tomto počítači čitateľné. Teraz sa vytvorí prvý kontrolný bod; neuložené zmeny v editore sa nezahrnú.</translation></message>
+<message><source>Creating checkpoint from saved files...</source><translation>Vytváranie kontrolného bodu z uložených súborov...</translation></message>
+<message><source>Loading local history...</source><translation>Načítavanie lokálnej histórie...</translation></message>
+<message><source>History location: assigned after enabling local history.</source><translation>Umiestnenie histórie sa priradí po zapnutí lokálnej histórie.</translation></message>
+<message><source>History location: %1</source><translation>Umiestnenie histórie: %1</translation></message>
+<message><source>Local history error: %1</source><translation>Chyba lokálnej histórie: %1</translation></message>
+</context>
+<context><name>MapEditorAltitudeUnderlay</name>
+<message><source>Mean height: %1 m relative to entrance %2 (LOX; not an absolute datum)</source><translation>Priemerná výška: %1 m vzhľadom na vchod %2 (LOX; nie absolútny výškový údaj)</translation></message>
+<message><source>Categorical scrap color — altitude unavailable or incomplete (not altitude)</source><translation>Rozlišovacia farba scrapu — výška nedostupná alebo neúplná (nie výška)</translation></message>
+<message><source>Approximate passage outline — gaps inferred for preview only.</source><translation>Približný obrys chodby — medzery sú odhadnuté iba pre náhľad.</translation></message>
+</context>
+<context><name>TherionStudio::MapEditorTab</name>
+<message><source>XVI legs: %1 altitude-colored, %2 fallback.</source><translation>Úseky XVI: %1 zafarbených podľa výšky, %2 náhradnou farbou.</translation></message>
+<message><source>No XVI centerline is loaded; TH2 survey lines are not XVI backgrounds.</source><translation>Nie je načítaný polygón XVI; meračské čiary TH2 nie sú podklady XVI.</translation></message>
+<message><source>Multiple LOX outputs (%1); a unique output is required.</source><translation>Viac výstupov LOX (%1); je potrebný jednoznačný výstup.</translation></message>
+<message><source>LOX station metadata could not be loaded.</source><translation>Nepodarilo sa načítať metadáta staníc LOX.</translation></message>
+<message><source>LOX station heights are unavailable.</source><translation>Výšky staníc LOX nie sú dostupné.</translation></message>
+<message><source>No flagged LOX entrance is available for the relative height datum.</source><translation>Pre relatívny výškový údaj nie je dostupný označený vchod LOX.</translation></message>
+<message><source>XVI height relative to %1 (LOX; not absolute altitude)</source><translation>Výška XVI vzhľadom na %1 (LOX; nejde o absolútnu nadmorskú výšku)</translation></message>
+<message><source>XVI height relative to a flagged LOX entrance</source><translation>Výška XVI vzhľadom na označený vchod LOX</translation></message>
+<message><source>flagged entrance</source><translation>označený vchod</translation></message>
+<message><source>Missing or ambiguous endpoint heights use the configured XVI color.</source><translation>Chýbajúce alebo nejednoznačné výšky koncových staníc používajú nastavenú farbu XVI.</translation></message>
+<message><source>LOX station heights or a flagged entrance are unavailable; the configured XVI color is used.</source><translation>Výšky staníc LOX alebo označený vchod nie sú dostupné; používa sa nastavená farba XVI.</translation></message>
+<message><source>Categorical scrap fallback colors are not altitude.</source><translation>Kategorizované náhradné farby scrapov nevyjadrujú výšku.</translation></message>
+<message><source>Underlay: mean relative heights; categorical colors where altitude is unavailable.</source><translation>Podfarbenie: priemerné relatívne výšky; rozlišovacie farby tam, kde výška nie je dostupná.</translation></message>
+<message><source>Underlay: categorical scrap colors — altitude unavailable (not altitude).</source><translation>Podfarbenie: rozlišovacie farby scrapov — výška nedostupná (nie výška).</translation></message>
+<message><source>Passage outlines: %1 of %2 scraps rendered; missing or ambiguous boundaries are not filled.</source><translation>Obrysy chodieb: vykreslených %1 z %2 scrapov; chýbajúce alebo nejednoznačné hranice sa nevyplňujú.</translation></message>
+<message><source>Passage outlines: %1 precise, %2 approximate, %3 unfilled.</source><translation>Obrysy chodieb: %1 presných, %2 približných, %3 nevyplnených.</translation></message>
+</context>
+<context>
+    <name>TherionStudio::ProjectVersioningToolbar</name>
+    <message><source>Backups and restore</source><translation>Zálohy a obnova</translation></message>
+    <message><source>Backups apply to the whole project, not only this file.</source><translation>Zálohy platia pre celý projekt, nie iba pre tento súbor.</translation></message>
+    <message><source>Local project history is disabled.</source><translation>Lokálna história projektu je vypnutá.</translation></message>
+    <message><source>Loading project backups...</source><translation>Načítavajú sa zálohy projektu...</translation></message>
+    <message><source>Backups</source><translation>Zálohy</translation></message>
+    <message><source>Older</source><translation>Staršia</translation></message>
+    <message><source>Newer</source><translation>Novšia</translation></message>
+    <message><source>Choose backup</source><translation>Vybrať zálohu</translation></message>
+    <message><source>Restore the previous project backup (project undo)</source><translation>Obnoviť predchádzajúcu zálohu projektu (krok späť v projekte)</translation></message>
+    <message><source>Restore the next project backup (project redo)</source><translation>Obnoviť nasledujúcu zálohu projektu (krok vpred v projekte)</translation></message>
+    <message><source>Choose a project backup by date and time</source><translation>Vybrať zálohu projektu podľa dátumu a času</translation></message>
+    <message><source>Manual checkpoint</source><translation>Ručný kontrolný bod</translation></message>
+    <message><source>Automatic checkpoint</source><translation>Automatický kontrolný bod</translation></message>
+    <message><source>Safety checkpoint before restore</source><translation>Záchranný kontrolný bod pred obnovou</translation></message>
+    <message><source>Restored checkpoint %1</source><translation>Obnovený kontrolný bod %1</translation></message>
+    <message><source>%1 - %2 [%3]</source><translation>%1 – %2 [%3]</translation></message>
+    <message><source>Enable local project history in File &gt; Settings &gt; Backups and versioning.</source><translation>Zapnite lokálnu históriu projektu cez Súbor &gt; Nastavenia &gt; Zálohy a verzovanie.</translation></message>
+    <message><source>Current: %1</source><translation>Aktuálna: %1</translation></message>
+    <message><source>No backup selected</source><translation>Nie je vybraná záloha</translation></message>
+    <message><source>Backup settings...</source><translation>Nastavenia záloh...</translation></message>
+</context>
+<context>
+    <name>TherionStudio::ProjectVersioningNavigationService</name>
+    <message><source>Local history is disabled or busy. Wait and try again.</source><translation>Lokálna história je vypnutá alebo zaneprázdnená. Počkajte a skúste to znova.</translation></message>
+</context>
+<context>
+<name>TherionStudio::GitHubRepositoryWidget</name>
+<message><source>Private repository verified: https://github.com/%1
+No project data was uploaded. Use the GitHub button in the File sidebar for an explicitly enabled backup.</source><translation>Súkromný repozitár overený: https://github.com/%1
+Údaje projektu neboli odoslané. Na výslovne povolenú zálohu použite tlačidlo GitHub v pravom paneli Súbor.</translation></message>
+<message><source>Create an empty private repository on GitHub. No project files, paths or history are uploaded by repository creation. Optional backups upload saved files without encryption. Sign-in uses GitHub CLI and your browser; credentials must be stored in the system keyring.</source><translation>Vytvorte prázdny súkromný repozitár na GitHube. Vytvorenie repozitára neodosiela súbory, cesty ani históriu projektu. Voliteľné zálohy odosielajú uložené súbory bez šifrovania. Prihlásenie používa GitHub CLI a prehliadač; prihlasovacie údaje musia byť v systémovej kľúčenke.</translation></message>
+<message><source>Enable unencrypted backups to this private repository</source><translation>Povoliť nešifrované zálohy do tohto súkromného repozitára</translation></message>
+<message><source>Ask before exiting when saved project changes have not been uploaded</source><translation>Pred ukončením sa opýtať, ak uložené zmeny projektu neboli odoslané</translation></message>
+<message><source>Enable GitHub backup</source><translation>Povoliť zálohu na GitHub</translation></message>
+<message><source>Project files will be uploaded WITHOUT ENCRYPTION to the private repository. GitHub and people with repository access can read them. Project .gitignore and export exclusions apply. Use a dedicated empty repository, not the Therion Studio source repository. Continue?</source><translation>Súbory projektu sa odošlú BEZ ŠIFROVANIA do súkromného repozitára. GitHub a osoby s prístupom k repozitáru ich môžu čítať. Platia pravidlá .gitignore a vylúčenie exportov. Použite samostatný prázdny repozitár, nie repozitár zdrojového kódu Therion Studia. Pokračovať?</translation></message>
+<message><source>GitHub settings have unsaved changes.</source><translation>Nastavenia GitHubu obsahujú neuložené zmeny.</translation></message>
+<message><source>Cannot access the project folder to store GitHub settings.</source><translation>Priečinok projektu nie je prístupný na uloženie nastavení GitHubu.</translation></message>
+<message><source>GitHub project settings must be a regular file, not a symbolic link.</source><translation>Nastavenia GitHubu v projekte musia byť bežný súbor, nie symbolický odkaz.</translation></message>
+<message><source>Could not read GitHub project settings: %1</source><translation>Nepodarilo sa načítať nastavenia GitHubu z projektu: %1</translation></message>
+<message><source>GitHub project settings are unreadable or too large.</source><translation>Nastavenia GitHubu v projekte sú nečitateľné alebo príliš veľké.</translation></message>
+<message><source>Invalid or unsupported GitHub project settings. The file was not changed.</source><translation>Neplatné alebo nepodporované nastavenia GitHubu v projekte. Súbor nebol zmenený.</translation></message>
+<message><source>GitHub settings loaded from the project. Check your account before remote operations.</source><translation>Nastavenia GitHubu sú načítané z projektu. Pred vzdialenými operáciami overte účet.</translation></message>
+<message><source>Owner and repository name are saved automatically in .therion-studio-github.json. No passwords or tokens are stored in the project.</source><translation>Vlastník a názov repozitára sa ukladajú automaticky do .therion-studio-github.json. Heslá ani tokeny sa v projekte neukladajú.</translation></message>
+<message><source>GitHub project settings changed on disk. Close and reopen Settings before editing.</source><translation>Nastavenia GitHubu v projekte sa zmenili na disku. Pred úpravou zatvorte a znovu otvorte nastavenia.</translation></message>
+<message><source>Could not save GitHub project settings: %1</source><translation>Nepodarilo sa uložiť nastavenia GitHubu do projektu: %1</translation></message>
+<message><source>GitHub owner and repository saved in the project. Credentials stay in the system keyring.</source><translation>Vlastník a repozitár GitHubu sú uložené v projekte. Prihlasovacie údaje zostávajú v systémovej kľúčenke.</translation></message>
+<message><source>Create an empty private repository on GitHub. No project files, paths or history are uploaded. Encryption, linking and synchronization are not available yet. Sign-in uses GitHub CLI and your browser; credentials must be stored in the system keyring.</source><translation>Vytvorte prázdny súkromný repozitár na GitHube. Súbory, cesty ani história projektu sa neodosielajú. Šifrovanie, pripojenie a synchronizácia zatiaľ nie sú dostupné. Prihlásenie používa GitHub CLI a prehliadač; prihlasovacie údaje musia byť v systémovej kľúčenke.</translation></message>
+<message><source>Sign in through browser...</source><translation>Prihlásiť cez prehliadač...</translation></message>
+<message><source>Check GitHub account</source><translation>Overiť účet GitHub</translation></message>
+<message><source>GitHub sign-in instructions</source><translation>Pokyny na prihlásenie do GitHubu</translation></message>
+<message><source>Owner (account or organization)</source><translation>Vlastník (účet alebo organizácia)</translation></message>
+<message><source>Repository name</source><translation>Názov repozitára</translation></message>
+<message><source>Create private repository...</source><translation>Vytvoriť súkromný repozitár...</translation></message>
+<message><source>Verify repository</source><translation>Overiť repozitár</translation></message>
+<message><source>Could not start GitHub CLI: %1</source><translation>Nepodarilo sa spustiť GitHub CLI: %1</translation></message>
+<message><source>Enter a valid owner and repository name.</source><translation>Zadajte platného vlastníka a názov repozitára.</translation></message>
+<message><source>Install GitHub CLI (gh), then reopen Settings.</source><translation>Nainštalujte GitHub CLI (gh) a znovu otvorte nastavenia.</translation></message>
+<message><source>Open a project first.</source><translation>Najprv otvorte projekt.</translation></message>
+<message><source>Check your GitHub account or sign in to continue.</source><translation>Pokračujte overením účtu GitHub alebo prihlásením.</translation></message>
+<message><source>Follow the sign-in instructions below. Closing Settings cancels this operation.</source><translation>Postupujte podľa pokynov na prihlásenie nižšie. Zatvorenie nastavení operáciu zruší.</translation></message>
+<message><source>Contacting GitHub...</source><translation>Pripája sa ku GitHubu...</translation></message>
+<message><source>GitHub operation failed or timed out. Check sign-in, network access and repository permissions. If creation was attempted, use Verify repository before retrying; it may already exist.</source><translation>Operácia GitHub zlyhala alebo prekročila časový limit. Skontrolujte prihlásenie, sieť a oprávnenia. Ak prebehlo vytváranie, pred opakovaním použite Overiť repozitár; už môže existovať.</translation></message>
+<message><source>GitHub CLI must use the system keyring. File-based or environment tokens are not accepted. Configure a system credential store and sign in again.</source><translation>GitHub CLI musí používať systémovú kľúčenku. Tokeny zo súboru a prostredia nie sú povolené. Nastavte systémové úložisko prihlasovacích údajov a prihláste sa znova.</translation></message>
+<message><source>GitHub account verified using the system keyring. Enter the owner and repository name.</source><translation>Účet GitHub je overený pomocou systémovej kľúčenky. Zadajte vlastníka a názov repozitára.</translation></message>
+<message><source>GitHub did not confirm a private repository with the requested owner and name. Nothing is linked or uploaded.</source><translation>GitHub nepotvrdil súkromný repozitár so zadaným vlastníkom a názvom. Nič nie je pripojené ani odoslané.</translation></message>
+<message><source>Private repository verified: https://github.com/%1
+No project data was uploaded. The repository is not linked; synchronization remains disabled.</source><translation>Súkromný repozitár overený: https://github.com/%1
+Údaje projektu neboli odoslané. Repozitár nie je pripojený; synchronizácia zostáva vypnutá.</translation></message>
+<message><source>Create private repository</source><translation>Vytvoriť súkromný repozitár</translation></message>
+<message><source>Create the empty PRIVATE repository %1 on GitHub?
+Only the owner and repository name will be sent. No project files will be uploaded.</source><translation>Vytvoriť prázdny SÚKROMNÝ repozitár %1 na GitHube?
+Odošle sa iba vlastník a názov repozitára. Súbory projektu sa neodošlú.</translation></message>
+</context>
+<context><name>MainWindow</name>
+<message><source>GitHub: checking account, repository and project changes...</source><translation>GitHub: overujem účet, repozitár a zmeny projektu...</translation></message>
+<message><source>GitHub error: %1</source><translation>Chyba GitHubu: %1</translation></message>
+<message><source>GitHub OK - project uploaded (%1)</source><translation>GitHub OK - projekt odoslaný (%1)</translation></message>
+<message><source>GitHub OK - project is up to date</source><translation>GitHub OK - projekt je aktuálny</translation></message>
+<message><source>Signing in alone does not enable project uploads. Save the destination repository and enable GitHub backups for this project once.</source><translation>Samotné prihlásenie nepovolí odosielanie projektu. Raz uložte cieľový repozitár a povoľte zálohy na GitHub pre tento projekt.</translation></message>
+<message><source>To upload the whole project:
+1. Open a project.
+2. Sign in through your browser or check your GitHub account.
+3. Select or create a dedicated empty private repository and verify it.
+4. Enable unencrypted GitHub backups.
+
+GitHub settings will open next.</source><translation>Na odoslanie celého projektu:
+1. Otvorte projekt.
+2. Prihláste sa cez prehliadač alebo overte svoj účet GitHub.
+3. Vyberte alebo vytvorte samostatný prázdny súkromný repozitár a overte ho.
+4. Povoľte nešifrované zálohy na GitHub.
+
+Následne sa otvoria nastavenia GitHubu.</translation></message>
+<message><source>GitHub backup</source><translation>Záloha na GitHub</translation></message>
+<message><source>Configure a private repository and explicitly enable unencrypted GitHub backups in Settings first.</source><translation>Najprv v nastaveniach zadajte súkromný repozitár a výslovne povoľte nešifrované zálohy na GitHub.</translation></message>
+<message><source>Wait for compilation or project restoration to finish before uploading.</source><translation>Pred odoslaním počkajte na dokončenie kompilácie alebo obnovy projektu.</translation></message>
+<message><source>Upload project to GitHub</source><translation>Odoslať projekt na GitHub</translation></message>
+<message><source>Private repository: %1
+Saved included files will be uploaded WITHOUT ENCRYPTION. Exports and .gitignore exclusions apply.
+Commit message:</source><translation>Súkromný repozitár: %1
+Zahrnuté uložené súbory sa odošlú BEZ ŠIFROVANIA. Platia vylúčenia exportov a .gitignore.
+Text commitu:</translation></message>
+<message><source>Project backup</source><translation>Záloha projektu</translation></message>
+<message><source>Enter a commit message between 1 and 4000 characters.</source><translation>Zadajte text commitu s dĺžkou 1 až 4000 znakov.</translation></message>
+<message><source>Verifying private repository and uploading project backup...</source><translation>Overuje sa súkromný repozitár a odosiela sa záloha projektu...</translation></message>
+<message><source>GitHub backup failed</source><translation>Záloha na GitHub zlyhala</translation></message>
+<message><source>Project backup uploaded and verified.
+Commit: %1</source><translation>Záloha projektu je odoslaná a overená.
+Commit: %1</translation></message>
+<message><source>No included project changes to upload.</source><translation>Žiadne zmeny zahrnutých súborov projektu na odoslanie.</translation></message>
+<message><source>GitHub settings could not be checked:
+%1
+
+Exit without a GitHub backup?</source><translation>Nepodarilo sa overiť nastavenia GitHubu:
+%1
+
+Ukončiť bez zálohy na GitHub?</translation></message>
+<message><source>Checking for project changes not uploaded to GitHub...</source><translation>Kontrolujú sa zmeny projektu neodoslané na GitHub...</translation></message>
+<message><source>Could not check unuploaded changes:
+%1
+
+Exit without a GitHub backup?</source><translation>Nepodarilo sa skontrolovať neodoslané zmeny:
+%1
+
+Ukončiť bez zálohy na GitHub?</translation></message>
+<message><source>Update GitHub before exiting?</source><translation>Aktualizovať GitHub pred ukončením?</translation></message>
+<message><source>Saved project changes have not been uploaded to %1. Upload a backup before exiting?</source><translation>Uložené zmeny projektu neboli odoslané do %1. Odoslať zálohu pred ukončením?</translation></message>
+<message><source>Upload and exit</source><translation>Odoslať a ukončiť</translation></message>
+<message><source>Exit without uploading</source><translation>Ukončiť bez odoslania</translation></message>
+</context>
+<context><name>TherionStudio::ProjectVersioningToolbar</name>
+<message><source>GitHub</source><translation>GitHub</translation></message>
+<message><source>Upload a project backup to GitHub</source><translation>Odoslať zálohu projektu na GitHub</translation></message>
 </context>
 </TS>

@@ -6760,4 +6760,38 @@ subtype blocks</source>
             <translation type="unfinished" />
         </message>
     </context>
+<context><name>TherionStudio::MainWindowSettingsDialog</name>
+<message><source>XVI centerline coloring</source><translation>Coloração da poligonal XVI</translation></message>
+<message><source>One color</source><translation>Uma cor</translation></message>
+<message><source>By altitude</source><translation>Por altitude</translation></message>
+<message><source>Pastel scrap altitude underlay</source><translation>Fundo pastel de altura dos scraps</translation></message>
+<message><source>Scrap underlay strength</source><translation>Intensidade do fundo dos scraps</translation></message>
+<message><source> %</source><translation> %</translation></message>
+<message><source> px</source><translation> px</translation></message>
+<message><source>XVI centerline color</source><translation>Cor da poligonal XVI</translation></message>
+<message><source>Choose XVI centerline color</source><translation>Escolher a cor da poligonal XVI</translation></message>
+<message><source>XVI centerline thickness</source><translation>Espessura da poligonal XVI</translation></message>
+<message><source>Cosmetic stroke width; retains the existing thinning when zoomed out. Only XVI station-to-station centerline legs change, not passage outlines or other layers.</source><translation>Espessura em píxeis; mantém o afinamento ao afastar o zoom. Apenas os segmentos XVI entre estações mudam, não os contornos das galerias nem outras camadas.</translation></message>
+<message><source>Mean mapped LOX station heights relative to a flagged entrance; otherwise stable scrap colors (not altitude). Editor only; off by default.</source><translation>Altura média das estações LOX associadas em relação a uma entrada marcada; caso contrário, cores estáveis dos scraps (não altitude). Apenas no editor; desativado por padrão.</translation></message>
+</context>
+<context><name>MapEditorAltitudeUnderlay</name>
+<message><source>Mean height: %1 m relative to entrance %2 (LOX; not an absolute datum)</source><translation>Altura média: %1 m em relação à entrada %2 (LOX; não é um datum absoluto)</translation></message>
+<message><source>Categorical scrap color — altitude unavailable or incomplete (not altitude)</source><translation>Cor categórica do scrap — altitude indisponível ou incompleta (não altitude)</translation></message>
+</context>
+<context><name>TherionStudio::MapEditorTab</name>
+<message><source>XVI legs: %1 altitude-colored, %2 fallback.</source><translation>Trechos XVI: %1 coloridos por altura, %2 com cor alternativa.</translation></message>
+<message><source>No XVI centerline is loaded; TH2 survey lines are not XVI backgrounds.</source><translation>Nenhuma poligonal XVI carregada; as linhas de levantamento TH2 não são fundos XVI.</translation></message>
+<message><source>Multiple LOX outputs (%1); a unique output is required.</source><translation>Várias saídas LOX (%1); é necessária uma saída única.</translation></message>
+<message><source>LOX station metadata could not be loaded.</source><translation>Não foi possível carregar os metadados das estações LOX.</translation></message>
+<message><source>LOX station heights are unavailable.</source><translation>As alturas das estações LOX não estão disponíveis.</translation></message>
+<message><source>No flagged LOX entrance is available for the relative height datum.</source><translation>Nenhuma entrada LOX marcada está disponível para a referência de altura relativa.</translation></message>
+<message><source>XVI height relative to %1 (LOX; not absolute altitude)</source><translation>Altitude XVI relativa a %1 (LOX; não é uma altitude absoluta)</translation></message>
+<message><source>XVI height relative to a flagged LOX entrance</source><translation>Altitude XVI relativa a uma entrada LOX assinalada</translation></message>
+<message><source>flagged entrance</source><translation>entrada assinalada</translation></message>
+<message><source>Missing or ambiguous endpoint heights use the configured XVI color.</source><translation>Altitudes em falta ou ambíguas nos extremos usam a cor XVI configurada.</translation></message>
+<message><source>LOX station heights or a flagged entrance are unavailable; the configured XVI color is used.</source><translation>As altitudes das estações LOX ou uma entrada assinalada estão indisponíveis; usa-se a cor XVI configurada.</translation></message>
+<message><source>Categorical scrap fallback colors are not altitude.</source><translation>As cores categóricas de recurso dos scraps não representam altitude.</translation></message>
+<message><source>Underlay: mean relative heights; categorical colors where altitude is unavailable.</source><translation>Fundo: alturas relativas médias; cores categóricas onde a altitude não está disponível.</translation></message>
+<message><source>Underlay: categorical scrap colors — altitude unavailable (not altitude).</source><translation>Fundo: cores categóricas dos scraps — altitude indisponível (não altitude).</translation></message>
+</context>
 </TS>

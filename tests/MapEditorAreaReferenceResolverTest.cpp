@@ -19,6 +19,7 @@ private slots:
     void preservesLineNumbersThroughLosslessProjection();
     void resolvesAreaReferencesFromLogicalCommands();
     void resolvesAreaReferencesFromTh2Projection();
+    void borderLineIndexMatchesPerLineLookup();
 };
 
 void MapEditorAreaReferenceResolverTest::resolvesAreaBodyReferencesToBorderLines()
@@ -164,6 +165,73 @@ void MapEditorAreaReferenceResolverTest::resolvesAreaReferencesFromTh2Projection
     QCOMPARE(projectedReferences.first().areaLineNumber, 10);
     QCOMPARE(projectedReferences.first().areaLabel, QStringLiteral("water (a1)"));
     QCOMPARE(projectedReferences.first().borderLineId, QStringLiteral("wall-left"));
+}
+void MapEditorAreaReferenceResolverTest::borderLineIndexMatchesPerLineLookup()
+{
+    const QString text = QStringLiteral(
+        "scrap s1 -projection plan\n"
+        "line wall -id w1\n"
+        "  0 0\n"
+        "  10 0\n"
+        "endline\n"
+        "line wall -id w2\n"
+        "  10 0\n"
+        "  10 10\n"
+        "endline\n"
+        "line wall\n"
+        "  0 10\n"
+        "  0 0\n"
+        "endline\n"
+        "area water -id a1\n"
+        "  w1 w2\n"
+        "endarea\n"
+        "area sand\n"
+        "  w2\n"
+        "endarea\n"
+        "endscrap\n");
+
+    TherionSourceDocumentMetadata metadata;
+    metadata.sourceType = TherionSourceDocumentType::TherionMap;
+    const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(text, metadata);
+    const TherionSourceLogicalDocument logicalDocument =
+        TherionSourceLogicalDocument::fromSourceDocument(sourceDocument);
+    const Th2GeometryProjection projection =
+        Th2GeometryProjection::fromDocuments(sourceDocument, logicalDocument);
+
+    const QHash<int, QVector<MapEditorAreaReference>> logicalIndex =
+        mapEditorAreaReferencesByBorderLine(logicalDocument.commands());
+    const QHash<int, QVector<MapEditorAreaReference>> projectedIndex =
+        mapEditorAreaReferencesByBorderLine(projection);
+
+    auto sameReferences = [](const QVector<MapEditorAreaReference> &left,
+                             const QVector<MapEditorAreaReference> &right) {
+        if (left.size() != right.size()) {
+            return false;
+        }
+        for (int index = 0; index < left.size(); ++index) {
+            if (left.at(index).areaLineNumber != right.at(index).areaLineNumber
+                || left.at(index).areaLabel != right.at(index).areaLabel
+                || left.at(index).borderLineId != right.at(index).borderLineId) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    for (int lineNumber = 1; lineNumber <= 21; ++lineNumber) {
+        const QVector<MapEditorAreaReference> logicalExpected =
+            mapEditorAreaReferencesForBorderLine(logicalDocument.commands(), lineNumber);
+        const QVector<MapEditorAreaReference> projectedExpected =
+            mapEditorAreaReferencesForBorderLine(projection, lineNumber);
+        QVERIFY2(sameReferences(logicalIndex.value(lineNumber), logicalExpected),
+                 qPrintable(QStringLiteral("logical line %1").arg(lineNumber)));
+        QVERIFY2(sameReferences(projectedIndex.value(lineNumber), projectedExpected),
+                 qPrintable(QStringLiteral("projected line %1").arg(lineNumber)));
+    }
+
+    QCOMPARE(logicalIndex.value(6).size(), 2);
+    QCOMPARE(logicalIndex.value(2).size(), 1);
+    QVERIFY(logicalIndex.value(10).isEmpty());
 }
 }
 

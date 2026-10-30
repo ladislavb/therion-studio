@@ -15,6 +15,31 @@ Active planning only. Completed history belongs in archive files. Stable archite
 
 ## Active Work
 
+- Continue the approved optimization audit sequence after gamma-preview scheduling, projection-cache retention,
+  scene-membership checks and prepared path-sort keys: digest reuse, completion/block drag, 3D/LOX resource limits, GitHub cancellation,
+  build/resource duplication, and SQL preparation. Measure runtime improvements rather than infer speedups.
+- Verify compiler-preview retention on large stderr-heavy real compiles as well as synthetic stdout. The preview is
+  line-bounded, not byte-bounded; copying the full disk transcript deliberately allocates its text for the clipboard.
+  Review per-window compiler-log disk retention separately from the preview's memory limit.
+- Viewport scrap optimization is measurement-blocked: the production synthetic
+  baseline already submits only visible geometry to paint, explicit hiding
+  retains all full-scene input/selection/zoom scans, and additional normal-view
+  benefit is inconsistent. See `BUGS.md` / `PR-NOTES.md`; obtain a focused
+  interaction trace before implementing ownership-indexed bounded updates or
+  changing scrap visibility. Preserve selection/drag pinning and multiple views.
+- Manually confirm endpoint drag/snap → another wall's Delete Point retains
+  connectivity with the separately staged correctness build after normal GUI
+  closure. Synthetic source/render/undo/save-reload regression is covered; do
+  not replace the currently running executable or mix in viewport culling here.
+- Verify opt-in Map pastel altitude underlay on representative projects after
+  local automated tests: mean mapped LOX station heights relative to flagged
+  entrance, explicitly categorical fallback, no source/export changes.
+- Manually review Settings strength (19% default), XVI centerline `One color` /
+  `By altitude` selection, numeric relative-height sidebar legend, fallback color,
+  and thickness in embedded and detached maps; verify other visible layers stay unchanged.
+- Manually review approximate passage outlines in representative projects;
+  bounded fallback is intentionally incomplete and reports unfilled scraps.
+
 ### 2026.7.2 Planning
 
 - Keep the `2026.7.2` scope open for the focused performance sequence: Map runtime ownership R4-R5 and map refresh
@@ -39,6 +64,12 @@ Active planning only. Completed history belongs in archive files. Stable archite
   and timeout are distinct results, and the same worker recovers for later queries. `MainWindow` now composes the
   settings-backed custom-preset store and CSV file exporter; the tab keeps only preset/dialog presentation while
   deterministic CSV serialization and file IO are focused services with parity coverage.
+- Native 3D visualization now solves survey centrelines directly from `.th` and `.thconfig` without running Therion,
+  supports loop closure and coordinate fixes, and drapes 2D `.th2` scraps onto the 3D centreline via station anchors
+  (`point ... station -name ...`) with Procrustes similarity fit, IDW vertical Z interpolation, and extruded 3D wall ribbons.
+  Direct opening of `.th`, `.thconfig`, and `.th2` is integrated into the 3D Viewer tab and project browser sidebar.
+  3D viewport rendering performance is optimized by precomputing vertex normals at mesh load/projection time and replacing
+  per-frame struct sorting with compact index proxy sorting.
 - Keep LiDAR/point-cloud processing as design/backlog work until the Map/TH2 projection boundary has a concrete import,
   registration, and 2D projection design.
 

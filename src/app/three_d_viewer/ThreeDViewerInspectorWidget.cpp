@@ -14,8 +14,25 @@ namespace TherionStudio
 ThreeDViewerInspectorWidget::ThreeDViewerInspectorWidget(QWidget *parent)
     : QQuickWidget(parent)
 {
+    initialize();
+}
+
+ThreeDViewerInspectorWidget::ThreeDViewerInspectorWidget(ThreeDViewerInspectorState *state,
+                                                         ThreeDViewerLayerListModel *layerModel,
+                                                         QWidget *parent)
+    : QQuickWidget(parent)
+    , inspectorState_(state)
+    , layerModel_(layerModel)
+{
+    initialize();
+}
+
+void ThreeDViewerInspectorWidget::initialize()
+{
     setResizeMode(QQuickWidget::SizeRootObjectToView);
     setClearColor(palette().window().color());
+    // Context must be complete before the QML source is loaded. Changing context
+    // properties after the surface is live aborts in QQuickWidget's offscreen window handling.
     updateContextProperties();
     connect(this, &QQuickWidget::statusChanged, this, [this](QQuickWidget::Status status) {
         if (status != QQuickWidget::Error) {

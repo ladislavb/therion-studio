@@ -4,12 +4,41 @@
 #include "TherionCommandSyntax.h"
 #include "TherionFileTypes.h"
 
+#include <QMutex>
+#include <QMutexLocker>
+
+#include <deque>
 #include <utility>
 
 namespace TherionStudio
 {
 namespace
 {
+// Catalog-free logical documents of large sources are memoized by the identity of the
+// source document's implicitly shared line storage (see TherionSourceDocument::fromText).
+// Each entry pins its source copy so the storage address cannot be reused while cached.
+constexpr qsizetype kLogicalMemoMinLines = 400;
+constexpr std::size_t kLogicalMemoCapacity = 3;
+
+struct LogicalMemoEntry
+{
+    const void *linesData = nullptr;
+    qsizetype lineCount = 0;
+    TherionSourceDocument source;
+    TherionSourceLogicalDocument logical;
+};
+
+QMutex &logicalMemoMutex()
+{
+    static QMutex mutex;
+    return mutex;
+}
+
+std::deque<LogicalMemoEntry> &logicalMemo()
+{
+    static std::deque<LogicalMemoEntry> entries;
+    return entries;
+}
 QString rightTrimmed(QString line)
 {
     while (!line.isEmpty() && line.back().isSpace()) {
@@ -373,7 +402,37 @@ TherionSourceLogicalDocument TherionSourceLogicalDocument::fromText(
 
 TherionSourceLogicalDocument TherionSourceLogicalDocument::fromSourceDocument(const TherionSourceDocument &sourceDocument)
 {
-    return fromSourceDocument(sourceDocument, nullptr);
+    const QVector<TherionSourceDocumentLine> &lines = sourceDocument.lines();
+    if (lines.size() < kLogicalMemoMinLines) {
+        return fromSourceDocument(sourceDocument, nullptr);
+    }
+
+    const void *linesData = lines.constData();
+    {
+        QMutexLocker locker(&logicalMemoMutex());
+        auto &entries = logicalMemo();
+        for (const LogicalMemoEntry &entry : entries) {
+            if (entry.linesData == linesData && entry.lineCount == lines.size()) {
+                TherionSourceLogicalDocument logicalDocument = entry.logical;
+                logicalDocument.metadata_ = sourceDocument.metadata();
+                return logicalDocument;
+            }
+        }
+    }
+
+    TherionSourceLogicalDocument logicalDocument = fromSourceDocument(sourceDocument, nullptr);
+    QMutexLocker locker(&logicalMemoMutex());
+    auto &entries = logicalMemo();
+    entries.push_front(LogicalMemoEntry{
+        .linesData = linesData,
+        .lineCount = lines.size(),
+        .source = sourceDocument,
+        .logical = logicalDocument,
+    });
+    while (entries.size() > kLogicalMemoCapacity) {
+        entries.pop_back();
+    }
+    return logicalDocument;
 }
 
 TherionSourceLogicalDocument TherionSourceLogicalDocument::fromSourceDocument(

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QPointer>
+
 #include "../../core/CommandCatalogStore.h"
 #include "../../core/TherionSourceSnapshotCache.h"
 #include "../../core/TherionSourceValidator.h"
@@ -51,6 +53,9 @@ class TextEditorContextHelpController final
 public:
     explicit TextEditorContextHelpController(TextEditorContextHelpContext context,
                                              CommandCatalogStore catalogStore);
+    ~TextEditorContextHelpController();
+    TextEditorContextHelpController(const TextEditorContextHelpController &) = delete;
+    TextEditorContextHelpController &operator=(const TextEditorContextHelpController &) = delete;
 
     void buildHelpPanel();
     void loadHelpMetadata();
@@ -83,10 +88,13 @@ private:
     void setHelpPanel(QWidget *helpPanel);
     void setHelpBrowser(QTextBrowser *helpBrowser);
     void setHelpTitle(const QString &title);
+    bool deferContextHelpUntilShown();
 
     TextEditorContextHelpContext context_;
     CommandCatalogStore catalogStore_;
     ContextHelpInspector *helpInspector_ = nullptr;
+    QPointer<QObject> helpShowWatcher_;
+    bool contextHelpDirty_ = false;
     mutable int cachedValidationRevision_ = -1;
     mutable TherionSourceValidationResult cachedValidationResult_;
     mutable TherionSourceSnapshotCache sourceSnapshotCache_;

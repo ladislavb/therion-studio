@@ -6,6 +6,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QStringList>
 
 namespace TherionStudio
 {
@@ -15,7 +16,9 @@ class ThreeDViewerInspectorState final : public QObject
     Q_OBJECT
 
     Q_PROPERTY(QString filePath READ filePath WRITE setFilePath NOTIFY filePathChanged)
+    Q_PROPERTY(QStringList sceneWarnings READ sceneWarnings NOTIFY sceneWarningsChanged)
     Q_PROPERTY(int meshColorMode READ meshColorMode WRITE setMeshColorMode NOTIFY meshColorModeChanged)
+    Q_PROPERTY(int centerlineColorMode READ centerlineColorMode WRITE setCenterlineColorMode NOTIFY centerlineColorModeChanged)
     Q_PROPERTY(int backgroundMode READ backgroundMode WRITE setBackgroundMode NOTIFY backgroundModeChanged)
     Q_PROPERTY(bool measurementMode READ measurementMode WRITE setMeasurementMode NOTIFY measurementModeChanged)
     Q_PROPERTY(bool autoRotationEnabled READ autoRotationEnabled WRITE setAutoRotationEnabled NOTIFY autoRotationEnabledChanged)
@@ -41,9 +44,14 @@ public:
 
     QString filePath() const;
     void setFilePath(const QString &filePath);
+    QStringList sceneWarnings() const;
+    void setSceneWarnings(const QStringList &sceneWarnings);
 
     int meshColorMode() const;
     void setMeshColorMode(int meshColorMode);
+
+    int centerlineColorMode() const;
+    void setCenterlineColorMode(int centerlineColorMode);
 
     int backgroundMode() const;
     void setBackgroundMode(int backgroundMode);
@@ -93,7 +101,9 @@ public:
 
 signals:
     void filePathChanged();
+    void sceneWarningsChanged();
     void meshColorModeChanged();
+    void centerlineColorModeChanged();
     void backgroundModeChanged();
     void measurementModeChanged();
     void autoRotationEnabledChanged();
@@ -110,7 +120,9 @@ signals:
 
 private:
     QString filePath_;
+    QStringList sceneWarnings_;
     ThreeDViewerMeshColorMode meshColorMode_ = ThreeDViewerMeshColorMode::Altitude;
+    ThreeDViewerCenterlineColorMode centerlineColorMode_ = ThreeDViewerCenterlineColorMode::Red;
     ThreeDViewerBackgroundMode backgroundMode_ = ThreeDViewerBackgroundMode::Black;
     bool measurementMode_ = false;
     bool autoRotationEnabled_ = false;

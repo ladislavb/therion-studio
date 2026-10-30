@@ -64,6 +64,9 @@ Required capabilities:
 - open files in editor tabs
 - opening a `.lox` file shall create a read-only 3D viewer tab with Reset, Fit, orthogonal-projection toggle, Top/Side view, rotate-left/rotate-right, automatic-rotation, measurement, and PNG image export controls, plus orbit, pan, zoom, arrow-key yaw/tilt navigation, precise camera-orientation, distance, and focal-length adjustment, and world-blue-axis rotation navigation; Fit shall frame the current 3D scene bounds using the active camera orientation and viewport aspect ratio
 - the 3D viewer shall let the user switch model coloring between altitude-based coloring and no model coloring
+- opening 3D from a `.th2` map shall use the current in-memory document and visibility from the Objects panel; hidden scraps and hidden wall objects shall be excluded before projection, and scraps from other referenced `.th2` files shall not be included. Reopening 3D from the map shall refresh the existing viewer with the current visibility rather than creating duplicate tabs.
+- GPU wall rendering shall batch segments by stroke width with per-vertex colors, so the number of wall scene-graph nodes does not grow with the number of segments when stroke widths are unchanged.
+- 3D opened from a TH2 map shall show visible line and point objects without passage fills or area meshes, excluding all border lines (including area boundaries), invisible walls, and all areas. Slope and other retained non-wall strokes shall be thinner than walls (at most 45% of the base wall width). Point outlines shall reuse TH2 symbol geometry. Objects shall retain source visibility and station-based placement, use the selected altitude/TH2 coloring mode, and follow the Walls layer; line decorations are not yet projected.
 - the 3D viewer shall color centerline shots using the same altitude-based or uncolored palette as the meshes
 - the 3D viewer shall render a bounding box around the loaded 3D scene extent
 - the 3D viewer shall let the user switch the scene background between black and white without changing altitude-based model coloring
@@ -170,6 +173,72 @@ Structured block-canvas requirements:
 
 ### 3.3 TH2 Map Editor
 
+- The application shall offer an editor-only pastel scrap altitude underlay in
+  application Settings, persist the preference, and default it to disabled.
+- Settings shall provide persistent `Scrap underlay strength` from 0 to 100 percent,
+  defaulting to 19 percent opacity. Zero shall make the tint invisible. The same
+  strength shall apply to precise/approximate outlines and altitude/categorical
+  colors without changing mean-height hue or station colors.
+- Settings shall provide persistent `XVI centerline color` (including alpha) and
+  `XVI centerline thickness` from 0.1 to 12 px, defaulting to RGBA(18,44,88,130)
+  and 1.8 px. These settings shall affect only XVI station-to-station traverse
+  legs, retaining cosmetic pixel width and existing zoom-out thinning; LRUD
+  outlines/fills, splays, grid, sketches, station markers, TH2 geometry and every
+  other background source shall retain their existing appearance.
+- Settings shall offer `One color` and `By altitude` XVI centerline coloring,
+  defaulting to `By altitude`; the configured centerline color shall remain the
+  fallback for legs whose two endpoint stations cannot each be uniquely resolved
+  to LOX height metadata.
+- Altitude-colored legs shall use only explicit XVI station-table identities at
+  traverse endpoints, resolved through the active project's station index to a
+  unique LOX station. The renderer shall not infer elevation from XVI drawing
+  coordinates, guessed station names, or segment averages. Both endpoint heights
+  and a flagged LOX entrance are required; valid legs shall interpolate the same
+  normalized pastel palette as scrap altitude underlays between their endpoint
+  station colors.
+- The Map Objects sidebar shall show a compact numeric XVI height legend when
+  `By altitude` is selected. Its range shall be relative to the chosen flagged
+  entrance, labeled as LOX-derived and not an absolute datum; segments lacking
+  uniquely resolved endpoint heights shall be identified as using the configured
+  XVI color. When scrap underlays are also enabled, their categorical fallback
+  shall be distinguished from altitude colors.
+- LOX station lookup keys shall use the same normalization as the project station
+  index. Collisions after normalization shall remain ambiguous, not silently pick
+  a height. The XVI legend shall report colored/fallback leg counts and distinguish
+  missing metadata, unreadable LOX, multiple outputs, missing entrance datum, and
+  absence of an XVI background. Multiple outputs shall not be chosen arbitrarily.
+- Manual map zoom shall support 10% through 20,000% (view scales 0.1 through 200).
+  Wheel, pinch and actions shall share one viewport zoom path in embedded and
+  detached maps, retaining cursor anchoring and screen-space geometry affordances.
+- Accepting Settings shall repaint all open maps, including detached maps,
+  without rebuilding the scene or XVI geometry/style-independent caches for
+  appearance-only changes, mutating source, dirty state, or undo history.
+  Cancel shall leave appearance unchanged. Invalid persisted values shall be
+  diagnosed and replaced individually by documented defaults; invalid writes
+  shall be diagnosed and rejected.
+- Enabled underlays shall use the arithmetic mean of distinct, uniquely resolved
+  station heights from a single current-project LOX output. Every mapped station
+  in the scrap shall be resolved; incomplete mapping shall not imply a valid mean.
+- Heights shall be relative to an explicitly flagged LOX entrance, selected by
+  lexicographically first fully qualified station name when multiple entrances
+  exist. LOX coordinates alone shall not be presented as an absolute/GPS datum.
+- Colors shall normalize mean heights against the complete LOX station-height
+  range. Equal heights shall receive equal colors independent of scrap identity.
+- Missing or ambiguous LOX data, missing entrance references, and incomplete
+  station mappings shall use stable identity-derived categorical pastel colors,
+  explicitly described as non-altitude fallback in the UI.
+- Fill shall follow safely closed wall geometry with preserved holes, use the
+  chosen opacity below editable geometry and labels, and not participate in selection.
+- Connected open outline segments shall form independent closed passage contours;
+  explicit inner outlines shall remove fill rather than replace the outer passage.
+  Scraps without a precise contour may use bounded local endpoint-gap closure
+  for an approximate editor-only preview. The UI shall distinguish precise,
+  approximate and unfilled scraps; approximate tooltips shall identify inferred
+  boundaries. Unbounded gaps and ambiguous branching shall remain unfilled.
+- The feature shall not mutate source, exports, or undo history, perform LOX IO
+  when disabled, or recompute data on zoom. Metadata loads shall be asynchronous
+  and bounded; source changes shall update the underlay from cached projections.
+
 The application shall provide a graphical editor for TH2 map documents.
 
 Required capabilities:
@@ -184,12 +253,17 @@ Required capabilities:
   - points
   - areas
 - support object selection, hover feedback, and visibility toggles; selected map objects shall use a red interaction overlay, hover-before-selection feedback shall use an azure/cyan interaction overlay without changing the normal object style color, and the map canvas shall use a crosshair cursor in select mode so the visible cursor hotspot matches hit testing
+- hit testing shall prefer an overlapping point, line, or other selectable object over a filled-area interior within the existing pick radius; a filled area shall remain selectable at interior points only when no other selectable object is within that radius, and its fill shall not intercept pointer delivery to the underlying object; an area boundary line shall remain independently selectable and snappable
 - support dragging and reordering objects where the document model allows it
 - support direct editing of map geometry
 - support undo and redo for all map mutations
 - keep the graphical selection synchronized with the text source where possible
 - keep the text editor selection synchronized with the graphical selection where possible
 - support zooming, panning, and viewport restoration
+- In the graphical editor, nominal line-decoration symbol metrics shall use logical screen pixels across zoom levels: tooth depth, tick length, rung/rail offsets, repeated-symbol size, wave amplitude/length, spacing, and positional/size jitter. This shall include bundled pit/pitch/step, wall-material, handrail, flowstone/moonmilk, and ladder families, as well as catalog overrides, without a line-type-specific sizing exception. Existing spacing adjustment for the available projected line length shall remain effective.
+- Explicit source-derived slope `l-size` lengths shall remain real geometric lengths, including interpolation and orientation; only the nominal slope fallback length and repetition spacing shall use screen pixels. Standalone point geometries, path-following text layout, and area-pattern level-of-detail policies shall not be flattened by this line-decoration policy.
+- The yellow line-direction selection aid shall be anchored to the actual first vertex, retain an 18-logical-pixel length independent of map scale and zoom, follow the first segment's tangent/control handle and reverse state, and update during dragging and viewport rotation.
+- These presentation policies shall not rewrite TH2 coordinates, line-point options, source text, undo transactions, or Therion compiler/export geometry and symbol units. Zoom shall update paint bounds/direction orientation without rebuilding the map scene; fit-to-geometry shall use source geometry bounds rather than zoom-dependent glyph margins. Visible glyphs shall remain drawable even when their underlying line is outside the viewport, and repeated decorations on long lines shall be sampled from visible path intervals without an offscreen marker-count truncation.
 - support an XTherion-style map canvas context menu on right-click or platform secondary-click gestures such as macOS two-finger trackpad click for the current map selection; repeated secondary-clicks while the context menu is open shall retarget the menu to the newly hit object or vertex and show it at the latest click position
 - support fitting the viewport to geometry only or to geometry plus background layers
 - support background imagery and sketch references used by TH2 documents, including multiple layers and `.xvi` vector references
@@ -213,6 +287,7 @@ Map editor editing workflows should include, at minimum:
 - selection of individual vertices or control points when editing geometry
 - point, line, and area insertion shall offer viewport-scale snapping to nearby vertices or point anchors from other map objects, shall highlight candidate vertices on the nearby object for orientation, and shall highlight the active snap target while snapping is offered; Bezier control handles remain free-form
 - dragging an existing line or area vertex shall offer viewport-scale snapping to nearby vertices or point anchors from other map objects, shall highlight candidate vertices on the nearby object for orientation, and shall highlight the active snap target while snapping is offered; Bezier control handles remain free-form
+- when dragging a wall anchor or inserting a wall, wall anchors within the existing snap radius shall take priority over closer non-wall geometry; if no wall anchor is in range, a wall segment within that radius shall take priority; guides and committed coordinates shall follow this policy across scraps, while other line types retain their existing snapping behavior
 - context-menu access to common selected-object and selected-line actions, mirroring the available `Selection` inspector groups for type/subtype edits, editable object fields, `Geometry`, the complete available `Line Point` panel, `Line Point Actions`, and `Object Actions`; unavailable groups and actions shall be omitted from the menu rather than shown disabled, and free text or numeric editors shall be opened/focused in the inspector rather than embedded in the native menu
 
 ### 3.4 Object Settings / Inspector Panels
@@ -642,6 +717,10 @@ The rules below define the expected day-to-day interaction model. If a later req
 - The user shall be able to reset a non-empty project working-directory override and return to automatic working-directory resolution.
 - The status-bar compiler indicator shall show a visible running, success, or failure state for the most recent run.
 - The user shall be able to copy the full console output.
+- The visible compiler output shall retain at most 10,000 lines while the complete current transcript is stored
+  in a local UTF-8 log per application window. Copy shall include evicted preview lines; storage/read failures
+  shall be reported rather than returning a partial transcript as complete. Starting the next run or clearing
+  output resets that window's transcript.
 - The user shall be able to clear the visible console output from the Compiler sidebar without clearing runner settings or the status-bar compiler result.
 - Failures shall be shown as actionable messages rather than raw process noise alone.
 - After a successful run, the application may offer opening the working directory or output folder in the platform file manager.
@@ -797,6 +876,29 @@ Preference behavior rules:
 - additional Therion runner command-line options shall remain session-only and shall not persist across application restarts
 - if a preference cannot be restored exactly, the application shall fall back to a safe default rather than failing to start
 - file-system refresh and project reload actions shall preserve user selections where possible
+
+#### 3.12.1 Local project history — initial user-facing slice
+
+- Settings shall expose `General` and `Backups and versioning` tabs.
+- Backup controls shall identify the current project root. With no project open, they shall remain disabled and explain how to open a project.
+- Local history shall be per-project and disabled by default. Explicit confirmation shall precede the initial checkpoint, with saved-file semantics, exclusions and unencrypted local storage explained.
+- Users shall be able to create manual checkpoints from saved files, refresh a timestamp/label/ID history list and open the isolated history folder. An unchanged snapshot shall not create a duplicate checkpoint.
+- Backup actions and opt-in changes shall apply immediately, independently of the general settings dialog's OK/Cancel; this distinction shall be visible.
+- Disabling shall retain history and its stable project mapping. Existing project Git metadata shall not be modified.
+- Users shall be able to edit the root project `.gitignore` as UTF-8 with explicit save/reload controls. Saving shall reject symlinks, non-regular files and externally changed contents; nested ignore files remain effective. The UI shall warn that saving changes the project's Git behavior, and earlier checkpoints retain old contents.
+- Users shall be able to opt into periodic checks with a persistent project-specific interval of 1–1440 minutes, initially five minutes. Automatic checks shall default to off and run asynchronously only while that project is open; no diff in included saved files means no new checkpoint. Settings may be closed while checks run, and errors shall be logged and surfaced in the status bar.
+- Explicitly confirmed local-history deletion shall first disable history, then remove only the isolated, app-managed store bound to the selected project. It shall not change project files or project Git metadata; a busy store or failed deletion shall produce an error. Reenabling shall allow new history.
+- Snapshot and history operations shall run outside the UI thread, disable conflicting controls while busy, and display failures instead of reporting success.
+- Nested Git repositories shall not silently be stored as gitlinks in place of their file contents; until nested-repository capture is supported, checkpoint creation shall fail with actionable exclusion/separate-project guidance.
+- The right sidebar's File tab shall expose a Backups and restore section with compact icons, visible labels for Older, Newer and Choose backup, current checkpoint status and access to backup settings. It shall explain that backups apply to the whole project, not only this file; no backup group shall appear in the top command bar. The picker shall identify checkpoints by local date/time, label and ID and mark the current restored version. Navigation shall be disabled unless local history is enabled.
+- Project restoration shall require confirmation, successful saving of open modified documents and a safety checkpoint before changing any project file. It shall run asynchronously with editing blocked and shall refuse to run during compilation. Restores shall append history without discarding earlier checkpoints.
+- Restoration shall preserve source bytes and executable flags, leave ignored files and project Git metadata untouched, refuse unsafe paths, links and ignored-file collisions, and attempt rollback on write/publication failure. Interrupted restoration shall leave a durable safety checkpoint pointer and block ordinary checkpoints until that safety state is restored. Unsupported file/directory transitions shall be rejected explicitly.
+- Open project documents shall reload after restoration; tabs for removed files shall close. A completion popup with OK shall identify the restored checkpoint and safety checkpoint, compare added/changed/removed file counts against the pre-restore state and offer file names in details. View reload failures shall be surfaced, not reported as complete UI success.
+- The sidebar backup-settings shortcut shall open Backups and versioning directly, while the ordinary Settings action shall still open General. Backup controls shall be separated into Local backups, GitHub and Excluded files (.gitignore) subtabs without a whole-page scroll area; history and text editors may scroll internally.
+- GitHub owner and repository name shall be saved automatically per project in `.therion-studio-github.json` and loaded when project settings reopen. This versioned-format file shall contain no tokens, passwords or machine-local history paths. Loading shall not contact GitHub or imply current remote verification. Writes shall be atomic, reject links and invalid existing files, and report concurrent modification rather than overwriting another editor's changes.
+- Pre-compilation checkpoints remain pending. The GitHub settings section shall support explicit browser sign-in through GitHub CLI, creation of an empty private repository after confirmation and independent verification of its owner, name and private visibility. Creation shall require system-keyring credentials and use a neutral default name unrelated to the project. Creation/verification alone shall upload no project data or change project Git configuration. Failed or ambiguous creation shall offer verification rather than automatic retries.
+- GitHub uploads shall be a separate default-off per-project plaintext opt-in with an explicit privacy warning. A small File-sidebar GitHub action shall save editors, request a nonempty commit message and upload only the included current snapshot to a verified private repository with push access. Local restore history shall never be published. The first upload shall require a dedicated empty repository. Subsequent uploads shall reject foreign remote changes without force-push or automatic merge, and success shall require remote commit confirmation.
+- A default-off per-project close preference shall check included saved content against the last confirmed upload without network traffic. Only changed projects shall prompt Upload and exit / Exit without uploading / Cancel, after ordinary save/discard handling. Upload failure or cancellation shall leave the application open. Tokens shall remain in memory/system keyring, never in project settings, Git configuration files, command arguments or logs. Encryption, remote restore and multi-computer synchronization remain unavailable.
 
 ### 3.13 Pen, Touch, and Secondary Display Support
 

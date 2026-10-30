@@ -2,7 +2,34 @@
 
 This document records the intended architecture of Therion Studio. It is a design guardrail, not a product specification and not a task backlog.
 
-The product source of truth remains `SPECIFICATION.md`. The active short-form implementation roadmap remains `WORKLOG.md`, with detailed working plans kept under `plans/`. When architecture, implementation, and specification diverge, resolve the divergence explicitly instead of silently choosing one.
+The product source of truth remains `SPECIFICATION.md`. The active short-form implementation roadmap remains `WORKLOG.md`, with detailed working plans kept under `plans/`. The optional local project history and private GitHub backup design is described in [Project Versioning and Backup Plan](plans/PROJECT_VERSIONING_PLAN.md). Settings exposes default-off project opt-in, manual and timed checkpoints, history listing/deletion, and root project ignore-file editing. The isolated Git store never changes the project's Git metadata. The right sidebar's File tab provides project-level backup navigation and restoration. Pre-compilation checkpoints and remote synchronization remain pending. When architecture, implementation, and specification diverge, resolve the divergence explicitly instead of silently choosing one.
+
+Project restoration uses `ProjectVersioningStore` for locked safety capture,
+strict snapshot/path validation, staging, byte-preserving atomic file writes,
+rollback and append-only restore records. A durable restore marker identifies the
+safety checkpoint after interruption; normal capture is blocked until recovery.
+`ProjectVersioningNavigationService` owns asynchronous history/restore operations;
+Per-document `ProjectVersioningToolbar` panels in `DocumentFileInspector` present
+checkpoint status and choices in the right File sidebar and emit requests.
+All panels share the window's navigation service.
+Settings uses separate local-history, GitHub and ignore-file pages.
+`GitHubRepositoryWidget` persists the format version, owner, repository
+name and upload/close-prompt opt-ins in the project root's `.therion-studio-github.json` using guarded atomic
+writes. Credentials remain managed by GitHub CLI/system keyring. Loading project
+metadata never performs authentication or network requests.
+`MainWindowGitHubBackup.cpp` coordinates explicit save/commit-message/upload and
+opt-in close prompts. Snapshot/network work runs outside the GUI thread behind
+an application-modal progress surface. `ProjectGitHubBackup` uses a separate
+application-owned store for upload snapshots and remote-chain state, never the
+project's `.git` or the local restore history. A successful upload requires a
+verified private target and remote ref confirmation; foreign changes are rejected.
+`MainWindowProjectVersioning.cpp` coordinates existing save-all and document
+reload/close workflows with an application-modal progress surface and a result
+comparison. Timed checkpoints pause in this window during restoration. External
+editors and other application instances are not filesystem-locked; concurrent
+changes to affected files are checked and rejected rather than intentionally
+overwritten. Links, ignored-file collisions and file/directory transitions are
+explicitly unsupported in this restoration slice.
 
 Therion language compatibility rules that affect parsing, namespaces, references, source preservation, validation, and project indexing are maintained in `docs/THERION_COMPATIBILITY.md`. Architecture and implementation changes that touch Therion semantics should align with that document or update it with focused verification.
 
@@ -86,6 +113,35 @@ Background metadata parsing and writing is a source projection boundary. XTherio
 Therion namespace and reference semantics are compatibility-critical. In particular, qualified survey references use Therion's innermost-to-outermost order (`child.parent`), not filesystem-style `parent.child`; project-index and validation code should follow `docs/THERION_COMPATIBILITY.md` before adding or changing namespace logic.
 
 ## UI Surface Ownership
+
+The optional Map altitude underlay uses `ScrapAltitudeModel` for pure mean/relative
+height and categorical fallback policy. `ProjectAltitudeService`, composed by
+MainWindow, consumes existing asynchronous output inventory and loads bounded
+survey/station-only LOX metadata off-thread; stale generations cannot publish.
+Project-index station resolution exposes the canonical qualified reference rather
+than duplicating namespace resolution in a renderer. `MapEditorAltitudeUnderlay`
+projects cached source station mappings and paints mouse-transparent passage paths;
+Map scene completion and partial-edit completion refresh this presentation only.
+LOX has no reliable absolute-datum declaration here, so this feature reports
+relative entrance heights only. Multiple LOX outputs deliberately use fallback.
+XVI traverse coloring reuses that bounded LOX metadata and project-index resolution:
+its station table supplies endpoint identities, and only uniquely resolved pairs
+receive interpolated palette colors. The drawing's 2D coordinates never imply
+height; unresolved pairs retain the configured centerline color. The sidebar legend
+reports relative numeric heights and explicitly disclaims an absolute datum.
+`ScrapAltitudeModel` normalizes LOX names to project-index lookup keys before
+detecting collisions. Metadata carries output availability/ambiguity/load-failure
+state; the legend reports actual colored/fallback leg counts and the reason,
+without guessing an output or a datum.
+Underlay contour reconstruction is separate from ordinary area clipping: spatially
+indexed reciprocal nearest endpoints form independent closed components, using
+the existing one-preview-unit connection tolerance. Explicit `outline in` paths
+remove fill, `outline none` is excluded, and explicit non-wall outlines participate.
+The presentation reports precise/approximate/unfilled scraps. Approximate fallback
+uses spatially indexed shortest endpoint pairing only for scraps without a precise
+outer contour, with local extent and inferred/known-length budgets. Coincident
+branch junctions are rejected; dense endpoint buckets and candidate counts are
+bounded. No bounding boxes or unrestricted gap bridges replace passage geometry.
 
 The main project sidebar surfaces have distinct responsibilities. `Files`, `Survey`, and `Map` may be presented as tabs in one project navigation sidebar opened from the `Structure` rail entry, but their ownership stays separate:
 
@@ -173,6 +229,11 @@ The project navigation sidebar displays file navigation and project structure pr
 
 Project source and project-index cache ownership belongs at an explicit application workflow boundary. Structure and Validation scanners may share a `ProjectScanCacheService` composed by `MainWindow` or a future composition root, but they shall not use static/global project-index caches or hidden service locators.
 
+Validation prunes source projections to the current snapshot and catalog at the scan boundary, before borrowing
+projection references. Unchanged projections remain reusable; shared logical-document handles retain their own lifetime.
+Path ordering precomputes canonical and case-folded keys before sorting rather than performing filesystem lookups
+inside comparators. In-memory aliases preserve the original-path tie-break for deterministic override precedence.
+
 Project watch inventory discovery belongs to `ProjectFileWatchInventoryCollector`, a pure application-level filesystem
 component. It normalizes the root, applies shared project discovery skip rules, and returns deterministic paths,
 signatures, skipped paths, and errors; it has no presentation or `QFileSystemWatcher` dependency. A generation-keyed
@@ -194,12 +255,15 @@ Therion command, option, help, style, and symbol metadata should be data-driven.
 - Map-object style discovery and override merging shall occur at Map-editor composition or explicit test setup. The
   resulting immutable catalog is passed to the scene renderer and style preview; rendering and painting shall not load
   resources, inspect environment/settings paths, or access a process-global catalog cache.
+- Map line-decoration items project the unchanged path to logical device coordinates for nominal glyph metrics and visible-interval repetition. Explicit slope `l-size` values remain source-derived geometry. The scene lifecycle synchronizes view-dependent paint bounds and direction-aid orientation without source parsing or scene replacement; fit bounds exclude nominal screen-space margins. Drag previews refresh slope vertex metrics alongside their path.
 - Background asset caching is an application-owned, byte-bounded LRU policy. Cache keys shall include stable normalized
   absolute source identity, asset format, and decode/projection options; cached values retain revision/error state but no graphics-item,
   inspector, or source-transaction state.
 - `MapEditorBackgroundAssetLoader` owns cached background-source reads and the deterministic XVI/SVG decoding needed
   to produce immutable asset payloads. `MapEditorBackgroundLayers` owns placement, graphics-item application, and
   background UI lifecycle; neither responsibility owns the other’s state.
+- Raster gamma previews keep at most one active worker and the latest pending value per layer. Every selection,
+  including a cached preview, supersedes older results; layer/source invalidation drops pending values.
 - A Map source revision is handed to scene refresh through `MapEditorSourceProjectionSnapshot`, held as a
   `shared_ptr<const ...>`. It owns the logical commands, TH2 geometry projection, and source bounds for that one
   revision, so scene refresh shares one immutable identity rather than copying separately cached projections.
@@ -212,6 +276,10 @@ Therion command, option, help, style, and symbol metadata should be data-driven.
   asynchronous, while vector items replace only their immutable source payload or derived geometry.
 
 ## UI Shell Reduction
+
+The compiler console retains at most 10,000 document blocks for rendering. An explicitly composed
+`TherionConsoleOutputStore` owns the complete UTF-8 transcript on disk, independently of the visible preview.
+Copy reads the complete transcript only on explicit user request; log failures are surfaced and prevent partial-copy success.
 
 `MainWindow`, `TextEditorTab`, `MapEditorTab`, and `ThreeDViewerTab` are orchestration shells under active reduction.
 
@@ -237,6 +305,9 @@ The editor-mode layout is stable:
 - `src/app/three_d_viewer/ThreeDViewerInspectorState.*` for QML-ready scene summary data and mesh-coloring mode exposed to the 3D viewer inspector
 - `src/app/three_d_viewer/ThreeDViewerInspectorWidget.*` for the QQuickWidget host that embeds the inspector shell into the Widgets application
 - `src/app/three_d_viewer/ThreeDViewerViewportItem.*` for the QQuickItem-based GPU-backed viewport surface that renders the shared scene model through the Qt Quick scene graph
+- Map-to-3D opening passes the current source snapshot and Objects-panel hidden source lines explicitly. `TherionScrap3D` filters hidden scraps and objects before projecting line and point geometry; station anchors remain local to their owning scrap, even when anchor symbols are hidden. Opening a TH2 scopes geometry to that file, while its survey source still supplies the solved centreline.
+- 3D wall segments share vertex-colored scene-graph batches per stroke width; changing the camera does not allocate a material and node for every altitude-colored segment.
+- Map-to-3D uses the `objectsOnly` projection path: visible lines except borders and invisible walls, and non-station point objects, are draped without building passage or area meshes. Non-wall strokes are capped at 45% of the base wall width; point outline paths reuse the TH2 symbol geometry helpers and join the same width/color batches. Passage fill generation and rendering are disabled; Map underlays are unchanged.
 - `src/app/three_d_viewer/ThreeDViewerViewportItem.*` also owns the mesh-group scene-graph material choice, currently using Qt's built-in GPU vertex-color material for shaded triangle output
 - `src/app/three_d_viewer/ThreeDViewerViewportItem.*` also owns screen-space HUD overlays such as the scene bounding box, compass, scale bar, altitude legend, hover station details, and measurement readouts
 - `src/app/three_d_viewer/ThreeDViewerViewportWidget.*` for the QQuickWidget host that embeds the viewport item into the Widgets application

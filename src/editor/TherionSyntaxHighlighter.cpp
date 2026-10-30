@@ -14,10 +14,20 @@
 #include <QGuiApplication>
 #include <QPalette>
 #include <QRegularExpression>
+#include <QSet>
+#include <QtConcurrent/QtConcurrentRun>
 #include <QTextCharFormat>
 #include <QTextDocument>
 
 #include <utility>
+
+namespace
+{
+// Validating a whole large TH2 (hundreds of kB) costs hundreds of ms; doing it inside
+// highlightBlock() blocks every edit. Large documents are validated off the GUI thread
+// and only the affected blocks are re-highlighted once the result arrives.
+constexpr qsizetype kAsyncValidationMinChars = 64 * 1024;
+}
 
 namespace TherionStudio
 {
@@ -190,13 +200,17 @@ TherionSyntaxHighlighter::TherionSyntaxHighlighter(CommandCatalogStore catalogSt
     : QSyntaxHighlighter(parent)
     , catalogStore_(std::move(catalogStore))
 {
+    connect(&asyncValidationWatcher_,
+            &QFutureWatcher<TherionSourceValidationResult>::finished,
+            this,
+            &TherionSyntaxHighlighter::handleAsyncValidationFinished);
     loadPalette();
 }
 
 void TherionSyntaxHighlighter::reloadPaletteForApplicationAppearance()
 {
     loadPalette();
-    rehighlight();
+    rehighlightFormatsOnly();
 }
 
 void TherionSyntaxHighlighter::setSourceDocumentType(TherionSourceDocumentType sourceType)
@@ -208,8 +222,9 @@ void TherionSyntaxHighlighter::setSourceDocumentType(TherionSourceDocumentType s
     sourceDocumentType_ = sourceType;
     cachedValidationResult_ = {};
     cachedValidationRevision_ = -1;
+    ++validationGeneration_;
     sourceSnapshotCache_.clear();
-    rehighlight();
+    rehighlightFormatsOnly();
 }
 
 void TherionSyntaxHighlighter::loadPalette()
@@ -225,6 +240,7 @@ void TherionSyntaxHighlighter::loadPalette()
     validationCatalog_ = {};
     cachedValidationResult_ = {};
     cachedValidationRevision_ = -1;
+    ++validationGeneration_;
     sourceSnapshotCache_.clear();
 
     const bool darkPalette = applicationUsesDarkSyntaxPalette();
@@ -652,7 +668,7 @@ void TherionSyntaxHighlighter::applyValidatorInvalidTokenFormats(const QString &
 void TherionSyntaxHighlighter::setExternalDiagnostics(const QVector<TherionSourceDiagnostic> &diagnostics)
 {
     externalDiagnostics_ = diagnostics;
-    rehighlight();
+    rehighlightFormatsOnly();
 }
 
 const QTextCharFormat &TherionSyntaxHighlighter::validationFormatForSeverity(
@@ -674,7 +690,16 @@ const TherionSourceValidationResult &TherionSyntaxHighlighter::cachedValidationR
         return emptyResult;
     }
 
+    if (applyingAsyncValidation_) {
+        return cachedValidationResult_;
+    }
+
     const int revision = document()->revision();
+    if (revision != cachedValidationRevision_ && document()->characterCount() >= kAsyncValidationMinChars) {
+        startAsyncValidation(revision);
+        static const TherionSourceValidationResult pendingResult;
+        return pendingResult;
+    }
     if (revision != cachedValidationRevision_) {
         const QString text = document()->toPlainText();
         TherionSourceDocumentMetadata metadata;
@@ -693,5 +718,72 @@ const TherionSourceValidationResult &TherionSyntaxHighlighter::cachedValidationR
         cachedValidationRevision_ = revision;
     }
     return cachedValidationResult_;
+}
+
+void TherionSyntaxHighlighter::rehighlightFormatsOnly()
+{
+    ++formatOnlyDepth_;
+    rehighlight();
+    --formatOnlyDepth_;
+}
+
+void TherionSyntaxHighlighter::startAsyncValidation(int revision)
+{
+    // A running validation is re-checked against the current revision when it finishes.
+    if (asyncValidationWatcher_.isRunning()) {
+        return;
+    }
+
+    asyncValidationRevision_ = revision;
+    asyncValidationGeneration_ = validationGeneration_;
+    TherionSourceDocumentMetadata metadata;
+    metadata.sourceType = sourceDocumentType_;
+    metadata.revisionId = revision;
+    asyncValidationWatcher_.setFuture(QtConcurrent::run(
+        [text = document()->toPlainText(), metadata, catalog = validationCatalog_]() {
+            const TherionSourceDocument sourceDocument = TherionSourceDocument::fromText(text, metadata);
+            const TherionSourceLogicalDocument logicalDocument =
+                TherionSourceLogicalDocument::fromSourceDocument(sourceDocument, catalog);
+            return TherionSourceValidator::validate(sourceDocument, logicalDocument, catalog);
+        }));
+}
+
+void TherionSyntaxHighlighter::handleAsyncValidationFinished()
+{
+    const int finishedRevision = asyncValidationRevision_;
+    asyncValidationRevision_ = -1;
+    QTextDocument *textDocument = document();
+    if (textDocument == nullptr) {
+        return;
+    }
+
+    if (finishedRevision != textDocument->revision() || asyncValidationGeneration_ != validationGeneration_) {
+        startAsyncValidation(textDocument->revision());
+        return;
+    }
+
+    QSet<int> touchedLines;
+    for (const TherionSourceDiagnostic &diagnostic : std::as_const(cachedValidationResult_.diagnostics)) {
+        touchedLines.insert(diagnostic.lineNumber);
+    }
+    cachedValidationResult_ = asyncValidationWatcher_.result();
+    cachedValidationRevision_ = finishedRevision;
+    for (const TherionSourceDiagnostic &diagnostic : std::as_const(cachedValidationResult_.diagnostics)) {
+        touchedLines.insert(diagnostic.lineNumber);
+    }
+
+    // Re-highlighting bumps QTextDocument::revision() without changing the text, so the
+    // result stays valid for the revision reached after applying it.
+    applyingAsyncValidation_ = true;
+    ++formatOnlyDepth_;
+    for (const int lineNumber : std::as_const(touchedLines)) {
+        const QTextBlock block = textDocument->findBlockByNumber(lineNumber - 1);
+        if (block.isValid()) {
+            rehighlightBlock(block);
+        }
+    }
+    --formatOnlyDepth_;
+    applyingAsyncValidation_ = false;
+    cachedValidationRevision_ = textDocument->revision();
 }
 }

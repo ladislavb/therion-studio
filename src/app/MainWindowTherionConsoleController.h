@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QClipboard>
+#include <QCoreApplication>
 #include <QColor>
 #include <QGuiApplication>
 #include <QLineEdit>
@@ -10,20 +11,31 @@
 #include <QTextCharFormat>
 #include <QTextCursor>
 #include <QString>
+#include <QDebug>
+#include <functional>
+#include <utility>
 
 #include "TherionRunnerOutputLinker.h"
+#include "TherionConsoleOutputStore.h"
 
 namespace TherionStudio
 {
 class MainWindowTherionConsoleController final
 {
 public:
+    void setOutputStore(TherionConsoleOutputStore *store,
+                        std::function<void(const QString &)> onError = {})
+    {
+        outputStore_ = store;
+        onOutputError_ = std::move(onError);
+    }
     enum class CopyOutputResult
     {
         Copied,
         Empty,
         ClipboardUnavailable,
-        ConsoleUnavailable
+        ConsoleUnavailable,
+        OutputReadFailed
     };
 
     void bindWidgets(QTextBrowser *consoleView,
@@ -45,6 +57,7 @@ public:
             return;
         }
         activeDiagnosticSeverity_ = DiagnosticSeverity::None;
+        recordOutput(line + QLatin1Char('\n'));
         appendText(line + QLatin1Char('\n'), QString());
     }
 
@@ -53,6 +66,7 @@ public:
         if (consoleView_ == nullptr || output.isEmpty()) {
             return;
         }
+        recordOutput(output);
         appendDiagnosticText(output, workingDirectory);
     }
 
@@ -63,7 +77,9 @@ public:
         if (consoleView_ == nullptr || output.isEmpty()) {
             return;
         }
-        appendDiagnosticText(prefix.arg(output), workingDirectory);
+        const QString text = prefix.arg(output);
+        recordOutput(text);
+        appendDiagnosticText(text, workingDirectory);
     }
 
     CopyOutputResult copyConsoleOutputToClipboard() const
@@ -72,7 +88,15 @@ public:
             return CopyOutputResult::ConsoleUnavailable;
         }
 
-        const QString consoleOutput = consoleView_->toPlainText();
+        QString consoleOutput;
+        if (outputStore_ != nullptr) {
+            if (!outputStore_->readAll(&consoleOutput)) {
+                reportOutputError();
+                return CopyOutputResult::OutputReadFailed;
+            }
+        } else {
+            consoleOutput = consoleView_->toPlainText();
+        }
         if (consoleOutput.trimmed().isEmpty()) {
             return CopyOutputResult::Empty;
         }
@@ -92,6 +116,12 @@ public:
             return false;
         }
 
+        if (outputStore_ != nullptr && !outputStore_->clear()) {
+            reportOutputError();
+            return false;
+        }
+        outputErrorReported_ = false;
+        activeDiagnosticSeverity_ = DiagnosticSeverity::None;
         consoleView_->clear();
         return true;
     }
@@ -113,6 +143,27 @@ public:
     }
 
 private:
+    void recordOutput(const QString &text) const
+    {
+        if (outputStore_ != nullptr && !outputStore_->append(text)) {
+            reportOutputError();
+        }
+    }
+
+    void reportOutputError() const
+    {
+        if (outputErrorReported_) {
+            return;
+        }
+        outputErrorReported_ = true;
+        const QString message = QCoreApplication::translate("MainWindow", "Compiler log error (%1): %2")
+                                    .arg(outputStore_->filePath(), outputStore_->errorString());
+        qWarning().noquote() << message;
+        if (onOutputError_) {
+            onOutputError_(message);
+        }
+    }
+
     enum class DiagnosticSeverity
     {
         None,
@@ -238,5 +289,8 @@ private:
     QLineEdit *workingDirectoryEdit_ = nullptr;
     QLineEdit *argumentsEdit_ = nullptr;
     mutable DiagnosticSeverity activeDiagnosticSeverity_ = DiagnosticSeverity::None;
+    TherionConsoleOutputStore *outputStore_ = nullptr;
+    std::function<void(const QString &)> onOutputError_;
+    mutable bool outputErrorReported_ = false;
 };
 }

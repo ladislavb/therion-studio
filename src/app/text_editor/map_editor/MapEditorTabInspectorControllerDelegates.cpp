@@ -34,7 +34,29 @@ void MapEditorTab::updateHelpPanel()
 
 void MapEditorTab::rebuildInspectorObjectsTree()
 {
+    // A synchronous rebuild supersedes any deferred one.
+    inspectorTreeRebuildPending_ = false;
     MapEditorInspectorObjectController(inspectorObjectContext()).rebuildInspectorObjectsTree();
+}
+
+void MapEditorTab::scheduleInspectorObjectsTreeRebuild()
+{
+    if (inspectorTreeRebuildPending_) {
+        return;
+    }
+    inspectorTreeRebuildPending_ = true;
+    // Run after the pending paint of the refreshed scene so the canvas responds first.
+    QTimer::singleShot(0, this, [this]() {
+        flushDeferredInspectorTreeRebuild();
+    });
+}
+
+void MapEditorTab::flushDeferredInspectorTreeRebuild()
+{
+    if (!inspectorTreeRebuildPending_) {
+        return;
+    }
+    rebuildInspectorObjectsTree();
 }
 
 void MapEditorTab::configureInspectorObjectTreeColumns()
@@ -44,21 +66,26 @@ void MapEditorTab::configureInspectorObjectTreeColumns()
 
 QModelIndex MapEditorTab::findInspectorObjectIndexForLine(int lineNumber) const
 {
+    // Source lines shift after inserts and deletes, so a stale tree would map to the wrong row.
+    const_cast<MapEditorTab *>(this)->flushDeferredInspectorTreeRebuild();
     return MapEditorInspectorObjectController(const_cast<MapEditorTab *>(this)->inspectorObjectContext()).findInspectorObjectIndexForLine(lineNumber);
 }
 
 void MapEditorTab::syncInspectorObjectSelectionToLine(int lineNumber)
 {
+    flushDeferredInspectorTreeRebuild();
     MapEditorInspectorObjectController(inspectorObjectContext()).syncInspectorObjectSelectionToLine(lineNumber);
 }
 
 void MapEditorTab::syncInspectorObjectSelectionToLine(int lineNumber, bool scrollToSelection)
 {
+    flushDeferredInspectorTreeRebuild();
     MapEditorInspectorObjectController(inspectorObjectContext()).syncInspectorObjectSelectionToLine(lineNumber, scrollToSelection);
 }
 
 void MapEditorTab::syncInspectorObjectSelectionToLineExpanding(int lineNumber, bool scrollToSelection)
 {
+    flushDeferredInspectorTreeRebuild();
     MapEditorInspectorObjectController(inspectorObjectContext()).syncInspectorObjectSelectionToLineExpanding(lineNumber, scrollToSelection);
 }
 
@@ -83,11 +110,13 @@ void MapEditorTab::clearInspectorObjectSelection(const QSet<int> &suppressAutoRe
 
 void MapEditorTab::handleInspectorObjectSelectionChanged(const QModelIndex &current)
 {
+    flushDeferredInspectorTreeRebuild();
     MapEditorInspectorObjectController(inspectorObjectContext()).handleInspectorObjectSelectionChanged(current);
 }
 
 void MapEditorTab::handleInspectorObjectClicked(const QModelIndex &index)
 {
+    flushDeferredInspectorTreeRebuild();
     MapEditorInspectorObjectController(inspectorObjectContext()).handleInspectorObjectClicked(index);
 }
 
@@ -115,7 +144,32 @@ void MapEditorTab::setObjectsInspectorAutoCollapseExpandScrapsEnabled(bool enabl
 
 void MapEditorTab::applyInspectorObjectVisibility()
 {
+    flushDeferredInspectorTreeRebuild();
     MapEditorInspectorObjectController(inspectorObjectContext()).applyInspectorObjectVisibility();
+}
+
+void MapEditorTab::hideAllObjects()
+{
+    flushDeferredInspectorTreeRebuild();
+    MapEditorInspectorObjectController(inspectorObjectContext()).hideAllObjects();
+}
+
+void MapEditorTab::showAllObjects()
+{
+    flushDeferredInspectorTreeRebuild();
+    MapEditorInspectorObjectController(inspectorObjectContext()).showAllObjects();
+}
+
+void MapEditorTab::selectNextObject()
+{
+    flushDeferredInspectorTreeRebuild();
+    MapEditorInspectorObjectController(inspectorObjectContext()).selectNextObject(true);
+}
+
+void MapEditorTab::selectPreviousObject()
+{
+    flushDeferredInspectorTreeRebuild();
+    MapEditorInspectorObjectController(inspectorObjectContext()).selectPreviousObject();
 }
 
 void MapEditorTab::configureInspectorBackgroundLayerTreeColumns()

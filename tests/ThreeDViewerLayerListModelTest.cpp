@@ -29,11 +29,15 @@ void ThreeDViewerLayerListModelTest::exposesLayerCountsAndVisibility()
     sceneModel.stations.append(fixedStation);
     sceneModel.meshGroups.append(ThreeDViewerMeshGroup{});
     sceneModel.surfaces.append(ThreeDViewerSurface{});
+    ThreeDViewerScrapPolyline wallLine;
+    wallLine.type = QStringLiteral("wall");
+    wallLine.points = {{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}};
+    sceneModel.scrapLinework.append(wallLine);
 
     ThreeDViewerLayerListModel model;
     model.setSceneModel(sceneModel);
 
-    QCOMPARE(model.rowCount(), 10);
+    QCOMPARE(model.rowCount(), 9);
 
     const QModelIndex centerlineIndex = model.index(0, 0);
     QCOMPARE(model.data(centerlineIndex, Qt::DisplayRole).toString(), QStringLiteral("Centerline"));
@@ -50,10 +54,12 @@ void ThreeDViewerLayerListModelTest::exposesLayerCountsAndVisibility()
     QCOMPARE(model.data(model.index(5, 0), Qt::DisplayRole).toString(), QStringLiteral("Fixed Stations"));
     QCOMPARE(model.data(model.index(6, 0), Qt::DisplayRole).toString(), QStringLiteral("Other Stations"));
     QCOMPARE(model.data(model.index(7, 0), Qt::DisplayRole).toString(), QStringLiteral("Labels"));
-    QCOMPARE(model.data(model.index(3, 0), Qt::CheckStateRole).toInt(), int(Qt::Unchecked));
-    QCOMPARE(model.data(model.index(7, 0), Qt::CheckStateRole).toInt(), int(Qt::Unchecked));
+    QCOMPARE(model.data(model.index(8, 0), Qt::DisplayRole).toString(), QStringLiteral("Walls"));
+    QCOMPARE(model.data(model.index(8, 0), ThreeDViewerLayerListModel::CountRole).toInt(), 1);
     QCOMPARE(model.data(model.index(8, 0), Qt::CheckStateRole).toInt(), int(Qt::Checked));
-    QCOMPARE(model.data(model.index(9, 0), Qt::CheckStateRole).toInt(), int(Qt::Checked));
+    QCOMPARE(model.data(model.index(3, 0), Qt::CheckStateRole).toInt(), int(Qt::PartiallyChecked));
+    QCOMPARE(model.data(model.index(7, 0), Qt::CheckStateRole).toInt(), int(Qt::Checked));
+    QVERIFY(model.layerVisible(2));
 
     QSignalSpy spy(&model, &ThreeDViewerLayerListModel::layerVisibilityChanged);
     QVERIFY(model.setData(centerlineIndex, Qt::Unchecked, Qt::CheckStateRole));
@@ -73,14 +79,15 @@ void ThreeDViewerLayerListModelTest::omitsStationSubgroupsWhenOnlyOneStationClas
     ThreeDViewerLayerListModel model;
     model.setSceneModel(sceneModel);
 
-    QCOMPARE(model.rowCount(), 6);
+    QCOMPARE(model.rowCount(), 5);
     QCOMPARE(model.data(model.index(0, 0), Qt::DisplayRole).toString(), QStringLiteral("Centerline"));
     QCOMPARE(model.data(model.index(1, 0), Qt::DisplayRole).toString(), QStringLiteral("Underground"));
     QCOMPARE(model.data(model.index(2, 0), Qt::DisplayRole).toString(), QStringLiteral("Stations"));
     QCOMPARE(model.data(model.index(2, 0), ThreeDViewerLayerListModel::HasChildrenRole).toBool(), false);
     QCOMPARE(model.data(model.index(3, 0), Qt::DisplayRole).toString(), QStringLiteral("Labels"));
-    QCOMPARE(model.data(model.index(4, 0), Qt::DisplayRole).toString(), QStringLiteral("Meshes"));
-    QCOMPARE(model.data(model.index(5, 0), Qt::DisplayRole).toString(), QStringLiteral("Surfaces"));
+    QCOMPARE(model.data(model.index(4, 0), Qt::DisplayRole).toString(), QStringLiteral("Walls"));
+    QVERIFY(model.layerVisible(2));
+    QVERIFY(model.layerVisible(3));
 }
 
 int runThreeDViewerLayerListModelTest(int argc, char **argv)

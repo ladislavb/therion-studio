@@ -41,6 +41,15 @@ public:
                                                    QVector<TherionSourceTextEdit> edits,
                                                    QString *errorMessage = nullptr);
 
+    // Edits for several vertices of one line/area, all expressed against `contents`.
+    // Fails (so callers can fall back to sequential rewrites) when the combined edits overlap.
+    [[nodiscard]] static bool lineAreaVerticesRewriteEdits(const QString &contents,
+                                                           int lineNumber,
+                                                           const QString &kind,
+                                                           const QVector<std::pair<int, QPointF>> &vertexMoves,
+                                                           QVector<TherionSourceTextEdit> *edits,
+                                                           QString *errorMessage = nullptr);
+
     [[nodiscard]] static bool structureEntryNameRewriteEdits(const QString &contents,
                                                              int lineNumber,
                                                              const QString &category,

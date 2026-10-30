@@ -6,6 +6,7 @@
 #include <QVector>
 
 #include <functional>
+#include <optional>
 
 class QGraphicsItem;
 class QGraphicsPathItem;
@@ -54,7 +55,8 @@ public:
     void restoreDraftGeometryItems();
     void restoreBackgroundImageItems();
     void updateSceneRectForBackgroundBounds();
-    void fitMapToView(bool includeBackgroundImages, bool updateCommandSurface = true);
+    void fitMapToView(bool includeBackgroundImages, bool updateCommandSurface = true,
+                      std::optional<QRectF> geometryFitBounds = std::nullopt);
     void syncZoomFactorFromView();
     void applyZoomAtViewportPosition(qreal factor, const QPointF &viewportPosition);
     void adjustMapZoom(qreal factor);

@@ -4,11 +4,15 @@
 
 #include <QColor>
 #include <QGraphicsPathItem>
+#include <QList>
 #include <QPainterPath>
 #include <QPointF>
+#include <QPolygonF>
 #include <QRectF>
+#include <QTransform>
 #include <QVector>
 
+#include <array>
 #include <optional>
 
 namespace TherionStudio
@@ -17,6 +21,13 @@ struct MapEditorLineDecorationVertex
 {
     QPointF anchor;
     std::optional<qreal> pathDistance;
+    std::optional<qreal> orientationDegrees;
+    std::optional<qreal> leftSize;
+};
+
+struct MapEditorLineDecorationVertexMetric
+{
+    qreal distance = 0.0;
     std::optional<qreal> orientationDegrees;
     std::optional<qreal> leftSize;
 };
@@ -34,7 +45,12 @@ public:
                                 QGraphicsItem *parent = nullptr);
 
     void setDecorationPath(const QPainterPath &path);
+    void setDecorationPath(const QPainterPath &path,
+                           const QVector<MapEditorLineDecorationVertex> &lineVertices);
+    bool usesLineVertexMetrics() const;
+    void updateViewTransform(const QTransform &viewTransform);
     QRectF boundingRect() const override;
+    QRectF sourceGeometryBounds() const;
     qreal hitDistancePixels(const QPointF &scenePosition, const QTransform &viewTransform) const;
 
 protected:
@@ -43,25 +59,31 @@ protected:
                QWidget *widget = nullptr) override;
 
 private:
-    enum class DrawMode
+    struct ProjectedPathCacheEntry
     {
-        Ticks,
-        Rungs,
-        Teeth,
-        Symbols,
-        Waves
+        QTransform transform;
+        QList<QPolygonF> polygons;
+        QVector<QVector<qreal>> cumulativeDistances;
+        bool valid = false;
     };
 
     void updatePaintBounds();
-    void drawDecorations(QPainter *painter, qreal zoomOutScale);
-    void drawOffsetStroke(QPainter *painter,
-                          const MapEditorLineDecorationStyle &decoration,
-                          qreal offset,
-                          qreal zoomOutScale);
-    void drawRepeated(QPainter *painter,
-                      const MapEditorLineDecorationStyle &decoration,
-                      qreal zoomOutScale,
-                      DrawMode mode);
+    qreal cachedPathLength() const;
+    const QVector<MapEditorLineDecorationVertexMetric> &cachedSourceMetrics() const;
+    const ProjectedPathCacheEntry &projectedPolygonsForProjection(const QTransform &projection) const;
+    void drawDecorations(QPainter *painter,
+                         qreal zoomOutScale,
+                         const QTransform &projection,
+                         const QPointF &projectionOffset,
+                         const QList<QPolygonF> &polygons,
+                         const QVector<QVector<qreal>> &cumulativeDistances);
+    void drawScreenDecoration(QPainter *painter,
+                              const MapEditorLineDecorationStyle &decoration,
+                              qreal zoomOutScale,
+                              const QTransform &projection,
+                              const QPointF &projectionOffset,
+                              const QList<QPolygonF> &polygons,
+                              const QVector<QVector<qreal>> &cumulativeDistances);
     void drawTick(QPainter *painter,
                   const MapEditorLineDecorationStyle &decoration,
                   const QPointF &point,
@@ -71,11 +93,6 @@ private:
                   const MapEditorLineDecorationStyle &decoration,
                   const QPointF &point,
                   const QPointF &normal);
-    void drawTooth(QPainter *painter,
-                   const MapEditorLineDecorationStyle &decoration,
-                   qreal centerDistance,
-                   qreal markerStep,
-                   int markerIndex);
     void drawSymbol(QPainter *painter,
                     const MapEditorLineDecorationStyle &decoration,
                     const QPointF &point,
@@ -89,9 +106,6 @@ private:
                   const QPointF &tangent,
                   const QPointF &normal,
                   int markerIndex);
-    void drawSlopeTicks(QPainter *painter,
-                        const MapEditorLineDecorationStyle &decoration,
-                        qreal zoomOutScale);
 
     QVector<MapEditorLineDecorationStyle> decorations_;
     QVector<MapEditorLineDecorationVertex> lineVertices_;
@@ -101,5 +115,14 @@ private:
     qreal linePointLengthScale_ = 1.0;
     QRectF paintBounds_;
     std::optional<QColor> interactionColorOverride_;
+    qreal screenPaddingScale_ = 2.0;
+    mutable QPainterPath projectedPathSource_;
+    mutable std::array<ProjectedPathCacheEntry, 2> projectedPathCache_;
+    mutable std::size_t mostRecentProjection_ = 0;
+    mutable qreal cachedPathLength_ = -1.0;
+    mutable QVector<MapEditorLineDecorationVertexMetric> cachedSourceMetrics_;
+    mutable bool cachedSourceMetricsValid_ = false;
 };
+
+void updateMapEditorScreenSpaceMetrics(QGraphicsScene *scene, const QTransform &viewTransform);
 }

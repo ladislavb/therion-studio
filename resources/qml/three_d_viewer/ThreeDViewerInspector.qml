@@ -58,6 +58,15 @@ Rectangle {
             y: root.outerMargin
             spacing: 12
 
+            Label {
+                objectName: "sceneWarnings"
+                Layout.fillWidth: true
+                visible: inspectorState && inspectorState.sceneWarnings.length > 0
+                text: inspectorState ? inspectorState.sceneWarnings.join("\n") : ""
+                wrapMode: Text.Wrap
+                color: root.textColor
+            }
+
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: cameraContent.implicitHeight + root.sectionHeaderHeight + root.sectionPadding
@@ -314,13 +323,36 @@ Rectangle {
 
                         Label {
                             Layout.preferredWidth: 120
-                            text: qsTr("Model Coloring")
+                            text: qsTr("Centerline Coloring")
                             color: root.textColor
                         }
 
                         ComboBox {
                             Layout.fillWidth: true
-                            model: [qsTr("Altitude"), qsTr("None")]
+                            model: [qsTr("Red"), qsTr("Altitude")]
+                            currentIndex: inspectorState ? inspectorState.centerlineColorMode : 0
+                            onActivated: {
+                                if (inspectorState) {
+                                    inspectorState.centerlineColorMode = currentIndex
+                                }
+                            }
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Label {
+                            Layout.preferredWidth: 120
+                            text: qsTr("Scrap Coloring")
+                            color: root.textColor
+                        }
+
+                        ComboBox {
+                            objectName: "scrapColorModeComboBox"
+                            Layout.fillWidth: true
+                            model: [qsTr("Altitude"), qsTr("TH2 Style")]
                             currentIndex: inspectorState ? inspectorState.meshColorMode : 0
                             onActivated: {
                                 if (inspectorState) {

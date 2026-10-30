@@ -12,6 +12,7 @@
 #include <QGuiApplication>
 #include <QImage>
 #include <QKeyEvent>
+#include <QMap>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QQuickWindow>
@@ -36,8 +37,7 @@ namespace
 constexpr int kCenterlineLayer = 0;
 constexpr int kStationsLayer = 1;
 constexpr int kLabelsLayer = 2;
-constexpr int kMeshesLayer = 3;
-constexpr int kSurfacesLayer = 4;
+constexpr int kScrapWallsLayer = 3;
 constexpr double kPi = 3.14159265358979323846;
 constexpr int kAutoRotationIntervalMs = 16;
 constexpr qint64 kMaxAutoRotationStepMs = 100;
@@ -175,6 +175,71 @@ void appendClosedPolyline(QSGNode *root,
     appendGeometryNode(root, closedPoints, QSGGeometry::DrawLineStrip, color, lineWidth);
 }
 
+struct CachedTextTexture
+{
+    QSGTexture *texture = nullptr;
+    QSizeF logicalSize;
+};
+
+class ThreeDViewerRootNode final : public QSGNode
+{
+public:
+    ~ThreeDViewerRootNode() override
+    {
+        clearCachedTextures();
+    }
+
+    void clearChildNodesKeepingCache()
+    {
+        while (QSGNode *child = firstChild()) {
+            removeChildNode(child);
+            delete child;
+        }
+    }
+
+    void clearCachedTextures()
+    {
+        for (auto it = textureCache_.cbegin(); it != textureCache_.cend(); ++it) {
+            delete it.value().texture;
+        }
+        textureCache_.clear();
+    }
+
+    CachedTextTexture findOrCreateTextTexture(QQuickWindow *window,
+                                              const QString &cacheKey,
+                                              const std::function<QImage(qreal, QSizeF *)> &rasterize,
+                                              qreal texturePixelRatio)
+    {
+        if (window == nullptr) {
+            return {};
+        }
+        if (cachedWindow_ != window || textureCache_.size() > 2048) {
+            clearCachedTextures();
+            cachedWindow_ = window;
+        }
+        const auto existing = textureCache_.constFind(cacheKey);
+        if (existing != textureCache_.cend() && existing.value().texture != nullptr) {
+            return existing.value();
+        }
+        QSizeF logicalSize;
+        const QImage image = rasterize(texturePixelRatio, &logicalSize);
+        if (image.isNull()) {
+            return {};
+        }
+        QSGTexture *texture = window->createTextureFromImage(image);
+        if (texture == nullptr) {
+            return {};
+        }
+        const CachedTextTexture entry{texture, logicalSize};
+        textureCache_.insert(cacheKey, entry);
+        return entry;
+    }
+
+private:
+    QQuickWindow *cachedWindow_ = nullptr;
+    QHash<QString, CachedTextTexture> textureCache_;
+};
+
 void appendTextNode(QSGNode *root,
                     QQuickWindow *window,
                     const QString &text,
@@ -187,26 +252,57 @@ void appendTextNode(QSGNode *root,
         return;
     }
 
-    const QFontMetricsF metrics(font);
-    const qreal width = std::ceil(std::max<qreal>(1.0, metrics.horizontalAdvance(text)));
-    const qreal height = std::ceil(std::max<qreal>(1.0, metrics.height()));
     const qreal texturePixelRatio = window->effectiveDevicePixelRatio() * std::max<qreal>(1.0, textureScale);
-    QImage image(QSize(static_cast<int>(std::ceil(width * texturePixelRatio)),
-                       static_cast<int>(std::ceil(height * texturePixelRatio))),
-                 QImage::Format_ARGB32_Premultiplied);
+    const QString cacheKey = QStringLiteral("T|%1|%2|%3|%4")
+                                 .arg(text,
+                                      QString::number(color.rgba(), 16),
+                                      font.key(),
+                                      QString::number(qRound(texturePixelRatio * 100.0)));
+
+    auto *cachedRoot = dynamic_cast<ThreeDViewerRootNode *>(root);
+    const auto rasterize = [&text, &color, &font](qreal dpr, QSizeF *outSize) -> QImage {
+        const QFontMetricsF metrics(font);
+        const qreal width = std::ceil(std::max<qreal>(1.0, metrics.horizontalAdvance(text)));
+        const qreal height = std::ceil(std::max<qreal>(1.0, metrics.height()));
+        if (outSize != nullptr) {
+            *outSize = QSizeF(width, height);
+        }
+        QImage image(QSize(static_cast<int>(std::ceil(width * dpr)),
+                           static_cast<int>(std::ceil(height * dpr))),
+                     QImage::Format_ARGB32_Premultiplied);
+        if (image.isNull()) {
+            return {};
+        }
+        image.setDevicePixelRatio(dpr);
+        image.fill(Qt::transparent);
+
+        QPainter painter(&image);
+        painter.setRenderHint(QPainter::TextAntialiasing, true);
+        painter.setPen(color);
+        painter.setFont(font);
+        painter.drawText(QPointF(0.0, metrics.ascent()), text);
+        painter.end();
+        return image;
+    };
+
+    if (cachedRoot != nullptr) {
+        const CachedTextTexture entry = cachedRoot->findOrCreateTextTexture(window, cacheKey, rasterize, texturePixelRatio);
+        if (entry.texture == nullptr) {
+            return;
+        }
+        auto *textNode = new QSGSimpleTextureNode;
+        textNode->setTexture(entry.texture);
+        textNode->setOwnsTexture(false);
+        textNode->setRect(QRectF(position, entry.logicalSize));
+        root->appendChildNode(textNode);
+        return;
+    }
+
+    QSizeF logicalSize;
+    const QImage image = rasterize(texturePixelRatio, &logicalSize);
     if (image.isNull()) {
         return;
     }
-    image.setDevicePixelRatio(texturePixelRatio);
-    image.fill(Qt::transparent);
-
-    QPainter painter(&image);
-    painter.setRenderHint(QPainter::TextAntialiasing, true);
-    painter.setPen(color);
-    painter.setFont(font);
-    painter.drawText(QPointF(0.0, metrics.ascent()), text);
-    painter.end();
-
     QSGTexture *texture = window->createTextureFromImage(image);
     if (texture == nullptr) {
         return;
@@ -215,7 +311,7 @@ void appendTextNode(QSGNode *root,
     auto *textNode = new QSGSimpleTextureNode;
     textNode->setTexture(texture);
     textNode->setOwnsTexture(true);
-    textNode->setRect(QRectF(position, QSizeF(width, height)));
+    textNode->setRect(QRectF(position, logicalSize));
     root->appendChildNode(textNode);
 }
 
@@ -229,6 +325,68 @@ void appendTextNodeWithShadow(QSGNode *root,
                               const QPointF &shadowOffset = QPointF(1.0, 1.0),
                               qreal textureScale = 1.0)
 {
+    if (window == nullptr || text.isEmpty()) {
+        return;
+    }
+
+    auto *cachedRoot = dynamic_cast<ThreeDViewerRootNode *>(root);
+    if (cachedRoot != nullptr) {
+        const qreal texturePixelRatio = window->effectiveDevicePixelRatio() * std::max<qreal>(1.0, textureScale);
+        const QString cacheKey = QStringLiteral("S|%1|%2|%3|%4|%5|%6,%7")
+                                     .arg(text,
+                                          QString::number(color.rgba(), 16),
+                                          QString::number(shadowColor.rgba(), 16),
+                                          font.key(),
+                                          QString::number(qRound(texturePixelRatio * 100.0)),
+                                          QString::number(shadowOffset.x(), 'f', 1),
+                                          QString::number(shadowOffset.y(), 'f', 1));
+        const CachedTextTexture entry = cachedRoot->findOrCreateTextTexture(
+            window,
+            cacheKey,
+            [&text, &color, &shadowColor, &shadowOffset, &font](qreal dpr, QSizeF *outSize) -> QImage {
+                const QFontMetricsF metrics(font);
+                const qreal padX = std::ceil(std::abs(shadowOffset.x())) + 1.0;
+                const qreal padY = std::ceil(std::abs(shadowOffset.y())) + 1.0;
+                const qreal width = std::ceil(std::max<qreal>(1.0, metrics.horizontalAdvance(text))) + padX;
+                const qreal height = std::ceil(std::max<qreal>(1.0, metrics.height())) + padY;
+                if (outSize != nullptr) {
+                    *outSize = QSizeF(width, height);
+                }
+                QImage image(QSize(static_cast<int>(std::ceil(width * dpr)),
+                                   static_cast<int>(std::ceil(height * dpr))),
+                             QImage::Format_ARGB32_Premultiplied);
+                if (image.isNull()) {
+                    return {};
+                }
+                image.setDevicePixelRatio(dpr);
+                image.fill(Qt::transparent);
+
+                QPainter painter(&image);
+                painter.setRenderHint(QPainter::TextAntialiasing, true);
+                painter.setFont(font);
+                painter.setPen(shadowColor);
+                painter.drawText(QPointF(std::max<qreal>(0.0, shadowOffset.x()),
+                                         metrics.ascent() + std::max<qreal>(0.0, shadowOffset.y())),
+                                 text);
+                painter.setPen(color);
+                painter.drawText(QPointF(std::max<qreal>(0.0, -shadowOffset.x()),
+                                         metrics.ascent() + std::max<qreal>(0.0, -shadowOffset.y())),
+                                 text);
+                painter.end();
+                return image;
+            },
+            texturePixelRatio);
+        if (entry.texture == nullptr) {
+            return;
+        }
+        auto *textNode = new QSGSimpleTextureNode;
+        textNode->setTexture(entry.texture);
+        textNode->setOwnsTexture(false);
+        textNode->setRect(QRectF(position, entry.logicalSize));
+        root->appendChildNode(textNode);
+        return;
+    }
+
     appendTextNode(root,
                    window,
                    text,
@@ -625,7 +783,7 @@ qreal measureTextCardHeight(const QString &title, const QString &body)
 
 void appendSceneStatisticsOverlay(QSGNode *root,
                                   QQuickWindow *window,
-                                  const ThreeDViewerSceneModel &sceneModel,
+                                  const ThreeDViewerPreparedScene &preparedScene,
                                   int viewportWidth,
                                   int viewportHeight,
                                   ThreeDViewerBackgroundMode backgroundMode,
@@ -634,8 +792,8 @@ void appendSceneStatisticsOverlay(QSGNode *root,
     Q_UNUSED(viewportWidth);
     Q_UNUSED(viewportHeight);
 
-    const ThreeDViewerSceneStatistics statistics = computeThreeDViewerSceneStatistics(sceneModel);
-    if (sceneModel.isEmpty() || (statistics.caveLengthMeters <= 0.0 && statistics.caveDepthMeters <= 0.0)) {
+    const ThreeDViewerSceneStatistics &statistics = preparedScene.statistics;
+    if (preparedScene.sceneModel.isEmpty() || (statistics.caveLengthMeters <= 0.0 && statistics.caveDepthMeters <= 0.0)) {
         return;
     }
 
@@ -779,16 +937,17 @@ const ThreeDViewerStation *pickStationAtPosition(const ThreeDViewerSceneModel &s
     return bestStation;
 }
 
-const ThreeDViewerStation *stationById(const ThreeDViewerSceneModel &sceneModel, quint32 stationId)
+const ThreeDViewerStation *stationById(const ThreeDViewerPreparedScene &preparedScene, quint32 stationId)
 {
     if (stationId == 0) {
         return nullptr;
     }
 
-    for (const ThreeDViewerStation &station : sceneModel.stations) {
-        if (station.id == stationId) {
-            return &station;
-        }
+    const auto it = preparedScene.stationIndexById.constFind(stationId);
+    if (it != preparedScene.stationIndexById.cend()
+        && it.value() >= 0
+        && it.value() < preparedScene.sceneModel.stations.size()) {
+        return &preparedScene.sceneModel.stations.at(it.value());
     }
     return nullptr;
 }
@@ -893,6 +1052,7 @@ QSet<quint32> visibleCenterlineStationIds(const ThreeDViewerSceneModel &sceneMod
         return stationIds;
     }
 
+    stationIds.reserve(sceneModel.stations.size());
     for (const ThreeDViewerShot &shot : sceneModel.shots) {
         if (!centerlineShotVisible(shot, layerVisibility, featureVisibility)) {
             continue;
@@ -931,7 +1091,7 @@ bool stationFeatureFiltersActive(const ThreeDViewerSceneModel &sceneModel)
 }
 
 bool stationVisibleForLayer(const ThreeDViewerStation &station,
-                            const ThreeDViewerSceneModel &sceneModel,
+                            bool filtersActive,
                             const std::array<bool, 5> &layerVisibility,
                             const ThreeDViewerLayerListModel::FeatureVisibility &featureVisibility,
                             const QSet<quint32> &visibleCenterlineStationIds)
@@ -944,7 +1104,7 @@ bool stationVisibleForLayer(const ThreeDViewerStation &station,
         return false;
     }
 
-    return !stationFeatureFiltersActive(sceneModel)
+    return !filtersActive
         || stationFeatureEnabled(station, featureVisibility.stations);
 }
 
@@ -969,7 +1129,43 @@ QFont stationLabelFont()
     return font;
 }
 
-DeclutterLockSelection selectDeclutterLocks(const ThreeDViewerSceneModel &sceneModel,
+std::shared_ptr<const ThreeDViewerPreparedScene> buildPreparedScene(const ThreeDViewerSceneModel &sceneModel)
+{
+    auto prepared = std::make_shared<ThreeDViewerPreparedScene>();
+    prepared->sceneModel = sceneModel;
+    prepared->bounds = sceneModel.bounds();
+    prepared->statistics = computeThreeDViewerSceneStatistics(sceneModel);
+    prepared->stationFeatureFiltersActive = stationFeatureFiltersActive(sceneModel);
+
+    const qsizetype stationCount = sceneModel.stations.size();
+    prepared->stationIndexById.reserve(stationCount);
+    prepared->stationQualifiedNames.reserve(stationCount);
+    prepared->stationDisplayLabels.reserve(stationCount);
+    prepared->stationLabelSizes.reserve(stationCount);
+
+    const QFontMetricsF labelMetrics(stationLabelFont());
+    for (qsizetype i = 0; i < stationCount; ++i) {
+        const ThreeDViewerStation &station = sceneModel.stations.at(i);
+        prepared->stationIndexById.insert(station.id, i);
+        const QString qualifiedName = sceneModel.stationQualifiedName(station);
+        prepared->stationQualifiedNames.push_back(qualifiedName);
+        if (qualifiedName.isEmpty()) {
+            prepared->stationDisplayLabels.push_back(QString());
+            prepared->stationLabelSizes.push_back(QSizeF());
+        } else {
+            const QString displayLabel = QStringLiteral("%1 [%2]").arg(qualifiedName, formatMeters(station.position.z));
+            prepared->stationDisplayLabels.push_back(displayLabel);
+            const QSizeF rawSize = labelMetrics.size(Qt::TextSingleLine, displayLabel);
+            prepared->stationLabelSizes.push_back(
+                QSizeF(std::max<qreal>(1.0, rawSize.width() + kStationLabelPadding * 2.0),
+                       std::max<qreal>(1.0, rawSize.height() + kStationLabelPadding * 2.0)));
+        }
+    }
+
+    return prepared;
+}
+
+DeclutterLockSelection selectDeclutterLocks(const ThreeDViewerPreparedScene &preparedScene,
                                             const ThreeDViewerCamera &camera,
                                             const std::array<bool, 5> &layerVisibility,
                                             const ThreeDViewerLayerListModel::FeatureVisibility &featureVisibility,
@@ -982,12 +1178,13 @@ DeclutterLockSelection selectDeclutterLocks(const ThreeDViewerSceneModel &sceneM
         return selection;
     }
 
+    const ThreeDViewerSceneModel &sceneModel = preparedScene.sceneModel;
     const QSet<quint32> visibleStationIds = visibleCenterlineStationIds(sceneModel, layerVisibility, featureVisibility);
     if (layerVisibility.at(kStationsLayer)) {
         QVector<QRectF> occupiedStationBounds;
         occupiedStationBounds.reserve(std::min(sceneModel.stations.size(), qsizetype(512)));
         for (const ThreeDViewerStation &station : sceneModel.stations) {
-            if (!stationVisibleForLayer(station, sceneModel, layerVisibility, featureVisibility, visibleStationIds)) {
+            if (!stationVisibleForLayer(station, preparedScene.stationFeatureFiltersActive, layerVisibility, featureVisibility, visibleStationIds)) {
                 continue;
             }
 
@@ -1009,12 +1206,15 @@ DeclutterLockSelection selectDeclutterLocks(const ThreeDViewerSceneModel &sceneM
         const QFont labelFont = stationLabelFont();
         QVector<QRectF> occupiedLabelBounds;
         occupiedLabelBounds.reserve(std::min(sceneModel.stations.size(), qsizetype(512)));
-        for (const ThreeDViewerStation &station : sceneModel.stations) {
+        for (qsizetype i = 0; i < sceneModel.stations.size(); ++i) {
+            const ThreeDViewerStation &station = sceneModel.stations.at(i);
             if (!stationLabelVisibleForLayer(station, layerVisibility, visibleStationIds)) {
                 continue;
             }
 
-            const QString label = sceneModel.stationQualifiedName(station);
+            const QString label = i < preparedScene.stationDisplayLabels.size()
+                ? preparedScene.stationDisplayLabels.at(i)
+                : QString();
             if (label.isEmpty()) {
                 continue;
             }
@@ -1025,7 +1225,9 @@ DeclutterLockSelection selectDeclutterLocks(const ThreeDViewerSceneModel &sceneM
             }
 
             const QPointF labelPosition = projected.screenPosition + QPointF(kStationLabelOffsetX, kStationLabelOffsetY);
-            const QRectF labelBounds = textBoundsAt(label, labelFont, labelPosition);
+            const QRectF labelBounds = i < preparedScene.stationLabelSizes.size() && preparedScene.stationLabelSizes.at(i).isValid()
+                ? QRectF(labelPosition - QPointF(kStationLabelPadding, kStationLabelPadding), preparedScene.stationLabelSizes.at(i))
+                : textBoundsAt(label, labelFont, labelPosition);
             if (intersectsAny(labelBounds, occupiedLabelBounds)) {
                 continue;
             }
@@ -1037,60 +1239,53 @@ DeclutterLockSelection selectDeclutterLocks(const ThreeDViewerSceneModel &sceneM
     return selection;
 }
 
-QVector<QPointF> projectedCircle(const QPointF &center, double radius, int segments = 20)
+QVector<QPointF> buildUnitCircle(int segments)
 {
     QVector<QPointF> points;
-    points.reserve(segments + 2);
-    points.push_back(center);
-    for (int index = 0; index <= segments; ++index) {
+    points.reserve(segments);
+    for (int index = 0; index < segments; ++index) {
+        const double angle = double(index) * 2.0 * kPi / double(segments);
+        points.push_back(QPointF(std::cos(angle), std::sin(angle)));
+    }
+    return points;
+}
+
+QVector<QPointF> projectedCircle(const QPointF &center, double radius, int segments = 20)
+{
+    static const QVector<QPointF> kUnitCircle20 = buildUnitCircle(20);
+    static const QVector<QPointF> kUnitCircle12 = buildUnitCircle(12);
+    const QVector<QPointF> *unitCircle = segments == 20 ? &kUnitCircle20
+        : segments == 12 ? &kUnitCircle12
+        : nullptr;
+
+    QVector<QPointF> points;
+    points.reserve(segments);
+    if (unitCircle != nullptr) {
+        for (const QPointF &u : *unitCircle) {
+            points.push_back(QPointF(center.x() + u.x() * radius, center.y() + u.y() * radius));
+        }
+        return points;
+    }
+
+    for (int index = 0; index < segments; ++index) {
         const double angle = double(index) * 2.0 * kPi / double(segments);
         points.push_back(QPointF(center.x() + std::cos(angle) * radius, center.y() + std::sin(angle) * radius));
     }
     return points;
 }
 
-ThreeDViewerVec3 subtract(const ThreeDViewerVec3 &left, const ThreeDViewerVec3 &right)
+void appendFilledCircle(QSGNode *root, const QPointF &center, qreal radius, const QColor &color, int segments = 20)
 {
-    return {left.x - right.x, left.y - right.y, left.z - right.z};
-}
-
-ThreeDViewerVec3 add(const ThreeDViewerVec3 &left, const ThreeDViewerVec3 &right)
-{
-    return {left.x + right.x, left.y + right.y, left.z + right.z};
-}
-
-ThreeDViewerVec3 scaled(const ThreeDViewerVec3 &value, double factor)
-{
-    return {value.x * factor, value.y * factor, value.z * factor};
-}
-
-double dot(const ThreeDViewerVec3 &left, const ThreeDViewerVec3 &right)
-{
-    return left.x * right.x + left.y * right.y + left.z * right.z;
-}
-
-ThreeDViewerVec3 cross(const ThreeDViewerVec3 &left, const ThreeDViewerVec3 &right)
-{
-    return {left.y * right.z - left.z * right.y,
-            left.z * right.x - left.x * right.z,
-            left.x * right.y - left.y * right.x};
-}
-
-double lengthSquared(const ThreeDViewerVec3 &value)
-{
-    return dot(value, value);
-}
-
-ThreeDViewerVec3 normalizedOrFallback(const ThreeDViewerVec3 &value, const ThreeDViewerVec3 &fallback)
-{
-    const double squaredLength = lengthSquared(value);
-    if (squaredLength <= 0.00000001) {
-        return fallback;
+    const QVector<QPointF> ring = projectedCircle(center, radius, segments);
+    QVector<QPointF> triangles;
+    triangles.reserve(ring.size() * 3);
+    for (qsizetype index = 0; index < ring.size(); ++index) {
+        triangles << center << ring.at(index) << ring.at((index + 1) % ring.size());
     }
-
-    const double length = std::sqrt(squaredLength);
-    return {value.x / length, value.y / length, value.z / length};
+    appendGeometryNode(root, triangles, QSGGeometry::DrawTriangles, color, 1.0);
 }
+
+
 
 QColor scaledColor(const QColor &baseColor, double factor, int alpha)
 {
@@ -1103,12 +1298,6 @@ QColor scaledColor(const QColor &baseColor, double factor, int alpha)
     return color;
 }
 
-struct MeshTriangleRender
-{
-    std::array<QPointF, 3> screenPoints;
-    std::array<QColor, 3> colors;
-    double depth = 0.0;
-};
 
 QColor depthColor(double depth, const ThreeDViewerBounds &bounds)
 {
@@ -1137,55 +1326,72 @@ QColor sceneColorForMode(ThreeDViewerMeshColorMode mode,
     return depthColor(depth, bounds);
 }
 
-QColor shadedMeshVertexColor(ThreeDViewerMeshColorMode mode,
-                             const ThreeDViewerVec3 &vertex,
-                             const ThreeDViewerVec3 &normal,
-                             const ThreeDViewerVec3 &cameraPosition,
-                             const ThreeDViewerVec3 &lightDirection,
-                             const ThreeDViewerVec3 &fillLightDirection,
-                             const ThreeDViewerBounds &bounds,
-                             ThreeDViewerBackgroundMode backgroundMode)
+void appendDashedLinePoints(QVector<QPointF> *points,
+                            const QPointF &from,
+                            const QPointF &to,
+                            qreal width,
+                            Qt::PenStyle penStyle,
+                            const QVector<qreal> &dashPattern)
 {
-    const ThreeDViewerVec3 viewDirection = normalizedOrFallback(subtract(cameraPosition, vertex), {0.0, 0.0, 1.0});
-    const double diffuse = std::pow(std::clamp(std::abs(dot(normal, lightDirection)), 0.0, 1.0), 1.35);
-    const double fill = std::clamp(std::abs(dot(normal, fillLightDirection)), 0.0, 1.0);
-    const double rim = std::pow(1.0 - std::clamp(std::abs(dot(normal, viewDirection)), 0.0, 1.0), 2.0);
-    const double shade = std::clamp(0.42 + diffuse * 0.58 + fill * 0.08 + rim * 0.16, 0.38, 1.24);
-    const int alpha = mode == ThreeDViewerMeshColorMode::None ? 225 : 205;
-    return scaledColor(sceneColorForMode(mode, vertex.z, bounds, backgroundMode), shade, alpha);
-}
-
-QSGGeometryNode *createMeshNode(const QVector<MeshTriangleRender> &triangles)
-{
-    if (triangles.isEmpty()) {
-        return nullptr;
+    if (points == nullptr) {
+        return;
     }
 
-    auto *geometry = new QSGGeometry(QSGGeometry::defaultAttributes_ColoredPoint2D(), triangles.size() * 3);
-    geometry->setDrawingMode(QSGGeometry::DrawTriangles);
-    auto *vertexData = geometry->vertexDataAsColoredPoint2D();
-
-    int vertexIndex = 0;
-    for (const MeshTriangleRender &triangle : triangles) {
-        for (qsizetype pointIndex = 0; pointIndex < qsizetype(triangle.screenPoints.size()); ++pointIndex) {
-            const QPointF &point = triangle.screenPoints.at(pointIndex);
-            const QColor &color = triangle.colors.at(pointIndex);
-            const uchar red = static_cast<uchar>(color.red());
-            const uchar green = static_cast<uchar>(color.green());
-            const uchar blue = static_cast<uchar>(color.blue());
-            const uchar alpha = static_cast<uchar>(color.alpha());
-            vertexData[vertexIndex++].set(float(point.x()), float(point.y()), red, green, blue, alpha);
+    QVector<qreal> pattern = dashPattern;
+    if (pattern.isEmpty()) {
+        switch (penStyle) {
+        case Qt::DashLine:
+            pattern = {4.0, 2.0};
+            break;
+        case Qt::DotLine:
+            pattern = {1.0, 2.0};
+            break;
+        case Qt::DashDotLine:
+            pattern = {4.0, 2.0, 1.0, 2.0};
+            break;
+        case Qt::DashDotDotLine:
+            pattern = {4.0, 2.0, 1.0, 2.0, 1.0, 2.0};
+            break;
+        default:
+            break;
         }
     }
 
-    auto *material = new QSGVertexColorMaterial();
-    auto *node = new QSGGeometryNode();
-    node->setGeometry(geometry);
-    node->setMaterial(material);
-    node->setFlag(QSGNode::OwnsGeometry);
-    node->setFlag(QSGNode::OwnsMaterial);
-    return node;
+    QVector<qreal> lengths;
+    lengths.reserve(pattern.size());
+    for (qreal length : pattern) {
+        const qreal scaledLength = length * width;
+        if (std::isfinite(scaledLength) && scaledLength > 0.0) {
+            lengths.append(scaledLength);
+        }
+    }
+    if (lengths.isEmpty()) {
+        points->append(from);
+        points->append(to);
+        return;
+    }
+
+    const QPointF delta = to - from;
+    const qreal totalLength = std::hypot(delta.x(), delta.y());
+    if (totalLength <= 0.0) {
+        return;
+    }
+
+    qreal offset = 0.0;
+    qsizetype patternIndex = 0;
+    while (offset < totalLength) {
+        const qreal segmentLength = std::min(lengths.at(patternIndex % lengths.size()), totalLength - offset);
+        if (patternIndex % 2 == 0) {
+            const qreal startRatio = offset / totalLength;
+            const qreal endRatio = (offset + segmentLength) / totalLength;
+            points->append(from + delta * startRatio);
+            points->append(from + delta * endRatio);
+        }
+        offset += segmentLength;
+        ++patternIndex;
+    }
 }
+
 
 } // namespace
 
@@ -1219,9 +1425,10 @@ ThreeDViewerViewportItem::ThreeDViewerViewportItem(QQuickItem *parent)
 
 void ThreeDViewerViewportItem::setSceneModel(const ThreeDViewerSceneModel &sceneModel, bool fitToScene)
 {
+    const std::shared_ptr<const ThreeDViewerPreparedScene> preparedScene = buildPreparedScene(sceneModel);
     {
         QMutexLocker locker(&mutex_);
-        sceneModel_ = sceneModel;
+        preparedScene_ = preparedScene;
         hoveredStationId_ = 0;
         hasHoveredStation_ = false;
         hoveredStationScreenPosition_ = QPointF();
@@ -1276,6 +1483,15 @@ void ThreeDViewerViewportItem::setMeshColorMode(ThreeDViewerMeshColorMode meshCo
     {
         QMutexLocker locker(&mutex_);
         meshColorMode_ = meshColorMode;
+    }
+    scheduleUpdate();
+}
+
+void ThreeDViewerViewportItem::setCenterlineColorMode(ThreeDViewerCenterlineColorMode colorMode)
+{
+    {
+        QMutexLocker locker(&mutex_);
+        centerlineColorMode_ = colorMode;
     }
     scheduleUpdate();
 }
@@ -1428,10 +1644,11 @@ void ThreeDViewerViewportItem::hoverMoveEvent(QHoverEvent *event)
     }
 
     const Snapshot current = snapshot();
-    const QSet<quint32> pickableStationIds = visibleCenterlineStationIds(current.sceneModel,
+    const ThreeDViewerSceneModel &sceneModel = current.sceneModel();
+    const QSet<quint32> pickableStationIds = visibleCenterlineStationIds(sceneModel,
                                                                         current.layerVisibility,
                                                                         current.featureVisibility);
-    const ThreeDViewerStation *station = pickStationAtPosition(current.sceneModel,
+    const ThreeDViewerStation *station = pickStationAtPosition(sceneModel,
                                                                current.camera,
                                                                pickableStationIds,
                                                                event->position(),
@@ -1521,14 +1738,14 @@ void ThreeDViewerViewportItem::keyPressEvent(QKeyEvent *event)
 
 void ThreeDViewerViewportItem::fitToScene()
 {
-    controller_.fitToScene(snapshot().sceneModel,
+    controller_.fitToScene(snapshot().sceneModel(),
                            std::max(1, int(std::lround(width()))),
                            std::max(1, int(std::lround(height()))));
 }
 
 void ThreeDViewerViewportItem::resetView()
 {
-    controller_.resetView(snapshot().sceneModel,
+    controller_.resetView(snapshot().sceneModel(),
                           std::max(1, int(std::lround(width()))),
                           std::max(1, int(std::lround(height()))));
 }
@@ -1536,7 +1753,7 @@ void ThreeDViewerViewportItem::resetView()
 void ThreeDViewerViewportItem::setViewPreset(ThreeDViewerViewPreset preset)
 {
     controller_.setViewPreset(preset,
-                              snapshot().sceneModel,
+                              snapshot().sceneModel(),
                               std::max(1, int(std::lround(width()))),
                               std::max(1, int(std::lround(height()))));
 }
@@ -1553,12 +1770,18 @@ void ThreeDViewerViewportItem::rollRight()
 
 QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
 {
-    delete oldNode;
+    auto *root = dynamic_cast<ThreeDViewerRootNode *>(oldNode);
+    if (root != nullptr) {
+        root->clearChildNodesKeepingCache();
+    } else {
+        delete oldNode;
+        root = new ThreeDViewerRootNode();
+    }
 
     const Snapshot current = snapshot();
-    auto *root = new QSGNode();
+    const ThreeDViewerSceneModel &sceneModel = current.sceneModel();
 
-    if (current.sceneModel.isEmpty()) {
+    if (sceneModel.isEmpty()) {
         appendSolidRect(root,
                         QRectF(0.0, 0.0, std::max<qreal>(1.0, width()), std::max<qreal>(1.0, height())),
                         viewportBackgroundColor(current.backgroundMode));
@@ -1572,172 +1795,141 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
         return root;
     }
 
+    const ThreeDViewerPreparedScene &preparedScene = *current.preparedScene;
     const int viewportWidth = std::max(1, int(width()));
     const int viewportHeight = std::max(1, int(height()));
     const ThreeDViewerCamera &camera = current.camera;
-    const ThreeDViewerBounds bounds = current.sceneModel.bounds();
-    QSGNode *meshNode = nullptr;
+    const ThreeDViewerBounds &bounds = preparedScene.bounds;
     appendSolidRect(root,
                     QRectF(0.0, 0.0, double(viewportWidth), double(viewportHeight)),
                     viewportBackgroundColor(current.backgroundMode));
 
-    if (current.layerVisibility.at(kSurfacesLayer)) {
-        const QColor surfaceColor = QColor(QStringLiteral("#7c3aed"));
-        for (const ThreeDViewerSurface &surface : current.sceneModel.surfaces) {
-            if (surface.width < 2 || surface.height < 2) {
-                continue;
-            }
 
-            for (quint32 row = 0; row < surface.height; ++row) {
-                QVector<QPointF> rowPoints;
-                rowPoints.reserve(int(surface.width));
-                for (quint32 column = 0; column < surface.width; ++column) {
-                    const qsizetype index = qsizetype(row) * qsizetype(surface.width) + qsizetype(column);
-                    if (index < 0 || index >= surface.elevations.size()) {
-                        continue;
-                    }
-                    const ThreeDViewerVec3 point{
-                        surface.calibration[0] + surface.calibration[2] * double(column) + surface.calibration[4] * double(row),
-                        surface.calibration[1] + surface.calibration[3] * double(column) + surface.calibration[5] * double(row),
-                        surface.elevations.at(index),
-                    };
-                    const ThreeDViewerProjectedPoint projected = ThreeDViewerProjection::projectPoint(camera, point, viewportWidth, viewportHeight, current.orthographicProjection);
-                    if (!projected.visible) {
-                        rowPoints.clear();
-                        break;
-                    }
-                    rowPoints.push_back(projected.screenPosition);
-                }
-                appendGeometryNode(root, rowPoints, QSGGeometry::DrawLineStrip, translucentColor(surfaceColor, 90), 1.0);
-            }
-
-            for (quint32 column = 0; column < surface.width; ++column) {
-                QVector<QPointF> columnPoints;
-                columnPoints.reserve(int(surface.height));
-                for (quint32 row = 0; row < surface.height; ++row) {
-                    const qsizetype index = qsizetype(row) * qsizetype(surface.width) + qsizetype(column);
-                    if (index < 0 || index >= surface.elevations.size()) {
-                        continue;
-                    }
-                    const ThreeDViewerVec3 point{
-                        surface.calibration[0] + surface.calibration[2] * double(column) + surface.calibration[4] * double(row),
-                        surface.calibration[1] + surface.calibration[3] * double(column) + surface.calibration[5] * double(row),
-                        surface.elevations.at(index),
-                    };
-                    const ThreeDViewerProjectedPoint projected = ThreeDViewerProjection::projectPoint(camera, point, viewportWidth, viewportHeight, current.orthographicProjection);
-                    if (!projected.visible) {
-                        columnPoints.clear();
-                        break;
-                    }
-                    columnPoints.push_back(projected.screenPosition);
-                }
-                appendGeometryNode(root, columnPoints, QSGGeometry::DrawLineStrip, translucentColor(surfaceColor, 90), 1.0);
-            }
-        }
-    }
-
-    if (current.layerVisibility.at(kMeshesLayer)) {
-        QVector<MeshTriangleRender> triangles;
-        triangles.reserve(256);
-        const ThreeDViewerVec3 cameraPosition = camera.position();
-        const ThreeDViewerVec3 lightDirection = normalizedOrFallback({-0.35, -0.55, 0.76}, {0.0, 0.0, 1.0});
-        const ThreeDViewerVec3 fillLightDirection = normalizedOrFallback(scaled(camera.forwardVector(), -1.0), {0.0, 0.0, 1.0});
-
-        for (const ThreeDViewerMeshGroup &mesh : current.sceneModel.meshGroups) {
-            QVector<ThreeDViewerVec3> vertexNormals;
-            vertexNormals.resize(mesh.vertices.size());
-            for (ThreeDViewerVec3 &normal : vertexNormals) {
-                normal = {0.0, 0.0, 0.0};
-            }
-
-            for (const std::array<quint32, 3> &triangle : mesh.triangles) {
-                if (triangle[0] >= quint32(mesh.vertices.size())
-                    || triangle[1] >= quint32(mesh.vertices.size())
-                    || triangle[2] >= quint32(mesh.vertices.size())) {
-                    continue;
-                }
-
-                const ThreeDViewerVec3 &v0 = mesh.vertices.at(triangle[0]);
-                const ThreeDViewerVec3 &v1 = mesh.vertices.at(triangle[1]);
-                const ThreeDViewerVec3 &v2 = mesh.vertices.at(triangle[2]);
-                const ThreeDViewerVec3 faceNormal = normalizedOrFallback(cross(subtract(v1, v0), subtract(v2, v0)), {0.0, 0.0, 1.0});
-                vertexNormals[int(triangle[0])] = add(vertexNormals.at(int(triangle[0])), faceNormal);
-                vertexNormals[int(triangle[1])] = add(vertexNormals.at(int(triangle[1])), faceNormal);
-                vertexNormals[int(triangle[2])] = add(vertexNormals.at(int(triangle[2])), faceNormal);
-            }
-
-            for (const std::array<quint32, 3> &triangle : mesh.triangles) {
-                if (triangle[0] >= quint32(mesh.vertices.size())
-                    || triangle[1] >= quint32(mesh.vertices.size())
-                    || triangle[2] >= quint32(mesh.vertices.size())) {
-                    continue;
-                }
-
-                const ThreeDViewerVec3 &v0 = mesh.vertices.at(triangle[0]);
-                const ThreeDViewerVec3 &v1 = mesh.vertices.at(triangle[1]);
-                const ThreeDViewerVec3 &v2 = mesh.vertices.at(triangle[2]);
-                const ThreeDViewerProjectedPoint p0 = ThreeDViewerProjection::projectPoint(camera, v0, viewportWidth, viewportHeight, current.orthographicProjection);
-                const ThreeDViewerProjectedPoint p1 = ThreeDViewerProjection::projectPoint(camera, v1, viewportWidth, viewportHeight, current.orthographicProjection);
-                const ThreeDViewerProjectedPoint p2 = ThreeDViewerProjection::projectPoint(camera, v2, viewportWidth, viewportHeight, current.orthographicProjection);
-                if (!p0.visible || !p1.visible || !p2.visible) {
-                    continue;
-                }
-
-                const ThreeDViewerVec3 faceNormal = normalizedOrFallback(cross(subtract(v1, v0), subtract(v2, v0)), {0.0, 0.0, 1.0});
-                const ThreeDViewerVec3 n0 = normalizedOrFallback(vertexNormals.at(int(triangle[0])), faceNormal);
-                const ThreeDViewerVec3 n1 = normalizedOrFallback(vertexNormals.at(int(triangle[1])), faceNormal);
-                const ThreeDViewerVec3 n2 = normalizedOrFallback(vertexNormals.at(int(triangle[2])), faceNormal);
-                triangles.push_back(MeshTriangleRender{
-                    {p0.screenPosition, p1.screenPosition, p2.screenPosition},
-                    {shadedMeshVertexColor(current.meshColorMode, v0, n0, cameraPosition, lightDirection, fillLightDirection, bounds, current.backgroundMode),
-                     shadedMeshVertexColor(current.meshColorMode, v1, n1, cameraPosition, lightDirection, fillLightDirection, bounds, current.backgroundMode),
-                     shadedMeshVertexColor(current.meshColorMode, v2, n2, cameraPosition, lightDirection, fillLightDirection, bounds, current.backgroundMode)},
-                    (dot(subtract(v0, cameraPosition), camera.forwardVector())
-                     + dot(subtract(v1, cameraPosition), camera.forwardVector())
-                     + dot(subtract(v2, cameraPosition), camera.forwardVector())) / 3.0,
-                });
-            }
-        }
-
-        std::sort(triangles.begin(), triangles.end(), [](const MeshTriangleRender &left, const MeshTriangleRender &right) {
-            return left.depth > right.depth;
-        });
-
-        meshNode = createMeshNode(triangles);
-    }
-
-    const QSet<quint32> visibleStationIds = visibleCenterlineStationIds(current.sceneModel,
+    const QSet<quint32> visibleStationIds = visibleCenterlineStationIds(sceneModel,
                                                                         current.layerVisibility,
                                                                         current.featureVisibility);
     const ThreeDViewerStation *hoveredStation = current.hasHoveredStation && visibleStationIds.contains(current.hoveredStationId)
-        ? stationById(current.sceneModel, current.hoveredStationId)
+        ? stationById(preparedScene, current.hoveredStationId)
         : nullptr;
     const ThreeDViewerStation *measurementStartStation = current.hasMeasurementStartStation
-        ? stationById(current.sceneModel, current.measurementStartStationId)
+        ? stationById(preparedScene, current.measurementStartStationId)
         : nullptr;
     const ThreeDViewerStation *measurementEndStation = current.hasMeasurementEndStation
-        ? stationById(current.sceneModel, current.measurementEndStationId)
+        ? stationById(preparedScene, current.measurementEndStationId)
         : nullptr;
 
+    if (current.layerVisibility.at(kScrapWallsLayer)) {
+        QMap<qreal, QVector<QSGGeometry::ColoredPoint2D>> wallBatches;
+        QVector<QPointF> dashedPoints;
+        for (const ThreeDViewerScrapPolyline &line : sceneModel.scrapLinework) {
+            if (!line.strokeVisible || line.penStyle == Qt::NoPen || line.points.size() < 2) {
+                continue;
+            }
+
+            if (!std::isfinite(line.strokeWidth) || line.strokeWidth <= 0.0) {
+                continue;
+            }
+            const qreal lineWidth = std::clamp(line.strokeWidth, qreal(0.5), qreal(8.0));
+            const QColor th2StyleColor = line.hasStrokeColor
+                ? QColor::fromRgba(line.strokeColorRgba)
+                : sceneColorForMode(ThreeDViewerMeshColorMode::None, 0.0, bounds, current.backgroundMode);
+            const qsizetype segmentCount = line.points.size() - 1 + (line.closed ? 1 : 0);
+            auto &vertices = wallBatches[lineWidth];
+            const bool solid = line.penStyle == Qt::SolidLine && line.dashPattern.isEmpty();
+            for (qsizetype index = 0; index < segmentCount; ++index) {
+                const ThreeDViewerVec3 &from = line.points.at(index % line.points.size());
+                const ThreeDViewerVec3 &to = line.points.at((index + 1) % line.points.size());
+                QPointF fromScreen;
+                QPointF toScreen;
+                if (!ThreeDViewerProjection::projectLine(camera, from, to, viewportWidth, viewportHeight,
+                                                        &fromScreen, &toScreen, current.orthographicProjection)) {
+                    continue;
+                }
+
+                const QColor color = current.meshColorMode == ThreeDViewerMeshColorMode::Altitude
+                    ? sceneColorForMode(ThreeDViewerMeshColorMode::Altitude, (from.z + to.z) * 0.5,
+                                        bounds, current.backgroundMode)
+                    : th2StyleColor;
+                const QRgb rgba = qPremultiply(color.rgba());
+                const auto appendVertex = [&vertices, rgba](const QPointF &point) {
+                    QSGGeometry::ColoredPoint2D vertex;
+                    vertex.set(float(point.x()), float(point.y()), qRed(rgba), qGreen(rgba), qBlue(rgba), qAlpha(rgba));
+                    vertices.append(vertex);
+                };
+                if (solid) {
+                    appendVertex(fromScreen);
+                    appendVertex(toScreen);
+                } else {
+                    dashedPoints.clear();
+                    appendDashedLinePoints(&dashedPoints, fromScreen, toScreen, lineWidth, line.penStyle, line.dashPattern);
+                    for (const QPointF &point : dashedPoints) {
+                        appendVertex(point);
+                    }
+                }
+            }
+        }
+
+        for (const auto &point : sceneModel.scrapPoints) {
+            const auto projected = ThreeDViewerProjection::projectPoint(
+                camera, point.position, viewportWidth, viewportHeight, current.orthographicProjection);
+            if (!projected.visible) {
+                continue;
+            }
+            QColor color = sceneColorForMode(current.meshColorMode, point.position.z, bounds, current.backgroundMode);
+            if (current.meshColorMode == ThreeDViewerMeshColorMode::None && point.hasStrokeColor) {
+                color = QColor::fromRgba(point.strokeColorRgba);
+            }
+            if (!point.text.isEmpty()) {
+                appendTextNode(root, window(), point.text, projected.screenPosition, color,
+                               QFont(QStringLiteral("Sans Serif"), 10), current.exportRenderScale);
+                continue;
+            }
+            auto strokes = point.symbolStrokes;
+            if (strokes.isEmpty()) {
+                auto circle = projectedCircle(QPointF(), point.size * 0.5, 12);
+                circle.append(circle.first());
+                strokes.append(circle);
+            }
+            const QRgb rgba = qPremultiply(color.rgba());
+            auto &vertices = wallBatches[std::clamp(point.strokeWidth, qreal(0.5), qreal(8.0))];
+            for (const auto &stroke : strokes) {
+                for (qsizetype i = 1; i < stroke.size(); ++i) {
+                    for (const auto &offset : {stroke[i - 1], stroke[i]}) {
+                        const QPointF position = projected.screenPosition + offset;
+                        QSGGeometry::ColoredPoint2D vertex;
+                        vertex.set(float(position.x()), float(position.y()), qRed(rgba), qGreen(rgba), qBlue(rgba), qAlpha(rgba));
+                        vertices.append(vertex);
+                    }
+                }
+            }
+        }
+        for (auto batch = wallBatches.cbegin(); batch != wallBatches.cend(); ++batch) {
+            const auto &vertices = batch.value();
+            if (vertices.isEmpty()) {
+                continue;
+            }
+            auto *geometry = new QSGGeometry(QSGGeometry::defaultAttributes_ColoredPoint2D(), vertices.size());
+            geometry->setDrawingMode(QSGGeometry::DrawLines);
+            geometry->setLineWidth(batch.key());
+            std::copy(vertices.cbegin(), vertices.cend(), geometry->vertexDataAsColoredPoint2D());
+            auto *node = new QSGGeometryNode();
+            node->setGeometry(geometry);
+            node->setMaterial(new QSGVertexColorMaterial());
+            node->setFlag(QSGNode::OwnsGeometry);
+            node->setFlag(QSGNode::OwnsMaterial);
+            root->appendChildNode(node);
+        }
+    }
+
     if (current.layerVisibility.at(kCenterlineLayer)) {
-        for (const ThreeDViewerShot &shot : current.sceneModel.shots) {
+        QMap<qreal, QVector<QSGGeometry::ColoredPoint2D>> shotBatches;
+        for (const ThreeDViewerShot &shot : sceneModel.shots) {
             if (!centerlineShotVisible(shot, current.layerVisibility, current.featureVisibility)) {
                 continue;
             }
 
-            const ThreeDViewerStation *fromStation = nullptr;
-            const ThreeDViewerStation *toStation = nullptr;
-            for (const ThreeDViewerStation &station : current.sceneModel.stations) {
-                if (station.id == shot.fromStationId) {
-                    fromStation = &station;
-                } else if (station.id == shot.toStationId) {
-                    toStation = &station;
-                }
-                if (fromStation != nullptr && toStation != nullptr) {
-                    break;
-                }
-            }
-
+            const ThreeDViewerStation *fromStation = stationById(preparedScene, shot.fromStationId);
+            const ThreeDViewerStation *toStation = stationById(preparedScene, shot.toStationId);
             if (fromStation == nullptr || toStation == nullptr) {
                 continue;
             }
@@ -1749,22 +1941,36 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
             }
 
             const double averageDepth = (fromStation->position.z + toStation->position.z) * 0.5;
-            const QColor baseColor = sceneColorForMode(current.meshColorMode, averageDepth, bounds, current.backgroundMode);
-            const QColor lineColor = shot.hidden ? scaledColor(baseColor, 0.45, 170)
-                                                 : shot.surface ? scaledColor(baseColor, 0.85, 240)
-                                                                : scaledColor(baseColor, 0.78, 235);
-            QVector<QPointF> linePoints;
-            linePoints << fromScreen << toScreen;
-            appendGeometryNode(root,
-                               linePoints,
-                               QSGGeometry::DrawLines,
-                               QColor(0, 0, 0, shot.hidden ? 170 : 210),
-                               shot.hidden ? 4.0 : 6.0);
-            appendGeometryNode(root,
-                               linePoints,
-                               QSGGeometry::DrawLines,
-                               lineColor,
-                               shot.hidden ? 2.0 : 3.5);
+            const QColor baseColor = current.centerlineColorMode == ThreeDViewerCenterlineColorMode::Red
+                ? QColor(Qt::red)
+                : sceneColorForMode(ThreeDViewerMeshColorMode::Altitude, averageDepth, bounds, current.backgroundMode);
+            const QColor finalColor = shot.hidden ? scaledColor(baseColor, 0.65, 170) : baseColor;
+            const QRgb rgba = qPremultiply(finalColor.rgba());
+            const qreal widthKey = shot.hidden ? 0.9 : 1.25;
+            auto &vertices = shotBatches[widthKey];
+
+            QSGGeometry::ColoredPoint2D v0;
+            v0.set(float(fromScreen.x()), float(fromScreen.y()), qRed(rgba), qGreen(rgba), qBlue(rgba), qAlpha(rgba));
+            QSGGeometry::ColoredPoint2D v1;
+            v1.set(float(toScreen.x()), float(toScreen.y()), qRed(rgba), qGreen(rgba), qBlue(rgba), qAlpha(rgba));
+            vertices.append(v0);
+            vertices.append(v1);
+        }
+        for (auto batch = shotBatches.cbegin(); batch != shotBatches.cend(); ++batch) {
+            const auto &vertices = batch.value();
+            if (vertices.isEmpty()) {
+                continue;
+            }
+            auto *geometry = new QSGGeometry(QSGGeometry::defaultAttributes_ColoredPoint2D(), vertices.size());
+            geometry->setDrawingMode(QSGGeometry::DrawLines);
+            geometry->setLineWidth(batch.key());
+            std::copy(vertices.cbegin(), vertices.cend(), geometry->vertexDataAsColoredPoint2D());
+            auto *node = new QSGGeometryNode();
+            node->setGeometry(geometry);
+            node->setMaterial(new QSGVertexColorMaterial());
+            node->setFlag(QSGNode::OwnsGeometry);
+            node->setFlag(QSGNode::OwnsMaterial);
+            root->appendChildNode(node);
         }
     }
 
@@ -1783,11 +1989,11 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
 
     if (current.layerVisibility.at(kStationsLayer)) {
         QVector<QRectF> occupiedStationBounds;
-        occupiedStationBounds.reserve(std::min(current.sceneModel.stations.size(), qsizetype(512)));
-        for (const ThreeDViewerStation &station : current.sceneModel.stations) {
+        occupiedStationBounds.reserve(std::min(sceneModel.stations.size(), qsizetype(512)));
+        for (const ThreeDViewerStation &station : sceneModel.stations) {
             const QColor accentColor = stationAccentColor(station);
             const bool priorityStation = accentColor.isValid();
-            if (!stationVisibleForLayer(station, current.sceneModel, current.layerVisibility, current.featureVisibility, visibleStationIds)) {
+            if (!stationVisibleForLayer(station, preparedScene.stationFeatureFiltersActive, current.layerVisibility, current.featureVisibility, visibleStationIds)) {
                 continue;
             }
             if (current.autoRotationDeclutterLocked && !priorityStation && !current.autoRotationStationIds.contains(station.id)) {
@@ -1809,23 +2015,19 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
 
             if (accentColor.isValid()) {
                 const QVector<QPointF> outerCircle = projectedCircle(projected.screenPosition, 5.2);
-                appendGeometryNode(root,
-                                   outerCircle,
-                                   QSGGeometry::DrawTriangleFan,
-                                   translucentColor(accentColor, 90),
-                                   1.0);
+                appendFilledCircle(root, projected.screenPosition, 5.2, translucentColor(accentColor, 90));
                 appendClosedPolyline(root, outerCircle, accentColor, 1.4);
             }
 
-            const QVector<QPointF> circlePoints = projectedCircle(projected.screenPosition, accentColor.isValid() ? 3.2 : 2.6);
-            appendGeometryNode(root,
-                               circlePoints,
-                               QSGGeometry::DrawTriangleFan,
+            const qreal markerRadius = accentColor.isValid() ? 3.2 : 2.6;
+            const QVector<QPointF> circlePoints = projectedCircle(projected.screenPosition, markerRadius);
+            appendFilledCircle(root,
+                               projected.screenPosition,
+                               markerRadius,
                                station.fixed ? QColor(QStringLiteral("#fcd34d"))
                                              : station.entrance ? QColor(QStringLiteral("#86efac"))
                                                                 : station.surface ? QColor(QStringLiteral("#93c5fd"))
-                                                                                  : QColor(QStringLiteral("#f8fafc")),
-                               1.0);
+                                                                                  : QColor(QStringLiteral("#f8fafc")));
             appendClosedPolyline(root, circlePoints, accentColor.isValid() ? accentColor : QColor(QStringLiteral("#e5e7eb")), accentColor.isValid() ? 1.5 : 0.8);
         }
     }
@@ -1841,11 +2043,7 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
         }
 
         const QVector<QPointF> outerCircle = projectedCircle(projected.screenPosition, 6.0);
-        appendGeometryNode(root,
-                           outerCircle,
-                           QSGGeometry::DrawTriangleFan,
-                           translucentColor(accentColor, 100),
-                           1.0);
+        appendFilledCircle(root, projected.screenPosition, 6.0, translucentColor(accentColor, 100));
         appendClosedPolyline(root, outerCircle, accentColor, 1.6);
     };
 
@@ -1857,8 +2055,9 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
         const QFont labelFont = stationLabelFont();
 
         QVector<QRectF> occupiedLabelBounds;
-        occupiedLabelBounds.reserve(std::min(current.sceneModel.stations.size(), qsizetype(512)));
-        for (const ThreeDViewerStation &station : current.sceneModel.stations) {
+        occupiedLabelBounds.reserve(std::min(sceneModel.stations.size(), qsizetype(512)));
+        for (qsizetype i = 0; i < sceneModel.stations.size(); ++i) {
+            const ThreeDViewerStation &station = sceneModel.stations.at(i);
             if (!stationLabelVisibleForLayer(station, current.layerVisibility, visibleStationIds)) {
                 continue;
             }
@@ -1866,7 +2065,9 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
                 continue;
             }
 
-            const QString label = current.sceneModel.stationQualifiedName(station);
+            const QString label = i < preparedScene.stationDisplayLabels.size()
+                ? preparedScene.stationDisplayLabels.at(i)
+                : QString();
             if (label.isEmpty()) {
                 continue;
             }
@@ -1878,7 +2079,9 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
 
             const QPointF labelPosition = projected.screenPosition + QPointF(kStationLabelOffsetX, kStationLabelOffsetY);
             if (!current.autoRotationDeclutterLocked) {
-                const QRectF labelBounds = textBoundsAt(label, labelFont, labelPosition);
+                const QRectF labelBounds = i < preparedScene.stationLabelSizes.size() && preparedScene.stationLabelSizes.at(i).isValid()
+                    ? QRectF(labelPosition - QPointF(kStationLabelPadding, kStationLabelPadding), preparedScene.stationLabelSizes.at(i))
+                    : textBoundsAt(label, labelFont, labelPosition);
                 if (intersectsAny(labelBounds, occupiedLabelBounds)) {
                     continue;
                 }
@@ -1895,10 +2098,6 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
                                      QPointF(1.0, 1.0),
                                      current.exportRenderScale);
         }
-    }
-
-    if (meshNode != nullptr) {
-        root->appendChildNode(meshNode);
     }
 
     if (measurementStartStation != nullptr && measurementEndStation != nullptr) {
@@ -1932,7 +2131,9 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
     }
     const QPointF altitudeOrigin(20.0, double(viewportHeight) - 300.0);
     if (current.showHud) {
-        const bool showAltitudeLegend = current.meshColorMode == ThreeDViewerMeshColorMode::Altitude;
+        const bool showAltitudeLegend = current.centerlineColorMode == ThreeDViewerCenterlineColorMode::Altitude
+            || (current.layerVisibility.at(kScrapWallsLayer)
+                && current.meshColorMode == ThreeDViewerMeshColorMode::Altitude);
         if (showAltitudeLegend) {
             appendAltitudeLegend(root, window(), bounds, altitudeOrigin, current.backgroundMode, current.exportRenderScale);
         }
@@ -1950,7 +2151,7 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
                        current.exportRenderScale);
     }
     if (current.showInfo) {
-        appendSceneStatisticsOverlay(root, window(), current.sceneModel, viewportWidth, viewportHeight, current.backgroundMode, current.exportRenderScale);
+        appendSceneStatisticsOverlay(root, window(), preparedScene, viewportWidth, viewportHeight, current.backgroundMode, current.exportRenderScale);
     }
 
     const QFont cardTitleFont(QStringLiteral("Menlo"), 11, QFont::Bold);
@@ -1973,16 +2174,16 @@ QSGNode *ThreeDViewerViewportItem::updatePaintNode(QSGNode *oldNode, UpdatePaint
 
     const QString stationTitle = QCoreApplication::translate("TherionStudio::ThreeDViewerViewportRenderer", "Station");
     const QString measurementTitle = QCoreApplication::translate("TherionStudio::ThreeDViewerViewportRenderer", "Measurement");
-    const QString stationBody = hoveredStation != nullptr ? stationDetailsText(current.sceneModel, *hoveredStation) : QString();
+    const QString stationBody = hoveredStation != nullptr ? stationDetailsText(sceneModel, *hoveredStation) : QString();
     const QString measurementBody = current.measurementMode
         ? (measurementStartStation != nullptr && measurementEndStation != nullptr
-               ? measurementText(current.sceneModel, *measurementStartStation, *measurementEndStation)
+               ? measurementText(sceneModel, *measurementStartStation, *measurementEndStation)
                : measurementStartStation != nullptr
                    ? QCoreApplication::translate("TherionStudio::ThreeDViewerViewportRenderer", "Start")
                          + QStringLiteral(": ")
-                         + (current.sceneModel.stationQualifiedName(*measurementStartStation).isEmpty()
+                         + (sceneModel.stationQualifiedName(*measurementStartStation).isEmpty()
                                 ? QStringLiteral("?")
-                                : current.sceneModel.stationQualifiedName(*measurementStartStation))
+                                : sceneModel.stationQualifiedName(*measurementStartStation))
                          + QStringLiteral("\n")
                          + QCoreApplication::translate("TherionStudio::ThreeDViewerViewportRenderer", "Click another station to finish.")
                    : QCoreApplication::translate("TherionStudio::ThreeDViewerViewportRenderer", "Click a station to start measuring."))
@@ -2052,10 +2253,11 @@ void ThreeDViewerViewportItem::mousePressEvent(QMouseEvent *event)
     if (event->button() == Qt::LeftButton) {
         const Snapshot current = snapshot();
         if (current.measurementMode) {
-            const QSet<quint32> pickableStationIds = visibleCenterlineStationIds(current.sceneModel,
+            const ThreeDViewerSceneModel &sceneModel = current.sceneModel();
+            const QSet<quint32> pickableStationIds = visibleCenterlineStationIds(sceneModel,
                                                                                 current.layerVisibility,
                                                                                 current.featureVisibility);
-            const ThreeDViewerStation *station = pickStationAtPosition(current.sceneModel,
+            const ThreeDViewerStation *station = pickStationAtPosition(sceneModel,
                                                                        current.camera,
                                                                        pickableStationIds,
                                                                        event->position(),
@@ -2136,10 +2338,11 @@ ThreeDViewerViewportItem::Snapshot ThreeDViewerViewportItem::snapshot() const
 {
     QMutexLocker locker(&mutex_);
     Snapshot current;
-    current.sceneModel = sceneModel_;
+    current.preparedScene = preparedScene_;
     current.layerVisibility = layerVisibility_;
     current.featureVisibility = featureVisibility_;
     current.meshColorMode = meshColorMode_;
+    current.centerlineColorMode = centerlineColorMode_;
     current.backgroundMode = backgroundMode_;
     current.measurementMode = measurementMode_;
     current.orthographicProjection = orthographicProjection_;
@@ -2191,7 +2394,7 @@ void ThreeDViewerViewportItem::handleAutoRotationTick()
 
 void ThreeDViewerViewportItem::rebuildAutoRotationDeclutterLocks()
 {
-    ThreeDViewerSceneModel sceneModel;
+    std::shared_ptr<const ThreeDViewerPreparedScene> preparedScene;
     ThreeDViewerCamera camera;
     std::array<bool, 5> layerVisibility;
     ThreeDViewerLayerListModel::FeatureVisibility featureVisibility;
@@ -2201,14 +2404,14 @@ void ThreeDViewerViewportItem::rebuildAutoRotationDeclutterLocks()
         if (!autoRotationEnabled_) {
             return;
         }
-        sceneModel = sceneModel_;
+        preparedScene = preparedScene_;
         camera = cameraSnapshot_;
         layerVisibility = layerVisibility_;
         featureVisibility = featureVisibility_;
         orthographic = orthographicProjection_;
     }
 
-    const DeclutterLockSelection selection = selectDeclutterLocks(sceneModel,
+    const DeclutterLockSelection selection = selectDeclutterLocks(*preparedScene,
                                                                   camera,
                                                                   layerVisibility,
                                                                   featureVisibility,

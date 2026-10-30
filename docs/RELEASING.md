@@ -30,6 +30,12 @@ v2026.5.1
 
 ## 3. Pre-Release Checklist
 
+For the next release notes, include opt-in local checkpoints and restore,
+private GitHub repository setup, one-click project uploads with **GitHub OK**
+status, and the optional exit prompt. Mention that remote backups are
+unencrypted and one-way, not multi-computer synchronization. The English,
+Czech and Slovak user manuals describe these workflows.
+
 Before tagging:
 
 1. Ensure `main` is up to date and clean.

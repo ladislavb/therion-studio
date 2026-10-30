@@ -90,8 +90,12 @@ MapEditorInteractiveDrawContext MapEditorTab::interactiveDrawContext()
         .sourcePointFromScenePosition = [this](const QPointF &scenePosition) {
             return sourcePointFromScenePosition(scenePosition);
         },
-        .xviStationSnapAtScenePosition = [this](const QPointF &scenePosition) {
-            return xviStationSnapAtScenePosition(scenePosition);
+        .xviStationSnapsAtScenePosition = [this](const QPointF &scenePosition) {
+            return xviStationSnapsAtScenePosition(scenePosition);
+        },
+        .chooseXviStationSnap = [this](const QVector<MapEditorXviStationSnapCandidate> &snaps,
+                                       const QPointF &scenePosition) {
+            return chooseXviStationSnap(snaps, scenePosition);
         },
         .applySourceTextChangeWithSnapshot = [this](const QString &label,
                                                     const QString &beforeText,

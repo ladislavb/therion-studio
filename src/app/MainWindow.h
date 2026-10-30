@@ -13,6 +13,7 @@
 
 #include "MainWindowTherionConsoleController.h"
 #include "ProjectOutputsScanner.h"
+#include "ProjectAltitudeService.h"
 #include "ProjectFileWatchInventoryService.h"
 #include "ProjectSearchScanner.h"
 #include "ProjectValidationController.h"
@@ -61,6 +62,8 @@ class ThreeDViewerTab;
 class TherionSqlReportTab;
 class TherionRunnerService;
 class ProjectScanCacheService;
+class ProjectVersioningService;
+class ProjectVersioningNavigationService;
 }
 
 class MainWindow final : public QMainWindow
@@ -111,6 +114,10 @@ private slots:
     void runTherionCurrentConfig();
     void stopTherion();
     void showSettingsDialog();
+    void showBackupSettingsDialog();
+    void uploadProjectToGitHub();
+    void showSettingsDialogAtPage(bool backups, bool github = false);
+    void refreshProjectVersioning();
     void offerApplicationRestart(const QString &message);
     void browseTherionTargetConfig();
     void browseTherionWorkingDirectoryOverride();
@@ -124,6 +131,16 @@ private slots:
     void handleMapEditorDetachRequested(TherionStudio::MapEditorTab *tab);
 
 private:
+    TherionStudio::ProjectVersioningService *projectVersioningService_ = nullptr;
+    TherionStudio::ProjectVersioningNavigationService *projectVersioningNavigation_ = nullptr;
+    bool projectRestoreInProgress_ = false;
+    bool githubBackupInProgress_ = false;
+    bool performProjectGitHubBackup(bool saveEditors);
+    bool confirmGitHubBackupBeforeClose();
+    void initializeProjectVersioningNavigation();
+    void refreshProjectVersioningInspectors();
+    void restoreProjectCheckpoint(const QString &checkpointId);
+    QStringList reloadRestoredProjectDocuments();
     enum class SidebarPane
     {
         FileBrowser = 0,
@@ -159,7 +176,9 @@ private:
     void refreshFileImportActions();
     TherionStudio::TextEditorTab *createUntitledTextTab(const QString &suggestedFileName, const QString &contents);
     TherionStudio::MapEditorTab *createUntitledMapEditorTab(const QString &suggestedFileName, const QString &contents);
-    TherionStudio::ThreeDViewerTab *openThreeDViewerTab(const QString &filePath, bool recordRecentFile = true);
+    TherionStudio::ThreeDViewerTab *openThreeDViewerTab(const QString &filePath,
+                                                       bool recordRecentFile = true,
+                                                       TherionStudio::MapEditorTab *sourceMapTab = nullptr);
     TherionStudio::TherionSqlReportTab *openTherionSqlReportTab(const QString &filePath, bool recordRecentFile = true);
     bool saveDocumentWidget(QWidget *documentWidget, QString *errorMessage = nullptr);
     QString requestSavePathForDocument(QWidget *documentWidget) const;
@@ -455,6 +474,7 @@ private:
     QString projectFileWatcherInventoryRootPath_;
     QStringList projectFileWatcherFailedPaths_;
     TherionStudio::TherionRunnerService *therionRunnerService_ = nullptr;
+    std::unique_ptr<TherionStudio::TherionConsoleOutputStore> therionConsoleOutputStore_;
     TherionStudio::MainWindowTherionConsoleController therionConsoleController_;
     QLabel *statusHintLabel_ = nullptr;
     QLabel *statusMapZoomLabel_ = nullptr;
@@ -507,6 +527,7 @@ private:
     QToolButton *workspaceVisualModeButton_ = nullptr;
     QToolButton *workspaceRawModeButton_ = nullptr;
     QToolButton *workspaceMapPaneWindowButton_ = nullptr;
+    QToolButton *workspaceMapThreeDViewButton_ = nullptr;
     QToolButton *workspaceTextRawModeButton_ = nullptr;
     QToolButton *workspaceBlocksModeButton_ = nullptr;
     bool workspaceModeSwitcherSyncInProgress_ = false;
@@ -566,6 +587,12 @@ private:
     std::shared_ptr<TherionStudio::ProjectScanCacheService> projectScanCacheService_;
     TherionStudio::ProjectSearchScanner *projectSearchScanner_ = nullptr;
     TherionStudio::ProjectOutputsScanner *projectOutputsScanner_ = nullptr;
+    TherionStudio::ProjectAltitudeService *projectAltitudeService_ = nullptr;
+    TherionStudio::ProjectIndexSnapshot altitudeProjectIndex_;
+    void updateMapAltitudeUnderlays();
+    void updateMapAppearance();
+    void initializeAltitudeUnderlay();
+    void configureMapAltitudeUnderlay(TherionStudio::MapEditorTab *tab);
     TherionStudio::ProjectValidationController *projectValidationController_ = nullptr;
     TherionStudio::ProjectStructureScanner *structureSidebarScanner_ = nullptr;
 };

@@ -56,6 +56,7 @@ void MapEditorTab::buildMapScene()
 void MapEditorTab::refreshMapScene()
 {
     const quint64 previousGeneration = lastCompletedSceneProjectionGeneration_;
+    sceneProjectedTextSerial_ = sourceTextChangeSerial_;
     MapEditorSceneRefreshController(sceneRefreshContext()).refreshMapScene();
     applyPendingNavigationSelection(false);
     if (lastCompletedSceneProjectionGeneration_ > previousGeneration) {
@@ -69,6 +70,7 @@ void MapEditorTab::refreshMapScene()
 void MapEditorTab::refreshMapScenePreservingUndoStack()
 {
     const quint64 previousGeneration = lastCompletedSceneProjectionGeneration_;
+    sceneProjectedTextSerial_ = sourceTextChangeSerial_;
     MapEditorSceneRefreshController(sceneRefreshContext()).refreshMapScenePreservingUndoStack();
     applyPendingNavigationSelection(false);
     if (lastCompletedSceneProjectionGeneration_ > previousGeneration) {
@@ -85,7 +87,8 @@ void MapEditorTab::flushPendingMapSceneRefreshAfterCommand()
     const quint64 previousGeneration = lastCompletedSceneProjectionGeneration_;
     MapEditorSceneRefreshController(sceneRefreshContext()).flushPendingMapSceneRefreshAfterCommand();
     if (hadPendingRefresh) {
-        rebuildInspectorObjectsTree();
+        sceneProjectedTextSerial_ = sourceTextChangeSerial_;
+        scheduleInspectorObjectsTreeRebuild();
         applyPendingNavigationSelection(false);
     }
     if (lastCompletedSceneProjectionGeneration_ > previousGeneration) {
@@ -129,6 +132,15 @@ void MapEditorTab::applySourceDrivenMapRefresh()
 {
     if (mapCommandApplyInProgress_) {
         scheduleSourceDrivenMapRefresh();
+        return;
+    }
+
+    // A map transaction already re-projected the scene from this exact text (see
+    // flushPendingMapSceneRefreshAfterCommand); a second full refresh would only repeat it.
+    if (sceneProjectedTextSerial_ == sourceTextChangeSerial_ && sourceTextChangeSerial_ > 0) {
+        preserveNextSourceDrivenMapRefresh_ = false;
+        applyPendingNavigationSelection(true);
+        emit sourceDrivenMapRefreshCompleted();
         return;
     }
 

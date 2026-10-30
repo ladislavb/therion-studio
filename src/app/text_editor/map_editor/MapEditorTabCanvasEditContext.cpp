@@ -114,6 +114,9 @@ MapEditorCanvasEditContext MapEditorTab::canvasEditContext()
         },
         .discardPendingSceneRefreshAfterCommand = [this]() {
             mapSceneRefreshPending_ = false;
+            if (altitudeUnderlayEnabled_) {
+                refreshAltitudeUnderlay();
+            }
         },
         .sourcePointFromScenePosition = [this](const QPointF &scenePosition) {
             return sourcePointFromScenePosition(scenePosition);
@@ -132,6 +135,7 @@ MapEditorCanvasEditContext MapEditorTab::canvasEditContext()
         },
         .sceneProjectionRefreshCompleted = [this](quint64 generation) {
             if (generation > 0 && sceneGeneration_.isCurrent(generation)) {
+                sceneGeneration_.markCompleted(generation);
                 lastCompletedSceneProjectionGeneration_ = generation;
                 emit sceneProjectionRefreshCompleted(generation);
             }

@@ -146,7 +146,8 @@ void TextEditorSourceRewriteController::replaceEditorText(const QString &content
         return;
     }
 
-    if (context_.editor->toPlainText() == contents) {
+    const QString currentText = context_.editor->toPlainText();
+    if (currentText == contents) {
         return;
     }
 
@@ -161,10 +162,33 @@ void TextEditorSourceRewriteController::replaceEditorText(const QString &content
         return;
     }
 
+    qsizetype prefixLen = 0;
+    const qsizetype minLen = std::min(currentText.size(), contents.size());
+    while (prefixLen < minLen && currentText.at(prefixLen) == contents.at(prefixLen)) {
+        ++prefixLen;
+    }
+    if (prefixLen > 0 && currentText.at(prefixLen - 1).isHighSurrogate()) {
+        --prefixLen;
+    }
+
+    qsizetype currentSuffixStart = currentText.size();
+    qsizetype newSuffixStart = contents.size();
+    while (currentSuffixStart > prefixLen
+           && newSuffixStart > prefixLen
+           && currentText.at(currentSuffixStart - 1) == contents.at(newSuffixStart - 1)) {
+        --currentSuffixStart;
+        --newSuffixStart;
+    }
+    if (currentSuffixStart < currentText.size() && currentText.at(currentSuffixStart).isLowSurrogate()) {
+        ++currentSuffixStart;
+        ++newSuffixStart;
+    }
+
     QTextCursor rewriteCursor(document);
     rewriteCursor.beginEditBlock();
-    rewriteCursor.select(QTextCursor::Document);
-    rewriteCursor.insertText(contents);
+    rewriteCursor.setPosition(int(prefixLen));
+    rewriteCursor.setPosition(int(currentSuffixStart), QTextCursor::KeepAnchor);
+    rewriteCursor.insertText(contents.mid(prefixLen, newSuffixStart - prefixLen));
     rewriteCursor.endEditBlock();
 }
 

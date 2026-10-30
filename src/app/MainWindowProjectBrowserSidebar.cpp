@@ -508,6 +508,13 @@ void MainWindow::handleProjectTreeContextMenuRequested(const QPoint &position)
             });
         }
 
+        const QString itemSuffix = itemInfo.suffix().toLower();
+        if (itemSuffix == QStringLiteral("th") || itemSuffix == QStringLiteral("thconfig") || itemSuffix == QStringLiteral("lox") || itemSuffix == QStringLiteral("th2")) {
+            menu.addAction(tr("Open in 3D Viewer"), this, [this, itemPath]() {
+                openThreeDViewerTab(itemPath);
+            });
+        }
+
         if (!itemInfo.isFile()
             || !(TherionStudio::isTherionProjectFilePath(itemPath)
                  || TherionStudio::isThreeDViewerArtifactFilePath(itemPath))) {

@@ -284,7 +284,7 @@ int runCatalogTest(const QString &overrideDirectoryPath)
                 "Expected slope line style to render l-size/orientation-aware ticks.")) {
         return 1;
     }
-    if (!expect(std::abs(slopeStyle.decorations.first().length - 18.0) < 1e-6,
+    if (!expect(std::abs(slopeStyle.decorations.first().length - 4.2) < 1e-6,
                 "Expected slope tick default length to parse from default_length.")) {
         return 1;
     }
@@ -296,7 +296,7 @@ int runCatalogTest(const QString &overrideDirectoryPath)
                 "Expected slope tick spacing divisor to parse.")) {
         return 1;
     }
-    if (!expect(std::abs(slopeStyle.decorations.first().alternateLengthScale - 0.333) < 1e-6,
+    if (!expect(std::abs(slopeStyle.decorations.first().alternateLengthScale - 0.5) < 1e-6,
                 "Expected slope tick alternate length scale to parse.")) {
         return 1;
     }

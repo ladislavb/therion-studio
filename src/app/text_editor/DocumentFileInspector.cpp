@@ -104,6 +104,14 @@ void DocumentFileInspector::changeEvent(QEvent *event)
     }
 }
 
+void DocumentFileInspector::setBackupWidget(QWidget *widget)
+{
+    if (widget != nullptr) {
+        auto *content = qobject_cast<QVBoxLayout *>(layout());
+        content->insertWidget(content->count() - 1, widget);
+    }
+}
+
 void DocumentFileInspector::addMetadataRow(QVBoxLayout *layout, const QString &labelText, QWidget *valueWidget)
 {
     if (layout == nullptr || valueWidget == nullptr) {

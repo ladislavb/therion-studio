@@ -1,4 +1,5 @@
 #include "MapEditorSceneRefreshController.h"
+#include "MapEditorSceneItems.h"
 
 #include "MapEditorObjectDetailsLogic.h"
 #include "MapEditorSceneInternals.h"
@@ -209,7 +210,7 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
         totalTimer.start();
         stageTimer.start();
     }
-    const int beforeItemCount = collectTiming ? mapScene->items().size() : -1;
+    const int beforeItemCount = collectTiming ? unsortedSceneItems(mapScene).size() : -1;
     const quint64 sceneGeneration = context_.sceneGeneration != nullptr
         ? context_.sceneGeneration->beginRefresh()
         : 0;
@@ -383,7 +384,7 @@ void MapEditorSceneRefreshController::refreshMapScenePreservingUndoStack(bool pr
     context_.refreshObjectDetailsPanel();
     const qint64 finalUiMs = collectTiming ? stageTimer.restart() : 0;
 
-    const int afterItemCount = collectTiming ? mapScene->items().size() : -1;
+    const int afterItemCount = collectTiming ? unsortedSceneItems(mapScene).size() : -1;
     const qint64 totalMs = collectTiming ? totalTimer.elapsed() : 0;
     if (context_.recordSceneRefreshMetrics) {
         context_.recordSceneRefreshMetrics(MapEditorSceneRefreshMetrics{

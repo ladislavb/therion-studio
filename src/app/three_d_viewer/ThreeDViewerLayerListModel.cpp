@@ -167,6 +167,9 @@ void ThreeDViewerLayerListModel::rebuildEntries()
     entries_.clear();
     for (int index = 0; index < layerCount(); ++index) {
         const Layer layer = static_cast<Layer>(index);
+        if (layer == Layer::Surfaces) {
+            continue;
+        }
         entries_.append(Entry{EntryKind::Layer, layer, Feature::Regular});
 
         if (layer != Layer::Centerline && layer != Layer::Stations) {
@@ -400,7 +403,7 @@ QString ThreeDViewerLayerListModel::layerLabel(Layer layer) const
     case Layer::Labels:
         return tr("Labels");
     case Layer::Meshes:
-        return tr("Meshes");
+        return tr("Walls");
     case Layer::Surfaces:
         return tr("Surfaces");
     case Layer::Count:
@@ -423,8 +426,9 @@ int ThreeDViewerLayerListModel::layerItemCount(Layer layer) const
         return sceneModel_.stations.size();
     case Layer::Labels:
         return sceneModel_.stations.size();
-    case Layer::Meshes:
-        return sceneModel_.meshGroups.size();
+    case Layer::Meshes: {
+        return sceneModel_.scrapLinework.size() + sceneModel_.scrapPoints.size();
+    }
     case Layer::Surfaces:
         return sceneModel_.surfaces.size();
     case Layer::Count:

@@ -22,6 +22,7 @@
 #include <QJsonObject>
 #include <QKeyEvent>
 #include <QLineF>
+#include <QMenu>
 #include <QMessageBox>
 #include <QMouseEvent>
 #include <QPainter>
@@ -46,6 +47,7 @@
 #include <optional>
 
 #include "MapEditorRasterBackgroundImage.h"
+#include "MapEditorPerformanceCounters.h"
 #include "MapEditorRasterBackgroundPlacement.h"
 #include "MapEditorBackgroundTransform.h"
 #include "MapEditorBackgroundAssetLoader.h"
@@ -994,21 +996,31 @@ bool buildXviLayerGeometry(const XviDocument &xvi,
         return QStringLiteral("%1:%2").arg(ix).arg(iy);
     };
     QSet<QString> stationPointKeys;
+    QHash<QString, QSet<QString>> stationNamesByPoint;
     stationPointKeys.reserve(!xvi.stationEntries.isEmpty() ? xvi.stationEntries.size() : xvi.stations.size());
     if (!xvi.stationEntries.isEmpty()) {
         for (const TherionXviStation &station : xvi.stationEntries) {
-            stationPointKeys.insert(stationKey(station.position));
+            const QString key = stationKey(station.position);
+            stationPointKeys.insert(key);
+            stationNamesByPoint[key].insert(station.name);
         }
     } else {
         for (auto it = xvi.stations.constBegin(); it != xvi.stations.constEnd(); ++it) {
-            stationPointKeys.insert(stationKey(it.value()));
+            const QString key = stationKey(it.value());
+            stationPointKeys.insert(key);
+            stationNamesByPoint[key].insert(it.key());
         }
     }
     auto matchesStation = [&](const QPointF &point) {
         return stationPointKeys.contains(stationKey(point));
     };
+    auto stationNameAt = [&](const QPointF &point) {
+        const QSet<QString> names = stationNamesByPoint.value(stationKey(point));
+        return names.size() == 1 ? *names.cbegin() : QString();
+    };
 
     QVector<QLineF> traverseShotLines;
+    QVector<MapEditorXviTraverseStations> traverseShotStations;
     QVector<QLineF> splayShotLines;
     QVector<MapEditorXviStationData> stations;
     stations.reserve(xvi.stationEntries.size());
@@ -1034,6 +1046,9 @@ bool buildXviLayerGeometry(const XviDocument &xvi,
         includePoint(projectedEnd);
         QVector<QLineF> &targetLines = isSplay ? splayShotLines : traverseShotLines;
         targetLines.append(QLineF(projectedStart, projectedEnd));
+        if (!isSplay) {
+            traverseShotStations.append({stationNameAt(rawStart), stationNameAt(rawEnd)});
+        }
 
         if (shot.passageOutline.size() == 4) {
             MapEditorXviPassagePolygonData passage;
@@ -1159,6 +1174,7 @@ bool buildXviLayerGeometry(const XviDocument &xvi,
     MapEditorXviLayerGeometryData result;
     result.gridLines = normalizedGridLines;
     result.traverseShotLines = normalizedTraverseShots;
+    result.traverseShotStations = traverseShotStations;
     result.splayShotLines = normalizedSplayShots;
     result.passagePolygons = normalizedPassagePolygons;
     result.sketchPaths = normalizedSketchPaths;
@@ -1258,6 +1274,7 @@ bool updateXviBackgroundItemGeometry(MapEditorXviBackgroundItem *item,
 
 bool createAndAppendXviBackgroundItem(QGraphicsScene *scene,
                                       QVector<QGraphicsPixmapItem *> *layers,
+                                      const MapAppearanceSettings &appearance,
                                       const QString &absolutePath,
                                       const XviDocument &xvi,
                                       const QPointF &anchoredBasePosition,
@@ -1279,6 +1296,7 @@ bool createAndAppendXviBackgroundItem(QGraphicsScene *scene,
         return false;
     }
 
+    backgroundItem->setCenterlineAppearance(QColor(appearance.xviCenterlineColor), appearance.xviCenterlineWidth);
     scene->addItem(backgroundItem);
     layers->append(backgroundItem);
     return true;
@@ -1763,6 +1781,7 @@ void MapEditorTab::browseAndAddBackgroundImages()
                     : XviBackgroundInsertionPlacement{QPointF(0.0, 0.0), QString()};
             if (!createAndAppendXviBackgroundItem(mapScene_,
                                                   &backgroundImageItems_,
+                                                  mapAppearance_,
                                                   absoluteXviPath,
                                                   xviDocument,
                                                   insertionPlacement.basePosition,
@@ -2321,11 +2340,11 @@ qreal MapEditorTab::backgroundLayerRotationDegValue(const QGraphicsPixmapItem *i
     return backgroundItemRotationDegValue(item);
 }
 
-std::optional<MapEditorXviStationSnapCandidate> MapEditorTab::xviStationSnapAtScenePosition(
+QVector<MapEditorXviStationSnapCandidate> MapEditorTab::xviStationSnapsAtScenePosition(
     const QPointF &scenePosition) const
 {
     if (mapView_ == nullptr) {
-        return std::nullopt;
+        return {};
     }
 
     constexpr qreal snapRadiusPixels = 12.0;
@@ -2355,7 +2374,36 @@ std::optional<MapEditorXviStationSnapCandidate> MapEditorTab::xviStationSnapAtSc
         }
     }
 
-    return mapEditorUniqueXviStationSnap(clickViewportPosition, candidates, snapRadiusPixels);
+    return mapEditorNearbyXviStationSnaps(clickViewportPosition, candidates, snapRadiusPixels);
+}
+
+std::optional<MapEditorXviStationSnapCandidate> MapEditorTab::chooseXviStationSnap(
+    const QVector<MapEditorXviStationSnapCandidate> &snaps,
+    const QPointF &scenePosition)
+{
+    if (snaps.isEmpty() || mapView_ == nullptr) {
+        return std::nullopt;
+    }
+
+    QMenu menu(mapView_);
+    QAction *title = menu.addAction(tr("Choose XVI station"));
+    title->setEnabled(false);
+    menu.addSeparator();
+    QHash<QAction *, int> snapIndexByAction;
+    for (int index = 0; index < snaps.size(); ++index) {
+        QAction *action = menu.addAction(snaps.at(index).name);
+        snapIndexByAction.insert(action, index);
+    }
+    if (!snapIndexByAction.isEmpty()) {
+        menu.setActiveAction(snapIndexByAction.key(0));
+    }
+
+    const QPoint globalPosition = mapView_->viewport()->mapToGlobal(mapView_->mapFromScene(scenePosition));
+    QAction *chosen = menu.exec(globalPosition);
+    if (chosen == nullptr || !snapIndexByAction.contains(chosen)) {
+        return std::nullopt;
+    }
+    return snaps.at(snapIndexByAction.value(chosen));
 }
 
 QPointF MapEditorTab::backgroundLayerBaseModelPosition(QGraphicsPixmapItem *item) const
@@ -2868,6 +2916,7 @@ void MapEditorTab::loadBackgroundLayersFromSession()
                     backgroundAssetCache_, QFileInfo(layerPath).absoluteFilePath(), &xviDocument)
                 || !createAndAppendXviBackgroundItem(mapScene_,
                                                      &backgroundImageItems_,
+                                                     mapAppearance_,
                                                      QFileInfo(layerPath).absoluteFilePath(),
                                                      xviDocument,
                                                      basePosition,
@@ -3118,6 +3167,7 @@ void MapEditorTab::syncAutoBackgroundLayersFromCurrentDocument()
                 : sourceBounds;
             if (!createAndAppendXviBackgroundItem(mapScene_,
                                                   &backgroundImageItems_,
+                                                  mapAppearance_,
                                                   referencePath,
                                                   xviDocument,
                                                   anchoredBase,
@@ -3764,6 +3814,9 @@ void MapEditorTab::invalidateBackgroundLayerRasterJobs(QGraphicsPixmapItem *item
 
     item->setData(kBackgroundLayerRasterLoadRequestRole, QVariant::fromValue<qulonglong>(nextMapEditorRasterLoadRequestId()));
     item->setData(kBackgroundLayerRasterGammaRequestRole, QVariant::fromValue<qulonglong>(nextMapEditorRasterGammaRequestId()));
+    if (auto active = activeBackgroundGammaJobs_.find(item); active != activeBackgroundGammaJobs_.end()) {
+        active.value().reset();
+    }
 }
 
 void MapEditorTab::invalidateBackgroundRasterJobs()
@@ -4122,11 +4175,22 @@ void MapEditorTab::applyBackgroundLayerGamma(QGraphicsPixmapItem *item, qreal ga
         return;
     }
 
+    const quint64 requestId = nextMapEditorRasterGammaRequestId();
+    item->setData(kBackgroundLayerRasterGammaRequestRole, QVariant::fromValue<qulonglong>(requestId));
     if (const std::optional<QImage> cachedImage = cachedMapEditorRasterDisplayImage(backgroundAssetCache_, layerPath, boundedGamma);
         cachedImage.has_value()) {
+        if (auto active = activeBackgroundGammaJobs_.find(item); active != activeBackgroundGammaJobs_.end()) {
+            active.value().reset();
+        }
         item->setData(2, boundedGamma);
         item->setPixmap(QPixmap::fromImage(cachedImage.value()));
         applyBackgroundLayerTransform(item);
+        return;
+    }
+
+    item->setData(2, boundedGamma);
+    if (auto active = activeBackgroundGammaJobs_.find(item); active != activeBackgroundGammaJobs_.end()) {
+        active.value() = boundedGamma;
         return;
     }
 
@@ -4135,19 +4199,21 @@ void MapEditorTab::applyBackgroundLayerGamma(QGraphicsPixmapItem *item, qreal ga
         return;
     }
 
-    const quint64 requestId = nextMapEditorRasterGammaRequestId();
-    item->setData(kBackgroundLayerRasterGammaRequestRole, QVariant::fromValue<qulonglong>(requestId));
-    item->setData(2, boundedGamma);
-
+    activeBackgroundGammaJobs_.insert(item, std::nullopt);
     auto *watcher = new QFutureWatcher<QImage>(this);
     connect(watcher, &QFutureWatcher<QImage>::finished, this, [this, watcher, item, layerPath, boundedGamma, requestId]() {
         const QImage adjustedImage = watcher->result();
         watcher->deleteLater();
 
-        if (adjustedImage.isNull()) {
+        const std::optional<qreal> pendingGamma = activeBackgroundGammaJobs_.take(item);
+        if (!backgroundImageItems_.contains(item)) {
             return;
         }
-        if (!backgroundImageItems_.contains(item)) {
+        if (pendingGamma.has_value()) {
+            applyBackgroundLayerGamma(item, pendingGamma.value());
+            return;
+        }
+        if (adjustedImage.isNull()) {
             return;
         }
         if (item->data(kBackgroundLayerRasterGammaRequestRole).toULongLong() != requestId) {
@@ -4158,6 +4224,7 @@ void MapEditorTab::applyBackgroundLayerGamma(QGraphicsPixmapItem *item, qreal ga
         item->setPixmap(QPixmap::fromImage(adjustedImage));
         applyBackgroundLayerTransform(item);
     });
+    mapEditorPerformanceCounters().rasterGammaJobsScheduled.fetch_add(1, std::memory_order_relaxed);
     watcher->setFuture(QtConcurrent::run(gammaCorrectMapEditorRasterSourceImage,
                                          sourceImage,
                                          boundedGamma));

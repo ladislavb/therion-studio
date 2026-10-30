@@ -266,6 +266,8 @@ Lorsqu’un fichier `.th2` ne contient pas de métadonnées XTherion `xth_me_are
 
 Les blocs Therion `area ... endarea` existants qui référencent des bordures `line -id ...` sont rendus à partir des lignes du même scrap. Les lignes de bordure peuvent être ouvertes ; si leurs intersections forment une face fermée, Therion Studio remplit cette face sans modifier la source des lignes référencées.
 
+Lorsqu’une aire remplie recouvre un autre objet sélectionnable, la sélection privilégie le point, la ligne ou l’autre objet situé dans le rayon de sélection habituel. L’aire reste sélectionnable depuis son intérieur libre, et son remplissage ne bloque pas les événements du pointeur destinés à la géométrie sous-jacente. La ligne de bordure réelle d’une aire reste sélectionnable et utilisable comme cible d’accrochage.
+
 `Smart Area` crée cette forme d’aire référencée au lieu de dessiner une nouvelle géométrie de bordure. La validation peut attribuer les identifiants manquants aux lignes de bordure référencées afin que le nouveau bloc `area ... endarea` puisse les désigner, sans modifier leur géométrie. Après validation, le dessin revient au mode Sélectionner. Appuyez sur `Esc` pour annuler l’aperçu.
 
 Pendant le placement des points ou le dessin des lignes et des aires, les sommets d’objets proches sont mis en évidence comme candidats à l’accrochage. La cible active est accentuée davantage ; les poignées de Bézier restent libres.
@@ -379,6 +381,16 @@ Therion Studio ne génère pas de grille métrique séparée. Utilisez les calqu
 
 ### 6.10 Fenêtre de dessin détachée
 
+Le zoom de dessin atteint **20 000 %**, avec un minimum manuel de **10 %** :
+molette, pincement et actions partagent les mêmes limites dans les vues intégrées
+et détachées, en conservant l’ancrage sous le curseur.
+Le mode de couleur XVI **Selon l’altitude** utilise les hauteurs LOX des deux
+stations, relatives à une entrée marquée et non à une altitude absolue.
+La légende indique les nombres de segments colorés et de segments en couleur
+de repli, ainsi que la raison des données manquantes. Plusieurs sorties LOX
+nécessitent une sortie unique ; aucune n’est choisie arbitrairement.
+Les lignes de levé TH2 ne sont pas des arrière-plans XVI et ne sont pas recolorées.
+
 Utilisez `Détacher le dessin` pour placer le panneau visuel dans sa propre fenêtre, par exemple sur un second écran. Utilisez `Réintégrer le dessin` ou fermez la fenêtre détachée pour le replacer dans la fenêtre principale.
 
 ## 7. Exécution de Therion
@@ -414,6 +426,23 @@ La fermeture d’un projet efface la `Configuration cible` et le `Remplacement d
 La barre d’état indique l’état de la compilation avec le préfixe compact `C:` : `C : Inactif`, `C: Running`, `C: OK` ou `C: Failed`. `C: OK` n’est utilisé que si le processus Therion se termine correctement et si Studio ne détecte pas dans la sortie d’erreur de problème connu d’écriture de fichier, tel que `warning -- error writing`.
 
 ## 8. Paramètres
+
+**Fond pastel d'altitude des scraps** est facultatif et désactivé par défaut.
+**Intensité du fond des scraps** règle l'opacité de **0 à 100 %**, initialement
+**19 %** ; zéro rend le fond invisible. La valeur concerne les contours précis
+et approximatifs, les couleurs d'altitude et les couleurs catégorielles.
+Désactiver le fond conserve la valeur choisie.
+
+**Couleur de la ligne de cheminement XVI** ouvre un sélecteur avec transparence.
+**Épaisseur de la ligne de cheminement XVI** accepte **0,1–12 px**, initialement
+**1,8 px**, avec la couleur RGBA **18, 44, 88, 130**. Seules les visées XVI entre
+stations changent, pas les contours/remplissages LRUD, visées latérales, grilles,
+croquis, repères de stations ni les autres calques. L'épaisseur est en pixels,
+pas en unités de carte ; l'amincissement existant au zoom arrière est conservé.
+
+**OK** enregistre et applique immédiatement ces valeurs à toutes les cartes
+ouvertes, y compris les fenêtres détachées, sans modifier les documents ni
+l'historique d'annulation. **Annuler** abandonne les modifications.
 
 Ouvrez les paramètres depuis `Fichier -> Paramètres...` ou `Preferences...` sous macOS.
 

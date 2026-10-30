@@ -129,6 +129,9 @@ bool MainWindow::reloadDocumentWidgetFromDisk(QWidget *documentWidget, QString *
 
 void MainWindow::handleWatchedDocumentFileChanged(const QString &filePath)
 {
+    if (projectRestoreInProgress_) {
+        return;
+    }
     const QString canonicalPath = canonicalDocumentPath(filePath);
     if (canonicalPath.isEmpty() || pendingWatchedDocumentChanges_.contains(canonicalPath)) {
         return;
@@ -143,6 +146,9 @@ void MainWindow::handleWatchedDocumentFileChanged(const QString &filePath)
 
 void MainWindow::handleWatchedDocumentDirectoryChanged(const QString &directoryPath)
 {
+    if (projectRestoreInProgress_) {
+        return;
+    }
     const QString canonicalDirectoryPath = canonicalDocumentPath(directoryPath);
     if (canonicalDirectoryPath.isEmpty()
         || pendingWatchedDocumentDirectoryChanges_.contains(canonicalDirectoryPath)) {

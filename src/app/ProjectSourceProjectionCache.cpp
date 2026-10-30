@@ -2,6 +2,7 @@
 
 #include "../core/TherionFileTypes.h"
 
+#include <QSet>
 #include <QStringList>
 
 namespace TherionStudio
@@ -94,6 +95,31 @@ ProjectSourceProjectionCacheStats ProjectSourceProjectionCache::stats() const
 void ProjectSourceProjectionCache::resetStats()
 {
     stats_ = {};
+}
+
+void ProjectSourceProjectionCache::pruneToSnapshot(const ProjectSourceSnapshot &snapshot,
+                                                  TherionSourceSnapshotCatalogKey catalogKey)
+{
+    QSet<QString> sourceKeys;
+    QSet<QString> logicalKeys;
+    QSet<QString> catalogLogicalKeys;
+    for (const ProjectSourceDocument &document : snapshot.documents) {
+        sourceKeys.insert(sourceKeyForDocument(document));
+        logicalKeys.insert(logicalKeyForDocument(document));
+        if (catalogKey.enabled) {
+            catalogLogicalKeys.insert(catalogLogicalKeyForDocument(document, catalogKey));
+        }
+    }
+    sourceDocuments_.removeIf([&](const auto &entry) {
+        return !sourceKeys.contains(entry.key());
+    });
+    logicalDocuments_.removeIf([&](const auto &entry) {
+        return !logicalKeys.contains(entry.key());
+    });
+    catalogLogicalDocuments_.removeIf([&](const auto &entry) {
+        return !catalogLogicalKeys.contains(entry.key());
+    });
+    transientCatalogLogicalDocument_.reset();
 }
 
 void ProjectSourceProjectionCache::clear()

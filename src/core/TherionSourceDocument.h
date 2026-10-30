@@ -92,6 +92,10 @@ public:
     [[nodiscard]] QVector<TherionParsedLine> tokenLines() const;
 
 private:
+    [[nodiscard]] static TherionSourceDocument parseText(
+        const QString &contents,
+        const TherionSourceDocumentMetadata &metadata);
+
     TherionSourceDocumentMetadata metadata_;
     TherionSourceText sourceText_;
     TherionParsedSourceDocument parsedDocument_;

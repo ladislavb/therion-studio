@@ -2282,7 +2282,7 @@ ProjectStationReferenceResolution ProjectStructureIndex::resolveStationReference
     }
 
     if (candidateKeys.size() == 1) {
-        return {ProjectStationReferenceResolutionState::Unique, 1};
+        return {ProjectStationReferenceResolutionState::Unique, 1, *candidateKeys.cbegin()};
     }
     if (candidateKeys.size() > 1) {
         return {ProjectStationReferenceResolutionState::Ambiguous, static_cast<int>(candidateKeys.size())};

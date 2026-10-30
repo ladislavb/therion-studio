@@ -112,6 +112,10 @@ QString TextEditorTab::filePath() const
 
 void TextEditorTab::handleTextChanged()
 {
+    if (highlighter_ != nullptr && highlighter_->applyingFormatsOnly()) {
+        return;
+    }
+
     TextEditorTabInteractionController::TextChangedActions actions;
     actions.rebuildBlocksCanvasFromText = [this]() {
         rebuildBlocksCanvasFromText();

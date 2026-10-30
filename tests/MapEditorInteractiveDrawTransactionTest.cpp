@@ -277,8 +277,18 @@ int runStationPointInsertUsesXviSnapTest()
     context.translate = [](const char *text) { return QString::fromUtf8(text); };
     context.emitModeStatusChanged = []() {};
     context.sourcePointFromScenePosition = [](const QPointF &point) { return point; };
-    context.xviStationSnapAtScenePosition = [](const QPointF &) -> std::optional<MapEditorXviStationSnapCandidate> {
-        return MapEditorXviStationSnapCandidate{QStringLiteral("12@survey"), QPointF(100.0, 200.0), QPointF(0.0, 0.0)};
+    QVector<MapEditorXviStationSnapCandidate> xviSnaps{
+        {QStringLiteral("12@survey"), QPointF(100.0, 200.0), QPointF(0.0, 0.0)}};
+    std::optional<int> chosenSnapIndex;
+    int chooserCalls = 0;
+    context.xviStationSnapsAtScenePosition = [&xviSnaps](const QPointF &) { return xviSnaps; };
+    context.chooseXviStationSnap = [&](const QVector<MapEditorXviStationSnapCandidate> &snaps,
+                                       const QPointF &) -> std::optional<MapEditorXviStationSnapCandidate> {
+        ++chooserCalls;
+        if (!chosenSnapIndex.has_value()) {
+            return std::nullopt;
+        }
+        return snaps.at(chosenSnapIndex.value());
     };
     context.applySourceTextChangeWithSnapshot = [&](const QString &,
                                                     const QString &,
@@ -327,6 +337,33 @@ int runStationPointInsertUsesXviSnapTest()
     }
     if (!expect(committedOptions.name == QStringLiteral("12@survey") && committedOptions.nameEnabled,
                 "Station point insertion should commit the snapped XVI station name.")) {
+        return 1;
+    }
+    if (!expect(chooserCalls == 0, "A single nearby XVI station should not open the chooser.")) {
+        return 1;
+    }
+
+    // Equated aliases at one position (e.g. 5109@Jaskyna_Okno = 5109@pripojenie_vchodov).
+    xviSnaps = {{QStringLiteral("5109@a"), QPointF(300.0, 400.0), QPointF(0.0, 0.0)},
+                {QStringLiteral("5109@b"), QPointF(300.0, 400.0), QPointF(0.0, 0.0)}};
+    plannedAfterText.clear();
+    chosenSnapIndex = 1;
+    if (!expect(controller.handleInteractiveDrawClick(QPointF(10.0, 20.0)),
+                "Interactive station insert should handle an ambiguous XVI snap click.")) {
+        return 1;
+    }
+    if (!expect(chooserCalls == 1 && plannedAfterText.contains(QStringLiteral("-name 5109@b")),
+                "Ambiguous XVI snap should insert the station chosen by the user.")) {
+        return 1;
+    }
+
+    plannedAfterText.clear();
+    chosenSnapIndex.reset();
+    if (!expect(controller.handleInteractiveDrawClick(QPointF(10.0, 20.0)),
+                "Cancelled XVI station choice should still consume the click.")) {
+        return 1;
+    }
+    if (!expect(plannedAfterText.isEmpty(), "Cancelled XVI station choice must not insert an unnamed station.")) {
         return 1;
     }
 

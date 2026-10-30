@@ -15,6 +15,7 @@
 #include "text_editor/map_editor/MapEditorTab.h"
 
 #include <QComboBox>
+#include <QDir>
 #include <QFileInfo>
 #include <QFileDialog>
 #include <QLabel>
@@ -22,9 +23,11 @@
 #include <QMessageBox>
 #include <QSignalBlocker>
 #include <QStatusBar>
+#include <QStandardPaths>
 #include <QStringList>
 #include <QTextBrowser>
 #include <QUrl>
+#include <QUuid>
 
 namespace
 {
@@ -59,6 +62,15 @@ void MainWindow::buildConsole()
     therionClearOutputButton_ = buildResult.therionClearOutputButton;
     therionCopyOutputButton_ = buildResult.therionCopyOutputButton;
     consoleView_ = buildResult.consoleView;
+    const QString logPath = QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
+                                .filePath(QStringLiteral("compiler-logs/%1.log")
+                                              .arg(QUuid::createUuid().toString(QUuid::WithoutBraces)));
+    therionConsoleOutputStore_ = std::make_unique<TherionStudio::TherionConsoleOutputStore>(logPath);
+    therionConsoleController_.setOutputStore(therionConsoleOutputStore_.get(), [this](const QString &message) {
+        statusBar()->showMessage(message, 30000);
+    });
+    consoleView_->setToolTip(tr("Preview: last 10,000 lines. Complete output: %1").arg(logPath));
+    therionCopyOutputButton_->setToolTip(tr("Copy the complete compiler output, including lines no longer in the preview."));
     if (consoleView_ != nullptr) {
         connect(consoleView_,
                 &QTextBrowser::anchorClicked,
@@ -145,6 +157,11 @@ void MainWindow::copyTherionConsoleOutput()
         return;
     case TherionStudio::MainWindowTherionConsoleController::CopyOutputResult::ConsoleUnavailable:
         statusBar()->showMessage(tr("Console output is unavailable"), 2000);
+        return;
+    case TherionStudio::MainWindowTherionConsoleController::CopyOutputResult::OutputReadFailed:
+        statusBar()->showMessage(tr("Compiler log error (%1): %2")
+                                    .arg(therionConsoleOutputStore_->filePath(), therionConsoleOutputStore_->errorString()),
+                                30000);
         return;
     case TherionStudio::MainWindowTherionConsoleController::CopyOutputResult::Copied:
         break;
@@ -521,7 +538,13 @@ void MainWindow::runTherion()
     }
 
     if (!therionRunnerService_->isRunning()) {
-        therionConsoleController_.clearConsoleOutput();
+        if (!therionConsoleController_.clearConsoleOutput()) {
+            const QString message = tr("Compiler log error (%1): %2")
+                                        .arg(therionConsoleOutputStore_->filePath(), therionConsoleOutputStore_->errorString());
+            QMessageBox::warning(this, tr("Run Therion"), message);
+            setCompilerStatusResult(false, message);
+            return;
+        }
         activeTherionRunStandardError_.clear();
     }
 

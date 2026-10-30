@@ -103,7 +103,7 @@ void ThreeDViewerViewportControllerTest::orbitsAroundScene()
     QVERIFY(controller.mousePress(Qt::LeftButton, QPoint(10, 10)));
     QVERIFY(controller.mouseMove(QPoint(30, 45), 400));
     const ThreeDViewerCameraState orbitState = controller.camera().state();
-    QVERIFY(std::abs(orbitState.yaw - (-0.85 + 20.0 * 0.008)) < 1e-12);
+    QVERIFY(std::abs(orbitState.yaw - (-0.85 - 20.0 * 0.008)) < 1e-12);
     QVERIFY(std::abs(orbitState.pitch - (0.45 + 35.0 * 0.008)) < 1e-12);
     QVERIFY(controller.mouseRelease(Qt::LeftButton));
 }

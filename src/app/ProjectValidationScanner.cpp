@@ -634,6 +634,9 @@ ProjectValidationScanner::Result performProjectValidation(const QString &project
     if (isSuperseded()) {
         return supersededResult();
     }
+    // Scans are serialized; no borrowed projections from the previous scan remain.
+    projectionCache.pruneToSnapshot(projectSourceSnapshot,
+                                    TherionSourceSnapshotCatalogKey::fromRevision(1));
     QSet<QString> knownProjectFilePaths;
     QHash<QString, ProjectSourceDocument> projectSourceDocumentByPath;
     for (const ProjectSourceDocument &document : std::as_const(projectSourceSnapshot.documents)) {

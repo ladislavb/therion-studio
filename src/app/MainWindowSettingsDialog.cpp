@@ -1,13 +1,16 @@
 #include "MainWindowSettingsDialog.h"
+#include "ProjectVersioningWidget.h"
 
 #include "../platform/DiagnosticLogging.h"
 #include "TherionExecutableDetector.h"
 #include "TherionExecutableSelectionController.h"
 
 #include <QCheckBox>
+#include <QColorDialog>
 #include <QComboBox>
 #include <QDesktopServices>
 #include <QDialogButtonBox>
+#include <QDoubleSpinBox>
 #include <QDir>
 #include <QFileDialog>
 #include <QFormLayout>
@@ -16,6 +19,9 @@
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QSpinBox>
+#include <QScrollArea>
+#include <QTabWidget>
 #include <QUrl>
 #include <QVBoxLayout>
 
@@ -23,6 +29,7 @@ namespace TherionStudio
 {
 MainWindowSettingsDialog::MainWindowSettingsDialog(const Settings &settings, QWidget *parent)
     : QDialog(parent)
+    , projectRootPath_(settings.projectRootPath)
 {
     setWindowTitle(tr("Settings"));
     setModal(true);
@@ -92,6 +99,61 @@ MainWindowSettingsDialog::MainWindowSettingsDialog(const Settings &settings, QWi
         tr("When enabled, the Validation panel refreshes the whole project after project, document, and file changes."));
     formLayout->addRow(QString(), automaticProjectValidationCheckBox_);
 
+    mapAltitudeUnderlayCheckBox_ = new QCheckBox(tr("Pastel scrap altitude underlay"), this);
+    mapAltitudeUnderlayCheckBox_->setObjectName(QStringLiteral("mapAltitudeUnderlayCheckBox"));
+    mapAltitudeUnderlayCheckBox_->setChecked(settings.mapAltitudeUnderlayEnabled);
+    formLayout->addRow(QString(), mapAltitudeUnderlayCheckBox_);
+    auto *altitudeNote = new QLabel(tr("Mean mapped LOX station heights relative to a flagged entrance; "
+        "otherwise stable scrap colors (not altitude). Editor only; off by default."), this);
+    altitudeNote->setWordWrap(true);
+    formLayout->addRow(QString(), altitudeNote);
+
+    mapAltitudeUnderlayStrengthSpin_ = new QSpinBox(this);
+    mapAltitudeUnderlayStrengthSpin_->setObjectName(QStringLiteral("mapAltitudeUnderlayStrengthSpin"));
+    mapAltitudeUnderlayStrengthSpin_->setRange(0, 100);
+    mapAltitudeUnderlayStrengthSpin_->setSuffix(tr(" %"));
+    mapAltitudeUnderlayStrengthSpin_->setValue(settings.mapAppearance.altitudeUnderlayStrengthPercent);
+    mapAltitudeUnderlayStrengthSpin_->setEnabled(settings.mapAltitudeUnderlayEnabled);
+    connect(mapAltitudeUnderlayCheckBox_, &QCheckBox::toggled,
+            mapAltitudeUnderlayStrengthSpin_, &QWidget::setEnabled);
+    formLayout->addRow(tr("Scrap underlay strength"), mapAltitudeUnderlayStrengthSpin_);
+
+    xviCenterlineColor_ = QColor(settings.mapAppearance.xviCenterlineColor);
+    xviCenterlineColorButton_ = new QPushButton(xviCenterlineColor_.name(QColor::HexArgb), this);
+    xviCenterlineColorButton_->setObjectName(QStringLiteral("xviCenterlineColorButton"));
+    xviCenterlineColorButton_->setToolTip(tr("Choose XVI centerline color"));
+    connect(xviCenterlineColorButton_, &QPushButton::clicked, this, [this] {
+        const QColor selected = QColorDialog::getColor(xviCenterlineColor_, this,
+            tr("XVI centerline color"), QColorDialog::ShowAlphaChannel);
+        if (selected.isValid()) {
+            xviCenterlineColor_ = selected;
+            xviCenterlineColorButton_->setText(selected.name(QColor::HexArgb));
+        }
+    });
+    formLayout->addRow(tr("XVI centerline color"), xviCenterlineColorButton_);
+
+    xviCenterlineColorModeCombo_ = new QComboBox(this);
+    xviCenterlineColorModeCombo_->setObjectName(QStringLiteral("xviCenterlineColorModeCombo"));
+    xviCenterlineColorModeCombo_->addItem(tr("One color"), QStringLiteral("single-color"));
+    xviCenterlineColorModeCombo_->addItem(tr("By altitude"), QStringLiteral("by-altitude"));
+    xviCenterlineColorModeCombo_->setCurrentIndex(xviCenterlineColorModeCombo_->findData(
+        settings.mapAppearance.xviCenterlineColorMode == MapAppearanceSettings::XviCenterlineColorMode::ByAltitude
+            ? QStringLiteral("by-altitude") : QStringLiteral("single-color")));
+    formLayout->addRow(tr("XVI centerline coloring"), xviCenterlineColorModeCombo_);
+
+    xviCenterlineWidthSpin_ = new QDoubleSpinBox(this);
+    xviCenterlineWidthSpin_->setObjectName(QStringLiteral("xviCenterlineWidthSpin"));
+    xviCenterlineWidthSpin_->setRange(MapAppearanceSettings::minimumCenterlineWidth,
+                                     MapAppearanceSettings::maximumCenterlineWidth);
+    xviCenterlineWidthSpin_->setDecimals(2);
+    xviCenterlineWidthSpin_->setSingleStep(0.1);
+    xviCenterlineWidthSpin_->setSuffix(tr(" px"));
+    xviCenterlineWidthSpin_->setValue(settings.mapAppearance.xviCenterlineWidth);
+    xviCenterlineWidthSpin_->setToolTip(
+        tr("Cosmetic stroke width; retains the existing thinning when zoomed out. "
+           "Only XVI station-to-station centerline legs change, not passage outlines or other layers."));
+    formLayout->addRow(tr("XVI centerline thickness"), xviCenterlineWidthSpin_);
+
     troubleshootingLogsCheckBox_ =
         new QCheckBox(tr("Enable troubleshooting logs for 24 hours"), this);
     troubleshootingLogsCheckBox_->setChecked(settings.troubleshootingLogsEnabled);
@@ -124,18 +186,54 @@ MainWindowSettingsDialog::MainWindowSettingsDialog(const Settings &settings, QWi
     logActionsLayout->addStretch(1);
     formLayout->addRow(QString(), logActionsRow);
 
-    rootLayout->addLayout(formLayout);
+    auto *generalPage = new QWidget(this);
+    generalPage->setLayout(formLayout);
+    auto *generalScroll = new QScrollArea(this);
+    generalScroll->setWidgetResizable(true);
+    generalScroll->setFrameShape(QFrame::NoFrame);
+    generalScroll->setWidget(generalPage);
+
+    auto *backups = new ProjectVersioningWidget(settings.projectRootPath, this);
+    backupPage_ = backups;
+    connect(backups, &ProjectVersioningWidget::preferencesChanged,
+            this, &MainWindowSettingsDialog::projectVersioningChanged);
+
+    tabs_ = new QTabWidget(this);
+    tabs_->setObjectName(QStringLiteral("settingsTabs"));
+    tabs_->addTab(generalScroll, tr("General"));
+    tabs_->addTab(backups, tr("Backups and versioning"));
+    rootLayout->addWidget(tabs_, 1);
 
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     rootLayout->addWidget(buttons);
-    resize(520, sizeHint().height());
+    resize(760, 700);
+}
+
+void MainWindowSettingsDialog::showBackupPage()
+{
+    tabs_->setCurrentWidget(backupPage_);
+}
+
+void MainWindowSettingsDialog::showGitHubPage()
+{
+    showBackupPage();
+    qobject_cast<ProjectVersioningWidget *>(backupPage_)->showGitHubPage();
 }
 
 MainWindowSettingsDialog::Settings MainWindowSettingsDialog::settings() const
 {
     Settings result;
+    result.projectRootPath = projectRootPath_;
+    result.mapAltitudeUnderlayEnabled = mapAltitudeUnderlayCheckBox_->isChecked();
+    result.mapAppearance.altitudeUnderlayStrengthPercent = mapAltitudeUnderlayStrengthSpin_->value();
+    result.mapAppearance.xviCenterlineColor = xviCenterlineColor_.name(QColor::HexArgb);
+    result.mapAppearance.xviCenterlineWidth = xviCenterlineWidthSpin_->value();
+    result.mapAppearance.xviCenterlineColorMode = xviCenterlineColorModeCombo_->currentData().toString()
+        == QStringLiteral("single-color")
+        ? MapAppearanceSettings::XviCenterlineColorMode::SingleColor
+        : MapAppearanceSettings::XviCenterlineColorMode::ByAltitude;
     result.applicationLanguage = languageCombo_ != nullptr
         ? languageCombo_->currentData().toString()
         : QStringLiteral("system");

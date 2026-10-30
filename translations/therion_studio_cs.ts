@@ -3,6 +3,9 @@
 <TS version="2.1" language="cs_CZ">
 <context>
     <name>MainWindow</name>
+    <message><source>Compiler log error (%1): %2</source><translation>Chyba protokolu kompilace (%1): %2</translation></message>
+    <message><source>Preview: last 10,000 lines. Complete output: %1</source><translation>Náhled: posledních 10 000 řádků. Úplný výstup: %1</translation></message>
+    <message><source>Copy the complete compiler output, including lines no longer in the preview.</source><translation>Zkopírovat úplný výstup kompilace včetně řádků, které již nejsou v náhledu.</translation></message>
     <message>
         <location filename="../src/app/MainWindow.cpp" line="403"/>
         <location filename="../src/app/MainWindow.cpp" line="860"/>
@@ -220,6 +223,16 @@
         <location filename="../src/app/MainWindowWorkspaceCommandBar.cpp" line="386"/>
         <source>Separate Map</source>
         <translation>Oddělit mapu</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowWorkspaceCommandBar.cpp" line="388"/>
+        <source>3D View</source>
+        <translation>3D pohled</translation>
+    </message>
+    <message>
+        <location filename="../src/app/MainWindowWorkspaceCommandBar.cpp" line="390"/>
+        <source>Open scrap and centreline in 3D Viewer</source>
+        <translation>Otevřít scrap a polygon ve 3D prohlížeči</translation>
     </message>
     <message>
         <location filename="../src/app/MainWindowWorkspaceCommandBar.cpp" line="397"/>
@@ -8447,5 +8460,42 @@ subtype blocks</translation>
         <source>Surfaces</source>
         <translation type="vanished">Povrchy</translation>
     </message>
+</context>
+<context><name>TherionStudio::MainWindowSettingsDialog</name>
+<message><source>XVI centerline coloring</source><translation>Barvení polygonu XVI</translation></message>
+<message><source>One color</source><translation>Jedna barva</translation></message>
+<message><source>By altitude</source><translation>Podle výšky</translation></message>
+<message><source>Pastel scrap altitude underlay</source><translation>Pastelové výškové podbarvení scrapů</translation></message>
+<message><source>Scrap underlay strength</source><translation>Intenzita podbarvení scrapů</translation></message>
+<message><source> %</source><translation> %</translation></message>
+<message><source> px</source><translation> px</translation></message>
+<message><source>XVI centerline color</source><translation>Barva polygonu XVI</translation></message>
+<message><source>Choose XVI centerline color</source><translation>Vybrat barvu polygonu XVI</translation></message>
+<message><source>XVI centerline thickness</source><translation>Tloušťka polygonu XVI</translation></message>
+<message><source>Cosmetic stroke width; retains the existing thinning when zoomed out. Only XVI station-to-station centerline legs change, not passage outlines or other layers.</source><translation>Šířka čáry v pixelech; zachovává ztenčení při oddálení. Mění se pouze úseky polygonu XVI mezi stanicemi, nikoli obrysy chodeb ani jiné vrstvy.</translation></message>
+<message><source>Mean mapped LOX station heights relative to a flagged entrance; otherwise stable scrap colors (not altitude). Editor only; off by default.</source><translation>Průměr výšek přiřazených bodů LOX vzhledem k označenému vchodu; jinak stálé barvy scrapů (nikoli výšky). Pouze v editoru; výchozí stav vypnuto.</translation></message>
+</context>
+<context><name>MapEditorAltitudeUnderlay</name>
+<message><source>Mean height: %1 m relative to entrance %2 (LOX; not an absolute datum)</source><translation>Průměrná výška: %1 m vzhledem ke vchodu %2 (LOX; nikoli absolutní výškový údaj)</translation></message>
+<message><source>Categorical scrap color — altitude unavailable or incomplete (not altitude)</source><translation>Rozlišovací barva scrapu — výška nedostupná nebo neúplná (nikoli výška)</translation></message>
+<message><source>Approximate passage outline — gaps inferred for preview only.</source><translation>Přibližný obrys chodby — mezery jsou odhadnuty pouze pro náhled.</translation></message>
+</context>
+<context><name>TherionStudio::MapEditorTab</name>
+<message><source>XVI legs: %1 altitude-colored, %2 fallback.</source><translation>Úseky XVI: %1 obarvených podle výšky, %2 náhradní barvou.</translation></message>
+<message><source>No XVI centerline is loaded; TH2 survey lines are not XVI backgrounds.</source><translation>Není načten polygon XVI; měřické čáry TH2 nejsou podklady XVI.</translation></message>
+<message><source>Multiple LOX outputs (%1); a unique output is required.</source><translation>Více výstupů LOX (%1); je nutný jednoznačný výstup.</translation></message>
+<message><source>LOX station metadata could not be loaded.</source><translation>Nepodařilo se načíst metadata stanic LOX.</translation></message>
+<message><source>LOX station heights are unavailable.</source><translation>Výšky stanic LOX nejsou dostupné.</translation></message>
+<message><source>No flagged LOX entrance is available for the relative height datum.</source><translation>Pro relativní výškový údaj není dostupný označený vchod LOX.</translation></message>
+<message><source>XVI height relative to %1 (LOX; not absolute altitude)</source><translation>Výška XVI vzhledem k %1 (LOX; nejde o absolutní nadmořskou výšku)</translation></message>
+<message><source>XVI height relative to a flagged LOX entrance</source><translation>Výška XVI vzhledem k označenému vchodu LOX</translation></message>
+<message><source>flagged entrance</source><translation>označený vchod</translation></message>
+<message><source>Missing or ambiguous endpoint heights use the configured XVI color.</source><translation>Chybějící nebo nejednoznačné výšky koncových stanic používají nastavenou barvu XVI.</translation></message>
+<message><source>LOX station heights or a flagged entrance are unavailable; the configured XVI color is used.</source><translation>Výšky stanic LOX nebo označený vchod nejsou dostupné; používá se nastavená barva XVI.</translation></message>
+<message><source>Categorical scrap fallback colors are not altitude.</source><translation>Rozlišovací barvy náhradního podbarvení scrapů nejsou výškové údaje.</translation></message>
+<message><source>Underlay: mean relative heights; categorical colors where altitude is unavailable.</source><translation>Podbarvení: průměrné relativní výšky; rozlišovací barvy tam, kde výška není dostupná.</translation></message>
+<message><source>Underlay: categorical scrap colors — altitude unavailable (not altitude).</source><translation>Podbarvení: rozlišovací barvy scrapů — výška nedostupná (nikoli výška).</translation></message>
+<message><source>Passage outlines: %1 of %2 scraps rendered; missing or ambiguous boundaries are not filled.</source><translation>Obrysy chodeb: vykresleno %1 z %2 scrapů; chybějící nebo nejednoznačné hranice se nevyplňují.</translation></message>
+<message><source>Passage outlines: %1 precise, %2 approximate, %3 unfilled.</source><translation>Obrysy chodeb: %1 přesných, %2 přibližných, %3 nevyplněných.</translation></message>
 </context>
 </TS>

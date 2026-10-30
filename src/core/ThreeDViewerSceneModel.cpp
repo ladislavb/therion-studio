@@ -4,6 +4,7 @@
 #include <QStringList>
 
 #include <algorithm>
+#include <cmath>
 
 namespace TherionStudio
 {
@@ -38,6 +39,14 @@ ThreeDViewerBounds ThreeDViewerSceneModel::bounds() const
             result.include(vertex);
         }
     }
+    for (const ThreeDViewerScrapPolyline &line : scrapLinework) {
+        for (const ThreeDViewerVec3 &point : line.points) {
+            result.include(point);
+        }
+    }
+    for (const ThreeDViewerScrapPoint &point : scrapPoints) {
+        result.include(point.position);
+    }
 
     for (const ThreeDViewerSurface &surface : surfaces) {
         if (surface.width == 0 || surface.height == 0) {
@@ -63,7 +72,8 @@ ThreeDViewerBounds ThreeDViewerSceneModel::bounds() const
 
 bool ThreeDViewerSceneModel::isEmpty() const
 {
-    return surveys.isEmpty() && stations.isEmpty() && shots.isEmpty() && meshGroups.isEmpty() && surfaces.isEmpty();
+    return surveys.isEmpty() && stations.isEmpty() && shots.isEmpty() && meshGroups.isEmpty()
+        && scrapLinework.isEmpty() && scrapPoints.isEmpty() && surfaces.isEmpty();
 }
 
 QString ThreeDViewerSceneModel::surveyPathForId(quint32 surveyId) const
@@ -114,6 +124,77 @@ QString ThreeDViewerSceneModel::stationQualifiedName(const ThreeDViewerStation &
         return QStringLiteral("@%1").arg(surveyPath);
     }
     return QStringLiteral("%1@%2").arg(station.name, surveyPath);
+}
+
+void ThreeDViewerMeshGroup::computeNormals()
+{
+    normals.clear();
+    if (vertices.isEmpty()) {
+        return;
+    }
+
+    normals.resize(vertices.size());
+    for (auto &n : normals) {
+        n = {0.0, 0.0, 0.0};
+    }
+
+    for (const auto &triangle : triangles) {
+        if (triangle[0] >= quint32(vertices.size())
+            || triangle[1] >= quint32(vertices.size())
+            || triangle[2] >= quint32(vertices.size())) {
+            continue;
+        }
+
+        const ThreeDViewerVec3 &v0 = vertices.at(triangle[0]);
+        const ThreeDViewerVec3 &v1 = vertices.at(triangle[1]);
+        const ThreeDViewerVec3 &v2 = vertices.at(triangle[2]);
+
+        const double e1x = v1.x - v0.x;
+        const double e1y = v1.y - v0.y;
+        const double e1z = v1.z - v0.z;
+        const double e2x = v2.x - v0.x;
+        const double e2y = v2.y - v0.y;
+        const double e2z = v2.z - v0.z;
+
+        double nx = e1y * e2z - e1z * e2y;
+        double ny = e1z * e2x - e1x * e2z;
+        double nz = e1x * e2y - e1y * e2x;
+        const double lenSq = nx * nx + ny * ny + nz * nz;
+        if (lenSq > 1e-12) {
+            const double invLen = 1.0 / std::sqrt(lenSq);
+            nx *= invLen;
+            ny *= invLen;
+            nz *= invLen;
+        } else {
+            nx = 0.0;
+            ny = 0.0;
+            nz = 1.0;
+        }
+
+        normals[triangle[0]].x += nx;
+        normals[triangle[0]].y += ny;
+        normals[triangle[0]].z += nz;
+
+        normals[triangle[1]].x += nx;
+        normals[triangle[1]].y += ny;
+        normals[triangle[1]].z += nz;
+
+        normals[triangle[2]].x += nx;
+        normals[triangle[2]].y += ny;
+        normals[triangle[2]].z += nz;
+    }
+
+    for (auto &n : normals) {
+        const double lenSq = n.x * n.x + n.y * n.y + n.z * n.z;
+        if (lenSq > 1e-12) {
+            const double invLen = 1.0 / std::sqrt(lenSq);
+            n.x *= invLen;
+            n.y *= invLen;
+            n.z *= invLen;
+        } else {
+            n = {0.0, 0.0, 1.0};
+        }
+    }
 }
 
 } // namespace TherionStudio

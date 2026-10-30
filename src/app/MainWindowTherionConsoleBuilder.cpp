@@ -183,6 +183,7 @@ MainWindowTherionConsoleBuilder::build(const BuildInput &input)
 
     result.consoleView = new QTextBrowser(widget);
     result.consoleView->setReadOnly(true);
+    result.consoleView->document()->setMaximumBlockCount(10000);
     result.consoleView->setLineWrapMode(QTextEdit::WidgetWidth);
     result.consoleView->setWordWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
     result.consoleView->setOpenExternalLinks(false);

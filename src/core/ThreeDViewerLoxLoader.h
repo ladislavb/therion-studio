@@ -20,6 +20,7 @@ public:
     };
 
     Result loadFile(const QString &path) const;
+    Result loadStationMetadataFile(const QString &path) const;
     Result loadBytes(const QByteArray &bytes) const;
 };
 

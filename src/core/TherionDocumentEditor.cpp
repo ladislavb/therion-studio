@@ -1558,6 +1558,38 @@ bool TherionDocumentEditor::applySourceTextEdits(QString *contents,
     return true;
 }
 
+bool TherionDocumentEditor::lineAreaVerticesRewriteEdits(const QString &contents,
+                                                         int lineNumber,
+                                                         const QString &kind,
+                                                         const QVector<std::pair<int, QPointF>> &vertexMoves,
+                                                         QVector<TherionSourceTextEdit> *edits,
+                                                         QString *errorMessage)
+{
+    if (edits == nullptr) {
+        if (errorMessage != nullptr) {
+            *errorMessage = QCoreApplication::translate("TherionStudio::TherionDocumentEditor", "No source edit output is available.");
+        }
+        return false;
+    }
+
+    QVector<TherionSourceTextEdit> combined;
+    for (const auto &move : vertexMoves) {
+        QVector<TherionSourceTextEdit> single;
+        if (!lineAreaVertexRewriteEdits(contents, lineNumber, kind, move.first, move.second, &single, errorMessage)) {
+            return false;
+        }
+        combined.append(single);
+    }
+
+    // Overlapping or out-of-range edits are rejected by the shared range validation.
+    QString scratch = contents;
+    if (!applySourceTextEdits(&scratch, combined, errorMessage)) {
+        return false;
+    }
+    *edits = std::move(combined);
+    return true;
+}
+
 bool TherionDocumentEditor::structureEntryNameRewriteEdits(const QString &contents,
                                                            int lineNumber,
                                                            const QString &category,

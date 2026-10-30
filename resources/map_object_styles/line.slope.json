@@ -1,15 +1,15 @@
 {
-  "stroke_width": 3.0,
+  "stroke_width": 2.0,
   "stroke_color": "#1C1C1E",
   "decorations": [
     {
       "kind": "slope_ticks",
-      "spacing": 14.0,
+      "spacing": 7.0,
       "adjust_spacing": true,
       "spacing_divisor": 2.0,
-      "default_length": 18.0,
-      "alternate_length_scale": 0.333,
-      "stroke_width": 0.95,
+      "default_length": 4.2,
+      "alternate_length_scale": 0.5,
+      "stroke_width": 0.85,
       "stroke_color": "#1C1C1E"
     }
   ]

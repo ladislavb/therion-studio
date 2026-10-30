@@ -12,6 +12,7 @@
 #include <QStyleOptionGraphicsItem>
 #include <QUndoCommand>
 
+#include <algorithm>
 #include <cmath>
 
 #include "../../../core/TherionDocumentParser.h"
@@ -347,7 +348,7 @@ public:
     void redo() override
     {
         if (scene_ != nullptr && item_ != nullptr) {
-            if (!scene_->items().contains(item_)) {
+            if (item_->scene() != scene_) {
                 scene_->addItem(item_);
             }
             item_->setPos(position_);
@@ -412,6 +413,74 @@ QRectF sceneCoordsPreviewBounds(const QRectF &sourceBounds, const QRectF &target
     const qreal left = targetBounds.left() + ((targetWidth - fittedWidth) / 2.0);
     const qreal top = targetBounds.top() + ((targetHeight - fittedHeight) / 2.0);
     return QRectF(left, top, fittedWidth, fittedHeight);
+}
+
+std::optional<QPointF> nearestWallGeometrySnapPoint(const QGraphicsScene *scene,
+                                                   const QPointF &candidate,
+                                                   qreal radius,
+                                                   int excludedLineNumber)
+{
+    if (scene == nullptr || radius <= 0.0) {
+        return std::nullopt;
+    }
+    // Hidden selection-gated anchors are tracked by the handle index too.
+    const QVector<QGraphicsItem *> items = MapEditorSceneHandleIndex::itemsInRect(
+        scene, QRectF(candidate.x() - radius, candidate.y() - radius, radius * 2.0, radius * 2.0));
+    qreal bestDistanceSquared = radius * radius;
+    std::optional<QPointF> bestPoint;
+    auto consider = [&](const QPointF &point) {
+        const QPointF delta = point - candidate;
+        const qreal distanceSquared = QPointF::dotProduct(delta, delta);
+        if (distanceSquared <= bestDistanceSquared
+            && (!bestPoint || distanceSquared < bestDistanceSquared)) {
+            bestDistanceSquared = distanceSquared;
+            bestPoint = point;
+        }
+    };
+    for (QGraphicsItem *item : items) {
+        if (!isMapSceneWallItem(item)
+            || item->data(kMapSceneLineNumberRole).toInt() == excludedLineNumber) {
+            continue;
+        }
+        auto *vertex = dynamic_cast<MapEditableGeometryVertexItem *>(item);
+        if (vertex != nullptr
+            && item->data(kMapSceneSelectionSubtypeRole).toInt() == kMapSceneSelectionSubtypeLineAnchor) {
+            consider(vertex->scenePos());
+        }
+    }
+    // Retain exact wall anchors before considering a point along a wall segment.
+    // Selection-gated hidden anchors remain valid geometry, as in ordinary snapping.
+    if (bestPoint) {
+        return bestPoint;
+    }
+    const QRectF probe(candidate.x() - radius, candidate.y() - radius, radius * 2.0, radius * 2.0);
+    for (QGraphicsItem *item : scene->items(probe, Qt::IntersectsItemBoundingRect)) {
+        if (!isMapSceneWallItem(item) || !item->isVisible()
+            || item->data(kMapSceneLineNumberRole).toInt() == excludedLineNumber) {
+            continue;
+        }
+        auto *path = dynamic_cast<QGraphicsPathItem *>(item);
+        const int subtype = item->data(kMapSceneSelectionSubtypeRole).toInt();
+        if (path == nullptr || (subtype != kMapSceneSelectionSubtypeGeneric
+                                && subtype != kMapSceneSelectionSubtypeLineDetail)) {
+            continue;
+        }
+        const qreal flattenScale = qMax<qreal>(1.0, 64.0 / radius);
+        const QTransform flattenTransform = path->sceneTransform()
+            * QTransform::fromScale(flattenScale, flattenScale);
+        for (const QPolygonF &polygon : path->path().toSubpathPolygons(flattenTransform)) {
+            for (int index = 1; index < polygon.size(); ++index) {
+                const QPointF start = polygon.at(index - 1) / flattenScale;
+                const QPointF direction = polygon.at(index) / flattenScale - start;
+                const qreal lengthSquared = QPointF::dotProduct(direction, direction);
+                const qreal ratio = lengthSquared > 0.0
+                    ? std::clamp(QPointF::dotProduct(candidate - start, direction) / lengthSquared, 0.0, 1.0)
+                    : 0.0;
+                consider(start + direction * ratio);
+            }
+        }
+    }
+    return bestPoint;
 }
 
 QPointF sceneCoordsSourceToPreview(const QPointF &source, const QRectF &sourceBounds, const QRectF &previewBounds)

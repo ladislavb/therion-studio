@@ -10,6 +10,7 @@ int runThreeDViewerImageExportDialogTest(int argc, char **argv);
 int runThreeDViewerInspectorWidgetTest(int argc, char **argv);
 int runThreeDViewerViewportWidgetTest(int argc, char **argv);
 int runThreeDViewerViewportControllerTest(int argc, char **argv);
+int runThreeDViewerTabHostingTest(int argc, char **argv);
 
 int main(int argc, char **argv)
 {
@@ -20,6 +21,7 @@ int main(int argc, char **argv)
         {"ThreeDViewerInspectorStateTest", runThreeDViewerInspectorStateTest},
         {"ThreeDViewerImageExportDialogTest", runThreeDViewerImageExportDialogTest},
         {"ThreeDViewerInspectorWidgetTest", runThreeDViewerInspectorWidgetTest},
+        {"ThreeDViewerTabHostingTest", runThreeDViewerTabHostingTest},
         {"ThreeDViewerViewportWidgetTest", runThreeDViewerViewportWidgetTest},
         {"ThreeDViewerViewportControllerTest", runThreeDViewerViewportControllerTest}});
 }

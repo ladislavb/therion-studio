@@ -135,7 +135,7 @@ private:
     int layerItemCount(Layer layer) const;
 
     ThreeDViewerSceneModel sceneModel_;
-    std::array<bool, kLayerCount> layerVisibility_ = {true, false, false, true, true};
+    std::array<bool, kLayerCount> layerVisibility_ = {true, true, true, true, false};
     FeatureVisibility featureVisibility_;
     QVector<Entry> entries_;
 };

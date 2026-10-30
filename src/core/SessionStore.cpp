@@ -288,6 +288,71 @@ bool SessionSettingsStore::therionMapMagnifierEnabled() const
     return settings_->value(kTherionMapMagnifierEnabledKey, true).toBool();
 }
 
+bool SessionSettingsStore::therionMapAltitudeUnderlayEnabled() const
+{
+    return settings_->value(QStringLiteral("session/therionMapAltitudeUnderlayEnabled"), false).toBool();
+}
+
+void SessionSettingsStore::setTherionMapAltitudeUnderlayEnabled(bool enabled)
+{
+    settings_->setValue(QStringLiteral("session/therionMapAltitudeUnderlayEnabled"), enabled);
+}
+
+MapAppearanceSettings SessionSettingsStore::therionMapAppearance() const
+{
+    MapAppearanceSettings result;
+    bool strengthOk = false;
+    const int strength = settings_->value(QStringLiteral("settings/mapAltitudeUnderlayStrengthPercent"),
+                                          result.altitudeUnderlayStrengthPercent).toInt(&strengthOk);
+    if (strengthOk && strength >= 0 && strength <= 100) {
+        result.altitudeUnderlayStrengthPercent = strength;
+    } else {
+        qWarning("Invalid stored scrap underlay strength; using 19 percent.");
+    }
+    const QString color = settings_->value(QStringLiteral("settings/mapXviCenterlineColor"),
+                                            result.xviCenterlineColor).toString();
+    if (MapAppearanceSettings::isValidCenterlineColor(color)) {
+        result.xviCenterlineColor = color;
+    } else {
+        qWarning("Invalid stored XVI centerline color; using the default color.");
+    }
+    bool widthOk = false;
+    const double width = settings_->value(QStringLiteral("settings/mapXviCenterlineWidth"),
+                                          result.xviCenterlineWidth).toDouble(&widthOk);
+    if (widthOk && std::isfinite(width) && width >= MapAppearanceSettings::minimumCenterlineWidth
+        && width <= MapAppearanceSettings::maximumCenterlineWidth) {
+        result.xviCenterlineWidth = width;
+    } else {
+        qWarning("Invalid stored XVI centerline width; using 1.8 px.");
+    }
+    const QString colorMode = settings_->value(QStringLiteral("settings/mapXviCenterlineColorMode"),
+                                                QStringLiteral("by-altitude")).toString();
+    if (colorMode == QStringLiteral("single-color")) {
+        result.xviCenterlineColorMode = MapAppearanceSettings::XviCenterlineColorMode::SingleColor;
+    } else if (colorMode == QStringLiteral("by-altitude")) {
+        result.xviCenterlineColorMode = MapAppearanceSettings::XviCenterlineColorMode::ByAltitude;
+    } else {
+        qWarning("Invalid stored XVI centerline color mode; using altitude colors.");
+    }
+    return result;
+}
+
+void SessionSettingsStore::setTherionMapAppearance(const MapAppearanceSettings &appearance)
+{
+    if (!appearance.isValid()) {
+        qWarning("Invalid map appearance settings; keeping previous values.");
+        return;
+    }
+    settings_->setValue(QStringLiteral("settings/mapAltitudeUnderlayStrengthPercent"),
+                        appearance.altitudeUnderlayStrengthPercent);
+    settings_->setValue(QStringLiteral("settings/mapXviCenterlineColor"),
+                        appearance.xviCenterlineColor);
+    settings_->setValue(QStringLiteral("settings/mapXviCenterlineWidth"), appearance.xviCenterlineWidth);
+    settings_->setValue(QStringLiteral("settings/mapXviCenterlineColorMode"),
+        appearance.xviCenterlineColorMode == MapAppearanceSettings::XviCenterlineColorMode::ByAltitude
+            ? QStringLiteral("by-altitude") : QStringLiteral("single-color"));
+}
+
 void SessionSettingsStore::setTherionMapMagnifierEnabled(bool enabled)
 {
     settings_->setValue(kTherionMapMagnifierEnabledKey, enabled);
@@ -510,6 +575,30 @@ void InMemorySessionStore::setTherionMapTouchFriendlyControlsEnabled(bool enable
 bool InMemorySessionStore::therionMapMagnifierEnabled() const
 {
     return therionMapMagnifierEnabled_;
+}
+
+bool InMemorySessionStore::therionMapAltitudeUnderlayEnabled() const
+{
+    return therionMapAltitudeUnderlayEnabled_;
+}
+
+void InMemorySessionStore::setTherionMapAltitudeUnderlayEnabled(bool enabled)
+{
+    therionMapAltitudeUnderlayEnabled_ = enabled;
+}
+
+MapAppearanceSettings InMemorySessionStore::therionMapAppearance() const
+{
+    return therionMapAppearance_;
+}
+
+void InMemorySessionStore::setTherionMapAppearance(const MapAppearanceSettings &appearance)
+{
+    if (!appearance.isValid()) {
+        qWarning("Invalid map appearance settings; keeping previous values.");
+        return;
+    }
+    therionMapAppearance_ = appearance;
 }
 
 void InMemorySessionStore::setTherionMapMagnifierEnabled(bool enabled)

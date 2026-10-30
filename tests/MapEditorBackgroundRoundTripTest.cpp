@@ -9,6 +9,8 @@
 // second time leaves the metadata byte for byte identical.
 
 #include "../src/app/text_editor/map_editor/MapEditorTab.h"
+#include "../src/app/text_editor/map_editor/MapEditorPerformanceCounters.h"
+#include "../src/app/text_editor/map_editor/MapEditorRasterBackgroundImage.h"
 #include "../src/core/CommandCatalogStore.h"
 #include "../src/core/QtFileSystem.h"
 #include "../src/core/TherionBackgroundMetadata.h"
@@ -23,6 +25,11 @@
 #include <QTemporaryDir>
 #include <QTest>
 #include <QGraphicsPixmapItem>
+#include <QGraphicsView>
+#include <QScopeGuard>
+#include <QSemaphore>
+#include <QThreadPool>
+#include <QtConcurrent>
 #include <QVBoxLayout>
 
 #include <cmath>
@@ -66,10 +73,87 @@ private slots:
     void scaledLayerSurvivesReload_data();
     void scaledLayerSurvivesReload();
     void xviScalingMatchesMapiahComposition();
+    void cachedGammaSelectionSurvivesOlderWorkerResult();
+    void cachedGammaSelectionSurvivesOlderWorkerResult_data();
 
 private:
     bool writeFixture(const QDir &directory, bool pivotSet, qreal rotationDeg, QString *filePath);
 };
+
+void MapEditorBackgroundRoundTripTest::cachedGammaSelectionSurvivesOlderWorkerResult_data()
+{
+    QTest::addColumn<bool>("burst");
+    QTest::newRow("cached selection supersedes worker") << false;
+    QTest::newRow("burst keeps only latest pending gamma") << true;
+}
+
+void MapEditorBackgroundRoundTripTest::cachedGammaSelectionSurvivesOlderWorkerResult()
+{
+    QFETCH(bool, burst);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString path = directory.filePath(QStringLiteral("gamma.png"));
+    QImage image(40, 20, QImage::Format_ARGB32);
+    image.fill(QColor(80, 110, 140));
+    QVERIFY(image.save(path));
+    QtFileSystem fileSystem;
+    FakeSessionStore sessionStore;
+    MapEditorTab tab(fileSystem, sessionStore, CommandCatalogStore());
+    QVERIFY(tab.addRasterBackgroundImageForTest(path, image));
+    tab.setSelectedBackgroundLayerIndex(0);
+    tab.resetSelectedBackgroundLayerGamma();
+    for (int pass = 0; pass < 8; ++pass) {
+        QVERIFY(QThreadPool::globalInstance()->waitForDone(10000));
+        pumpEvents();
+    }
+    auto *view = tab.findChild<QGraphicsView *>();
+    QVERIFY(view && view->scene());
+    QGraphicsPixmapItem *raster = nullptr;
+    for (auto *item : view->scene()->items()) {
+        if (item->data(0).toString() == path) {
+            raster = dynamic_cast<QGraphicsPixmapItem *>(item);
+            if (raster) break;
+        }
+    }
+    QVERIFY(raster);
+    const QImage original = raster->pixmap().toImage();
+
+    auto *pool = QThreadPool::globalInstance();
+    QVERIFY(pool->waitForDone(10000));
+    const int previousLimit = pool->maxThreadCount();
+    pool->setMaxThreadCount(1);
+    QSemaphore running;
+    QSemaphore release;
+    auto blocker = QtConcurrent::run([&] {
+        running.release();
+        release.acquire();
+    });
+    const auto cleanup = qScopeGuard([&] {
+        release.release();
+        pool->waitForDone();
+        pool->setMaxThreadCount(previousLimit);
+    });
+    QVERIFY(running.tryAcquire(1, 10000));
+    const int jobsBefore = mapEditorPerformanceCounters().rasterGammaJobsScheduled.load();
+    tab.setSelectedBackgroundLayerGamma(0.6);
+    if (burst) {
+        for (int index = 0; index < 100; ++index) {
+            tab.setSelectedBackgroundLayerGamma(0.7 + index * 0.01);
+        }
+        tab.setSelectedBackgroundLayerGamma(0.9);
+    } else {
+        tab.resetSelectedBackgroundLayerGamma();
+        QCOMPARE(raster->pixmap().toImage(), original);
+    }
+    release.release();
+    QVERIFY(pool->waitForDone(10000));
+    pumpEvents();
+    const qreal expectedGamma = burst ? 0.9 : 1.0;
+    const QImage expected = QPixmap::fromImage(gammaCorrectMapEditorRasterSourceImage(image, expectedGamma)).toImage();
+    QTRY_COMPARE(raster->pixmap().toImage(), expected);
+    QCOMPARE(tab.backgroundLayerGamma(0), expectedGamma);
+    QCOMPARE(mapEditorPerformanceCounters().rasterGammaJobsScheduled.load() - jobsBefore, burst ? 2 : 1);
+}
 
 bool MapEditorBackgroundRoundTripTest::writeFixture(const QDir &directory,
                                                     bool pivotSet,

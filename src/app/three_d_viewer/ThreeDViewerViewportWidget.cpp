@@ -75,6 +75,12 @@ void ThreeDViewerViewportWidget::setMeshColorMode(ThreeDViewerMeshColorMode mesh
     syncRootItem();
 }
 
+void ThreeDViewerViewportWidget::setCenterlineColorMode(ThreeDViewerCenterlineColorMode colorMode)
+{
+    centerlineColorMode_ = colorMode;
+    syncRootItem();
+}
+
 void ThreeDViewerViewportWidget::setBackgroundMode(ThreeDViewerBackgroundMode backgroundMode)
 {
     backgroundMode_ = backgroundMode;
@@ -274,6 +280,7 @@ void ThreeDViewerViewportWidget::syncRootItem()
         item->setLayerVisibility(layerVisibility_);
         item->setFeatureVisibility(featureVisibility_);
         item->setMeshColorMode(meshColorMode_);
+        item->setCenterlineColorMode(centerlineColorMode_);
         item->setBackgroundMode(backgroundMode_);
         item->setMeasurementMode(measurementMode_);
         item->setOrthographicProjection(orthographicProjection_);

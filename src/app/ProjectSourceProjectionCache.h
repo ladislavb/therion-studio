@@ -38,6 +38,9 @@ public:
 
     [[nodiscard]] ProjectSourceProjectionCacheStats stats() const;
     void resetStats();
+    // Call only between scans, when no borrowed document references are in use.
+    void pruneToSnapshot(const ProjectSourceSnapshot &snapshot,
+                         TherionSourceSnapshotCatalogKey catalogKey);
     void clear();
 
 private:

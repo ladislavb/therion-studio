@@ -3,7 +3,11 @@
 #include "../../core/ThreeDViewerLoxLoader.h"
 #include "ThreeDViewerLayerListModel.h"
 
+#include <QStringList>
+#include <QSet>
 #include <QWidget>
+
+#include <optional>
 
 class QSplitter;
 
@@ -22,10 +26,15 @@ public:
     explicit ThreeDViewerTab(QWidget *parent = nullptr);
 
     bool loadFile(const QString &filePath, QString *errorMessage = nullptr);
+    bool loadFile(const QString &filePath, const QString &surveySourcePath, QString *errorMessage = nullptr);
+    static QStringList surveySourceCandidatesForTh2(const QString &filePath, const QString &projectRootPath = QString());
     bool reloadFile(QString *errorMessage = nullptr);
+    void setSceneModel(const ThreeDViewerSceneModel &sceneModel, const QString &sourceFilePath = QString());
     void setProjectRootPath(const QString &projectRootPath);
+    void setTh2SourceSnapshot(const QString &contents, const QSet<int> &hiddenObjectLines);
     QString filePath() const;
     QString displayName() const;
+    [[nodiscard]] const ThreeDViewerSceneModel &sceneModel() const;
     bool isDirty() const;
     bool save(QString *errorMessage = nullptr);
     void fitToScene();
@@ -62,9 +71,16 @@ private:
 
     ThreeDViewerLoxLoader loader_;
     ThreeDViewerSceneModel sceneModel_;
+    struct Th2SourceSnapshot
+    {
+        QString contents;
+        QSet<int> hiddenObjectLines;
+    };
+    std::optional<Th2SourceSnapshot> th2SourceSnapshot_;
     QString filePath_;
     QString displayName_;
     QString projectRootPath_;
+    QString surveySourceFilePath_;
     QSplitter *splitter_ = nullptr;
     ThreeDViewerViewportWidget *viewport_ = nullptr;
     ThreeDViewerInspectorState *inspectorState_ = nullptr;

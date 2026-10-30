@@ -55,6 +55,17 @@ Release tags use CalVer, for example:
 v2026.5.0
 ```
 
+## User guides
+
+The user manuals explain local checkpoints and restore, first-time private
+GitHub setup, one-click project upload and backup troubleshooting:
+
+- [English user manual](docs/USER_MANUAL.md#81-local-backups-and-restore)
+- [Česká uživatelská příručka](docs/USER_MANUAL.cs.md#81-místní-zálohy-a-obnova)
+- [Slovenská používateľská príručka](docs/USER_MANUAL.sk.md#81-lokálne-zálohy-a-verzovanie)
+
+The localized manual is also available from **Help → User Manual** in the app.
+
 ## Notes
 
 Therion Studio does not bundle the external Therion compiler. Install Therion separately and

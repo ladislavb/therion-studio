@@ -2,6 +2,21 @@ build/
 build-*/
 .DS_Store
 /therion*
+
+# Generated Therion model and centerline exports.
+*.3d
+*.lox
+*.plt
+
+# Generated Therion export directories.
+output/
+outputs/
+
+# Keep deliberately committed format fixtures available to tests.
+!tests/fixtures/**/*.3d
+!tests/fixtures/**/*.lox
+!tests/fixtures/**/*.plt
+
 sample_data/
 tests/__pycache__/
 scripts/__pycache__/

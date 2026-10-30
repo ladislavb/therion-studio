@@ -12,6 +12,11 @@
 
 namespace TherionStudio
 {
+QSet<int> MapEditorTab::hiddenObjectLines() const
+{
+    return hiddenInspectorObjectLines_;
+}
+
 bool MapEditorTab::loadFile(const QString &filePath, QString *errorMessage)
 {
     const QString currentFilePath = this->filePath();
@@ -59,6 +64,11 @@ bool MapEditorTab::save(QString *errorMessage)
 
 void MapEditorTab::setProjectRootPath(const QString &projectRootPath)
 {
+    if (projectRootPath_ != projectRootPath && altitudeUnderlayEnabled_) {
+        altitudeProjectIndex_ = {};
+        altitudeStations_ = {};
+        refreshAltitudeUnderlay();
+    }
     projectRootPath_ = projectRootPath;
     textEditor_->setProjectRootPath(projectRootPath);
     refreshStatus();
@@ -133,7 +143,8 @@ QString MapEditorTab::statusModeText() const
 
 QString MapEditorTab::statusHintText() const
 {
-    return toolbarStatusNote_;
+    return altitudeUnderlayHint_.isEmpty() ? toolbarStatusNote_
+        : toolbarStatusNote_ + QStringLiteral("  ") + altitudeUnderlayHint_;
 }
 
 int MapEditorTab::zoomPercent() const

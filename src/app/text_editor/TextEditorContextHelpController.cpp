@@ -1,6 +1,7 @@
 #include "TextEditorContextHelpController.h"
 
 #include <QCoreApplication>
+#include <QEvent>
 
 #include "ContextHelpController.h"
 #include "ContextHelpInspector.h"
@@ -18,6 +19,7 @@
 #include <QTextBrowser>
 #include <QTextBlock>
 #include <QTextCursor>
+#include <QTextDocument>
 #include <QToolTip>
 #include <QVBoxLayout>
 
@@ -35,6 +37,37 @@ void appendUniqueCaseInsensitive(QStringList &target, const QString &value)
     target.append(trimmed);
 }
 
+// Rendering context help parses the whole document; for large sources this is skipped
+// while the help browser is hidden and done once it is shown again.
+constexpr int kDeferredContextHelpMinChars = 64 * 1024;
+
+class ShowEventWatcher final : public QObject
+{
+public:
+    ShowEventWatcher(QObject *parent, std::function<void()> onShow)
+        : QObject(parent)
+        , onShow_(std::move(onShow))
+    {
+    }
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override
+    {
+        if (event->type() == QEvent::Show && onShow_) {
+            onShow_();
+        }
+        return QObject::eventFilter(watched, event);
+    }
+
+public:
+    void disarm()
+    {
+        onShow_ = nullptr;
+    }
+
+private:
+    std::function<void()> onShow_;
+};
 }
 
 namespace TherionStudio
@@ -46,6 +79,40 @@ TextEditorContextHelpController::TextEditorContextHelpController(TextEditorConte
     : context_(std::move(context))
     , catalogStore_(std::move(catalogStore))
 {
+}
+
+TextEditorContextHelpController::~TextEditorContextHelpController()
+{
+    // The watcher is owned by the help browser; deleting it here would notify a widget
+    // tree that is already being torn down.
+    if (auto *watcher = static_cast<ShowEventWatcher *>(helpShowWatcher_.data())) {
+        watcher->disarm();
+    }
+}
+
+bool TextEditorContextHelpController::deferContextHelpUntilShown()
+{
+    QTextBrowser *browser = helpBrowser();
+    if (browser == nullptr || browser->isVisible() || editor() == nullptr
+        || editor()->document()->characterCount() < kDeferredContextHelpMinChars) {
+        return false;
+    }
+
+    contextHelpDirty_ = true;
+    if (helpShowWatcher_.isNull() || helpShowWatcher_->parent() != browser) {
+        if (auto *staleWatcher = static_cast<ShowEventWatcher *>(helpShowWatcher_.data())) {
+            staleWatcher->disarm();
+            staleWatcher->deleteLater();
+        }
+        auto *watcher = new ShowEventWatcher(browser, [this]() {
+            if (contextHelpDirty_) {
+                updateContextHelp();
+            }
+        });
+        browser->installEventFilter(watcher);
+        helpShowWatcher_ = watcher;
+    }
+    return true;
 }
 
 QString TextEditorContextHelpController::tr(const char *text) const
@@ -191,6 +258,10 @@ void TextEditorContextHelpController::updateContextHelp()
     if (helpBrowser() == nullptr || context_.metadata == nullptr) {
         return;
     }
+    if (deferContextHelpUntilShown()) {
+        return;
+    }
+    contextHelpDirty_ = false;
 
     const QStringList candidates = helpCandidateTokens();
     for (const QString &candidate : candidates) {

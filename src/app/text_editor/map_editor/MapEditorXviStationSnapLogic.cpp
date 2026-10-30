@@ -3,15 +3,17 @@
 #include <QLineF>
 #include <QSet>
 
+#include <algorithm>
+
 namespace TherionStudio
 {
-std::optional<MapEditorXviStationSnapCandidate> mapEditorUniqueXviStationSnap(
+QVector<MapEditorXviStationSnapCandidate> mapEditorNearbyXviStationSnaps(
     const QPointF &clickViewportPosition,
     const QVector<MapEditorXviStationSnapCandidate> &candidates,
     qreal radiusPixels)
 {
     if (radiusPixels <= 0.0) {
-        return std::nullopt;
+        return {};
     }
 
     QVector<MapEditorXviStationSnapCandidate> nearbyCandidates;
@@ -35,6 +37,23 @@ std::optional<MapEditorXviStationSnapCandidate> mapEditorUniqueXviStationSnap(
         }
     }
 
+    std::stable_sort(nearbyCandidates.begin(),
+                     nearbyCandidates.end(),
+                     [&clickViewportPosition](const MapEditorXviStationSnapCandidate &left,
+                                              const MapEditorXviStationSnapCandidate &right) {
+                         return QLineF(clickViewportPosition, left.viewportPosition).length()
+                             < QLineF(clickViewportPosition, right.viewportPosition).length();
+                     });
+    return nearbyCandidates;
+}
+
+std::optional<MapEditorXviStationSnapCandidate> mapEditorUniqueXviStationSnap(
+    const QPointF &clickViewportPosition,
+    const QVector<MapEditorXviStationSnapCandidate> &candidates,
+    qreal radiusPixels)
+{
+    const QVector<MapEditorXviStationSnapCandidate> nearbyCandidates =
+        mapEditorNearbyXviStationSnaps(clickViewportPosition, candidates, radiusPixels);
     return nearbyCandidates.size() == 1
         ? std::optional<MapEditorXviStationSnapCandidate>{nearbyCandidates.constFirst()}
         : std::nullopt;

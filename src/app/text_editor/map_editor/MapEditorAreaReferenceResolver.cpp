@@ -267,6 +267,35 @@ QVector<MapEditorAreaReference> areaReferencesForBorderLine(const Th2GeometryPro
     }
     return references;
 }
+
+QHash<int, QVector<MapEditorAreaReference>> areaReferencesByBorderLine(const QVector<AreaReferenceBlock> &areas,
+                                                                      const QVector<QPair<int, QString>> &lineIds)
+{
+    QHash<QString, QVector<const AreaReferenceBlock *>> areasByBorderId;
+    for (const AreaReferenceBlock &area : areas) {
+        for (const QString &borderId : area.borderLineIds) {
+            areasByBorderId[borderId].append(&area);
+        }
+    }
+
+    QHash<int, QVector<MapEditorAreaReference>> result;
+    QSet<int> resolvedLines;
+    for (const auto &[lineNumber, lineId] : lineIds) {
+        if (lineNumber <= 0 || resolvedLines.contains(lineNumber)) {
+            continue;
+        }
+        resolvedLines.insert(lineNumber);
+        const auto areaIt = areasByBorderId.constFind(lineId);
+        if (lineId.isEmpty() || areaIt == areasByBorderId.constEnd()) {
+            continue;
+        }
+        QVector<MapEditorAreaReference> &references = result[lineNumber];
+        for (const AreaReferenceBlock *area : areaIt.value()) {
+            references.append(MapEditorAreaReference{area->lineNumber, area->label, lineId});
+        }
+    }
+    return result;
+}
 }
 
 QSet<int> mapEditorBorderLineNumbersForArea(const QString &text, int areaLineNumber)
@@ -299,5 +328,28 @@ QVector<MapEditorAreaReference> mapEditorAreaReferencesForBorderLine(const Th2Ge
                                                                      int borderLineNumber)
 {
     return areaReferencesForBorderLine(projection, borderLineNumber);
+}
+
+QHash<int, QVector<MapEditorAreaReference>> mapEditorAreaReferencesByBorderLine(
+    const QVector<TherionSourceLogicalCommand> &commands)
+{
+    const QVector<TherionParsedLine> parsedLines = parsedTokenLinesForLogicalCommands(commands);
+    QVector<QPair<int, QString>> lineIds;
+    for (const TherionParsedLine &parsedLine : parsedLines) {
+        if (parsedLine.directive == QStringLiteral("line")) {
+            lineIds.append({parsedLine.lineNumber,
+                            commandOptionValue(parsedLine.tokens, QStringLiteral("-id")).trimmed().toLower()});
+        }
+    }
+    return areaReferencesByBorderLine(areaReferenceBlocks(parsedLines), lineIds);
+}
+
+QHash<int, QVector<MapEditorAreaReference>> mapEditorAreaReferencesByBorderLine(const Th2GeometryProjection &projection)
+{
+    QVector<QPair<int, QString>> lineIds;
+    for (const Th2LineObject &line : projection.lines()) {
+        lineIds.append({line.command.sourceRange.startLineNumber, line.command.id.trimmed().toLower()});
+    }
+    return areaReferencesByBorderLine(areaReferenceBlocks(projection), lineIds);
 }
 }

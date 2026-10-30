@@ -325,7 +325,7 @@ public:
         if (draftItem_ == nullptr) {
             return;
         }
-        if (scene_ != nullptr && !scene_->items().contains(draftItem_)) {
+        if (scene_ != nullptr && draftItem_->scene() != scene_) {
             scene_->addItem(draftItem_);
             draftItem_->setZValue(20.0);
             draftItem_->setSelected(true);
@@ -338,7 +338,7 @@ public:
 private:
     bool isDraftAttached() const
     {
-        const bool inScene = scene_ != nullptr && draftItem_ != nullptr && scene_->items().contains(draftItem_);
+        const bool inScene = scene_ != nullptr && draftItem_ != nullptr && draftItem_->scene() == scene_;
         const bool inList = draftItems_ != nullptr && draftItem_ != nullptr && draftItems_->contains(draftItem_);
         return inScene || inList;
     }
@@ -389,21 +389,38 @@ bool mapGeometryItemGroupReadyForPartialRefresh(QGraphicsScene *scene,
         return false;
     }
 
-    bool primaryItemInScene = false;
+    QGraphicsItem *primaryItem = primaryIt.value();
+    if (primaryItem->scene() != scene) {
+        return false;
+    }
+
+    if (primaryItem->data(kMapItemRole).toInt() == kMapItemGeometryValue
+        && primaryItem->data(kMapSceneLineNumberRole).toInt() == lineNumber) {
+        return true;
+    }
+
+    for (QGraphicsItem *item : MapEditorSceneHandleIndex::itemsForLine(scene, lineNumber)) {
+        if (item != nullptr
+            && item->scene() == scene
+            && item->data(kMapItemRole).toInt() == kMapItemGeometryValue
+            && item->data(kMapSceneLineNumberRole).toInt() == lineNumber) {
+            return true;
+        }
+    }
+
     bool geometryItemInScene = false;
+    ++mapEditorPerformanceCounters().fullSceneItemScans;
     const QList<QGraphicsItem *> sceneItems = scene->items();
     for (QGraphicsItem *item : sceneItems) {
-        if (item == primaryIt.value()) {
-            primaryItemInScene = true;
-        }
         if (item != nullptr
             && item->data(kMapItemRole).toInt() == kMapItemGeometryValue
             && item->data(kMapSceneLineNumberRole).toInt() == lineNumber) {
             geometryItemInScene = true;
+            break;
         }
     }
 
-    return primaryItemInScene && geometryItemInScene;
+    return geometryItemInScene;
 }
 
 bool lineHasDependentArea(const MapEditorLogicalSourceContext &logicalSource, int lineNumber)
@@ -540,8 +557,8 @@ MapEditableGeometryVertexItem *findGeometryVertexItem(QGraphicsScene *scene,
         return nullptr;
     }
 
-    const auto items = scene->items();
-    for (QGraphicsItem *item : items) {
+    const QVector<QGraphicsItem *> lineItems = MapEditorSceneHandleIndex::itemsForLine(scene, lineNumber);
+    for (QGraphicsItem *item : lineItems) {
         auto *vertexItem = dynamic_cast<MapEditableGeometryVertexItem *>(item);
         if (vertexItem == nullptr) {
             continue;
@@ -1412,6 +1429,25 @@ void MapEditorCanvasEditController::recordLineAreaVertexMove(int lineNumber,
     }
     if (secondaryMoves.isEmpty()) {
         request.sourceEdits = std::move(primarySourceEdits);
+    } else {
+        // Coupled moves (bezier handles) normally force a whole-document snapshot rewrite. Apply them as
+        // targeted edits instead, but only when they reproduce the sequential result exactly.
+        QVector<std::pair<int, QPointF>> allMoves;
+        allMoves.reserve(secondaryMoves.size() + 1);
+        allMoves.append({vertexIndex, newPoint});
+        for (const MapLineAreaVertexSecondaryMove &move : std::as_const(secondaryMoves)) {
+            if (move.vertexIndex >= 0) {
+                allMoves.append({move.vertexIndex, move.newPoint});
+            }
+        }
+        QVector<TherionSourceTextEdit> combinedEdits;
+        QString combinedText = beforeText;
+        if (TherionDocumentEditor::lineAreaVerticesRewriteEdits(beforeText, lineNumber, rewriteKind, allMoves,
+                                                                &combinedEdits, nullptr)
+            && TherionDocumentEditor::applySourceTextEdits(&combinedText, combinedEdits, nullptr)
+            && combinedText == afterText) {
+            request.sourceEdits = std::move(combinedEdits);
+        }
     }
     sourceTransactionController(context_).applyChangeWithSnapshot(request);
     (*context_.toolbarStatusNote) = tr("Updated %1 vertex %2 at source line %3.")

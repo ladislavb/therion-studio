@@ -2,6 +2,8 @@
 
 #include <QtTest/QtTest>
 
+int runScrapAltitudeModelTest(int argc, char **argv);
+
 int runCommandCatalogStoreTest(int argc, char **argv);
 int runCommandOptionParserTest(int argc, char **argv);
 int runMapBackgroundPlacementTest(int argc, char **argv);
@@ -28,10 +30,13 @@ int runTherionDocumentParserTest(int argc, char **argv);
 int runTherionXviParserTest(int argc, char **argv);
 int runTherionXviPassageTest(int argc, char **argv);
 int runTherionXviAreaAdjustTest(int argc, char **argv);
+int runTherionCentrelineTest(int argc, char **argv);
+int runTherionScrap3DTest(int argc, char **argv);
 
 int main(int argc, char **argv)
 {
     return runSelectedQTestSuites(argc, argv, {
+        {"ScrapAltitudeModelTest", runScrapAltitudeModelTest},
         {"CommandCatalogStoreTest", runCommandCatalogStoreTest},
         {"CommandOptionParserTest", runCommandOptionParserTest},
         {"MapBackgroundPlacementTest", runMapBackgroundPlacementTest},
@@ -57,5 +62,7 @@ int main(int argc, char **argv)
         {"TherionSourceValidatorFixTest", runTherionSourceValidatorFixTest},
         {"TherionSourceValidatorProjectionTest", runTherionSourceValidatorProjectionTest},
         {"ProjectStructureIndexQTest", runProjectStructureIndexQTest},
-        {"TherionTokenRulesTest", runTherionTokenRulesTest}});
+        {"TherionTokenRulesTest", runTherionTokenRulesTest},
+        {"TherionCentrelineTest", runTherionCentrelineTest},
+        {"TherionScrap3DTest", runTherionScrap3DTest}});
 }

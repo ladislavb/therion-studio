@@ -1,6 +1,6 @@
 # Therion Studio User Manual
 
-Last updated: 2026-07-14
+Last updated: 2026-10-22
 
 This guide covers everyday workflows in Therion Studio. It intentionally focuses on using the application, not on the full Therion language reference. Therion source syntax, command names, options, and serialized document content stay in canonical Therion form.
 
@@ -16,6 +16,10 @@ The application follows the operating system language when a bundled translation
 - [6. Visual Map Editing (`.th2`)](#6-visual-map-editing-th2)
 - [7. Running Therion](#7-running-therion)
 - [8. Settings](#8-settings)
+- [Local backups and restore](#81-local-backups-and-restore)
+- [First-time GitHub setup](#82-first-time-github-setup)
+- [One-click upload](#83-upload-the-current-project-with-one-click)
+- [Exit prompts and backup troubleshooting](#84-exit-prompts-exclusions-and-troubleshooting)
 - [9. Keyboard Shortcuts](#9-keyboard-shortcuts)
 - [10. Help And About](#10-help-and-about)
 - [11. Troubleshooting](#11-troubleshooting)
@@ -247,6 +251,14 @@ These map controls are enabled when the embedded `.th2` workspace is in `Visual`
 
 The map canvas uses a stable light paper-style surface in both light and dark application modes. Toolbars, tabs, and inspectors follow the system appearance, but raster backgrounds, `.xvi` references, and map symbols are not inverted or tinted for dark mode.
 
+Line decorations stay small on screen when zooming in or out: overhang teeth, pit/pitch and step ticks, wall-material and handrail symbols, flowstone/moonmilk waves, and ladder rails/rungs use the map style catalog's nominal screen-pixel sizes and spacing. Custom style overrides follow the same rule; spacing is adjusted to fit the projected line where the style requests it.
+
+The yellow direction tick shown for a selected line stays 18 screen pixels long. It remains attached to the first vertex, follows the first curve handle or segment, and changes side when the line is reversed, including during dragging.
+
+When a filled area overlaps another selectable object, hit testing prefers the point, line, or other object within the normal pick radius. The area remains selectable from its empty interior, and its fill does not block pointer delivery to geometry beneath it. An area's actual boundary line remains independently selectable and snappable.
+
+This editor preview does not change TH2 coordinates, source options, undo history, or Therion's exported geometry and symbol sizes. An explicitly entered slope `l-size` still represents a real geometric length and therefore grows when you zoom in; a slope with no explicit `l-size` uses a small screen-sized fallback tick. Point symbols, path-following text, and area patterns retain their separate display policies.
+
 ### 6.4 Insert Objects
 
 - `Point`: click once in the map.
@@ -303,7 +315,7 @@ While drafting a line or area:
 
 Select a map object or one of its vertices/control handles in the canvas. The `Selection` inspector then shows the relevant controls, including the source line and enclosing scrap ID.
 
-Map objects keep their normal rendered colors while editing. In select mode, the map canvas uses a crosshair cursor; the object under the cursor hotspot is highlighted in cyan before selection, and the selected object is highlighted in red.
+Map objects keep their normal rendered colors while editing. In select mode, the map canvas uses a crosshair cursor; the object under the cursor hotspot is highlighted in cyan before selection, and the selected object is highlighted in red. When the selected object is a station point inside a scrap, the other station points of that same scrap get a violet ring and show their names, so you can check which stations the scrap already contains; stations of other scraps keep their normal look. Selecting anything else clears the violet rings.
 
 Selection is shared between the map canvas, the `Objects` pane, and the `Selection` inspector. Selecting an area also highlights its referenced border lines. Selecting a line vertex or Bezier handle switches the inspector to the corresponding line-point controls.
 
@@ -411,9 +423,253 @@ Closing a project clears `Target Config` and `Working Directory Override` becaus
 - `Clear Output`
 - `Copy Output`
 
+The console keeps the last 10,000 lines in its preview. `Copy Output` still copies the complete output,
+saved as a UTF-8 log under the application's local data directory (`compiler-logs`). Hover over the output
+to see the log path. Each application window keeps a separate log; starting another compile or choosing
+`Clear Output` clears that window's previous transcript. Logs remain on disk after closing the window.
+If log creation or writing fails, Studio reports the error instead of copying an incomplete transcript.
+
 The status bar shows compile state with the compact `C:` prefix: `C: Idle`, `C: Running`, `C: OK`, or `C: Failed`. `C: OK` is used only when the Therion process exits successfully and Studio does not detect known output-write errors in stderr, such as `warning -- error writing`.
 
 ## 8. Settings
+
+### 8.1 Local backups and restore
+
+This guide is for project authors setting up backups for the first time. Follow
+it to keep local checkpoints and send a verified project backup to GitHub.
+Local history and GitHub uploads are separate, per-project opt-ins: enabling one
+does not enable the other. Git must be installed; GitHub uploads also need GitHub
+CLI (`gh`), a GitHub account and network access.
+Install missing tools using the official [Git](https://git-scm.com/downloads)
+and [GitHub CLI](https://cli.github.com/) instructions for your operating system.
+
+Open a project with **File → Open Project**, then choose
+**File → Settings → Backups and versioning**. Check the displayed project root
+and exclusions before enabling local history, which is off by default.
+Use **Save All** first: checkpoints contain saved files, not unsaved editor buffers.
+Confirming **Enable local history for this project** creates the first checkpoint.
+Use **Create checkpoint** for subsequent saved changes and **Refresh history** to
+reload the timestamp, label and ID list. Unchanged contents do not create duplicates.
+
+Enable **Create checkpoints automatically** and set **Check for changes every**
+to 1–1440 minutes (initially 5) for periodic checks while the project is open.
+Automatic checks are off by default and do not schedule GitHub uploads. They continue after Settings closes, run
+in the background, and create checkpoints only if included saved files differ.
+Ignored output changes do not create history. Closing the project stops checks;
+the preferences survive reopening. Results and errors appear in the status bar;
+use **Refresh history** to update the table.
+
+**Project .gitignore** loads the root file. Edit it and use **Save .gitignore**
+to change the real project file, including its effect on other Git tools.
+**Reload .gitignore** discards unsaved text in this editor and loads the file
+again. Saving refuses to overwrite a file changed externally since loading.
+Nested ignore files still apply but are not edited here. Changed rules affect
+future checkpoints, not the contents of older history.
+
+Backup controls apply **immediately**, independently of **OK** or **Cancel** in
+general settings. Disabling retains existing history. The displayed history folder
+is outside the project and does not change its Git repository. Git must be installed;
+operation failures appear on the backup tab. Project `.gitignore` files apply, along
+with defaults excluding `output/`, `outputs/`, `.3d`, `.lox`, `.plt` and Git metadata.
+Local history is unencrypted.
+Nested Git repositories are not yet supported: exclude their directories using
+the project `.gitignore` or back them up as separate projects if capture reports this error.
+
+**Delete local history...** permanently deletes all local checkpoints for this
+project after explicit confirmation and disables history to prevent immediate
+recreation. It does not delete project files or modify the project's `.git`.
+It cannot be undone and does not restore the project to an earlier state.
+If a checkpoint is busy, wait for it and retry. Reenabling starts fresh history.
+
+The right sidebar's **File** tab contains **Backups and restore**, with compact
+icons, text labels and the current checkpoint status. Backups apply to the whole
+project, not only the displayed file. **Older** and **Newer** restore project checkpoints,
+independently of editor Undo/Redo. **Choose backup** lists dates, times, labels
+and IDs, marks the current version, and provides access to backup settings.
+The **Backup settings...** button opens **Backups and versioning** directly.
+Its **Local backups**, **GitHub**, and **Excluded files (.gitignore)** subtabs
+separate the controls without scrolling through the whole settings page.
+Only long history lists and file contents scroll within their own editors.
+Navigation is disabled when local history is off.
+
+After confirmation, all modified editors are saved and the current project is
+captured in a safety checkpoint before any restore writes. Save or checkpoint
+failure aborts the restore. Included files are restored byte-for-byte; newer
+included files absent from the selected snapshot are removed. Ignored files and
+project Git metadata remain untouched. Open views reload and tabs for deleted
+files close. Editing is blocked during restoration. Stop compilation first and
+do not edit the same project in another application or window during restoration.
+
+The **Project restored** popup has an **OK** button, identifies the restored
+version and safety checkpoint, and compares added/changed/removed file counts
+against the pre-restore project. Expand its details for file names. The safety
+checkpoint is available in **Choose backup**, including work that was unsaved
+before you started restoring. Ordinary editor Undo remains separate.
+
+Write failures attempt to roll back applied changes and report incomplete
+rollback explicitly. An interrupted restore retains a durable safety pointer:
+restore that checkpoint before creating further backups. Symlinks, nested
+repositories, file/directory conflicts and collisions with currently ignored
+files are rejected rather than overwritten. Empty directories are not versioned.
+
+Pre-compilation checkpoints are not available yet.
+
+### 8.2 First-time GitHub setup
+
+**Private does not mean encrypted.** GitHub and people with repository access can
+read the uploaded files. Use a dedicated private repository for cave-project data,
+never the Therion Studio application's source repository.
+
+1. Open the whole project with **File → Open Project**. Check that the project
+   root includes all inputs you want to back up; files outside it are not included.
+2. Open **File → Settings → Backups and versioning → GitHub**. Install Git and
+   GitHub CLI (`gh`) if missing, then reopen Settings.
+3. Choose **Sign in through browser...** and follow the displayed device-code
+   instructions. For an existing login, choose **Check GitHub account**. The
+   account check requires credentials in the system keyring, not a file or
+   environment token.
+4. Enter the repository owner (account or organization) and repository name as
+   separate fields, not a URL. Choose **Create private repository...** and
+   confirm, or enter an existing dedicated empty private repository and choose
+   **Verify repository**. Do not initialize it with a README, license or other
+   files: the first upload rejects any existing branches or tags. The generated
+   default name does not reveal the cave name.
+5. Review **Excluded files (.gitignore)** before uploading. Then enable
+   **Enable unencrypted backups to this private repository** and confirm the
+   privacy warning. **Signing in or verifying the repository alone does not
+   enable uploads.**
+6. Close Settings and click the top-bar **GitHub** icon to send the first backup.
+   Setup itself does not upload project files.
+
+Owner, repository and backup choices are saved in the project and loaded again
+when its settings reopen. Credentials stay in the machine's keyring. These
+controls save immediately, including when Settings is closed with **Cancel**;
+use the enable checkbox to stop future uploads. Invalid or externally modified
+configuration is not silently overwritten.
+
+Opening a project alone does not contact GitHub. Opening the **GitHub** subtab
+with a saved destination automatically checks the existing login and private
+repository. **Check GitHub account** repeats those checks. No repository is
+created automatically. If creation times out, **Verify repository** before
+trying to create it again.
+
+### 8.3 Upload the current project with one click
+
+Click the **GitHub** icon beside **Save** in the top command bar. The small
+**GitHub** button beside backup settings in the right **File** sidebar does the
+same thing. Wait for compilation or restoration to finish first.
+
+The action saves modified open documents, checks the existing login, private
+repository and write access, then uploads the included saved project files.
+Unsaved new documents may still need a save location; a save failure stops the
+upload. Otherwise no repeated login, verification clicks or commit dialog are
+needed. The commit message uses a UTC timestamp.
+
+After remote confirmation, the bottom status bar shows **GitHub OK - project
+uploaded** with the commit ID, or **GitHub OK - project is up to date** when there
+is nothing new. No success popup needs dismissal. Local checkpoint/safety history
+is not uploaded, and the project's existing Git repository is untouched.
+
+If setup is incomplete, the action explains the required steps and opens the
+**GitHub** settings subtab directly. An upload failure displays an error and
+opens the same subtab; success does not reopen Settings.
+
+This is a one-way backup to the remote `main` branch, not a pull/merge or
+multi-computer synchronization tool. An existing destination is accepted for
+later uploads only while its branch matches the last confirmed backup from this
+computer. Keep using the same project location on this computer; moving the
+project or using a different computer does not transfer its local upload state.
+
+### 8.4 Exit prompts, exclusions and troubleshooting
+
+Enable **Ask before exiting when saved project changes have not been uploaded**
+to offer **Upload and exit**, **Exit without uploading**, or **Cancel**, only when
+included saved files differ from the last successful upload. The close-time check
+is local and does not contact GitHub. Normal save/discard prompts happen first;
+discarded editor edits are not included. **Upload and exit** asks for a commit
+message, unlike the one-click toolbar action. A failed/canceled upload keeps the
+app open. If the local check fails, a separate warning asks whether to exit
+without a backup.
+
+Project `.gitignore` rules and the local checkpoint defaults apply: `output/`,
+`outputs/`, `*.3d`, `*.lox`, `*.plt` and Git metadata are excluded. Add other generated
+exports or sensitive inputs to `.gitignore` **before the first upload**. Previously
+uploaded data remains in remote Git history even after adding an exclusion.
+Private is **not encrypted**: GitHub and authorized collaborators can read the files.
+Encryption, remote restoration and multi-computer synchronization are not implemented.
+
+| What you see | What to do |
+|---|---|
+| Setup opens although you are signed in | Check the project root, owner and repository fields, and the separate unencrypted-backup checkbox. Login alone is not project setup. |
+| Account or permission check fails | In the opened GitHub settings, check the account or sign in again. Confirm write access, private visibility and network access. A public repository is not accepted. |
+| First upload rejects a nonempty repository | Choose a dedicated empty private repository, not the application's source repository. Do not erase an existing repository to bypass this check. |
+| Remote changes or repository identity conflict | Stop retrying and preserve both copies. Studio never force-pushes or merges foreign changes. Resolve the conflict outside Studio; alternatively select a new empty private repository. |
+| Upload result is uncertain after a network error | Restore connectivity and retry the same project and destination. Studio checks whether the pending commit reached GitHub before continuing. |
+| A source or background is missing from the backup | Check whether it is inside the project root and whether ignore rules exclude it. Inputs such as PDF, SVG and XVI are not blanket-excluded; exclude sensitive inputs yourself. |
+| Project configuration changed externally | Close and reopen Settings before editing it again. Do not overwrite another program's changes. |
+
+### General settings
+
+**Pastel scrap altitude underlay** is an optional, editor-only aid (off by default).
+Enable it in Settings to tint the passage inside closed wall outlines, preserving
+holes and keeping lines, labels, and selection handles above the tint.
+**Scrap underlay strength** sets opacity from **0–100%**, initially **19%**.
+Zero makes the tint invisible without changing its colors; 100% is opaque.
+The setting applies equally to precise and approximate passage previews and
+categorical fallback colors. Turning the underlay off retains the chosen strength.
+
+**XVI centerline color** opens a color picker with an alpha/transparency control.
+**XVI centerline color mode** selects **One color** or **By altitude** (the default).
+Altitude mode blends the endpoint station colors along each traverse leg using the
+same project-wide LOX palette as scraps. Both endpoint identities and heights must
+resolve uniquely; missing or ambiguous data, or a missing flagged entrance datum,
+falls back to the configured single XVI color for that leg.
+
+When altitude mode has a usable LOX height range, the Map Objects sidebar shows a
+thin numeric legend. Heights are relative to the selected flagged entrance, not an
+absolute elevation or sea-level datum. The categorical scrap fallback is identified
+separately and does not represent height.
+
+The legend reports how many XVI legs are altitude-colored and how many use the
+configured fallback. It explains missing station heights, missing entrance data,
+unreadable LOX metadata, or multiple LOX outputs. Multiple outputs are not selected
+arbitrarily: the project must provide a unique LOX output. TH2 `line survey`
+geometry is not an XVI background and is not recolored by this setting.
+
+Map zoom reaches **20,000%** (a view scale of 200), with the existing **10%**
+manual-zoom minimum. Wheel, pinch and zoom actions share these limits in embedded
+and detached maps; cursor-anchored zoom and constant-screen-size decorations remain.
+
+**XVI centerline thickness** accepts **0.1–12 px**, initially **1.8 px**.
+The initial color is the existing translucent navy, RGBA **18, 44, 88, 130**.
+Only station-to-station centerline legs in XVI backgrounds change; LRUD passage
+outlines and fills, splays, grid, sketches, station markers, and all other map
+layers keep their appearance. Thickness is a cosmetic pixel width, not a map
+distance, and retains the existing thinning when zoomed out.
+
+Click **OK** in **Settings** to save and immediately apply these preferences to
+all open maps, including detached windows. No document edits or undo steps are
+created. **Cancel** discards changes.
+
+With one compiled LOX output in the current project, colors represent the mean
+height of the scrap's distinct mapped survey stations. Heights are shown relative
+to a station explicitly flagged as an entrance, never as an assumed absolute/GPS
+datum. If several entrances exist, the first fully qualified name in alphabetical
+order is the reference; changing that reference does not change the colors.
+All station mappings must resolve uniquely. The palette uses the current LOX
+station-height range, so similar heights receive similar colors across scraps.
+
+If the LOX is missing, ambiguous, invalid, lacks a flagged entrance, or a scrap
+has incomplete station mappings, that scrap receives a stable categorical pastel
+instead. These colors distinguish scraps, **not heights**. The status hint identifies
+this fallback; scrap underlay tooltips explain the height/reference or fallback.
+Connected open wall segments can form closed passage outlines; closed interior
+rock outlines remain holes rather than becoming colored scraps. The status hint
+reports precise, approximate and unfilled scrap counts. Where no precise outline
+exists, nearby endpoints may be joined for an **approximate preview**; the tooltip
+marks that inferred boundary. Larger gaps and ambiguous branching remain unfilled.
+Known inner rock outlines remain holes. This preference
+does not change source, undo history, or Therion exports.
 
 Open settings from `File -> Settings...` or `Preferences...` on macOS.
 

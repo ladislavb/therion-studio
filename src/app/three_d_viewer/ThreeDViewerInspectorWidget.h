@@ -16,11 +16,15 @@ class ThreeDViewerInspectorWidget final : public QQuickWidget
 
 public:
     explicit ThreeDViewerInspectorWidget(QWidget *parent = nullptr);
+    ThreeDViewerInspectorWidget(ThreeDViewerInspectorState *state,
+                                ThreeDViewerLayerListModel *layerModel,
+                                QWidget *parent = nullptr);
 
     void setInspectorState(ThreeDViewerInspectorState *state);
     void setLayerModel(ThreeDViewerLayerListModel *layerModel);
 
 private:
+    void initialize();
     void updateContextProperties();
 
     ThreeDViewerInspectorState *inspectorState_ = nullptr;

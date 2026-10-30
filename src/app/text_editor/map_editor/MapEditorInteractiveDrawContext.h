@@ -64,7 +64,11 @@ struct MapEditorInteractiveDrawContext
     std::function<QString(const char *)> translate;
     std::function<void()> emitModeStatusChanged;
     std::function<QPointF(const QPointF &)> sourcePointFromScenePosition;
-    std::function<std::optional<MapEditorXviStationSnapCandidate>(const QPointF &)> xviStationSnapAtScenePosition;
+    std::function<QVector<MapEditorXviStationSnapCandidate>(const QPointF &)> xviStationSnapsAtScenePosition;
+    // Lets the user pick one of several nearby XVI stations; std::nullopt cancels the insert.
+    std::function<std::optional<MapEditorXviStationSnapCandidate>(const QVector<MapEditorXviStationSnapCandidate> &,
+                                                                  const QPointF &)>
+        chooseXviStationSnap;
     std::function<TextEditorSourceTransactionResult(const QString &, const QString &, const QString &, int, std::function<void()>)>
         applySourceTextChangeWithSnapshot;
     std::function<TextEditorSourceTransactionResult(const QString &, const QString &, const QString &, int, std::function<void()>)>

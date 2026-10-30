@@ -274,6 +274,7 @@ void MainWindow::initializeWorkspaceModeSwitcher()
         newDocumentMenu->popup(button->mapToGlobal(QPoint(0, button->height())));
     });
     workspaceSaveButton_ = createWorkspaceIconButton(workspaceModeSwitcher_, tr("Save"), QStringLiteral("save"));
+    workspaceSaveButton_->setObjectName(QStringLiteral("workspaceSaveButton"));
     workspaceExportCsvButton_ =
         createWorkspaceIconButton(workspaceModeSwitcher_, tr("Export CSV"), QStringLiteral("download"));
     workspaceEditSeparator_ = createWorkspaceToolbarSeparator(workspaceModeSwitcher_);
@@ -286,6 +287,11 @@ void MainWindow::initializeWorkspaceModeSwitcher()
         createWorkspaceIconButton(workspaceModeSwitcher_, tr("Compile Current Config"), QStringLiteral("play"));
     hostLayout->addWidget(workspaceNewDocumentButton_);
     hostLayout->addWidget(workspaceSaveButton_);
+    auto *githubBackup = createWorkspaceIconButton(workspaceModeSwitcher_,
+        tr("Upload project to GitHub"), QStringLiteral("github-backup"));
+    githubBackup->setObjectName(QStringLiteral("workspaceGitHubBackupButton"));
+    connect(githubBackup, &QToolButton::clicked, this, &MainWindow::uploadProjectToGitHub);
+    hostLayout->addWidget(githubBackup);
     hostLayout->addWidget(workspaceExportCsvButton_);
     hostLayout->addWidget(workspaceEditSeparator_);
     hostLayout->addWidget(workspaceUndoButton_);
@@ -385,9 +391,14 @@ void MainWindow::initializeWorkspaceModeSwitcher()
     workspaceRawModeButton_->setCheckable(true);
     workspaceMapPaneWindowButton_ = createWorkspaceIconButton(workspaceMapModeSwitcher_, tr("Separate Map"), QStringLiteral("screen-share"));
     workspaceMapPaneWindowButton_->setObjectName(QStringLiteral("workspaceMapPaneWindowButton"));
+    workspaceMapThreeDViewButton_ = createWorkspaceIconButton(workspaceMapModeSwitcher_, tr("3D View"), QStringLiteral("box"));
+    workspaceMapThreeDViewButton_->setObjectName(QStringLiteral("workspaceMapThreeDViewButton"));
+    workspaceMapThreeDViewButton_->setToolTip(tr("Open scrap and centreline in 3D Viewer"));
+    workspaceMapThreeDViewButton_->setAccessibleName(tr("3D View"));
     mapLayout->addWidget(workspaceRawModeButton_);
     mapLayout->addWidget(workspaceVisualModeButton_);
     mapLayout->addWidget(workspaceMapPaneWindowButton_);
+    mapLayout->addWidget(workspaceMapThreeDViewButton_);
 
     workspaceTextModeSwitcher_ = new QWidget(workspaceModeSwitcher_);
     auto *textLayout = new QHBoxLayout(workspaceTextModeSwitcher_);
@@ -404,6 +415,7 @@ void MainWindow::initializeWorkspaceModeSwitcher()
 
     hostLayout->addWidget(workspaceMapModeSwitcher_);
     hostLayout->addWidget(workspaceTextModeSwitcher_);
+    initializeProjectVersioningNavigation();
 
     connect(workspaceSaveButton_, &QToolButton::clicked, this, &MainWindow::saveActiveDocument);
     connect(workspaceExportCsvButton_, &QToolButton::clicked, this, [this]() {
@@ -475,6 +487,14 @@ void MainWindow::initializeWorkspaceModeSwitcher()
             mapTab->toggleMapPaneWindow();
         }
     });
+    connect(workspaceMapThreeDViewButton_, &QToolButton::clicked, this, [this]() {
+        if (workspaceModeSwitcherSyncInProgress_) {
+            return;
+        }
+        if (auto *mapTab = currentMapEditorTab(); mapTab != nullptr) {
+            openThreeDViewerTab(mapTab->filePath(), true, mapTab);
+        }
+    });
     connect(workspaceTextRawModeButton_, &QToolButton::clicked, this, [this]() {
         if (workspaceModeSwitcherSyncInProgress_) {
             return;
@@ -513,6 +533,7 @@ void MainWindow::initializeWorkspaceModeSwitcher()
 
 void MainWindow::refreshWorkspaceModeSwitcher()
 {
+    refreshProjectVersioningInspectors();
     if (workspaceModeSwitcher_ == nullptr
         || workspaceMapModeSwitcher_ == nullptr
         || workspaceTextModeSwitcher_ == nullptr
@@ -521,6 +542,7 @@ void MainWindow::refreshWorkspaceModeSwitcher()
         || workspaceVisualModeButton_ == nullptr
         || workspaceRawModeButton_ == nullptr
         || workspaceMapPaneWindowButton_ == nullptr
+        || workspaceMapThreeDViewButton_ == nullptr
         || workspaceSaveButton_ == nullptr
         || workspaceExportCsvButton_ == nullptr
         || workspaceUndoButton_ == nullptr
@@ -734,6 +756,7 @@ void MainWindow::refreshWorkspaceModeSwitcher()
         workspaceVisualModeButton_->setEnabled(!mapPaneDetached);
         workspaceRawModeButton_->setEnabled(!mapPaneDetached);
         workspaceMapPaneWindowButton_->setEnabled(true);
+        workspaceMapThreeDViewButton_->setEnabled(true);
         workspaceMapPaneWindowButton_->setProperty("lucideIconName",
                                                    mapPaneDetached
                                                        ? QStringLiteral("monitor-x")

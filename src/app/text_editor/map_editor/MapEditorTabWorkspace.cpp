@@ -1,4 +1,5 @@
 #include "MapEditorTab.h"
+#include "MapEditorXviBackgroundItem.h"
 
 #include "../InspectorPanel.h"
 #include "MapEditorMagnifierOverlay.h"
@@ -96,6 +97,7 @@ MapEditorTab::MapEditorTab(IFileSystem &fileSystem,
 
 void MapEditorTab::initializeWorkspace()
 {
+    mapAppearance_ = sessionStore_->therionMapAppearance();
     undoStack_ = new QUndoStack(this);
     undoStack_->setUndoLimit(kMapEditorUndoLimit);
     MapEditorUndoArbitrationService::resetOwnership(undoOwnershipState_, undoStack_->index());
@@ -108,6 +110,11 @@ void MapEditorTab::initializeWorkspace()
     sessionStore_->setTherionMapTouchFriendlyControlsEnabled(false);
     buildUi();
     connect(this, &MapEditorTab::zoomStatusChanged, this, [this](int) {
+        for (auto *item : backgroundImageItems_) {
+            if (auto *xvi = dynamic_cast<MapEditorXviBackgroundItem *>(item)) {
+                xvi->refreshPaintBounds();
+            }
+        }
         refreshStatus();
     });
     connect(this, &MapEditorTab::modeStatusChanged, this, [this]() {
@@ -196,6 +203,9 @@ void MapEditorTab::buildUi()
     connect(textEditor_, &TextEditorTab::dirtyStateChanged, this, &MapEditorTab::dirtyStateChanged);
     connect(textEditor_, &TextEditorTab::currentLineChanged, this, &MapEditorTab::handleTextEditorCurrentLineChanged);
     connect(textEditor_, &TextEditorTab::cursorPositionChanged, this, &MapEditorTab::handleTextEditorCursorPositionChanged);
+    connect(textEditor_, &TextEditorTab::documentTextChanged, this, [this]() {
+        ++sourceTextChangeSerial_;
+    });
     connect(textEditor_, &TextEditorTab::documentTextChanged, this, &MapEditorTab::scheduleSourceDrivenMapRefresh);
     connect(textEditor_, &TextEditorTab::documentTextChanged, this, &MapEditorTab::documentTextChanged);
     connect(textEditor_, &TextEditorTab::documentTextChanged, this, &MapEditorTab::updateCommandSurfaceState);
@@ -239,16 +249,26 @@ void MapEditorTab::buildUi()
     mapView_->setDragMode(QGraphicsView::NoDrag);
     mapView_->setTransformationAnchor(QGraphicsView::AnchorViewCenter);
     mapView_->setResizeAnchor(QGraphicsView::AnchorViewCenter);
-    mapView_->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+    // Partial updates: hover/selection/drag repaint only dirty item regions.
+    // MapEditorSpatialIndexRepaintTest compares the result with a clean full
+    // repaint (hover, selection, drag, draw drafts, high zoom, pan, detached).
+    mapView_->setViewportUpdateMode(QGraphicsView::SmartViewportUpdate);
     mapView_->setCacheMode(QGraphicsView::CacheBackground);
     mapView_->setRenderHint(QPainter::Antialiasing, true);
     mapView_->setRenderHint(QPainter::SmoothPixmapTransform, true);
     mapView_->setBackgroundBrush(mapEditorCanvasViewportBackgroundColor());
     mapView_->setFocusPolicy(Qt::StrongFocus);
-    mapView_->installEventFilter(this);
+    // The tab's application-wide filter already routes every view/viewport event
+    // (also when the pane is detached); object filters would dispatch each
+    // pointer event a second time through the whole input controller.
+    if (qApp == nullptr) {
+        mapView_->installEventFilter(this);
+    }
     if (mapView_->viewport() != nullptr) {
         mapView_->viewport()->setFocusPolicy(Qt::StrongFocus);
-        mapView_->viewport()->installEventFilter(this);
+        if (qApp == nullptr) {
+            mapView_->viewport()->installEventFilter(this);
+        }
         mapView_->viewport()->setMouseTracking(true);
         mapView_->viewport()->setCursor(Qt::CrossCursor);
         mapView_->viewport()->setContextMenuPolicy(Qt::CustomContextMenu);

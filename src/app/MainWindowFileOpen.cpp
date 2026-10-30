@@ -2,6 +2,7 @@
 
 #include "MainWindowDocumentOpenController.h"
 #include "three_d_viewer/ThreeDViewerTab.h"
+#include "text_editor/map_editor/MapEditorTab.h"
 #include "reports/TherionSqlReportCsvExporter.h"
 #include "reports/TherionSqlReportPresetStore.h"
 #include "reports/TherionSqlReportTab.h"
@@ -13,6 +14,7 @@
 #include <QDesktopServices>
 #include <QFileInfo>
 #include <QFileSystemModel>
+#include <QInputDialog>
 #include <QMessageBox>
 #include <QMimeDatabase>
 #include <QMimeType>
@@ -125,10 +127,36 @@ void MainWindow::handleProjectTreeActivated(const QModelIndex &index)
 }
 
 TherionStudio::ThreeDViewerTab *MainWindow::openThreeDViewerTab(const QString &filePath,
-                                                                bool recordRecentFile)
+                                                                bool recordRecentFile,
+                                                                TherionStudio::MapEditorTab *sourceMapTab)
 {
     const QString canonicalPath = TherionStudio::MainWindowDocumentOpenController::canonicalDocumentPath(filePath);
-    if (auto *existingTab = qobject_cast<TherionStudio::ThreeDViewerTab *>(documentWidgetForFilePath(canonicalPath))) {
+    TherionStudio::ThreeDViewerTab *existingTab = nullptr;
+    TherionStudio::MapEditorTab *mapTab = sourceMapTab != nullptr
+        ? sourceMapTab
+        : detachedMapEditorTabForPath(canonicalPath);
+    for (int index = 0; index < editorTabs_->count(); ++index) {
+        QWidget *widget = editorTabs_->widget(index);
+        if (auto *candidate = qobject_cast<TherionStudio::ThreeDViewerTab *>(widget);
+            candidate != nullptr
+            && TherionStudio::MainWindowDocumentOpenController::canonicalDocumentPath(candidate->filePath()) == canonicalPath) {
+            existingTab = candidate;
+        } else if (auto *candidate = qobject_cast<TherionStudio::MapEditorTab *>(widget);
+                   sourceMapTab == nullptr
+                   && candidate != nullptr
+                   && TherionStudio::MainWindowDocumentOpenController::canonicalDocumentPath(candidate->filePath()) == canonicalPath) {
+            mapTab = candidate;
+        }
+    }
+    if (existingTab != nullptr) {
+        if (mapTab != nullptr) {
+            existingTab->setTh2SourceSnapshot(mapTab->text(), mapTab->hiddenObjectLines());
+            QString errorMessage;
+            if (!existingTab->reloadFile(&errorMessage)) {
+                QMessageBox::warning(this, tr("Open File"), errorMessage);
+                return nullptr;
+            }
+        }
         const int existingIndex = editorTabs_->indexOf(existingTab);
         if (existingIndex >= 0) {
             editorTabs_->setCurrentIndex(existingIndex);
@@ -140,8 +168,38 @@ TherionStudio::ThreeDViewerTab *MainWindow::openThreeDViewerTab(const QString &f
     }
 
     auto *tab = new TherionStudio::ThreeDViewerTab();
+    tab->setProjectRootPath(projectRootPath_);
+    if (mapTab != nullptr) {
+        tab->setTh2SourceSnapshot(mapTab->text(), mapTab->hiddenObjectLines());
+    }
+    QString surveySourcePath;
+    if (QFileInfo(canonicalPath).suffix().compare(QStringLiteral("th2"), Qt::CaseInsensitive) == 0) {
+        const QStringList candidates = TherionStudio::ThreeDViewerTab::surveySourceCandidatesForTh2(
+            canonicalPath, projectRootPath_);
+        if (candidates.size() == 1) {
+            surveySourcePath = candidates.first();
+        } else if (candidates.size() > 1) {
+            bool accepted = false;
+            surveySourcePath = QInputDialog::getItem(
+                this,
+                tr("Select Survey Source"),
+                tr("Several survey files reference this scrap. Choose the source for its 3D centreline."),
+                candidates,
+                0,
+                false,
+                &accepted);
+            if (!accepted) {
+                tab->deleteLater();
+                return nullptr;
+            }
+        }
+    }
+
     QString errorMessage;
-    if (!tab->loadFile(canonicalPath, &errorMessage)) {
+    const bool loaded = surveySourcePath.isEmpty()
+        ? tab->loadFile(canonicalPath, &errorMessage)
+        : tab->loadFile(canonicalPath, surveySourcePath, &errorMessage);
+    if (!loaded) {
         QMessageBox::warning(this, tr("Open File"), errorMessage);
         tab->deleteLater();
         return nullptr;

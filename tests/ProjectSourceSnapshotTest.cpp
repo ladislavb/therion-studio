@@ -29,6 +29,7 @@ private slots:
     void equivalentPathFormsShareRequestKey();
     void inMemoryHashChangesRequestKey();
     void inMemoryOrderDoesNotAffectRequestKey();
+    void inMemoryAliasesPreserveOriginalPathTieBreak();
     void preferredConfigAffectsRequestKey();
     void policyKeyAffectsRequestKey();
     void collectorReadsSortedProjectSourceFiles();
@@ -39,7 +40,29 @@ private slots:
     void projectionCacheReusesUnchangedSourceDocuments();
     void projectionCacheInvalidatesWhenTextChanges();
     void projectionCacheSeparatesCatalogLogicalDocumentsByCatalogKey();
+    void projectionCachePrunesObsoleteRevisionsAtScanBoundary();
 };
+
+void ProjectSourceSnapshotTest::inMemoryAliasesPreserveOriginalPathTieBreak()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString path = directory.filePath(QStringLiteral("survey.th"));
+    const QString alias = directory.path() + QStringLiteral("/./survey.th");
+    QVERIFY(writeTextFile(path, QStringLiteral("survey disk\nendsurvey\n")));
+    QHash<QString, QString> contents;
+    contents.insert(path, QStringLiteral("survey canonical\nendsurvey\n"));
+    contents.insert(alias, QStringLiteral("survey alias\nendsurvey\n"));
+    const auto snapshot = collectProjectSourceSnapshot(directory.path(), {}, contents);
+    QCOMPARE(snapshot.documents.size(), 1);
+    const QString expected = path < alias ? contents.value(alias) : contents.value(path);
+    QCOMPARE(snapshot.documents.first().text, expected);
+    QCOMPARE(snapshot.requestKey.inMemoryDocuments.size(), 2);
+    const auto keyBeforeReinsert = snapshot.requestKey;
+    contents.remove(path);
+    contents.insert(path, QStringLiteral("survey canonical\nendsurvey\n"));
+    QCOMPARE(collectProjectSourceSnapshot(directory.path(), {}, contents).requestKey, keyBeforeReinsert);
+}
 
 void ProjectSourceSnapshotTest::equivalentPathFormsShareRequestKey()
 {
@@ -404,6 +427,73 @@ void ProjectSourceSnapshotTest::projectionCacheSeparatesCatalogLogicalDocumentsB
     QCOMPARE(stats.catalogLogicalDocumentBuilds, 2);
     QCOMPARE(stats.catalogLogicalDocumentHits, 1);
     QCOMPARE(stats.logicalDocumentBuilds, 1);
+}
+
+void ProjectSourceSnapshotTest::projectionCachePrunesObsoleteRevisionsAtScanBoundary()
+{
+    ProjectSourceDocument edited{
+        normalizeProjectSourcePath(QStringLiteral("edited.th")),
+        QStringLiteral("survey original\nendsurvey\n"),
+        ProjectSourceDocumentOrigin::InMemoryOnly,
+        -1,
+        true,
+    };
+    ProjectSourceDocument unchanged = edited;
+    unchanged.normalizedPath = normalizeProjectSourcePath(QStringLiteral("unchanged.th"));
+    ProjectSourceDocument removed = edited;
+    removed.normalizedPath = normalizeProjectSourcePath(QStringLiteral("removed.th"));
+
+    ProjectSourceProjectionCache cache;
+    TherionSourceValidationCatalog catalog;
+    const auto catalogKey = TherionSourceSnapshotCatalogKey::fromRevision(1);
+    auto originalHandle = cache.logicalDocumentHandle(edited);
+    const std::weak_ptr<const TherionSourceLogicalDocument> originalWeak = originalHandle;
+    const std::weak_ptr<const TherionSourceLogicalDocument> removedWeak =
+        cache.logicalDocumentHandle(removed);
+    const auto unchangedHandle = cache.logicalDocumentHandle(unchanged);
+    const TherionSourceDocument *unchangedSource = &cache.sourceDocument(unchanged);
+    const TherionSourceLogicalDocument *unchangedCatalog =
+        &cache.logicalDocument(unchanged, catalog, catalogKey);
+    const QString originalCommandText = originalHandle->commands().constFirst().text;
+
+    // Building another revision must not invalidate references within a scan.
+    const TherionSourceLogicalDocument &originalReference = cache.logicalDocument(edited);
+    edited.text = QStringLiteral("survey changed\nendsurvey\n");
+    const auto currentHandle = cache.logicalDocumentHandle(edited);
+    QCOMPARE(originalReference.commands().constFirst().text, originalCommandText);
+    QVERIFY(currentHandle.get() != originalHandle.get());
+    QVERIFY(!originalWeak.expired());
+
+    ProjectSourceSnapshot currentSnapshot;
+    currentSnapshot.documents = {edited, unchanged};
+    cache.pruneToSnapshot(currentSnapshot, catalogKey);
+    QVERIFY(removedWeak.expired());
+    QCOMPARE(originalHandle->commands().constFirst().text, originalCommandText);
+    originalHandle.reset();
+    QVERIFY(originalWeak.expired());
+
+    cache.resetStats();
+    QCOMPARE(cache.logicalDocumentHandle(edited).get(), currentHandle.get());
+    QCOMPARE(cache.logicalDocumentHandle(unchanged).get(), unchangedHandle.get());
+    QCOMPARE(&cache.sourceDocument(unchanged), unchangedSource);
+    QCOMPARE(&cache.logicalDocument(unchanged, catalog, catalogKey), unchangedCatalog);
+    QCOMPARE(cache.stats().sourceDocumentBuilds, 0);
+    QCOMPARE(cache.stats().logicalDocumentBuilds, 0);
+    QCOMPARE(cache.stats().catalogLogicalDocumentBuilds, 0);
+
+    // A partially populated (canceled) scan is pruned by the next scan, too.
+    ProjectSourceDocument canceledRevision = edited;
+    canceledRevision.text = QStringLiteral("survey canceled\nendsurvey\n");
+    const std::weak_ptr<const TherionSourceLogicalDocument> canceledWeak =
+        cache.logicalDocumentHandle(canceledRevision);
+    cache.pruneToSnapshot(currentSnapshot, catalogKey);
+    QVERIFY(canceledWeak.expired());
+    QCOMPARE(cache.logicalDocumentHandle(edited).get(), currentHandle.get());
+    QCOMPARE(cache.logicalDocumentHandle(unchanged).get(), unchangedHandle.get());
+
+    cache.pruneToSnapshot({}, catalogKey);
+    QCOMPARE(currentHandle->commands().constFirst().text, QStringLiteral("survey changed"));
+    QCOMPARE(unchangedHandle->commands().constFirst().text, originalCommandText);
 }
 
 QTEST_GUILESS_MAIN(ProjectSourceSnapshotTest)

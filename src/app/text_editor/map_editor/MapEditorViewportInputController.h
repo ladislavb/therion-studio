@@ -19,6 +19,7 @@ public:
 
     std::optional<bool> handleEvent(QObject *watched, QEvent *event);
     void showContextMenuAtViewportPosition(const QPoint &viewportPosition, const QPoint &globalPosition);
+    void refreshHoverAtViewportPosition(const QPoint &viewportPosition);
 
 private:
     MapEditorInteractiveDrawMode drawMode() const;

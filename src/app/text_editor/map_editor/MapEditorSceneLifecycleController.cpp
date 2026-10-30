@@ -1,6 +1,9 @@
 #include "MapEditorSceneLifecycleController.h"
+#include "MapEditorSceneItems.h"
 
 #include "MapEditorSceneSupport.h"
+#include "MapEditorLineDecorationItem.h"
+#include "MapEditorDirectionAidItem.h"
 
 #include <QGraphicsItem>
 #include <QGraphicsPixmapItem>
@@ -71,10 +74,10 @@ void MapEditorSceneLifecycleController::clearMapScene()
             preservedDrafts.append(draftItem);
             continue;
         }
-
-        mapScene->removeItem(item);
-        delete item;
     }
+
+    // Let Qt reset its scene index before deleting the remaining items.
+    mapScene->clear();
 
     *context_.draftGeometryItems = preservedDrafts;
     *context_.backgroundImageItems = preservedBackgrounds;
@@ -122,7 +125,7 @@ void MapEditorSceneLifecycleController::restoreDraftGeometryItems()
     }
 
     for (QGraphicsRectItem *item : std::as_const(*context_.draftGeometryItems)) {
-        if (item == nullptr || mapScene->items().contains(item)) {
+        if (item == nullptr || item->scene() == mapScene) {
             continue;
         }
 
@@ -139,7 +142,7 @@ void MapEditorSceneLifecycleController::restoreBackgroundImageItems()
     }
 
     for (QGraphicsPixmapItem *item : std::as_const(*context_.backgroundImageItems)) {
-        if (item == nullptr || mapScene->items().contains(item)) {
+        if (item == nullptr || item->scene() == mapScene) {
             continue;
         }
 
@@ -165,14 +168,15 @@ void MapEditorSceneLifecycleController::updateSceneRectForBackgroundBounds()
     mapScene->setSceneRect(mapEditorScrollableSceneRect(backgroundBounds));
 }
 
-void MapEditorSceneLifecycleController::fitMapToView(bool includeBackgroundImages, bool updateCommandSurface)
+void MapEditorSceneLifecycleController::fitMapToView(bool includeBackgroundImages, bool updateCommandSurface,
+                                                      std::optional<QRectF> geometryFitBounds)
 {
     QGraphicsScene *mapScene = scene();
     if (mapScene == nullptr || context_.view == nullptr) {
         return;
     }
 
-    QRectF fitBounds = mapGeometryFitBounds();
+    QRectF fitBounds = geometryFitBounds.has_value() ? *geometryFitBounds : mapGeometryFitBounds();
     const QRectF backgroundBounds = context_.mapBackgroundFitBounds();
     if (backgroundBounds.isValid() && includeBackgroundImages) {
         fitBounds = fitBounds.isValid() ? fitBounds.united(backgroundBounds) : backgroundBounds;
@@ -199,6 +203,7 @@ void MapEditorSceneLifecycleController::syncZoomFactorFromView()
     }
 
     const QTransform viewTransform = context_.view->transform();
+    updateMapEditorScreenSpaceMetrics(scene(), context_.view->viewportTransform());
     const qreal scaleX = std::hypot(viewTransform.m11(), viewTransform.m21());
     *context_.zoomFactor = scaleX > 0.0 ? scaleX : 1.0;
     context_.emitZoomStatusChanged(context_.zoomPercent());
@@ -211,7 +216,7 @@ void MapEditorSceneLifecycleController::applyZoomAtViewportPosition(qreal factor
     }
 
     syncZoomFactorFromView();
-    const qreal targetZoomFactor = qBound(0.1, *context_.zoomFactor * factor, 50.0);
+    const qreal targetZoomFactor = qBound(0.1, *context_.zoomFactor * factor, 200.0);
     if (qFuzzyCompare(targetZoomFactor, *context_.zoomFactor)) {
         return;
     }
@@ -219,10 +224,13 @@ void MapEditorSceneLifecycleController::applyZoomAtViewportPosition(qreal factor
     const qreal appliedFactor = targetZoomFactor / *context_.zoomFactor;
     const QPoint viewportPoint = viewportPosition.toPoint();
     const QPointF scenePointBefore = context_.view->mapToScene(viewportPoint);
+    const auto previousAnchor = context_.view->transformationAnchor();
+    context_.view->setTransformationAnchor(QGraphicsView::NoAnchor);
     context_.view->scale(appliedFactor, appliedFactor);
     const QPointF scenePointAfter = context_.view->mapToScene(viewportPoint);
     const QPointF sceneDelta = scenePointAfter - scenePointBefore;
     context_.view->translate(sceneDelta.x(), sceneDelta.y());
+    context_.view->setTransformationAnchor(previousAnchor);
 
     *context_.autoFitEnabled = false;
     syncZoomFactorFromView();
@@ -238,7 +246,7 @@ QRectF MapEditorSceneLifecycleController::mapGeometryFitBounds() const
 
     QRectF bounds;
     bool hasBounds = false;
-    const QList<QGraphicsItem *> items = mapScene->items();
+    const QList<QGraphicsItem *> items = unsortedSceneItems(mapScene);
     for (QGraphicsItem *item : items) {
         if (item == nullptr) {
             continue;
@@ -247,7 +255,12 @@ QRectF MapEditorSceneLifecycleController::mapGeometryFitBounds() const
             continue;
         }
 
-        const QRectF itemBounds = item->sceneBoundingRect();
+        if (dynamic_cast<MapEditorDirectionAidItem *>(item)) {
+            continue;
+        }
+        const auto *decoration = dynamic_cast<MapEditorLineDecorationItem *>(item);
+        const QRectF itemBounds = decoration
+            ? decoration->mapRectToScene(decoration->sourceGeometryBounds()) : item->sceneBoundingRect();
         if (!itemBounds.isValid()) {
             continue;
         }
